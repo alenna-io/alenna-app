@@ -1,4 +1,4 @@
-import { Home, Settings, Users, FileText, LayoutDashboard } from "lucide-react"
+import { Home, Settings, Users, FileText, LayoutDashboard, GraduationCap } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -18,6 +18,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Home", url: "/", icon: Home },
+  { title: "Students", url: "/students", icon: GraduationCap },
   { title: "Users", url: "/users", icon: Users },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Settings", url: "/settings", icon: Settings },
