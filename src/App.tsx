@@ -5,6 +5,7 @@ import { LoginPage } from '@/pages/login'
 import { SignUpPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
 import { HomePage } from '@/pages/home'
+import StudentsPage from '@/pages/students'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export default function App() {
         >
           <Route index element={<HomePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="students" element={<StudentsPage />} />
           <Route path="users" element={<div className="text-2xl font-bold">Users Page</div>} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
