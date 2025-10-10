@@ -78,9 +78,11 @@
   }
 }
 
-/* Fix sidebar positioning */
+/* Fix sidebar positioning - only for desktop */
 @layer components {
-  [data-sidebar="sidebar"] {
-    position: relative !important;
+  @media (min-width: 768px) {
+    [data-sidebar="sidebar"] {
+      position: relative !important;
+    }
   }
 }
