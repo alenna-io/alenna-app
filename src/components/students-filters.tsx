@@ -1,7 +1,8 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { X, Filter } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { X, Filter, ChevronDown, ChevronUp } from "lucide-react"
 
 interface Filters {
   certificationType: string
@@ -19,12 +20,19 @@ interface StudentsFiltersProps {
 export function StudentsFilters({ filters, onFiltersChange, totalStudents, filteredCount }: StudentsFiltersProps) {
   const [showFilters, setShowFilters] = React.useState(false)
 
-  const certificationTypes = ["INEA", "Grace Christian", "Home Life", "Lighthouse", "Otro"]
+  const certificationTypes = [
+    { value: "INEA", label: "INEA", color: "bg-blue-100 text-blue-800" },
+    { value: "Grace Christian", label: "Grace Christian", color: "bg-green-100 text-green-800" },
+    { value: "Home Life", label: "Home Life", color: "bg-purple-100 text-purple-800" },
+    { value: "Lighthouse", label: "Lighthouse", color: "bg-orange-100 text-orange-800" },
+    { value: "Otro", label: "Otro", color: "bg-gray-100 text-gray-800" }
+  ]
+
   const graduationYears = ["2024", "2025", "2026", "2027", "2028"]
   const levelingOptions = [
-    { value: "true", label: "Nivelados" },
-    { value: "false", label: "No Nivelados" },
-    { value: "", label: "Todos" }
+    { value: "true", label: "Nivelados", color: "bg-green-100 text-green-800" },
+    { value: "false", label: "No Nivelados", color: "bg-orange-100 text-orange-800" },
+    { value: "", label: "Todos", color: "bg-gray-100 text-gray-800" }
   ]
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
@@ -44,18 +52,32 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
 
   const hasActiveFilters = filters.certificationType || filters.graduationYear || filters.isLeveled
 
+  const getActiveFilterLabels = () => {
+    const labels = []
+    if (filters.certificationType) {
+      const cert = certificationTypes.find(c => c.value === filters.certificationType)
+      labels.push(cert?.label || filters.certificationType)
+    }
+    if (filters.graduationYear) {
+      labels.push(`Graduación ${filters.graduationYear}`)
+    }
+    if (filters.isLeveled) {
+      const level = levelingOptions.find(l => l.value === filters.isLeveled)
+      labels.push(level?.label || filters.isLeveled)
+    }
+    return labels
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="w-full" style={{ border: "none" }}>
+      <CardHeader className='p-0'>
+        <div className="flex items-center justify-start gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+            <Filter className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Filtros</CardTitle>
-            {hasActiveFilters && (
-              <span className="ml-2 px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-full">
-                {filteredCount} de {totalStudents}
-              </span>
-            )}
+            <Badge variant="secondary" className="ml-2">
+              {filteredCount} de {totalStudents}
+            </Badge>
           </div>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
@@ -65,43 +87,72 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
               </Button>
             )}
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-1 hover:cursor-pointer"
             >
-              {showFilters ? "Ocultar" : "Mostrar"} Filtros
+              {showFilters ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Ocultar
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Mostrar
+                </>
+              )}
             </Button>
           </div>
         </div>
+
+        {/* Active Filters Display */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="text-sm text-muted-foreground">Filtros activos:</span>
+            {getActiveFilterLabels().map((label, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {label}
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardHeader>
 
       {showFilters && (
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+        <CardContent className="pt-0">
+          <div className="grid gap-6 md:grid-cols-3">
             {/* Certification Type Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Certificación</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                Tipo de Certificación
+              </label>
               <select
                 value={filters.certificationType}
                 onChange={(e) => handleFilterChange("certificationType", e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm"
+                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
               >
                 <option value="">Todas las certificaciones</option>
                 {certificationTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.value} value={type.value}>
+                    {type.label}
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Graduation Year Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Año de Graduación</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Año de Graduación
+              </label>
               <select
                 value={filters.graduationYear}
                 onChange={(e) => handleFilterChange("graduationYear", e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm"
+                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
               >
                 <option value="">Todos los años</option>
                 {graduationYears.map((year) => (
@@ -113,12 +164,15 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
             </div>
 
             {/* Leveling Status Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Estado de Nivelación</label>
+            <div className="space-y-3">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                Estado de Nivelación
+              </label>
               <select
                 value={filters.isLeveled}
                 onChange={(e) => handleFilterChange("isLeveled", e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm"
+                className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
               >
                 {levelingOptions.map((option) => (
                   <option key={option.value} value={option.value}>

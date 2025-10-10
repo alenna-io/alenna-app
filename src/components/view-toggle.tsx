@@ -1,7 +1,6 @@
-import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Grid3X3, List } from "lucide-react"
+import { List, LayoutGrid } from "lucide-react"
 
 interface ViewToggleProps {
   view: "cards" | "table"
@@ -10,28 +9,34 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Vista:</span>
-          <div className="flex rounded-md border">
+    <Card style={{ border: "none" }}>
+      <CardContent className="p-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Vista:</span>
+          <div className="flex rounded-lg border bg-muted/50">
             <Button
-              variant={view === "cards" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => onViewChange("cards")}
-              className="rounded-r-none"
-            >
-              <Grid3X3 className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Tarjetas</span>
-            </Button>
-            <Button
-              variant={view === "table" ? "default" : "ghost"}
+              variant={view === "table" ? "ghost" : "ghost"}
               size="sm"
               onClick={() => onViewChange("table")}
-              className="rounded-l-none border-l"
+              className={`flex items-center gap-2 transition-all cursor-pointer ${view === "table"
+                ? "bg-white text-black shadow-sm"
+                : "hover:bg-background/50 text-muted-foreground"
+                }`}
             >
               <List className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Lista</span>
+              <span className="text-sm font-medium">Lista</span>
+            </Button>
+            <Button
+              variant={view === "cards" ? "ghost" : "ghost"}
+              size="sm"
+              onClick={() => onViewChange("cards")}
+              className={`flex items-center gap-2 transition-all cursor-pointer ${view === "cards"
+                ? "bg-white text-black shadow-sm"
+                : "hover:bg-background/50 text-muted-foreground"
+                }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="text-sm font-medium">Tarjetas</span>
             </Button>
           </div>
         </div>

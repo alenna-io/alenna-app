@@ -121,7 +121,7 @@ export default function StudentsPage() {
     graduationYear: "",
     isLeveled: ""
   })
-  const [view, setView] = React.useState<"cards" | "table">("cards")
+  const [view, setView] = React.useState<"cards" | "table">("table")
 
   // Simulate API fetch
   React.useEffect(() => {
@@ -185,10 +185,6 @@ export default function StudentsPage() {
         <p className="text-muted-foreground">
           Gestiona la información de todos los estudiantes
         </p>
-        {/* Debug info */}
-        <p className="text-xs text-muted-foreground mt-2">
-          Total: {students.length} | Filtrados: {filteredStudents.length} | Vista: {view}
-        </p>
       </div>
 
       {/* Search */}
@@ -231,7 +227,8 @@ export default function StudentsPage() {
             <StudentsTable students={filteredStudents} onStudentSelect={handleStudentSelect} />
           )}
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   )
 }
