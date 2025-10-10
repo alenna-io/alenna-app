@@ -1,73 +1,188 @@
-# React + TypeScript + Vite
+# Alenna - SaaS Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive SaaS application built with React, TypeScript, and shadcn/ui, featuring authentication, sidebar navigation, and a clean dashboard interface.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **🔐 Authentication** - Secure user authentication with Clerk
+- **📱 Responsive Design** - Mobile-first design that works on all devices
+- **🎨 Modern UI** - Beautiful interface built with shadcn/ui components
+- **🗂️ Sidebar Navigation** - Collapsible sidebar with smooth transitions
+- **🌙 Dark Mode Ready** - Built-in dark mode support
+- **⚡ Fast Development** - Hot reload with Vite
+- **📦 Type Safe** - Full TypeScript support
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React 19, TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui
+- **Authentication**: Clerk
+- **Routing**: React Router v7
+- **Build Tool**: Vite
+- **Package Manager**: pnpm
 
-## Expanding the ESLint configuration
+## 📋 Prerequisites
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js 18+ 
+- pnpm (recommended) or npm
+- Clerk account for authentication
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🚀 Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 1. Clone the repository
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone <your-repo-url>
+cd alenna-app
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Install dependencies
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
 ```
+
+### 3. Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+```
+
+Get your Clerk keys from [clerk.com](https://clerk.com)
+
+### 4. Run the development server
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── ui/              # shadcn/ui components
+│   └── app-sidebar.tsx  # Main sidebar component
+├── layouts/
+│   └── dashboard-layout.tsx  # Dashboard layout wrapper
+├── pages/
+│   ├── dashboard.tsx    # Dashboard page
+│   ├── home.tsx         # Home page
+│   ├── login.tsx        # Login page
+│   └── signup.tsx       # Sign up page
+├── hooks/
+│   └── use-mobile.ts    # Mobile detection hook
+├── lib/
+│   └── utils.ts         # Utility functions
+└── App.tsx              # Main app component
+```
+
+## 🎨 UI Components
+
+This project uses [shadcn/ui](https://ui.shadcn.com/) for UI components:
+
+- **Sidebar** - Collapsible navigation with icon mode
+- **Button** - Various button variants
+- **Input** - Form input components
+- **Separator** - Visual dividers
+- **Sheet** - Mobile sidebar overlay
+- **Tooltip** - Hover tooltips
+- **Skeleton** - Loading placeholders
+
+## 📱 Responsive Design
+
+- **Desktop**: Full sidebar with text labels
+- **Mobile**: Off-canvas sidebar with overlay
+- **Collapsed**: Icon-only mode with tooltips
+
+## 🔧 Available Scripts
+
+```bash
+# Start development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Preview production build
+pnpm preview
+
+# Run linting
+pnpm lint
+
+# Type checking
+pnpm type-check
+```
+
+## 🎯 Key Features
+
+### Authentication
+- Sign in/Sign up with Clerk
+- Protected routes
+- User profile management
+
+### Navigation
+- Collapsible sidebar
+- Active route highlighting
+- Mobile-friendly navigation
+- Keyboard shortcuts (Ctrl/Cmd + B)
+
+### Layout
+- Responsive grid system
+- Consistent spacing
+- Dark mode ready
+- Smooth animations
+
+## 🚀 Deployment
+
+### Build for Production
+
+```bash
+pnpm build
+```
+
+The build artifacts will be stored in the `dist/` directory.
+
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+### Environment Variables for Production
+
+Make sure to set your Clerk keys in your deployment platform:
+
+- `VITE_CLERK_PUBLISHABLE_KEY`
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) for beautiful UI components
+- [Clerk](https://clerk.com/) for authentication
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [Lucide React](https://lucide.dev/) for icons
+
+---
+
+Built with ❤️ using React, TypeScript, and modern web technologies.
