@@ -9,7 +9,8 @@ A modern, responsive educational management platform built with React, TypeScrip
 - **📈 Progress Tracking** - Real-time completion status and grade tracking
 - **👨‍🎓 Student Management** - Comprehensive student profiles and academic records
 - **📅 Weekly Planning** - Interactive 9-week quarterly schedules
-- **🎯 Goal Setting** - Daily and weekly academic goals
+- **🎯 Daily Goals System** - Comprehensive daily goal tracking with page calculations and notes
+- **📝 Notes & History** - Track pending items and maintain completion history
 
 ### 🛠️ Technical Features
 - **🔐 Authentication** - Secure user authentication with Clerk
@@ -80,6 +81,7 @@ src/
 │   │   ├── sidebar.tsx
 │   │   └── ...
 │   ├── ace-quarterly-table.tsx  # PACE projection table
+│   ├── daily-goals-table.tsx    # Daily goals tracking table
 │   ├── app-sidebar.tsx          # Main navigation
 │   └── footer.tsx               # App footer
 ├── layouts/
@@ -119,14 +121,70 @@ The core feature of Alenna is the PACE (Personalized ACE Curriculum) projection 
   - 🟢 90-100%: Excellent
   - 🔵 80-89%: Good  
   - 🔴 Below 80%: Needs attention
-- **Context Menu** - Right-click options for editing and deletion
+- **Grade History** - Track all grade attempts with notes and timestamps
+- **Failed PACEs Tracking** - Separate summary for failed PACEs with completion history
+- **Context Menu** - Right-click options for editing, notes, and grade history
 - **Completion Status** - Visual checkmarks for completed work
+- **Comments** - Add optional comments when submitting grades
 
 ### 📈 Progress Tracking
-- **Quarter Summaries** - Expected, completed, and pending PACEs
+- **Quarter Summaries** - Expected, completed, pending, and failed PACEs
 - **Current Week Highlight** - Green background for active week
 - **Subject Color Coding** - Blue/gray alternating rows for clarity
 - **Sticky Columns** - Subject names stay visible while scrolling
+
+## 📅 Daily Goals System
+
+A comprehensive daily goal tracking system integrated with the PACE projections:
+
+### 🎯 Goal Planning
+- **Daily Structure** - Track goals for Monday through Friday
+- **Subject Coverage** - All 6 subjects (Math, English, Science, Social Studies, Word Building, Spanish)
+- **Flexible Input** - Support for page ranges (1-1000) or "Self Test"
+- **Auto-calculation** - Automatic daily page totals
+- **One Table Per Week** - Organized by student, quarter, and week
+
+### ✍️ Input Formats
+- **Page Ranges** - Enter any range from 1-1000 (e.g., "1-10", "45-67", "999-1000")
+- **Self Test** - Special option that counts as 3 pages
+- **Single Pages** - Enter individual page numbers (e.g., "500")
+- **Smart Validation** - Real-time input validation with visual feedback:
+  - ✅ "1-10" → 10 pages
+  - ✅ "45-67" → 23 pages
+  - ✅ "Self Test" → 3 pages
+  - ✅ "500" → 1 page
+  - ❌ "0-5" (0 not allowed)
+  - ❌ "01-10" (no leading zeros)
+  - ❌ Invalid formats show red border with error message
+
+### ✔️ Completion Tracking
+- **Visual Checkboxes** - Always visible completion indicators
+- **Click to Toggle** - Mark goals as complete/incomplete
+- **Strike-through Text** - Completed goals show with line-through styling
+- **Progress Summary** - Track completed vs. total goals with percentage
+
+### 📝 Notes System
+- **Pending Notes**:
+  - Red pencil icon for active notes
+  - Enhanced red note box with "PENDIENTE" label
+  - Add notes for partially completed goals
+  - Notes persist until marked complete
+  
+- **Notes History**:
+  - Orange history icon when only archived notes exist
+  - Complete notes are archived with timestamp
+  - View historical notes in modal dialog
+  - Auto-archive notes when goal is marked complete
+
+### 📊 Page Calculation
+- **Automatic Totals** - Daily page totals calculated in real-time
+- **Smart Parsing**:
+  - Page ranges: "45-46" → 2 pages (46 - 45 + 1)
+  - Self Test: "Self Test" → 3 pages (fixed)
+  - Single pages: "5" → 1 page
+  - Empty: "" → 0 pages
+- **Non-editable Total** - Total column is read-only and auto-calculated
+- **Real-time Updates** - Totals update as you modify goals
 
 ## 🎨 UI Components
 
@@ -222,7 +280,7 @@ pnpm type-check
 - `/students/:studentId` - Student profile
 - `/students/:studentId/projections` - Student's PACE projections list
 - `/students/:studentId/projections/:projectionId` - Quarterly projection view
-- `/students/:studentId/projections/:projectionId/:quarter/week/:week` - Weekly goals
+- `/students/:studentId/projections/:projectionId/goals/:quarter/:week` - Daily goals tracking
 
 ## 🚀 Deployment
 
@@ -264,25 +322,67 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📖 Usage Examples
 
-### Adding a PACE
+### PACE Projection
+
+#### Adding a PACE
 ```typescript
 // Click on an empty cell in the projection table
 // Enter PACE number (e.g., "1001")
 // Press Enter or click confirm
 ```
 
-### Tracking Completion
+#### Tracking Completion
 ```typescript
-// Click on a PACE badge
+// Click on a PACE number
 // Enter grade (0-100)
+// Optionally add a comment
 // PACE is marked complete with color indicator
 ```
 
-### Rescheduling PACEs
+#### Viewing Grade History
+```typescript
+// Click on options menu (three dots)
+// Select "Ver Historial de Grados"
+// View all grade attempts with dates and notes
+```
+
+#### Rescheduling PACEs
 ```typescript
 // Drag a PACE cell
 // Drop it on a different week in the same subject
 // Updates automatically
+```
+
+### Daily Goals
+
+#### Setting Daily Goals
+```typescript
+// Navigate to Daily Goals page
+// Click on any cell to set a goal
+// Enter a page range (e.g., "1-10") or "Self Test"
+// Click green check to save
+```
+
+#### Tracking Goal Completion
+```typescript
+// Click checkbox next to a goal to mark as complete
+// Goal shows with strike-through styling
+// Daily total updates automatically
+```
+
+#### Adding Notes
+```typescript
+// Click pencil icon on a goal
+// Enter note for partially completed work
+// Note appears in red "PENDIENTE" box
+// Click checkbox on note to mark complete
+```
+
+#### Viewing Notes History
+```typescript
+// Click history icon (orange) on a goal
+// View all archived notes with completion dates
+// Closed modal by clicking X or "Cerrar" button
 ```
 
 ## 🔐 Validation Rules
@@ -300,6 +400,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Green (90-100): Excellent
   - Blue (80-89): Good
   - Red (< 80): Needs Attention
+- Optional comment field available
+
+### Daily Goals
+- **Page Ranges**: 
+  - Format: `start-end` where both are 1-1000
+  - Start must be ≤ end
+  - Example: "1-10", "45-67", "999-1000"
+- **Self Test**: 
+  - Case insensitive ("Self Test", "self test", "SELF TEST")
+  - Fixed value of 3 pages
+- **Single Pages**:
+  - Format: Single number 1-1000
+  - Example: "5", "100", "500"
+- **Invalid Formats**:
+  - Numbers starting with 0 (except standalone "0" if allowed)
+  - Non-numeric characters
+  - Numbers outside 1-1000 range
+  - Visual feedback with red border and error message
 
 ### Quarter Limits
 - Recommended max: 18 PACEs per quarter
