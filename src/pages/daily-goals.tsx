@@ -82,21 +82,25 @@ const calculatePagesFromValue = (value: string): number => {
     return 3
   }
 
-  // Check for range format (e.g., "45-46", "1-10")
-  const rangeMatch = trimmedValue.match(/^(\d+)-(\d+)$/)
+  // Check for range format (e.g., "45-46", "1-10") - must be valid numbers 1-1000
+  const rangeMatch = trimmedValue.match(/^([1-9]\d{0,3})-([1-9]\d{0,3})$/)
   if (rangeMatch) {
     const start = parseInt(rangeMatch[1])
     const end = parseInt(rangeMatch[2])
-    if (start <= end) {
+    // Validate range is within 1-1000 and start <= end
+    if (start >= 1 && end <= 1000 && start <= end) {
       const pages = end - start + 1 // +1 because both start and end are included
       return pages
     }
   }
 
-  // Check for single number
-  const singleMatch = trimmedValue.match(/^\d+$/)
+  // Check for single number (1-1000) - no leading zeros
+  const singleMatch = trimmedValue.match(/^[1-9]\d{0,3}$/)
   if (singleMatch) {
-    return 1
+    const num = parseInt(singleMatch[0])
+    if (num >= 1 && num <= 1000) {
+      return 1
+    }
   }
 
   // If no valid format, return 0

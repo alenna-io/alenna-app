@@ -64,9 +64,20 @@ export function DailyGoalsTable({
 
   const handleGoalSubmit = () => {
     if (editingCell) {
-      onGoalUpdate?.(editingCell.subject, editingCell.dayIndex, editValue)
-      setEditingCell(null)
-      setEditValue("")
+      // Only submit if the value is valid (1-1000 or Self Test)
+      const trimmedValue = editValue.trim()
+      const isValid =
+        trimmedValue === "" ||
+        /^self\s*test$/i.test(trimmedValue) ||
+        /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
+        /^[1-9]\d{0,3}$/.test(trimmedValue)
+
+      if (isValid) {
+        onGoalUpdate?.(editingCell.subject, editingCell.dayIndex, editValue)
+        setEditingCell(null)
+        setEditValue("")
+      }
+      // If invalid, don't submit (user can cancel or fix the input)
     }
   }
 
@@ -185,27 +196,40 @@ export function DailyGoalsTable({
                     >
                       {editingCell?.subject === subject && editingCell?.dayIndex === dayIndex ? (
                         <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
-                          <select
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                            autoFocus
-                          >
-                            <option value="">Select...</option>
-                            <option value="1-5">1-5</option>
-                            <option value="6-10">6-10</option>
-                            <option value="11-15">11-15</option>
-                            <option value="16-20">16-20</option>
-                            <option value="21-25">21-25</option>
-                            <option value="26-30">26-30</option>
-                            <option value="31-35">31-35</option>
-                            <option value="36-40">36-40</option>
-                            <option value="41-45">41-45</option>
-                            <option value="46-50">46-50</option>
-                            <option value="51-55">51-55</option>
-                            <option value="56-60">56-60</option>
-                            <option value="Self Test">Self Test</option>
-                          </select>
+                          <div className="w-full">
+                            {(() => {
+                              const trimmedValue = editValue.trim()
+                              const isValid =
+                                trimmedValue === "" ||
+                                /^self\s*test$/i.test(trimmedValue) ||
+                                /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
+                                /^[1-9]\d{0,3}$/.test(trimmedValue)
+
+                              return (
+                                <>
+                                  <input
+                                    type="text"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="e.g., 1-10 or Self Test"
+                                    className={`w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 ${editValue && !isValid
+                                      ? 'border-red-500 focus:ring-red-500 bg-red-50'
+                                      : 'focus:ring-primary'
+                                      }`}
+                                    autoFocus
+                                  />
+                                  <div className={`text-xs mt-1 text-center ${editValue && !isValid ? 'text-red-500' : 'text-gray-500'
+                                    }`}>
+                                    {editValue && !isValid
+                                      ? 'Invalid format. Use: start-end (1-1000) or "Self Test"'
+                                      : 'Format: start-end (1-1000) or "Self Test"'
+                                    }
+                                  </div>
+                                </>
+                              )
+                            })()}
+                          </div>
                           <div className="flex gap-1">
                             <button
                               onClick={handleGoalSubmit}
