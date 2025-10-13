@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/ui/back-button"
 import { Calendar, ChevronRight, BookOpen } from "lucide-react"
 
@@ -12,7 +13,7 @@ interface Projection {
   endDate: string
   totalPaces: number
   completedPaces: number
-  status: "active" | "completed" | "upcoming"
+  status: "active" | "finished"
 }
 
 // Mock student data - in real app this would come from API
@@ -23,33 +24,34 @@ const mockStudent = {
 }
 
 // Mock projections data - ordered by year (latest first)
+// Only ONE active projection per student, rest are finished
 const mockProjections: Projection[] = [
   {
     id: "3",
-    schoolYear: "2025-2026",
-    startDate: "2025-08-15",
-    endDate: "2026-06-15",
-    totalPaces: 216,
-    completedPaces: 0,
-    status: "upcoming"
-  },
-  {
-    id: "2",
     schoolYear: "2024-2025",
     startDate: "2024-08-15",
     endDate: "2025-06-15",
     totalPaces: 216,
     completedPaces: 89,
-    status: "active"
+    status: "active" // Current active projection
   },
   {
-    id: "1",
+    id: "2",
     schoolYear: "2023-2024",
     startDate: "2023-08-15",
     endDate: "2024-06-15",
     totalPaces: 216,
+    completedPaces: 195,
+    status: "finished" // Time period finished
+  },
+  {
+    id: "1",
+    schoolYear: "2022-2023",
+    startDate: "2022-08-15",
+    endDate: "2023-06-15",
+    totalPaces: 216,
     completedPaces: 216,
-    status: "completed"
+    status: "finished" // Time period finished
   }
 ]
 
@@ -70,10 +72,8 @@ export default function ProjectionListPage() {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800 border-green-200"
-      case "completed":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "upcoming":
-        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "finished":
+        return "bg-gray-100 text-gray-800 border-gray-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -83,10 +83,8 @@ export default function ProjectionListPage() {
     switch (status) {
       case "active":
         return "Activo"
-      case "completed":
-        return "Completado"
-      case "upcoming":
-        return "Próximo"
+      case "finished":
+        return "Finalizado"
       default:
         return status
     }

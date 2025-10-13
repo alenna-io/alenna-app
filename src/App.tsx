@@ -8,6 +8,7 @@ import { HomePage } from '@/pages/home'
 import StudentsPage from '@/pages/students'
 import ProjectionListPage from '@/pages/projection-list'
 import ACEProjectionPage from '@/pages/ace-projection'
+import DailyGoalsPage from '@/pages/daily-goals'
 import { ScrollToTop } from '@/components/scroll-to-top'
 
 // Protected Route wrapper
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="students/:studentId" element={<StudentsPage />} />
           <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
           <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
+          <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
           <Route path="users" element={<div className="text-2xl font-bold">Users Page</div>} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
