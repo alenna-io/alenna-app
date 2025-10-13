@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar, ChevronRight } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 interface Parent {
   id: string
@@ -28,6 +29,8 @@ interface StudentProfileProps {
 }
 
 export function StudentProfile({ student, onBack }: StudentProfileProps) {
+  const navigate = useNavigate()
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -143,6 +146,38 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
                 <p className="text-sm">{student.expectedLevel}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* A.C.E. Projections */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Proyecciones A.C.E.
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/students/${student.id}/projections`)}
+              >
+                Ver Todas
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Planificación semanal de PACEs por año escolar
+            </p>
+            <Button
+              className="w-full"
+              onClick={() => navigate(`/students/${student.id}/projections`)}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Administrar Proyecciones
+            </Button>
           </CardContent>
         </Card>
 
