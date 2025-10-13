@@ -14,6 +14,7 @@ interface DailyGoalsTableProps {
   onGoalToggle?: (subject: string, dayIndex: number) => void
   onNotesUpdate?: (subject: string, dayIndex: number, notes: string) => void
   onNotesToggle?: (subject: string, dayIndex: number) => void
+  dayTotals?: number[]
 }
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -33,7 +34,8 @@ export function DailyGoalsTable({
   onGoalUpdate,
   onGoalToggle,
   onNotesUpdate,
-  onNotesToggle
+  onNotesToggle,
+  dayTotals
 }: DailyGoalsTableProps) {
   const [editingCell, setEditingCell] = React.useState<{ subject: string, dayIndex: number } | null>(null)
   const [editValue, setEditValue] = React.useState("")
@@ -109,14 +111,7 @@ export function DailyGoalsTable({
     }
   }
 
-  // Total pages data per day (editable)
-  const [totalPages, setTotalPages] = React.useState<string[]>(["", "", "", "", ""])
 
-  const handleTotalPageChange = (dayIndex: number, value: string) => {
-    const newTotals = [...totalPages]
-    newTotals[dayIndex] = value
-    setTotalPages(newTotals)
-  }
 
   // Calculate completed goals
   const completedGoals = React.useMemo(() => {
@@ -190,15 +185,27 @@ export function DailyGoalsTable({
                     >
                       {editingCell?.subject === subject && editingCell?.dayIndex === dayIndex ? (
                         <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
+                          <select
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="e.g., 1-10"
-                            className="w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                             autoFocus
-                          />
+                          >
+                            <option value="">Select...</option>
+                            <option value="1-5">1-5</option>
+                            <option value="6-10">6-10</option>
+                            <option value="11-15">11-15</option>
+                            <option value="16-20">16-20</option>
+                            <option value="21-25">21-25</option>
+                            <option value="26-30">26-30</option>
+                            <option value="31-35">31-35</option>
+                            <option value="36-40">36-40</option>
+                            <option value="41-45">41-45</option>
+                            <option value="46-50">46-50</option>
+                            <option value="51-55">51-55</option>
+                            <option value="56-60">56-60</option>
+                            <option value="Self Test">Self Test</option>
+                          </select>
                           <div className="flex gap-1">
                             <button
                               onClick={handleGoalSubmit}
@@ -338,13 +345,9 @@ export function DailyGoalsTable({
                     </td>
                   ))}
                   <td className="p-1 text-center align-middle border border-gray-300 bg-blue-50">
-                    <input
-                      type="text"
-                      value={totalPages[dayIndex]}
-                      onChange={(e) => handleTotalPageChange(dayIndex, e.target.value)}
-                      className="w-full h-8 text-center text-sm font-medium border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                      placeholder="0"
-                    />
+                    <span className="w-full h-8 flex items-center justify-center text-sm font-medium text-gray-700">
+                      {dayTotals?.[dayIndex] || "0"}
+                    </span>
                   </td>
                 </tr>
               ))}

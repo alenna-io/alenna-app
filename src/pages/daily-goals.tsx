@@ -29,7 +29,7 @@ const mockDailyGoals: DailyGoalData = {
     { text: "45-46", isCompleted: false },
     { text: "47-48", isCompleted: false },
     { text: "49-51", isCompleted: false },
-    { text: "Test", isCompleted: false },
+    { text: "Self Test", isCompleted: false },
     { text: "", isCompleted: false }
   ],
   English: [
@@ -37,21 +37,21 @@ const mockDailyGoals: DailyGoalData = {
     { text: "11-20", isCompleted: false },
     { text: "21-30", isCompleted: false },
     { text: "31-39", isCompleted: false },
-    { text: "Test", isCompleted: false }
+    { text: "Self Test", isCompleted: false }
   ],
   "Word Building": [
     { text: "7-13", isCompleted: false },
     { text: "14-21", isCompleted: false },
     { text: "22-28", isCompleted: false },
     { text: "29-35", isCompleted: false },
-    { text: "36-ST", isCompleted: false }
+    { text: "Self Test", isCompleted: false }
   ],
   Science: [
     { text: "45-48", isCompleted: false },
     { text: "49-52", isCompleted: false },
     { text: "53-56", isCompleted: false },
     { text: "57-59", isCompleted: false },
-    { text: "Test", isCompleted: false }
+    { text: "Self Test", isCompleted: false }
   ],
   "Social Studies": [
     { text: "11-19", isCompleted: false },
@@ -65,16 +65,62 @@ const mockDailyGoals: DailyGoalData = {
     { text: "23-26", isCompleted: false },
     { text: "27-30", isCompleted: false },
     { text: "31-35", isCompleted: false },
-    { text: "Test", isCompleted: false }
+    { text: "Self Test", isCompleted: false }
   ]
 }
 
 const subjects = Object.keys(mockDailyGoals)
 
+// Helper function to calculate pages from input value
+const calculatePagesFromValue = (value: string): number => {
+  if (!value.trim()) return 0
+
+  const trimmedValue = value.trim()
+
+  // Check for "Self Test" (case insensitive)
+  if (/^self\s*test$/i.test(trimmedValue)) {
+    return 3
+  }
+
+  // Check for range format (e.g., "45-46", "1-10")
+  const rangeMatch = trimmedValue.match(/^(\d+)-(\d+)$/)
+  if (rangeMatch) {
+    const start = parseInt(rangeMatch[1])
+    const end = parseInt(rangeMatch[2])
+    if (start <= end) {
+      const pages = end - start + 1 // +1 because both start and end are included
+      return pages
+    }
+  }
+
+  // Check for single number
+  const singleMatch = trimmedValue.match(/^\d+$/)
+  if (singleMatch) {
+    return 1
+  }
+
+  // If no valid format, return 0
+  return 0
+}
+
 export default function DailyGoalsPage() {
   const navigate = useNavigate()
   const { studentId, projectionId, quarter, week } = useParams()
   const [goalsData, setGoalsData] = React.useState(mockDailyGoals)
+  const [totalPages, setTotalPages] = React.useState("")
+
+  // Calculate total pages for a specific day
+  const calculateDayTotal = React.useMemo(() => {
+    const dayTotals = [0, 0, 0, 0, 0] // 5 days
+
+    subjects.forEach(subject => {
+      goalsData[subject]?.forEach((goal, dayIndex) => {
+        const pages = calculatePagesFromValue(goal.text)
+        dayTotals[dayIndex] += pages
+      })
+    })
+    return dayTotals
+  }, [goalsData, subjects])
 
   const handleGoalUpdate = (subject: string, dayIndex: number, value: string) => {
     setGoalsData(prev => ({
@@ -150,6 +196,7 @@ export default function DailyGoalsPage() {
       })
     }))
   }
+
 
   const getInitials = (name: string) => {
     return name
@@ -229,6 +276,7 @@ export default function DailyGoalsPage() {
         onGoalToggle={handleGoalToggle}
         onNotesUpdate={handleNotesUpdate}
         onNotesToggle={handleNotesToggle}
+        dayTotals={calculateDayTotal}
       />
     </div>
   )
