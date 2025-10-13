@@ -22,8 +22,8 @@ interface QuarterlyTableProps {
 // Simplified 2-color system: alternating between blue and gray
 const getSubjectColor = (index: number) => {
   return index % 2 === 0
-    ? { bg: "bg-blue-50 border-blue-200", text: "text-blue-700" }
-    : { bg: "bg-gray-50 border-gray-200", text: "text-gray-700" }
+    ? { bg: "bg-blue-100 border-blue-200", text: "text-blue-700" }
+    : { bg: "bg-gray-100 border-gray-200", text: "text-gray-700" }
 }
 
 export function ACEQuarterlyTable({
@@ -220,43 +220,43 @@ export function ACEQuarterlyTable({
   return (
     <>
       <Card className={isActive ? "border-primary shadow-md" : ""}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CardTitle className="flex items-center gap-3">
-                <BookOpen className="h-6 w-6" />
-                <span>{quarterName}</span>
-                <Badge variant="secondary" className="ml-2">
+        <CardHeader className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+              <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
+                <BookOpen className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
+                <span className="truncate">{quarterName}</span>
+                <Badge variant="secondary" className="text-xs md:text-sm">
                   {quarter}
                 </Badge>
                 {isActive && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs md:text-sm">
                     Actual
                   </Badge>
                 )}
-                {isQuarterOverloaded && (
-                  <Badge className="bg-red-100 text-red-800 border-red-500">
-                    Sobrecarga ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
-                  </Badge>
-                )}
               </CardTitle>
+              {isQuarterOverloaded && (
+                <Badge className="bg-red-100 text-red-800 border-red-500 text-xs md:text-sm">
+                  Sobrecarga ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
+                </Badge>
+              )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
               {currentWeek && (
-                <Badge variant="outline" className="text-sm">
+                <Badge variant="outline" className="text-xs md:text-sm">
                   Semana {currentWeek}
                 </Badge>
               )}
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-xs md:text-sm">
                 {isQuarterComplete ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                 ) : (
-                  <XCircle className="h-4 w-4 text-orange-500" />
+                  <XCircle className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
                 )}
                 <span className="font-medium">
                   {quarterStats.completed} / {quarterStats.expected}
                 </span>
-                <span className="text-muted-foreground">
+                <span className="text-muted-foreground hidden sm:inline">
                   ({completionPercentage}%)
                 </span>
               </div>
@@ -264,17 +264,17 @@ export function ACEQuarterlyTable({
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 cursor-pointer"
+                className="flex items-center gap-1 cursor-pointer text-xs md:text-sm h-8 md:h-9"
               >
                 {isExpanded ? (
                   <>
-                    <ChevronUp className="h-4 w-4" />
-                    Ocultar
+                    <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">Ocultar</span>
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="h-4 w-4" />
-                    Mostrar
+                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">Mostrar</span>
                   </>
                 )}
               </Button>
@@ -282,12 +282,12 @@ export function ACEQuarterlyTable({
           </div>
         </CardHeader>
         {isExpanded && (
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
+          <CardContent className="p-3 md:p-6">
+            <div className="overflow-x-auto -mx-3 md:mx-0 border border-gray-300 rounded-md overflow-hidden">
+              <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-gray-300">
-                    <th className="text-left p-2 font-semibold bg-muted/50 sticky left-0 z-10 min-w-[160px] border border-gray-300">
+                  <tr>
+                    <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       Materia
                     </th>
                     {weeks.map((week, weekIdx) => {
@@ -297,7 +297,7 @@ export function ACEQuarterlyTable({
                         <th
                           key={week}
                           className={`text-center p-2 font-semibold min-w-[100px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
-                            ? "bg-green-100 border-2 border-green-500"
+                            ? "bg-green-100"
                             : "bg-muted/50"
                             }`}
                           onClick={() => onWeekClick?.(quarter, week)}
@@ -325,12 +325,11 @@ export function ACEQuarterlyTable({
                   {subjects.map((subject, subjectIndex) => (
                     <tr
                       key={subject}
-                      className={`border-b transition-colors hover:bg-muted/30 ${subjectIndex % 2 === 0 ? "bg-muted/10" : ""
+                      className={`transition-colors hover:bg-muted/30 ${subjectIndex % 2 === 0 ? "bg-muted/10" : ""
                         }`}
                     >
                       <td
-                        className={`p-2 font-semibold sticky left-0 z-10 border-l-4 border border-gray-300 ${getSubjectColor(subjectIndex).bg
-                          } ${getSubjectColor(subjectIndex).text}`}
+                        className={`p-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text}`}
                       >
                         {subject}
                       </td>
@@ -493,23 +492,23 @@ export function ACEQuarterlyTable({
             </div>
 
             {/* Summary */}
-            <div className="mt-4 pt-4 border-t">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg bg-muted/50">
-                  <p className="text-2xl font-bold text-primary">{quarterStats.expected}</p>
-                  <p className="text-xs text-muted-foreground">PACEs Programados</p>
+            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
+                  <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">PACEs Programados</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-green-50">
-                  <p className="text-2xl font-bold text-green-600">{quarterStats.completed}</p>
-                  <p className="text-xs text-muted-foreground">Completados</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
+                  <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-orange-50">
-                  <p className="text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed}</p>
-                  <p className="text-xs text-muted-foreground">Pendientes</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
+                  <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-blue-50">
-                  <p className="text-2xl font-bold text-blue-600">{completionPercentage}%</p>
-                  <p className="text-xs text-muted-foreground">Progreso</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
+                  <p className="text-lg md:text-2xl font-bold text-blue-600">{completionPercentage}%</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Progreso</p>
                 </div>
               </div>
             </div>

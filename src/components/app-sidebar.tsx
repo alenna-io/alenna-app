@@ -17,11 +17,11 @@ import {
 
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Home", url: "/", icon: Home },
-  { title: "Students", url: "/students", icon: GraduationCap },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Inicio", url: "/", icon: Home },
+  { title: "Estudiantes", url: "/students", icon: GraduationCap },
+  { title: "Usuarios", url: "/users", icon: Users },
+  { title: "Documentos", url: "/documents", icon: FileText },
+  { title: "Configuración", url: "/settings", icon: Settings },
 ]
 
 export function AppSidebar() {

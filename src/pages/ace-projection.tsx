@@ -186,31 +186,33 @@ export default function ACEProjectionPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
-          Volver a Proyecciones
+          <span className="hidden sm:inline">Volver a Proyecciones</span>
+          <span className="sm:hidden">Volver</span>
         </BackButton>
       </div>
 
       {/* Current Week Indicator */}
       <Card className="border-green-500 bg-green-50/50">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-white" />
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                <Clock className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-green-900">Semana Actual</h3>
-                <p className="text-sm text-green-700">
-                  {currentQuarter} - Semana {currentWeekInQuarter} (Semana {currentSchoolWeek} del año escolar)
+                <h3 className="text-base md:text-lg font-bold text-green-900">Semana Actual</h3>
+                <p className="text-xs md:text-sm text-green-700">
+                  {currentQuarter} - Semana {currentWeekInQuarter}
+                  <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <Badge className="bg-green-600 text-white text-lg px-4 py-2">
+            <div className="self-end sm:self-auto">
+              <Badge className="bg-green-600 text-white text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
                 Semana {currentSchoolWeek}
               </Badge>
             </div>
@@ -220,27 +222,27 @@ export default function ACEProjectionPage() {
 
       {/* Student Info Card */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-6">
-            <Avatar className="h-20 w-20">
-              <AvatarFallback className="text-2xl font-semibold">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
+            <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
+              <AvatarFallback className="text-xl md:text-2xl font-semibold">
                 {getInitials(mockStudent.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{mockStudent.name}</h1>
-              <div className="flex items-center gap-4 text-muted-foreground">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{mockStudent.name}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
+                  <GraduationCap className="h-4 w-4 shrink-0" />
                   <span>{mockStudent.currentGrade}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Año Escolar: {mockStudent.schoolYear}</span>
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Año Escolar: {mockStudent.schoolYear}</span>
                 </div>
               </div>
             </div>
-            <Badge variant="outline" className="text-lg px-4 py-2">
+            <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2 self-end sm:self-auto">
               A.C.E. System
             </Badge>
           </div>
@@ -249,14 +251,14 @@ export default function ACEProjectionPage() {
 
       {/* Title */}
       <div>
-        <h2 className="text-2xl font-bold">Proyección de PACEs</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl md:text-2xl font-bold">Proyección de PACEs</h2>
+        <p className="text-sm md:text-base text-muted-foreground">
           Planificación semanal por bloque para el año escolar {mockStudent.schoolYear}
         </p>
       </div>
 
       {/* Quarterly Tables */}
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         <ACEQuarterlyTable
           quarter="Q1"
           quarterName="Primer Bloque"
