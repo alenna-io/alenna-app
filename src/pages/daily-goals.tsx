@@ -88,9 +88,66 @@ export default function DailyGoalsPage() {
   const handleGoalToggle = (subject: string, dayIndex: number) => {
     setGoalsData(prev => ({
       ...prev,
+      [subject]: prev[subject].map((goal, index) => {
+        if (index === dayIndex) {
+          const newCompleted = !goal.isCompleted
+
+          // If goal is being marked as completed and has pending notes, auto-complete them
+          if (newCompleted && goal.notes && !goal.notesCompleted) {
+            const newHistory = [
+              ...(goal.notesHistory || []),
+              {
+                text: goal.notes,
+                completedDate: new Date().toISOString()
+              }
+            ]
+            return {
+              ...goal,
+              isCompleted: newCompleted,
+              notes: undefined,
+              notesCompleted: undefined,
+              notesHistory: newHistory
+            }
+          }
+
+          return { ...goal, isCompleted: newCompleted }
+        }
+        return goal
+      })
+    }))
+  }
+
+  const handleNotesUpdate = (subject: string, dayIndex: number, notes: string) => {
+    setGoalsData(prev => ({
+      ...prev,
       [subject]: prev[subject].map((goal, index) =>
-        index === dayIndex ? { ...goal, isCompleted: !goal.isCompleted } : goal
+        index === dayIndex ? { ...goal, notes } : goal
       )
+    }))
+  }
+
+  const handleNotesToggle = (subject: string, dayIndex: number) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [subject]: prev[subject].map((goal, index) => {
+        if (index === dayIndex && goal.notes && !goal.notesCompleted) {
+          // Move note to history when marking as complete
+          const newHistory = [
+            ...(goal.notesHistory || []),
+            {
+              text: goal.notes,
+              completedDate: new Date().toISOString()
+            }
+          ]
+          return {
+            ...goal,
+            notes: undefined,
+            notesCompleted: undefined,
+            notesHistory: newHistory
+          }
+        }
+        return goal
+      })
     }))
   }
 
@@ -170,6 +227,8 @@ export default function DailyGoalsPage() {
         subjects={subjects}
         onGoalUpdate={handleGoalUpdate}
         onGoalToggle={handleGoalToggle}
+        onNotesUpdate={handleNotesUpdate}
+        onNotesToggle={handleNotesToggle}
       />
     </div>
   )

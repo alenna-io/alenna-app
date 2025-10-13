@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, BookOpen, Check, X } from "lucide-react"
+import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 
 interface DailyGoalsTableProps {
@@ -12,6 +12,8 @@ interface DailyGoalsTableProps {
   subjects: string[]
   onGoalUpdate?: (subject: string, dayIndex: number, value: string) => void
   onGoalToggle?: (subject: string, dayIndex: number) => void
+  onNotesUpdate?: (subject: string, dayIndex: number, notes: string) => void
+  onNotesToggle?: (subject: string, dayIndex: number) => void
 }
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -29,10 +31,27 @@ export function DailyGoalsTable({
   data,
   subjects,
   onGoalUpdate,
-  onGoalToggle
+  onGoalToggle,
+  onNotesUpdate,
+  onNotesToggle
 }: DailyGoalsTableProps) {
   const [editingCell, setEditingCell] = React.useState<{ subject: string, dayIndex: number } | null>(null)
   const [editValue, setEditValue] = React.useState("")
+  const [editingNotes, setEditingNotes] = React.useState<{ subject: string, dayIndex: number } | null>(null)
+  const [notesValue, setNotesValue] = React.useState("")
+  const [notesHistory, setNotesHistory] = React.useState<{ subject: string, dayIndex: number, history: Array<{ text: string, completedDate: string }> } | null>(null)
+
+  // Prevent body scroll when modal is open
+  React.useEffect(() => {
+    if (notesHistory) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [notesHistory])
 
   const handleGoalClick = (subject: string, dayIndex: number) => {
     const currentGoal = data[subject]?.[dayIndex]
@@ -59,6 +78,34 @@ export function DailyGoalsTable({
       handleGoalSubmit()
     } else if (e.key === 'Escape') {
       handleGoalCancel()
+    }
+  }
+
+  const handleNotesClick = (subject: string, dayIndex: number) => {
+    const currentNotes = data[subject]?.[dayIndex]?.notes || ""
+    setEditingNotes({ subject, dayIndex })
+    setNotesValue(currentNotes)
+  }
+
+  const handleNotesSubmit = () => {
+    if (editingNotes) {
+      onNotesUpdate?.(editingNotes.subject, editingNotes.dayIndex, notesValue)
+      setEditingNotes(null)
+      setNotesValue("")
+    }
+  }
+
+  const handleNotesCancel = () => {
+    setEditingNotes(null)
+    setNotesValue("")
+  }
+
+  const handleNotesKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleNotesSubmit()
+    } else if (e.key === 'Escape') {
+      handleNotesCancel()
     }
   }
 
@@ -169,36 +216,123 @@ export function DailyGoalsTable({
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="relative flex items-center justify-center w-full gap-2 p-1">
-                          {data[subject]?.[dayIndex]?.text && (
+                      ) : editingNotes?.subject === subject && editingNotes?.dayIndex === dayIndex ? (
+                        <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
+                          <textarea
+                            value={notesValue}
+                            onChange={(e) => setNotesValue(e.target.value)}
+                            onKeyDown={handleNotesKeyDown}
+                            placeholder="Nota pendiente..."
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400 resize-none"
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="flex gap-1">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onGoalToggle?.(subject, dayIndex)
-                              }}
-                              className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${data[subject]?.[dayIndex]?.isCompleted
-                                ? "bg-green-500 border-green-500"
-                                : "bg-white border-gray-300 hover:border-green-400"
-                                }`}
-                              title={data[subject]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
+                              onClick={handleNotesSubmit}
+                              className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors cursor-pointer"
+                              title="Guardar"
                             >
-                              {data[subject]?.[dayIndex]?.isCompleted && (
-                                <Check className="h-3 w-3 text-white" />
-                              )}
+                              <Check className="h-4 w-4" />
                             </button>
-                          )}
-                          <div
-                            onClick={() => handleGoalClick(subject, dayIndex)}
-                            className="flex-1 min-h-[32px] flex items-center justify-center transition-all cursor-pointer hover:bg-muted/50 rounded"
-                          >
-                            <span className={`text-sm font-mono text-center ${data[subject]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
-                              }`}>
-                              {data[subject]?.[dayIndex]?.text || (
-                                <span className="text-muted-foreground/50 text-xs">Agregar</span>
-                              )}
-                            </span>
+                            <button
+                              onClick={handleNotesCancel}
+                              className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors cursor-pointer"
+                              title="Cancelar"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
                           </div>
+                        </div>
+                      ) : (
+                        <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
+                          <div className="flex items-center justify-center w-full gap-2">
+                            {data[subject]?.[dayIndex]?.text && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onGoalToggle?.(subject, dayIndex)
+                                }}
+                                className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${data[subject]?.[dayIndex]?.isCompleted
+                                  ? "bg-green-500 border-green-500"
+                                  : "bg-white border-gray-300 hover:border-green-400"
+                                  }`}
+                                title={data[subject]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
+                              >
+                                {data[subject]?.[dayIndex]?.isCompleted && (
+                                  <Check className="h-3 w-3 text-white" />
+                                )}
+                              </button>
+                            )}
+                            <div
+                              onClick={() => handleGoalClick(subject, dayIndex)}
+                              className="flex-1 min-h-[32px] flex items-center justify-center transition-all cursor-pointer hover:bg-muted/50 rounded"
+                            >
+                              <span className={`text-sm font-mono text-center ${data[subject]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
+                                }`}>
+                                {data[subject]?.[dayIndex]?.text || (
+                                  <span className="text-muted-foreground/50 text-xs">Agregar</span>
+                                )}
+                              </span>
+                            </div>
+                            {data[subject]?.[dayIndex]?.text && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const goal = data[subject]?.[dayIndex]
+                                  if (goal?.notesHistory && goal.notesHistory.length > 0 && !goal.notes) {
+                                    // Show history if there's history and no active note
+                                    setNotesHistory({
+                                      subject,
+                                      dayIndex,
+                                      history: goal.notesHistory
+                                    })
+                                  } else {
+                                    // Otherwise edit/add note
+                                    handleNotesClick(subject, dayIndex)
+                                  }
+                                }}
+                                className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-sm ${data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted
+                                  ? "bg-red-500 hover:bg-red-600 text-white"
+                                  : (data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0)
+                                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                                    : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+                                  }`}
+                                title={
+                                  data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted
+                                    ? "Editar nota"
+                                    : (data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0)
+                                      ? "Ver historial de notas"
+                                      : "Agregar nota"
+                                }
+                              >
+                                {data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0 && !data[subject]?.[dayIndex]?.notes ? (
+                                  <History className="h-4 w-4" />
+                                ) : (
+                                  <Edit2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          {data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted && (
+                            <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onNotesToggle?.(subject, dayIndex)
+                                }}
+                                className="shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer bg-white border-red-500 hover:bg-red-50 hover:border-red-600"
+                                title="Marcar completo"
+                              >
+                              </button>
+                              <div className="flex-1">
+                                <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">Pendiente</p>
+                                <p className="text-sm font-medium leading-tight">
+                                  {data[subject]?.[dayIndex]?.notes}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
@@ -242,6 +376,48 @@ export function DailyGoalsTable({
           </div>
         </div>
       </CardContent>
+
+      {/* Notes History Dialog */}
+      {notesHistory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setNotesHistory(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full my-8" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Historial de Notas
+                </h3>
+                <button onClick={() => setNotesHistory(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span></p>
+                <p className="text-sm text-gray-600">Materia: <span className="font-semibold">{notesHistory.subject}</span></p>
+              </div>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {notesHistory.history.map((entry, index) => (
+                  <div key={index} className="p-3 rounded-lg border-2 bg-green-50 border-green-200">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-gray-800 flex-1">{entry.text}</p>
+                      <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(entry.completedDate).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setNotesHistory(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   )
 }

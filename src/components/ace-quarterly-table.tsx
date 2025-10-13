@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X } from "lucide-react"
+import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
 interface QuarterlyTableProps {
@@ -13,7 +13,7 @@ interface QuarterlyTableProps {
   currentWeek?: number // 1-9 for the current week in this quarter, undefined if not current
   isActive?: boolean // Whether this quarter contains the current week
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
-  onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
+  onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => void
   onWeekClick?: (quarter: string, week: number) => void
   onAddPace?: (quarter: string, subject: string, weekIndex: number, paceNumber: string) => void
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
@@ -42,6 +42,8 @@ export function ACEQuarterlyTable({
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
+  const [commentInput, setCommentInput] = React.useState("")
+  const [gradePhase, setGradePhase] = React.useState<'grade' | 'comment' | null>(null)
   const [addingPace, setAddingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [paceNumberInput, setPaceNumberInput] = React.useState("")
   const [deleteDialog, setDeleteDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string } | null>(null)
@@ -49,6 +51,7 @@ export function ACEQuarterlyTable({
   const [confirmAddDialog, setConfirmAddDialog] = React.useState<{ subject: string, weekIndex: number, weekCount: number } | null>(null)
   const [overloadRememberUntil, setOverloadRememberUntil] = React.useState<number | null>(null)
   const [optionsMenu, setOptionsMenu] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
+  const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const subjects = Object.keys(data)
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
@@ -62,29 +65,68 @@ export function ACEQuarterlyTable({
     }
   }, [optionsMenu])
 
-  const handlePaceClick = (subject: string, weekIndex: number, pace: { number: string; grade: number | null; isCompleted: boolean }) => {
-    if (!pace.isCompleted) {
-      // If not completed, show grade input
-      setEditingPace({ subject, weekIndex })
-      setGradeInput("")
+  // Prevent body scroll when modal is open
+  React.useEffect(() => {
+    if (historyDialog) {
+      document.body.style.overflow = 'hidden'
     } else {
-      // If already completed, toggle off (uncomplete)
-      onPaceToggle?.(quarter, subject, weekIndex)
+      document.body.style.overflow = 'unset'
     }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [historyDialog])
+
+  const handlePaceClick = (subject: string, weekIndex: number, pace: { number: string; grade: number | null; isCompleted: boolean }) => {
+    // Always open grade editor when clicking on a PACE, regardless of completion status
+    setEditingPace({ subject, weekIndex })
+    setGradeInput(pace.grade !== null ? pace.grade.toString() : "")
+    setGradePhase('grade')
+    setCommentInput("")
+  }
+
+  const handleEditGrade = (subject: string, weekIndex: number, currentGrade: number | null) => {
+    // Open grade editor regardless of completion status
+    setEditingPace({ subject, weekIndex })
+    setGradeInput(currentGrade !== null ? currentGrade.toString() : "")
+    setGradePhase('grade')
+    setCommentInput("")
   }
 
   const handleGradeSubmit = (subject: string, weekIndex: number) => {
     const grade = parseInt(gradeInput)
     if (grade >= 0 && grade <= 100) {
+      if (gradePhase === 'grade') {
+        // Move to comment phase
+        setGradePhase('comment')
+      } else if (gradePhase === 'comment') {
+        // Submit with comment
+        onPaceToggle?.(quarter, subject, weekIndex, grade, commentInput.trim() || undefined)
+        setEditingPace(null)
+        setGradeInput("")
+        setCommentInput("")
+        setGradePhase(null)
+      }
+    }
+  }
+
+  const handleGradeSkipComment = (subject: string, weekIndex: number) => {
+    const grade = parseInt(gradeInput)
+    if (grade >= 0 && grade <= 100) {
+      // Submit without comment
       onPaceToggle?.(quarter, subject, weekIndex, grade)
       setEditingPace(null)
       setGradeInput("")
+      setCommentInput("")
+      setGradePhase(null)
     }
   }
 
   const handleGradeCancel = () => {
     setEditingPace(null)
     setGradeInput("")
+    setCommentInput("")
+    setGradePhase(null)
   }
 
   const getGradeColor = (grade: number | null) => {
@@ -196,6 +238,7 @@ export function ACEQuarterlyTable({
     let completed = 0
     let failed = 0
     let expected = 0
+    let totalFailed = 0 // Total failed attempts across all PACEs
 
     subjects.forEach(subject => {
       data[subject].forEach(pace => {
@@ -208,11 +251,15 @@ export function ACEQuarterlyTable({
               completed++
             }
           }
+          // Count total failed attempts from history
+          if (pace.gradeHistory) {
+            totalFailed += pace.gradeHistory.filter(h => h.grade < 80).length
+          }
         }
       })
     })
 
-    return { completed, failed, expected }
+    return { completed, failed, expected, totalFailed }
   }, [data, subjects])
 
   const completionPercentage = quarterStats.expected > 0
@@ -360,42 +407,87 @@ export function ACEQuarterlyTable({
                         >
                           {pace ? (
                             editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                              <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={gradeInput}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value)
-                                    if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                      setGradeInput(e.target.value)
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                    if (e.key === 'Escape') handleGradeCancel()
-                                  }}
-                                  placeholder="0-100"
-                                  className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  autoFocus
-                                />
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Guardar"
-                                  >
-                                    <Check className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={handleGradeCancel}
-                                    className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Cancelar"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
-                                </div>
+                              <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                                {gradePhase === 'grade' || gradePhase === null ? (
+                                  <>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={gradeInput}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        if (e.target.value === '' || (val >= 0 && val <= 100)) {
+                                          setGradeInput(e.target.value)
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
+                                        if (e.key === 'Escape') handleGradeCancel()
+                                      }}
+                                      placeholder="0-100"
+                                      className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Siguiente"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={() => handleGradeSkipComment(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Guardar sin comentario"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={handleGradeCancel}
+                                        className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Cancelar"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="text-xs text-center text-gray-600 mb-1">
+                                      Grado: <span className="font-semibold">{gradeInput}%</span>
+                                    </div>
+                                    <textarea
+                                      value={commentInput}
+                                      onChange={(e) => setCommentInput(e.target.value)}
+                                      placeholder="Comentario (opcional)..."
+                                      className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                                      rows={2}
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Guardar con comentario"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => setGradePhase('grade')}
+                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Volver"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             ) : (
                               <div className="relative flex items-center justify-center w-full group/pace">
@@ -510,17 +602,17 @@ export function ACEQuarterlyTable({
                   <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
                 </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
-                  <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
-                </div>
                 <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
                   <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
                 </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
-                  <p className="text-lg md:text-2xl font-bold text-blue-600">{completionPercentage}%</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Progreso</p>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
+                  <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
+                </div>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
+                  <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Total Intentos Fallidos</p>
                 </div>
               </div>
             </div>
@@ -539,7 +631,7 @@ export function ACEQuarterlyTable({
             onClick={() => {
               const pace = data[optionsMenu.subject][optionsMenu.weekIndex]
               if (pace) {
-                handlePaceClick(optionsMenu.subject, optionsMenu.weekIndex, pace)
+                handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
                 setOptionsMenu(null)
               }
             }}
@@ -547,6 +639,37 @@ export function ACEQuarterlyTable({
           >
             <Edit className="h-4 w-4" />
             Editar Nota
+          </button>
+          {data[optionsMenu.subject][optionsMenu.weekIndex]?.isCompleted && (
+            <button
+              onClick={() => {
+                onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
+                setOptionsMenu(null)
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+              Marcar Incompleto
+            </button>
+          )}
+          <button
+            onClick={() => {
+              const pace = data[optionsMenu.subject][optionsMenu.weekIndex]
+              if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
+                setHistoryDialog({
+                  subject: optionsMenu.subject,
+                  weekIndex: optionsMenu.weekIndex,
+                  paceNumber: pace.number,
+                  history: pace.gradeHistory
+                })
+                setOptionsMenu(null)
+              }
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!data[optionsMenu.subject][optionsMenu.weekIndex]?.gradeHistory || data[optionsMenu.subject][optionsMenu.weekIndex]?.gradeHistory?.length === 0}
+          >
+            <History className="h-4 w-4" />
+            Ver Historial
           </button>
           <button
             onClick={() => {
@@ -587,6 +710,52 @@ export function ACEQuarterlyTable({
         onConfirm={() => setAlertDialog(null)}
         onCancel={() => setAlertDialog(null)}
       />
+
+      {/* Grade History Dialog */}
+      {historyDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setHistoryDialog(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full my-8" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Historial de Calificaciones
+                </h3>
+                <button onClick={() => setHistoryDialog(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span></p>
+                <p className="text-sm text-gray-600">Materia: <span className="font-semibold">{historyDialog.subject}</span></p>
+              </div>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {historyDialog.history.map((entry, index) => (
+                  <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                    }`}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
+                        }`}>{entry.grade}%</span>
+                      <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
+                    </div>
+                    {entry.note && (
+                      <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setHistoryDialog(null)}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overload Confirmation Dialog */}
       {confirmAddDialog && (

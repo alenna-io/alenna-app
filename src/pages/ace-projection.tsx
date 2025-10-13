@@ -24,10 +24,16 @@ const mockStudent: Student = {
 }
 
 // Helper to create pace data
-const createPace = (number: string, grade: number | null = null, isCompleted: boolean = false): PaceData => ({
+const createPace = (
+  number: string,
+  grade: number | null = null,
+  isCompleted: boolean = false,
+  gradeHistory?: Array<{ grade: number, date: string, note?: string }>
+): PaceData => ({
   number,
   grade,
-  isCompleted
+  isCompleted,
+  gradeHistory
 })
 
 // Mock PACE projection data with completion status and grades (0-100)
@@ -35,12 +41,64 @@ const createPace = (number: string, grade: number | null = null, isCompleted: bo
 // Week 1 (index 0) has 24 PACEs total (4 per subject) - OVERLOADED to show warning!
 const initialProjectionData: { Q1: QuarterData, Q2: QuarterData, Q3: QuarterData, Q4: QuarterData } = {
   Q1: {
-    Math: [createPace("1001", 95, true), createPace("1002", 88, true), createPace("1003", 92), createPace("1004", 85, true), null, null, null, null, createPace("1005")],
-    English: [createPace("1011", 92, true), createPace("1012", 85), createPace("1013", 90), createPace("1014"), null, null, null, null, createPace("1015")],
-    Science: [createPace("1021", 85, true), createPace("1022", 88), createPace("1023", 84), createPace("1024"), null, null, null, null, createPace("1025")],
-    "Social Studies": [createPace("1031", 90, true), createPace("1032", 87), createPace("1033", 92), createPace("1034"), null, null, null, null, createPace("1035")],
-    "Word Building": [createPace("1041", 78, true), createPace("1042", 80), createPace("1043", 83), createPace("1044"), null, null, null, null, createPace("1045")],
-    Spanish: [createPace("1051", 88, true), createPace("1052", 85), createPace("1053", 90), createPace("1054"), null, null, null, null, createPace("1055")]
+    Math: [
+      createPace("1001", 95, true, [
+        { grade: 75, date: "2024-09-15", note: "Primera vez - necesita repasar multiplicación" },
+        { grade: 82, date: "2024-09-20", note: "Mejor, pero aún tiene errores" },
+        { grade: 95, date: "2024-09-25" }
+      ]),
+      createPace("1002", 88, true),
+      createPace("1003", 92),
+      createPace("1004", 85, true),
+      null, null, null, null,
+      createPace("1005")
+    ],
+    English: [
+      createPace("1011", 92, true),
+      createPace("1012", 85),
+      createPace("1013", 90),
+      createPace("1014"),
+      null, null, null, null,
+      createPace("1015")
+    ],
+    Science: [
+      createPace("1021", 85, true),
+      createPace("1022", 88),
+      createPace("1023", 84),
+      createPace("1024"),
+      null, null, null, null,
+      createPace("1025")
+    ],
+    "Social Studies": [
+      createPace("1031", 90, true),
+      createPace("1032", 87),
+      createPace("1033", 92),
+      createPace("1034"),
+      null, null, null, null,
+      createPace("1035")
+    ],
+    "Word Building": [
+      createPace("1041", 78, true, [
+        { grade: 65, date: "2024-09-10", note: "Dificultad con vocabulario nuevo" },
+        { grade: 72, date: "2024-09-17", note: "Mejorando pero necesita más práctica" },
+        { grade: 78, date: "2024-09-22", note: "Aún no alcanza el 80% requerido" }
+      ]),
+      createPace("1042", 80),
+      createPace("1043", 83),
+      createPace("1044"),
+      null, null, null, null,
+      createPace("1045")
+    ],
+    Spanish: [
+      createPace("1051", 88, true, [
+        { grade: 88, date: "2024-09-12" }
+      ]),
+      createPace("1052", 85),
+      createPace("1053", 90),
+      createPace("1054"),
+      null, null, null, null,
+      createPace("1055")
+    ]
   },
   Q2: {
     Math: [createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null, null],
@@ -99,7 +157,7 @@ export default function ACEProjectionPage() {
   }
 
   // Handle pace completion and grade
-  const handlePaceToggle = (quarter: string, subject: string, weekIndex: number, grade?: number) => {
+  const handlePaceToggle = (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
     setProjectionData(prev => {
       const quarterData = prev[quarter as keyof typeof prev]
       const subjectPaces = [...quarterData[subject]]
@@ -111,7 +169,15 @@ export default function ACEProjectionPage() {
           subjectPaces[weekIndex] = { ...pace, isCompleted: false, grade: null }
         } else if (grade !== undefined) {
           // If grade provided, complete and set grade
-          subjectPaces[weekIndex] = { ...pace, isCompleted: true, grade }
+          const newHistory = comment ? [
+            ...(pace.gradeHistory || []),
+            {
+              grade,
+              date: new Date().toISOString(),
+              note: comment
+            }
+          ] : pace.gradeHistory
+          subjectPaces[weekIndex] = { ...pace, isCompleted: true, grade, gradeHistory: newHistory }
         } else {
           // If not completed and no grade, just toggle (prompt for grade in component)
           // Component will handle prompting for grade
@@ -261,7 +327,7 @@ export default function ACEProjectionPage() {
       <div className="space-y-4 md:space-y-8">
         <ACEQuarterlyTable
           quarter="Q1"
-          quarterName="Primer Bloque"
+          quarterName="Bloque 1"
           data={projectionData.Q1}
           isActive={currentQuarter === "Q1"}
           currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter : undefined}
@@ -273,7 +339,7 @@ export default function ACEProjectionPage() {
         />
         <ACEQuarterlyTable
           quarter="Q2"
-          quarterName="Segundo Bloque"
+          quarterName="Bloque 2"
           data={projectionData.Q2}
           isActive={currentQuarter === "Q2"}
           currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter : undefined}
@@ -285,7 +351,7 @@ export default function ACEProjectionPage() {
         />
         <ACEQuarterlyTable
           quarter="Q3"
-          quarterName="Tercer Bloque"
+          quarterName="Bloque 3"
           data={projectionData.Q3}
           isActive={currentQuarter === "Q3"}
           currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter : undefined}
@@ -297,7 +363,7 @@ export default function ACEProjectionPage() {
         />
         <ACEQuarterlyTable
           quarter="Q4"
-          quarterName="Cuarto Bloque"
+          quarterName="Bloque 4"
           data={projectionData.Q4}
           isActive={currentQuarter === "Q4"}
           currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter : undefined}
