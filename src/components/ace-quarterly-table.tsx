@@ -191,9 +191,10 @@ export function ACEQuarterlyTable({
     return counts
   }, [data, subjects])
 
-  // Calculate completed and expected paces for this quarter
+  // Calculate completed, failed, and expected paces for this quarter
   const quarterStats = React.useMemo(() => {
     let completed = 0
+    let failed = 0
     let expected = 0
 
     subjects.forEach(subject => {
@@ -201,13 +202,17 @@ export function ACEQuarterlyTable({
         if (pace) {
           expected++
           if (pace.isCompleted) {
-            completed++
+            if (isPaceFailing(pace.grade)) {
+              failed++
+            } else {
+              completed++
+            }
           }
         }
       })
     })
 
-    return { completed, expected }
+    return { completed, failed, expected }
   }, [data, subjects])
 
   const completionPercentage = quarterStats.expected > 0
@@ -411,8 +416,11 @@ export function ACEQuarterlyTable({
                                       }`}
                                   >
                                     {pace.isCompleted && (
-                                      <CheckCircle2 className={`h-3 w-3 absolute -top-1 -right-1 ${isPaceFailing(pace.grade) ? "text-red-600 fill-red-100" : "text-green-600 fill-green-100"
-                                        }`} />
+                                      isPaceFailing(pace.grade) ? (
+                                        <XCircle className="h-3 w-3 absolute -top-1 -right-1 text-red-600 fill-red-100" />
+                                      ) : (
+                                        <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-600 fill-green-100" />
+                                      )
                                     )}
                                     {pace.number}
                                   </Badge>
@@ -493,7 +501,7 @@ export function ACEQuarterlyTable({
 
             {/* Summary */}
             <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                 <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
                   <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">PACEs Programados</p>
@@ -502,8 +510,12 @@ export function ACEQuarterlyTable({
                   <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
                 </div>
+                <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
+                  <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
+                </div>
                 <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
-                  <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed}</p>
+                  <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
                 </div>
                 <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
