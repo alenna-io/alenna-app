@@ -10,12 +10,15 @@ import ProjectionListPage from '@/pages/projection-list'
 import ACEProjectionPage from '@/pages/ace-projection'
 import DailyGoalsPage from '@/pages/daily-goals'
 import { ScrollToTop } from '@/components/scroll-to-top'
+import { AuthSync } from '@/components/auth-sync'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <SignedIn>{children}</SignedIn>
+      <SignedIn>
+        <AuthSync>{children}</AuthSync>
+      </SignedIn>
       <SignedOut>
         <RedirectToSignIn />
       </SignedOut>
@@ -24,6 +27,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+
   return (
     <BrowserRouter>
       <ScrollToTop />

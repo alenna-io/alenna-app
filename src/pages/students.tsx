@@ -7,8 +7,9 @@ import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
 import { Input } from "@/components/ui/input"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
-import { Search } from "lucide-react"
+import { Search, AlertCircle } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
+import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
 
 // Mock data - simulating API fetch
@@ -456,7 +457,10 @@ type SortDirection = "asc" | "desc"
 export default function StudentsPage() {
   const { studentId } = useParams()
   const navigate = useNavigate()
+  const api = useApi()
   const [students, setStudents] = React.useState<Student[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
     certificationType: "",
@@ -478,14 +482,55 @@ export default function StudentsPage() {
   // If we have a studentId but no students loaded yet, show loading
   const isLoadingStudent = studentId && students.length === 0
 
-  // Simulate API fetch
+  // Fetch students from API
   React.useEffect(() => {
-    // Simulate loading delay
-    const timer = setTimeout(() => {
-      setStudents(mockStudents)
-    }, 500)
+    let isMounted = true
 
-    return () => clearTimeout(timer)
+    const fetchStudents = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const data = await api.students.getAll()
+
+        if (isMounted) {
+          // Transform API data to match frontend Student type
+          const transformedStudents: Student[] = data.map((student: any) => ({
+            id: student.id,
+            firstName: student.firstName,
+            lastName: student.lastName,
+            name: `${student.firstName} ${student.lastName}`,
+            age: student.age,
+            birthDate: student.birthDate,
+            certificationType: student.certificationType,
+            graduationDate: student.graduationDate,
+            parents: student.parents || [],
+            contactPhone: student.contactPhone || '',
+            isLeveled: student.isLeveled,
+            expectedLevel: student.expectedLevel,
+            address: student.address || '',
+          }))
+
+          setStudents(transformedStudents)
+        }
+      } catch (err: any) {
+        console.error('Error fetching students:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load students')
+          // Fallback to mock data for development
+          setStudents(mockStudents)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchStudents()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // Filter, search, and sort logic
@@ -569,6 +614,11 @@ export default function StudentsPage() {
     }
   }
 
+  // Show loading state
+  if (isLoading) {
+    return <LoadingSkeleton variant="list" />
+  }
+
   // Show loading state when navigating to a student profile
   if (isLoadingStudent) {
     return <LoadingSkeleton variant="profile" />
@@ -582,6 +632,20 @@ export default function StudentsPage() {
   // Show students list
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {error && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
+              Using Demo Data
+            </h3>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              {error}. Showing mock data for development.
+            </p>
+          </div>
+        </div>
+      )}
       <div>
         <h1 className="text-3xl font-bold">Estudiantes</h1>
         <p className="text-muted-foreground">
