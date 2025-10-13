@@ -1,26 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-
-interface Parent {
-  id: string
-  name: string
-}
-
-interface Student {
-  id: string
-  name: string
-  age: number
-  birthDate: string
-  certificationType: "INEA" | "Grace Christian" | "Home Life" | "Lighthouse" | "Otro"
-  graduationDate: string
-  parents: Parent[]
-  contactPhone: string
-  isLeveled: boolean
-  expectedLevel?: string
-  address: string
-}
+import { LinkButton } from "@/components/ui/link-button"
+import { BackButton } from "@/components/ui/back-button"
+import { Calendar } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import type { Student } from "@/types/student"
 
 interface StudentProfileProps {
   student: Student
@@ -28,6 +13,8 @@ interface StudentProfileProps {
 }
 
 export function StudentProfile({ student, onBack }: StudentProfileProps) {
+  const navigate = useNavigate()
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -40,11 +27,12 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
+        <BackButton onClick={onBack}>
+          Volver a Estudiantes
+        </BackButton>
       </div>
+
+      <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Header */}
@@ -143,6 +131,36 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
                 <p className="text-sm">{student.expectedLevel}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* A.C.E. Projections */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Proyecciones A.C.E.
+              </CardTitle>
+              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)}>
+                Ver Todas
+              </LinkButton>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Planificación semanal de PACEs por año escolar
+            </p>
+            <LinkButton
+              variant="default"
+              size="default"
+              showChevron={false}
+              className="w-full"
+              onClick={() => navigate(`/students/${student.id}/projections`)}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Administrar Proyecciones
+            </LinkButton>
           </CardContent>
         </Card>
 

@@ -69,7 +69,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
   }
 
   return (
-    <Card className="w-full" style={{ border: "none" }}>
+    <Card className="w-full" style={{ border: "none", boxShadow: "none" }}>
       <CardHeader className='p-0'>
         <div className="flex items-center justify-start gap-3">
           <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
               variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 hover:cursor-pointer"
+              className="flex items-center gap-1 cursor-pointer"
             >
               {showFilters ? (
                 <>

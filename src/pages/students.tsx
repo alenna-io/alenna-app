@@ -1,35 +1,22 @@
 import * as React from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import { StudentsList } from "@/components/students-list"
 import { StudentsTable } from "@/components/students-table"
 import { StudentProfile } from "@/components/student-profile"
 import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
 import { Input } from "@/components/ui/input"
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
 import { Search } from "lucide-react"
-
-interface Parent {
-  id: string
-  name: string
-}
-
-interface Student {
-  id: string
-  name: string
-  age: number
-  birthDate: string
-  certificationType: "INEA" | "Grace Christian" | "Home Life" | "Lighthouse" | "Otro"
-  graduationDate: string
-  parents: Parent[]
-  contactPhone: string
-  isLeveled: boolean
-  expectedLevel?: string
-  address: string
-}
+import { includesIgnoreAccents } from "@/lib/string-utils"
+import type { Student } from "@/types/student"
 
 // Mock data - simulating API fetch
 const mockStudents: Student[] = [
   {
     id: "1",
+    firstName: "María",
+    lastName: "González López",
     name: "María González López",
     age: 15,
     birthDate: "2009-03-15",
@@ -46,6 +33,8 @@ const mockStudents: Student[] = [
   },
   {
     id: "2",
+    firstName: "José Antonio",
+    lastName: "Rodríguez",
     name: "José Antonio Rodríguez",
     age: 14,
     birthDate: "2010-07-22",
@@ -60,6 +49,8 @@ const mockStudents: Student[] = [
   },
   {
     id: "3",
+    firstName: "Sofía",
+    lastName: "Hernández Martínez",
     name: "Sofía Hernández Martínez",
     age: 16,
     birthDate: "2008-11-08",
@@ -76,6 +67,8 @@ const mockStudents: Student[] = [
   },
   {
     id: "4",
+    firstName: "Diego Fernando",
+    lastName: "Silva",
     name: "Diego Fernando Silva",
     age: 13,
     birthDate: "2011-01-30",
@@ -91,6 +84,8 @@ const mockStudents: Student[] = [
   },
   {
     id: "5",
+    firstName: "Valentina",
+    lastName: "Cruz Morales",
     name: "Valentina Cruz Morales",
     age: 15,
     birthDate: "2009-05-14",
@@ -103,6 +98,349 @@ const mockStudents: Student[] = [
     contactPhone: "+52 555 654 3210",
     isLeveled: false,
     address: "Calle Independencia 654, Colonia Oeste, Tijuana"
+  },
+  {
+    id: "6",
+    firstName: "Andrés",
+    lastName: "Ramírez Torres",
+    name: "Andrés Ramírez Torres",
+    age: 14,
+    birthDate: "2010-09-20",
+    certificationType: "INEA",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p9", name: "Fernando Ramírez" }
+    ],
+    contactPhone: "+52 555 789 0123",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Av. Juárez 890, Colonia Centro, Querétaro"
+  },
+  {
+    id: "7",
+    firstName: "Camila",
+    lastName: "Jiménez Flores",
+    name: "Camila Jiménez Flores",
+    age: 16,
+    birthDate: "2008-02-14",
+    certificationType: "Grace Christian",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p10", name: "Sandra Jiménez" },
+      { id: "p11", name: "Roberto Flores" }
+    ],
+    contactPhone: "+52 555 234 5678",
+    isLeveled: true,
+    expectedLevel: "Preparatoria",
+    address: "Calle Morelos 234, Colonia Sur, Mérida"
+  },
+  {
+    id: "8",
+    firstName: "Mateo",
+    lastName: "García Mendoza",
+    name: "Mateo García Mendoza",
+    age: 13,
+    birthDate: "2011-06-18",
+    certificationType: "Lighthouse",
+    graduationDate: "2026-06-15",
+    parents: [
+      { id: "p12", name: "Gabriela García" }
+    ],
+    contactPhone: "+52 555 345 6789",
+    isLeveled: false,
+    address: "Blvd. Insurgentes 345, Colonia Norte, León"
+  },
+  {
+    id: "9",
+    firstName: "Isabella",
+    lastName: "Vargas Sánchez",
+    name: "Isabella Vargas Sánchez",
+    age: 15,
+    birthDate: "2009-11-25",
+    certificationType: "Home Life",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p13", name: "Luis Vargas" },
+      { id: "p14", name: "María Sánchez" }
+    ],
+    contactPhone: "+52 555 456 7890",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Calle Hidalgo 456, Colonia Centro, Toluca"
+  },
+  {
+    id: "10",
+    firstName: "Santiago",
+    lastName: "Ortiz Ruiz",
+    name: "Santiago Ortiz Ruiz",
+    age: 14,
+    birthDate: "2010-04-30",
+    certificationType: "INEA",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p15", name: "Elena Ortiz" }
+    ],
+    contactPhone: "+52 555 567 8901",
+    isLeveled: false,
+    address: "Av. Constitución 567, Colonia Este, Aguascalientes"
+  },
+  {
+    id: "11",
+    firstName: "Lucía",
+    lastName: "Morales Castro",
+    name: "Lucía Morales Castro",
+    age: 16,
+    birthDate: "2008-08-12",
+    certificationType: "Grace Christian",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p16", name: "Jorge Morales" },
+      { id: "p17", name: "Diana Castro" }
+    ],
+    contactPhone: "+52 555 678 9012",
+    isLeveled: true,
+    expectedLevel: "Preparatoria",
+    address: "Calle Zaragoza 678, Colonia Oeste, Chihuahua"
+  },
+  {
+    id: "12",
+    firstName: "Sebastián",
+    lastName: "López Reyes",
+    name: "Sebastián López Reyes",
+    age: 13,
+    birthDate: "2011-12-05",
+    certificationType: "Otro",
+    graduationDate: "2026-06-15",
+    parents: [
+      { id: "p18", name: "Carolina López" }
+    ],
+    contactPhone: "+52 555 789 0123",
+    isLeveled: true,
+    expectedLevel: "Primaria",
+    address: "Av. Revolución 789, Colonia Sur, Culiacán"
+  },
+  {
+    id: "13",
+    firstName: "Emilia",
+    lastName: "Fernández Guzmán",
+    name: "Emilia Fernández Guzmán",
+    age: 15,
+    birthDate: "2009-03-22",
+    certificationType: "Lighthouse",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p19", name: "Ricardo Fernández" },
+      { id: "p20", name: "Sofía Guzmán" }
+    ],
+    contactPhone: "+52 555 890 1234",
+    isLeveled: false,
+    address: "Calle Madero 890, Colonia Centro, Morelia"
+  },
+  {
+    id: "14",
+    firstName: "Nicolás",
+    lastName: "Pérez Navarro",
+    name: "Nicolás Pérez Navarro",
+    age: 14,
+    birthDate: "2010-10-08",
+    certificationType: "Home Life",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p21", name: "Beatriz Pérez" }
+    ],
+    contactPhone: "+52 555 901 2345",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Blvd. López Mateos 901, Colonia Norte, Hermosillo"
+  },
+  {
+    id: "15",
+    firstName: "Valeria",
+    lastName: "Romero Delgado",
+    name: "Valeria Romero Delgado",
+    age: 16,
+    birthDate: "2008-05-17",
+    certificationType: "INEA",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p22", name: "Alberto Romero" },
+      { id: "p23", name: "Patricia Delgado" }
+    ],
+    contactPhone: "+52 555 012 3456",
+    isLeveled: true,
+    expectedLevel: "Preparatoria",
+    address: "Calle Allende 012, Colonia Este, Saltillo"
+  },
+  {
+    id: "16",
+    firstName: "Leonardo",
+    lastName: "Torres Medina",
+    name: "Leonardo Torres Medina",
+    age: 13,
+    birthDate: "2011-07-29",
+    certificationType: "Grace Christian",
+    graduationDate: "2026-06-15",
+    parents: [
+      { id: "p24", name: "Verónica Torres" }
+    ],
+    contactPhone: "+52 555 123 4567",
+    isLeveled: false,
+    address: "Av. Independencia 123, Colonia Sur, Durango"
+  },
+  {
+    id: "17",
+    firstName: "Regina",
+    lastName: "Castillo Vega",
+    name: "Regina Castillo Vega",
+    age: 15,
+    birthDate: "2009-09-03",
+    certificationType: "Lighthouse",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p25", name: "Héctor Castillo" },
+      { id: "p26", name: "Claudia Vega" }
+    ],
+    contactPhone: "+52 555 234 5678",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Calle Victoria 234, Colonia Centro, Oaxaca"
+  },
+  {
+    id: "18",
+    firstName: "Gabriel",
+    lastName: "Ruiz Aguilar",
+    name: "Gabriel Ruiz Aguilar",
+    age: 14,
+    birthDate: "2010-01-15",
+    certificationType: "Otro",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p27", name: "Mónica Ruiz" }
+    ],
+    contactPhone: "+52 555 345 6789",
+    isLeveled: false,
+    address: "Blvd. Díaz Ordaz 345, Colonia Norte, Cuernavaca"
+  },
+  {
+    id: "19",
+    firstName: "Martina",
+    lastName: "Chávez Ibarra",
+    name: "Martina Chávez Ibarra",
+    age: 16,
+    birthDate: "2008-12-20",
+    certificationType: "Home Life",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p28", name: "Arturo Chávez" },
+      { id: "p29", name: "Raquel Ibarra" }
+    ],
+    contactPhone: "+52 555 456 7890",
+    isLeveled: true,
+    expectedLevel: "Preparatoria",
+    address: "Calle Juárez 456, Colonia Este, Villahermosa"
+  },
+  {
+    id: "20",
+    firstName: "Daniel",
+    lastName: "Méndez Solís",
+    name: "Daniel Méndez Solís",
+    age: 13,
+    birthDate: "2011-04-11",
+    certificationType: "INEA",
+    graduationDate: "2026-06-15",
+    parents: [
+      { id: "p30", name: "Adriana Méndez" }
+    ],
+    contactPhone: "+52 555 567 8901",
+    isLeveled: true,
+    expectedLevel: "Primaria",
+    address: "Av. Carranza 567, Colonia Oeste, Pachuca"
+  },
+  {
+    id: "21",
+    firstName: "Renata",
+    lastName: "Domínguez Rojas",
+    name: "Renata Domínguez Rojas",
+    age: 15,
+    birthDate: "2009-06-28",
+    certificationType: "Grace Christian",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p31", name: "Guillermo Domínguez" },
+      { id: "p32", name: "Isabel Rojas" }
+    ],
+    contactPhone: "+52 555 678 9012",
+    isLeveled: false,
+    address: "Calle Guerrero 678, Colonia Centro, Tuxtla Gutiérrez"
+  },
+  {
+    id: "22",
+    firstName: "Ángel",
+    lastName: "Herrera Campos",
+    name: "Ángel Herrera Campos",
+    age: 14,
+    birthDate: "2010-11-02",
+    certificationType: "Lighthouse",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p33", name: "Mariana Herrera" }
+    ],
+    contactPhone: "+52 555 789 0123",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Blvd. Kukulcán 789, Colonia Sur, Cancún"
+  },
+  {
+    id: "23",
+    firstName: "Paulina",
+    lastName: "Santos Núñez",
+    name: "Paulina Santos Núñez",
+    age: 16,
+    birthDate: "2008-07-14",
+    certificationType: "Otro",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p34", name: "Eduardo Santos" },
+      { id: "p35", name: "Lorena Núñez" }
+    ],
+    contactPhone: "+52 555 890 1234",
+    isLeveled: true,
+    expectedLevel: "Preparatoria",
+    address: "Calle Obregón 890, Colonia Norte, Veracruz"
+  },
+  {
+    id: "24",
+    firstName: "Joaquín",
+    lastName: "Ríos Parra",
+    name: "Joaquín Ríos Parra",
+    age: 13,
+    birthDate: "2011-02-26",
+    certificationType: "Home Life",
+    graduationDate: "2026-06-15",
+    parents: [
+      { id: "p36", name: "Cristina Ríos" }
+    ],
+    contactPhone: "+52 555 901 2345",
+    isLeveled: false,
+    address: "Av. Benito Juárez 901, Colonia Este, Mazatlán"
+  },
+  {
+    id: "25",
+    firstName: "Ximena",
+    lastName: "Molina Cortés",
+    name: "Ximena Molina Cortés",
+    age: 15,
+    birthDate: "2009-10-19",
+    certificationType: "INEA",
+    graduationDate: "2025-06-15",
+    parents: [
+      { id: "p37", name: "Pablo Molina" },
+      { id: "p38", name: "Daniela Cortés" }
+    ],
+    contactPhone: "+52 555 012 3456",
+    isLeveled: true,
+    expectedLevel: "Secundaria",
+    address: "Calle Progreso 012, Colonia Oeste, Colima"
   }
 ]
 
@@ -112,8 +450,12 @@ interface Filters {
   isLeveled: string
 }
 
+type SortField = "firstName" | "lastName" | null
+type SortDirection = "asc" | "desc"
+
 export default function StudentsPage() {
-  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
+  const { studentId } = useParams()
+  const navigate = useNavigate()
   const [students, setStudents] = React.useState<Student[]>([])
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
@@ -122,6 +464,19 @@ export default function StudentsPage() {
     isLeveled: ""
   })
   const [view, setView] = React.useState<"cards" | "table">("table")
+  const [sortField, setSortField] = React.useState<SortField>(null)
+  const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
+
+  // Get selected student from URL param
+  const selectedStudent = React.useMemo(() => {
+    if (!studentId || students.length === 0) return null
+    return students.find(s => s.id === studentId) || null
+  }, [studentId, students])
+
+  // If we have a studentId but no students loaded yet, show loading
+  const isLoadingStudent = studentId && students.length === 0
 
   // Simulate API fetch
   React.useEffect(() => {
@@ -133,15 +488,16 @@ export default function StudentsPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Filter and search logic
-  const filteredStudents = React.useMemo(() => {
-    return students.filter((student) => {
-      // Search filter
+  // Filter, search, and sort logic
+  const filteredAndSortedStudents = React.useMemo(() => {
+    // Filter students
+    let result = students.filter((student) => {
+      // Search filter (accent-insensitive)
       const matchesSearch =
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.certificationType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        includesIgnoreAccents(student.name, searchTerm) ||
+        includesIgnoreAccents(student.certificationType, searchTerm) ||
         student.contactPhone.includes(searchTerm) ||
-        student.address.toLowerCase().includes(searchTerm.toLowerCase())
+        includesIgnoreAccents(student.address, searchTerm)
 
       // Certification type filter
       const matchesCertification =
@@ -160,24 +516,70 @@ export default function StudentsPage() {
 
       return matchesSearch && matchesCertification && matchesGraduationYear && matchesLeveling
     })
-  }, [students, searchTerm, filters])
+
+    // Sort students
+    if (sortField) {
+      result = [...result].sort((a, b) => {
+        const aValue = a[sortField].toLowerCase()
+        const bValue = b[sortField].toLowerCase()
+
+        if (sortDirection === "asc") {
+          return aValue.localeCompare(bValue)
+        } else {
+          return bValue.localeCompare(aValue)
+        }
+      })
+    }
+
+    return result
+  }, [students, searchTerm, filters, sortField, sortDirection])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedStudents.length / itemsPerPage)
+  const paginatedStudents = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredAndSortedStudents.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredAndSortedStudents, currentPage, itemsPerPage])
+
+  // Reset to page 1 when filters/search/sort changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filters, sortField, sortDirection])
 
   const handleStudentSelect = (student: Student) => {
-    setSelectedStudent(student)
+    navigate(`/students/${student.id}`)
   }
 
   const handleBackToList = () => {
-    setSelectedStudent(null)
+    navigate('/students')
   }
 
   const handleFiltersChange = (newFilters: Filters) => {
     setFilters(newFilters)
   }
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      // New field, default to ascending
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }
+
+  // Show loading state when navigating to a student profile
+  if (isLoadingStudent) {
+    return <LoadingSkeleton variant="profile" />
+  }
+
+  // Show student profile if we have a selected student
   if (selectedStudent) {
     return <StudentProfile student={selectedStudent} onBack={handleBackToList} />
   }
 
+  // Show students list
   return (
     <div className="space-y-6">
       <div>
@@ -204,13 +606,13 @@ export default function StudentsPage() {
           filters={filters}
           onFiltersChange={handleFiltersChange}
           totalStudents={students.length}
-          filteredCount={filteredStudents.length}
+          filteredCount={filteredAndSortedStudents.length}
         />
         <ViewToggle view={view} onViewChange={setView} />
       </div>
 
       {/* Students Content */}
-      {filteredStudents.length === 0 ? (
+      {filteredAndSortedStudents.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-muted-foreground">
             {searchTerm || Object.values(filters).some(f => f !== "")
@@ -222,9 +624,26 @@ export default function StudentsPage() {
       ) : (
         <>
           {view === "cards" ? (
-            <StudentsList students={filteredStudents} onStudentSelect={handleStudentSelect} />
+            <StudentsList
+              students={paginatedStudents}
+              onStudentSelect={handleStudentSelect}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredAndSortedStudents.length}
+              onPageChange={setCurrentPage}
+            />
           ) : (
-            <StudentsTable students={filteredStudents} onStudentSelect={handleStudentSelect} />
+            <StudentsTable
+              students={paginatedStudents}
+              onStudentSelect={handleStudentSelect}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredAndSortedStudents.length}
+              onPageChange={setCurrentPage}
+            />
           )}
         </>
       )
