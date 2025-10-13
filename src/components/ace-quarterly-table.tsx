@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit } from "lucide-react"
+import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
 interface QuarterlyTableProps {
@@ -110,6 +110,15 @@ export function ACEQuarterlyTable({
       setAlertDialog({
         title: "Campo Requerido",
         message: "Por favor ingresa un número de PACE"
+      })
+      return
+    }
+
+    // Validate format: must start with 1 and be 4 digits
+    if (!/^1\d{3}$/.test(newPaceNumber)) {
+      setAlertDialog({
+        title: "Formato Inválido",
+        message: "El número de PACE debe tener 4 dígitos y comenzar con 1 (ej: 1001, 1234)"
       })
       return
     }
@@ -370,15 +379,17 @@ export function ACEQuarterlyTable({
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 cursor-pointer"
+                                    className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                    title="Guardar"
                                   >
-                                    ✓
+                                    <Check className="h-4 w-4" />
                                   </button>
                                   <button
                                     onClick={handleGradeCancel}
-                                    className="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+                                    className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                    title="Cancelar"
                                   >
-                                    ✗
+                                    <X className="h-4 w-4" />
                                   </button>
                                 </div>
                               </div>
@@ -426,28 +437,37 @@ export function ACEQuarterlyTable({
                             <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="text"
+                                inputMode="numeric"
                                 value={paceNumberInput}
-                                onChange={(e) => setPaceNumberInput(e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  // Only allow numbers and max 4 digits
+                                  if (/^\d{0,4}$/.test(value)) {
+                                    setPaceNumberInput(value)
+                                  }
+                                }}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
                                   if (e.key === 'Escape') handleAddPaceCancel()
                                 }}
-                                placeholder="PACE #"
+                                placeholder="1XXX"
                                 className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                                 autoFocus
                               />
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
+                                  className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                  title="Agregar"
                                 >
-                                  ✓
+                                  <Check className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={handleAddPaceCancel}
-                                  className="text-xs px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 cursor-pointer"
+                                  className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                  title="Cancelar"
                                 >
-                                  ✗
+                                  <X className="h-4 w-4" />
                                 </button>
                               </div>
                             </div>
