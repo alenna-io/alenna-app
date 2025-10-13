@@ -90,7 +90,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
               variant="ghost"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 hover:cursor-pointer"
+              className="flex items-center gap-1 cursor-pointer"
             >
               {showFilters ? (
                 <>

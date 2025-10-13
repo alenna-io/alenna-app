@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, ChevronRight, BookOpen } from "lucide-react"
+import { BackButton } from "@/components/ui/back-button"
+import { Calendar, ChevronRight, BookOpen } from "lucide-react"
 
 interface Projection {
   id: string
@@ -100,14 +100,9 @@ export default function ProjectionListPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/students")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver a Estudiantes
-        </Button>
+        <BackButton onClick={() => navigate(`/students/${studentId}`)}>
+          Volver al Perfil
+        </BackButton>
       </div>
 
       {/* Student Info */}
