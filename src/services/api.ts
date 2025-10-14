@@ -38,12 +38,26 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
 export const studentsApi = {
   getAll: (token: string | null) => apiFetch('/students', token),
   getById: (id: string, token: string | null) => apiFetch(`/students/${id}`, token),
-  create: (data: any, token: string | null) => 
+  create: (data: Record<string, unknown>, token: string | null) => 
     apiFetch('/students', token, { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: any, token: string | null) => 
+  update: (id: string, data: Record<string, unknown>, token: string | null) => 
     apiFetch(`/students/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) => 
     apiFetch(`/students/${id}`, token, { method: 'DELETE' }),
+};
+
+// Projections API
+export const projectionsApi = {
+  getByStudentId: (studentId: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections`, token),
+  getById: (studentId: string, id: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${id}`, token),
+  create: (studentId: string, data: Record<string, unknown>, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections`, token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (studentId: string, id: string, data: Record<string, unknown>, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (studentId: string, id: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'DELETE' }),
 };
 
 // Auth API
@@ -55,8 +69,8 @@ export const authApi = {
 // Schools API
 export const schoolsApi = {
   getMy: (token: string | null) => apiFetch('/schools/me', token),
-  create: (data: any) => apiFetch('/schools', null, { method: 'POST', body: JSON.stringify(data) }),
-  update: (data: any, token: string | null) => 
+  create: (data: Record<string, unknown>) => apiFetch('/schools', null, { method: 'POST', body: JSON.stringify(data) }),
+  update: (data: Record<string, unknown>, token: string | null) => 
     apiFetch('/schools/me', token, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
@@ -74,17 +88,39 @@ export function useApi() {
         const token = await getToken();
         return studentsApi.getById(id, token);
       },
-      create: async (data: any) => {
+      create: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return studentsApi.create(data, token);
       },
-      update: async (id: string, data: any) => {
+      update: async (id: string, data: Record<string, unknown>) => {
         const token = await getToken();
         return studentsApi.update(id, data, token);
       },
       delete: async (id: string) => {
         const token = await getToken();
         return studentsApi.delete(id, token);
+      },
+    },
+    projections: {
+      getByStudentId: async (studentId: string) => {
+        const token = await getToken();
+        return projectionsApi.getByStudentId(studentId, token);
+      },
+      getById: async (studentId: string, id: string) => {
+        const token = await getToken();
+        return projectionsApi.getById(studentId, id, token);
+      },
+      create: async (studentId: string, data: Record<string, unknown>) => {
+        const token = await getToken();
+        return projectionsApi.create(studentId, data, token);
+      },
+      update: async (studentId: string, id: string, data: Record<string, unknown>) => {
+        const token = await getToken();
+        return projectionsApi.update(studentId, id, data, token);
+      },
+      delete: async (studentId: string, id: string) => {
+        const token = await getToken();
+        return projectionsApi.delete(studentId, id, token);
       },
     },
     auth: {
@@ -103,7 +139,7 @@ export function useApi() {
         return schoolsApi.getMy(token);
       },
       create: schoolsApi.create,
-      update: async (data: any) => {
+      update: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolsApi.update(data, token);
       },
