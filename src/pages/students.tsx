@@ -7,6 +7,7 @@ import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
 import { Input } from "@/components/ui/input"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { BackButton } from "@/components/ui/back-button"
 import { Search, AlertCircle } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
@@ -26,8 +27,11 @@ export default function StudentsPage() {
   const navigate = useNavigate()
   const api = useApi()
   const [students, setStudents] = React.useState<Student[]>([])
+  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingStudent, setIsLoadingStudent] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [studentError, setStudentError] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
     certificationType: "",
@@ -40,17 +44,11 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
 
-  // Get selected student from URL param
-  const selectedStudent = React.useMemo(() => {
-    if (!studentId || students.length === 0) return null
-    return students.find(s => s.id === studentId) || null
-  }, [studentId, students])
-
-  // If we have a studentId but no students loaded yet, show loading
-  const isLoadingStudent = studentId && students.length === 0
-
-  // Fetch students from API (scoped to user's school)
+  // Fetch students list from API (scoped to user's school) - only when not viewing a specific student
   React.useEffect(() => {
+    // Don't fetch list if we're viewing a specific student profile
+    if (studentId) return
+
     let isMounted = true
 
     const fetchStudents = async () => {
@@ -62,29 +60,32 @@ export default function StudentsPage() {
         if (isMounted) {
           // Backend returns students for the authenticated user's school only
           // Transform API data to match frontend Student type
-          const transformedStudents: Student[] = data.map((student: any) => ({
-            id: student.id,
-            firstName: student.firstName,
-            lastName: student.lastName,
-            name: student.name, // Backend already provides the full name
-            age: student.age,
-            birthDate: student.birthDate,
-            certificationType: student.certificationType,
-            graduationDate: student.graduationDate,
-            parents: student.parents || [],
-            contactPhone: student.contactPhone || '',
-            isLeveled: student.isLeveled,
-            expectedLevel: student.expectedLevel,
-            address: student.address || '',
-          }))
+          const transformedStudents: Student[] = data.map((student: unknown) => {
+            const s = student as Record<string, unknown>
+            return {
+              id: s.id as string,
+              firstName: s.firstName as string,
+              lastName: s.lastName as string,
+              name: s.name as string,
+              age: s.age as number,
+              birthDate: s.birthDate as string,
+              certificationType: s.certificationType as string,
+              graduationDate: s.graduationDate as string,
+              parents: (s.parents || []) as Student['parents'],
+              contactPhone: (s.contactPhone || '') as string,
+              isLeveled: s.isLeveled as boolean,
+              expectedLevel: s.expectedLevel as string | undefined,
+              address: (s.address || '') as string,
+            }
+          })
 
           setStudents(transformedStudents)
         }
-      } catch (err: any) {
-        console.error('Error fetching students:', err)
+      } catch (err) {
+        const error = err as Error
+        console.error('Error fetching students:', error)
         if (isMounted) {
-          setError(err.message || 'Failed to load students')
-          // Set empty array on error - don't use mock data in production
+          setError(error.message || 'Failed to load students')
           setStudents([])
         }
       } finally {
@@ -99,7 +100,66 @@ export default function StudentsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId])
+
+  // Fetch individual student from API when viewing profile
+  React.useEffect(() => {
+    if (!studentId) {
+      setSelectedStudent(null)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchStudent = async () => {
+      try {
+        setIsLoadingStudent(true)
+        setStudentError(null)
+        const data = await api.students.getById(studentId)
+
+        if (isMounted) {
+          // Transform API data to match frontend Student type
+          const s = data as Record<string, unknown>
+          const transformedStudent: Student = {
+            id: s.id as string,
+            firstName: s.firstName as string,
+            lastName: s.lastName as string,
+            name: s.name as string,
+            age: s.age as number,
+            birthDate: s.birthDate as string,
+            certificationType: s.certificationType as string,
+            graduationDate: s.graduationDate as string,
+            parents: (s.parents || []) as Student['parents'],
+            contactPhone: (s.contactPhone || '') as string,
+            isLeveled: s.isLeveled as boolean,
+            expectedLevel: s.expectedLevel as string | undefined,
+            address: (s.address || '') as string,
+          }
+
+          setSelectedStudent(transformedStudent)
+        }
+      } catch (err) {
+        const error = err as Error
+        console.error('Error fetching student:', error)
+        if (isMounted) {
+          setStudentError(error.message || 'Failed to load student')
+          setSelectedStudent(null)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingStudent(false)
+        }
+      }
+    }
+
+    fetchStudent()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId])
 
   // Filter, search, and sort logic
   const filteredAndSortedStudents = React.useMemo(() => {
@@ -182,19 +242,41 @@ export default function StudentsPage() {
     }
   }
 
-  // Show loading state
-  if (isLoading) {
-    return <LoadingSkeleton variant="list" />
-  }
-
-  // Show loading state when navigating to a student profile
+  // Show loading state when fetching student profile
   if (isLoadingStudent) {
     return <LoadingSkeleton variant="profile" />
+  }
+
+  // Show error state for student profile
+  if (studentError && studentId) {
+    return (
+      <div className="space-y-6">
+        <BackButton onClick={handleBackToList}>
+          Volver a Estudiantes
+        </BackButton>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="font-semibold text-red-900 dark:text-red-100">
+              Error al cargar estudiante
+            </h3>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+              {studentError}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Show student profile if we have a selected student
   if (selectedStudent) {
     return <StudentProfile student={selectedStudent} onBack={handleBackToList} />
+  }
+
+  // Show loading state for students list
+  if (isLoading) {
+    return <LoadingSkeleton variant="list" />
   }
 
   // Show students list

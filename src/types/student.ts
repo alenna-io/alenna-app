@@ -10,7 +10,7 @@ export interface Student {
   name: string // Full name for display
   age: number
   birthDate: string
-  certificationType: "INEA" | "Grace Christian" | "Home Life" | "Lighthouse" | "Otro"
+  certificationType: string // Dynamic from database - managed per school
   graduationDate: string
   parents: Parent[]
   contactPhone: string
