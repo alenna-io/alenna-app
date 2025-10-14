@@ -5,23 +5,30 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/
 
 // Generic API fetch function with authentication
 async function apiFetch(url: string, token: string | null, options: RequestInit = {}) {
+  if (!token) {
+    throw new Error('Authentication token required');
+  }
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  headers['Authorization'] = `Bearer ${token}`;
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
   });
 
+  // Handle 204 No Content (for DELETE operations)
+  if (response.status === 204) {
+    return null;
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || 'API request failed');
+    throw new Error(error.error || `API request failed: ${response.status} ${response.statusText}`);
   }
 
   return response.json();
