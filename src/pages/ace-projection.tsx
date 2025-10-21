@@ -195,24 +195,27 @@ export default function ACEProjectionPage() {
           grade,
           note: comment,
         })
-
-        // Reload projection data
-        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-        setProjectionDetail(detail)
-        const convertedData = {
-          Q1: convertQuarterData(detail.quarters.Q1),
-          Q2: convertQuarterData(detail.quarters.Q2),
-          Q3: convertQuarterData(detail.quarters.Q3),
-          Q4: convertQuarterData(detail.quarters.Q4),
-        }
-        setProjectionData(convertedData)
+      } else {
+        // No grade provided = mark as incomplete
+        await api.projections.markIncomplete(studentId, projectionId, paceId)
       }
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
     } catch (err) {
-      console.error('Error updating PACE grade:', err)
+      console.error('Error actualizando PACE:', err)
       setErrorDialog({
         open: true,
-        title: "Error Updating Grade",
-        message: err instanceof Error ? err.message : 'Failed to update PACE grade'
+        title: "Error actualizando PACE",
+        message: err instanceof Error ? err.message : 'Error al actualizar PACE'
       })
     }
   }

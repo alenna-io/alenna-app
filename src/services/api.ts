@@ -73,6 +73,8 @@ export const projectionsApi = {
     apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   movePace: (studentId: string, projectionId: string, paceId: string, data: { quarter: string, week: number }, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}/move`, token, { method: 'PATCH', body: JSON.stringify(data) }),
+  markIncomplete: (studentId: string, projectionId: string, paceId: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}/incomplete`, token, { method: 'PATCH' }),
   removePace: (studentId: string, projectionId: string, paceId: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}`, token, { method: 'DELETE' }),
 };
@@ -165,6 +167,10 @@ export function useApi() {
       movePace: async (studentId: string, projectionId: string, paceId: string, data: { quarter: string, week: number }) => {
         const token = await getToken();
         return projectionsApi.movePace(studentId, projectionId, paceId, data, token);
+      },
+      markIncomplete: async (studentId: string, projectionId: string, paceId: string) => {
+        const token = await getToken();
+        return projectionsApi.markIncomplete(studentId, projectionId, paceId, token);
       },
       removePace: async (studentId: string, projectionId: string, paceId: string) => {
         const token = await getToken();
