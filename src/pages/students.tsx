@@ -8,10 +8,13 @@ import { ViewToggle } from "@/components/view-toggle"
 import { Input } from "@/components/ui/input"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
 import { BackButton } from "@/components/ui/back-button"
+import { NoPermission } from "@/components/no-permission"
+import { ParentChildrenView } from "@/components/parent-children-view"
 import { Search, AlertCircle } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
+import type { UserInfo } from "@/services/api"
 
 interface Filters {
   certificationType: string
@@ -32,6 +35,8 @@ export default function StudentsPage() {
   const [isLoadingStudent, setIsLoadingStudent] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [studentError, setStudentError] = React.useState<string | null>(null)
+  const [hasPermission, setHasPermission] = React.useState(true)
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
     certificationType: "",
@@ -43,6 +48,21 @@ export default function StudentsPage() {
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
+
+  // Fetch user info to check if parent
+  React.useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const info = await api.auth.getUserInfo()
+        setUserInfo(info)
+      } catch (err) {
+        console.error('Error fetching user info:', err)
+      }
+    }
+
+    fetchUserInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Fetch students list from API (scoped to user's school) - only when not viewing a specific student
   React.useEffect(() => {
@@ -84,9 +104,16 @@ export default function StudentsPage() {
       } catch (err) {
         const error = err as Error
         console.error('Error fetching students:', error)
+        console.error('Error message:', error.message)
         if (isMounted) {
-          setError(error.message || 'Failed to load students')
-          setStudents([])
+          // Check if it's a permission error (403)
+          if (error.message?.includes('permiso') || error.message?.includes('403')) {
+            console.log('Setting hasPermission to false')
+            setHasPermission(false)
+          } else {
+            setError(error.message || 'Failed to load students')
+            setStudents([])
+          }
         }
       } finally {
         if (isMounted) {
@@ -143,8 +170,13 @@ export default function StudentsPage() {
         const error = err as Error
         console.error('Error fetching student:', error)
         if (isMounted) {
-          setStudentError(error.message || 'Failed to load student')
-          setSelectedStudent(null)
+          // Check if it's a permission error (403)
+          if (error.message?.includes('permiso')) {
+            setHasPermission(false)
+          } else {
+            setStudentError(error.message || 'Failed to load student')
+            setSelectedStudent(null)
+          }
         }
       } finally {
         if (isMounted) {
@@ -242,6 +274,15 @@ export default function StudentsPage() {
     }
   }
 
+  // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
+  const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
+    !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+
+  // Show permission error if user doesn't have access
+  if (!hasPermission) {
+    return <NoPermission onBack={() => navigate('/dashboard')} />
+  }
+
   // Show loading state when fetching student profile
   if (isLoadingStudent) {
     return <LoadingSkeleton variant="profile" />
@@ -271,7 +312,7 @@ export default function StudentsPage() {
 
   // Show student profile if we have a selected student
   if (selectedStudent) {
-    return <StudentProfile student={selectedStudent} onBack={handleBackToList} />
+    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={isParentOnly} />
   }
 
   // Show loading state for students list
@@ -279,7 +320,29 @@ export default function StudentsPage() {
     return <LoadingSkeleton variant="list" />
   }
 
-  // Show students list
+  // Show parent-specific view
+  if (isParentOnly && !studentId) {
+    return (
+      <div className="space-y-6">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-900 dark:text-red-100">
+                Error al cargar
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                {error}
+              </p>
+            </div>
+          </div>
+        )}
+        <ParentChildrenView students={students} />
+      </div>
+    )
+  }
+
+  // Show admin/teacher students list
   return (
     <div className="space-y-6">
       {/* Error banner */}

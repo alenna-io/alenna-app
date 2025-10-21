@@ -10,9 +10,10 @@ import type { Student } from "@/types/student"
 interface StudentProfileProps {
   student: Student
   onBack: () => void
+  isParentView?: boolean
 }
 
-export function StudentProfile({ student, onBack }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
 
   const getInitials = (name: string) => {
@@ -155,52 +156,54 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
               variant="default"
               size="default"
               showChevron={false}
-              className="w-full"
+              className="w-full cursor-pointer"
               onClick={() => navigate(`/students/${student.id}/projections`)}
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Administrar Proyecciones
+              {isParentView ? 'Ver Proyecciones' : 'Administrar Proyecciones'}
             </LinkButton>
           </CardContent>
         </Card>
 
-        {/* Parents Information */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Información de Padres</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {student.parents.length > 0 ? (
-              <div className="space-y-2">
-                {student.parents.map((parent) => (
-                  <div
-                    key={parent.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback>
-                        {getInitials(parent.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{parent.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Padre/Madre
-                      </p>
+        {/* Parents Information - Hidden for parent users */}
+        {!isParentView && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Información de Padres</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {student.parents.length > 0 ? (
+                <div className="space-y-2">
+                  {student.parents.map((parent) => (
+                    <div
+                      key={parent.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>
+                          {getInitials(parent.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{parent.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Padre/Madre
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="ml-auto cursor-pointer">
+                        Ver Perfil
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" className="ml-auto">
-                      Ver Perfil
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No se ha registrado información de padres
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No se ha registrado información de padres
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

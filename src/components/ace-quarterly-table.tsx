@@ -12,6 +12,7 @@ interface QuarterlyTableProps {
   data: QuarterData
   currentWeek?: number // 1-9 for the current week in this quarter, undefined if not current
   isActive?: boolean // Whether this quarter contains the current week
+  isReadOnly?: boolean // Read-only mode for parents
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -32,6 +33,7 @@ export function ACEQuarterlyTable({
   data,
   currentWeek,
   isActive = false,
+  isReadOnly = false,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -142,7 +144,7 @@ export function ACEQuarterlyTable({
 
   const handleAddPaceClick = (subject: string, weekIndex: number) => {
     // Directly call onAddPace to open the picker dialog
-    onAddPace?.(quarter, subject, weekIndex)
+    onAddPace?.(quarter, subject, weekIndex, '')
   }
 
   const handleAddPaceSubmit = (subject: string, weekIndex: number) => {
@@ -389,8 +391,8 @@ export function ACEQuarterlyTable({
                         <td
                           key={weekIndex}
                           className="p-2 text-center align-middle border border-gray-300"
-                          draggable={!!pace}
-                          onDragStart={() => setDraggedPace({ subject, weekIndex })}
+                          draggable={!isReadOnly && !!pace}
+                          onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
                           onDragOver={(e) => {
                             if (draggedPace && draggedPace.subject === subject) {
                               e.preventDefault()
@@ -398,7 +400,7 @@ export function ACEQuarterlyTable({
                           }}
                           onDrop={(e) => {
                             e.preventDefault()
-                            if (draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
                               onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                             }
                             setDraggedPace(null)
@@ -492,10 +494,12 @@ export function ACEQuarterlyTable({
                             ) : (
                               <div className="relative flex items-center justify-center w-full group/pace">
                                 <div
-                                  className="inline-flex flex-col items-center cursor-pointer"
+                                  className={`inline-flex flex-col items-center ${!isReadOnly ? 'cursor-pointer' : ''}`}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handlePaceClick(subject, weekIndex, pace)
+                                    if (!isReadOnly) {
+                                      handlePaceClick(subject, weekIndex, pace)
+                                    }
                                   }}
                                 >
                                   <Badge
@@ -520,16 +524,18 @@ export function ACEQuarterlyTable({
                                     {pace.grade !== null ? `${pace.grade}%` : "—"}
                                   </span>
                                 </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
-                                  }}
-                                  className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-gray-500" />
-                                </button>
+                                {!isReadOnly && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const rect = e.currentTarget.getBoundingClientRect()
+                                      setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
+                                    }}
+                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </button>
+                                )}
                               </div>
                             )
                           ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
@@ -570,7 +576,7 @@ export function ACEQuarterlyTable({
                                 </button>
                               </div>
                             </div>
-                          ) : (
+                          ) : !isReadOnly ? (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -582,7 +588,7 @@ export function ACEQuarterlyTable({
                                 +
                               </span>
                             </div>
-                          )}
+                          ) : null}
                         </td>
                       ))}
                     </tr>
@@ -759,7 +765,7 @@ export function ACEQuarterlyTable({
 
       {/* Overload Confirmation Dialog */}
       {confirmAddDialog && (
-        <ConfirmDialog
+        <AlertDialog
           isOpen={true}
           title="Sobrecarga de Bloque"
           message={`Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?`}
@@ -767,7 +773,7 @@ export function ACEQuarterlyTable({
           cancelText="Cancelar"
           variant="warning"
           showRememberOption={true}
-          onConfirm={(remember) => confirmOverloadAdd(remember || false)}
+          onConfirm={(remember: boolean) => confirmOverloadAdd(remember || false)}
           onCancel={() => {
             setConfirmAddDialog(null)
             setAddingPace(null)

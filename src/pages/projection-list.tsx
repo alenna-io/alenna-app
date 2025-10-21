@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/ui/back-button"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { NoPermission } from "@/components/no-permission"
 import { Calendar, ChevronRight, BookOpen, AlertCircle } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { Projection } from "@/types/projection"
@@ -20,6 +21,7 @@ export default function ProjectionListPage() {
   const [projections, setProjections] = React.useState<Projection[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [hasPermission, setHasPermission] = React.useState(true)
 
   // Fetch student and projections
   React.useEffect(() => {
@@ -46,7 +48,12 @@ export default function ProjectionListPage() {
         const error = err as Error
         console.error('Error fetching data:', error)
         if (isMounted) {
-          setError(error.message || 'Failed to load data')
+          // Check if it's a permission error
+          if (error.message?.includes('permiso')) {
+            setHasPermission(false)
+          } else {
+            setError(error.message || 'Failed to load data')
+          }
         }
       } finally {
         if (isMounted) {
@@ -80,6 +87,11 @@ export default function ProjectionListPage() {
 
   const getStatusLabel = (isActive: boolean) => {
     return isActive ? "Activo" : "Inactivo"
+  }
+
+  // Show permission error if user doesn't have access
+  if (!hasPermission) {
+    return <NoPermission onBack={() => navigate(`/students/${studentId}`)} />
   }
 
   if (isLoading) {

@@ -11,6 +11,8 @@ import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { AlertDialog } from "@/components/ui/alert-dialog"
+import { NoPermission } from "@/components/no-permission"
+import type { UserInfo } from "@/services/api"
 
 
 // Helper to create empty quarter data structure
@@ -39,6 +41,8 @@ export default function ACEProjectionPage() {
   const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [hasPermission, setHasPermission] = React.useState(true)
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
     quarter: string
@@ -50,6 +54,21 @@ export default function ACEProjectionPage() {
     title?: string
     message: string
   }>({ open: false, message: "" })
+
+  // Fetch user info to check if parent
+  React.useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const info = await api.auth.getUserInfo()
+        setUserInfo(info)
+      } catch (err) {
+        console.error('Error fetching user info:', err)
+      }
+    }
+
+    fetchUserInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Fetch projection detail from API
   React.useEffect(() => {
@@ -72,7 +91,14 @@ export default function ACEProjectionPage() {
         setProjectionData(convertedData)
       } catch (err) {
         console.error('Error fetching projection detail:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load projection')
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load projection'
+
+        // Check if it's a permission error
+        if (errorMessage.includes('permiso')) {
+          setHasPermission(false)
+        } else {
+          setError(errorMessage)
+        }
       } finally {
         setLoading(false)
       }
@@ -315,6 +341,15 @@ export default function ACEProjectionPage() {
       .slice(0, 2)
   }
 
+  // Check if user is a parent (read-only mode)
+  const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
+    !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+
+  // Show permission error if user doesn't have access
+  if (!hasPermission) {
+    return <NoPermission onBack={() => navigate(`/students/${studentId}/projections`)} />
+  }
+
   // Show loading state
   if (loading) {
     return (
@@ -461,11 +496,12 @@ export default function ACEProjectionPage() {
           data={projectionData.Q1}
           isActive={currentQuarter === "Q1"}
           currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q2"
@@ -473,11 +509,12 @@ export default function ACEProjectionPage() {
           data={projectionData.Q2}
           isActive={currentQuarter === "Q2"}
           currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q3"
@@ -485,11 +522,12 @@ export default function ACEProjectionPage() {
           data={projectionData.Q3}
           isActive={currentQuarter === "Q3"}
           currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q4"
@@ -497,11 +535,12 @@ export default function ACEProjectionPage() {
           data={projectionData.Q4}
           isActive={currentQuarter === "Q4"}
           currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
       </div>
 

@@ -90,10 +90,39 @@ export const paceCatalogApi = {
   },
 };
 
+// Modules API
+export interface ModuleData {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  permissions: string[];
+}
+
+export const modulesApi = {
+  getUserModules: (token: string | null) => apiFetch<ModuleData[]>('/modules/me', token),
+};
+
 // Auth API
+export interface UserInfo {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  fullName: string;
+  schoolId: string;
+  schoolName: string;
+  roles: Array<{
+    id: string;
+    name: string;
+    displayName: string;
+  }>;
+}
+
 export const authApi = {
   syncUser: (token: string | null) => apiFetch('/auth/sync', token, { method: 'POST' }),
   getCurrentUser: (token: string | null) => apiFetch('/auth/me', token),
+  getUserInfo: (token: string | null) => apiFetch<UserInfo>('/auth/info', token),
 };
 
 // Schools API
@@ -183,6 +212,12 @@ export function useApi() {
         return paceCatalogApi.get(filters, token);
       },
     },
+    modules: {
+      getUserModules: async () => {
+        const token = await getToken();
+        return modulesApi.getUserModules(token);
+      },
+    },
     auth: {
       syncUser: async () => {
         const token = await getToken();
@@ -191,6 +226,10 @@ export function useApi() {
       getCurrentUser: async () => {
         const token = await getToken();
         return authApi.getCurrentUser(token);
+      },
+      getUserInfo: async () => {
+        const token = await getToken();
+        return authApi.getUserInfo(token);
       },
     },
     schools: {
