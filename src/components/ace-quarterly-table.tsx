@@ -2,7 +2,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { AlertDialog } from "@/components/ui/alert-dialog"
 import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
@@ -492,7 +492,7 @@ export function ACEQuarterlyTable({
                             ) : (
                               <div className="relative flex items-center justify-center w-full group/pace">
                                 <div
-                                  className="inline-flex flex-col items-center cursor-move"
+                                  className="inline-flex flex-col items-center cursor-pointer"
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     handlePaceClick(subject, weekIndex, pace)
@@ -688,7 +688,7 @@ export function ACEQuarterlyTable({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
+      <AlertDialog
         isOpen={!!deleteDialog}
         title="Eliminar PACE"
         message={deleteDialog ? `¿Estás seguro de que deseas eliminar el PACE ${deleteDialog.paceNumber} de ${deleteDialog.subject}?\n\nEsta acción no se puede deshacer.` : ""}
@@ -700,13 +700,13 @@ export function ACEQuarterlyTable({
       />
 
       {/* Alert Dialog */}
-      <ConfirmDialog
+      <AlertDialog
         isOpen={!!alertDialog}
         title={alertDialog?.title || "Alerta"}
         message={alertDialog?.message || ""}
         confirmText="Entendido"
         cancelText=""
-        variant="warning"
+        variant="info"
         onConfirm={() => setAlertDialog(null)}
         onCancel={() => setAlertDialog(null)}
       />

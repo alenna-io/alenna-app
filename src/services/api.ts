@@ -69,6 +69,12 @@ export const projectionsApi = {
     apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'DELETE' }),
   addPace: (studentId: string, projectionId: string, data: { paceCatalogId: string, quarter: string, week: number }, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/paces`, token, { method: 'POST', body: JSON.stringify(data) }),
+  updatePaceGrade: (studentId: string, projectionId: string, paceId: string, data: { grade: number, isCompleted?: boolean, isFailed?: boolean, comments?: string, note?: string }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  movePace: (studentId: string, projectionId: string, paceId: string, data: { quarter: string, week: number }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}/move`, token, { method: 'PATCH', body: JSON.stringify(data) }),
+  removePace: (studentId: string, projectionId: string, paceId: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/paces/${paceId}`, token, { method: 'DELETE' }),
 };
 
 // PACE Catalog API
@@ -151,6 +157,18 @@ export function useApi() {
       addPace: async (studentId: string, projectionId: string, data: { paceCatalogId: string, quarter: string, week: number }) => {
         const token = await getToken();
         return projectionsApi.addPace(studentId, projectionId, data, token);
+      },
+      updatePaceGrade: async (studentId: string, projectionId: string, paceId: string, data: { grade: number, isCompleted?: boolean, isFailed?: boolean, comments?: string, note?: string }) => {
+        const token = await getToken();
+        return projectionsApi.updatePaceGrade(studentId, projectionId, paceId, data, token);
+      },
+      movePace: async (studentId: string, projectionId: string, paceId: string, data: { quarter: string, week: number }) => {
+        const token = await getToken();
+        return projectionsApi.movePace(studentId, projectionId, paceId, data, token);
+      },
+      removePace: async (studentId: string, projectionId: string, paceId: string) => {
+        const token = await getToken();
+        return projectionsApi.removePace(studentId, projectionId, paceId, token);
       },
     },
     paceCatalog: {

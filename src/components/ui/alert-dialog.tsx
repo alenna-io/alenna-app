@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AlertTriangle, X } from "lucide-react"
 
-interface ConfirmDialogProps {
+interface AlertDialogProps {
   isOpen: boolean
   title: string
   message: string
@@ -16,7 +16,7 @@ interface ConfirmDialogProps {
   showRememberOption?: boolean
 }
 
-export function ConfirmDialog({
+export function AlertDialog({
   isOpen,
   title,
   message,

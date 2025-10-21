@@ -6,127 +6,29 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BackButton } from "@/components/ui/back-button"
 import { Calendar, GraduationCap, Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
-import type { PaceData, QuarterData } from "@/types/pace"
+import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { AlertDialog } from "@/components/ui/alert-dialog"
 
-interface Student {
-  id: string
-  name: string
-  currentGrade: string
-  schoolYear: string
-}
 
-// Mock student data
-const mockStudent: Student = {
-  id: "1",
-  name: "María González López",
-  currentGrade: "8th Grade",
-  schoolYear: "2024-2025"
-}
-
-// Helper to create pace data
-const createPace = (
-  number: string,
-  grade: number | null = null,
-  isCompleted: boolean = false,
-  gradeHistory?: Array<{ grade: number, date: string, note?: string }>
-): PaceData => ({
-  number,
-  grade,
-  isCompleted,
-  gradeHistory
+// Helper to create empty quarter data structure
+const createEmptyQuarterData = (): QuarterData => ({
+  Math: Array(9).fill(null),
+  English: Array(9).fill(null),
+  Science: Array(9).fill(null),
+  "Social Studies": Array(9).fill(null),
+  "Word Building": Array(9).fill(null),
+  Spanish: Array(9).fill(null)
 })
 
-// Mock PACE projection data with completion status and grades (0-100)
-// Note: Each array position = one week. Position 0 = Week 1, Position 1 = Week 2, etc.
-// Week 1 (index 0) has 24 PACEs total (4 per subject) - OVERLOADED to show warning!
-const initialProjectionData: { Q1: QuarterData, Q2: QuarterData, Q3: QuarterData, Q4: QuarterData } = {
-  Q1: {
-    Math: [
-      createPace("1001", 95, true, [
-        { grade: 75, date: "2024-09-15", note: "Primera vez - necesita repasar multiplicación" },
-        { grade: 82, date: "2024-09-20", note: "Mejor, pero aún tiene errores" },
-        { grade: 95, date: "2024-09-25" }
-      ]),
-      createPace("1002", 88, true),
-      createPace("1003", 92),
-      createPace("1004", 85, true),
-      null, null, null, null,
-      createPace("1005")
-    ],
-    English: [
-      createPace("1011", 92, true),
-      createPace("1012", 85),
-      createPace("1013", 90),
-      createPace("1014"),
-      null, null, null, null,
-      createPace("1015")
-    ],
-    Science: [
-      createPace("1021", 85, true),
-      createPace("1022", 88),
-      createPace("1023", 84),
-      createPace("1024"),
-      null, null, null, null,
-      createPace("1025")
-    ],
-    "Social Studies": [
-      createPace("1031", 90, true),
-      createPace("1032", 87),
-      createPace("1033", 92),
-      createPace("1034"),
-      null, null, null, null,
-      createPace("1035")
-    ],
-    "Word Building": [
-      createPace("1041", 78, true, [
-        { grade: 65, date: "2024-09-10", note: "Dificultad con vocabulario nuevo" },
-        { grade: 72, date: "2024-09-17", note: "Mejorando pero necesita más práctica" },
-        { grade: 78, date: "2024-09-22", note: "Aún no alcanza el 80% requerido" }
-      ]),
-      createPace("1042", 80),
-      createPace("1043", 83),
-      createPace("1044"),
-      null, null, null, null,
-      createPace("1045")
-    ],
-    Spanish: [
-      createPace("1051", 88, true, [
-        { grade: 88, date: "2024-09-12" }
-      ]),
-      createPace("1052", 85),
-      createPace("1053", 90),
-      createPace("1054"),
-      null, null, null, null,
-      createPace("1055")
-    ]
-  },
-  Q2: {
-    Math: [createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null, null],
-    English: [createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null, null],
-    Science: [null, null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006")],
-    "Social Studies": [null, null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006")],
-    "Word Building": [null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null],
-    Spanish: [null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null]
-  },
-  Q3: {
-    Math: [createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null, null],
-    English: [createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null, null],
-    Science: [null, null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009")],
-    "Social Studies": [null, null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009")],
-    "Word Building": [null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null],
-    Spanish: [null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null]
-  },
-  Q4: {
-    Math: [createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null, null],
-    English: [createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null, null],
-    Science: [null, null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012")],
-    "Social Studies": [null, null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012")],
-    "Word Building": [null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null],
-    Spanish: [null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null]
-  },
+// Empty initial state (will be replaced by API data)
+const initialProjectionData = {
+  Q1: createEmptyQuarterData(),
+  Q2: createEmptyQuarterData(),
+  Q3: createEmptyQuarterData(),
+  Q4: createEmptyQuarterData(),
 }
 
 export default function ACEProjectionPage() {
@@ -143,6 +45,11 @@ export default function ACEProjectionPage() {
     subject: string
     weekIndex: number
   } | null>(null)
+  const [errorDialog, setErrorDialog] = React.useState<{
+    open: boolean
+    title?: string
+    message: string
+  }>({ open: false, message: "" })
 
   // Fetch projection detail from API
   React.useEffect(() => {
@@ -175,7 +82,7 @@ export default function ACEProjectionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, projectionId])
 
-  // Helper function to convert API pace detail to PaceData
+  // Helper function to convert API pace detail to PaceData (including ID for updates)
   const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
     const result: QuarterData = {}
 
@@ -184,6 +91,7 @@ export default function ACEProjectionPage() {
         if (!pace) return null
 
         return {
+          id: pace.id, // Include ID for updates/deletes
           number: pace.number,
           grade: pace.grade,
           isCompleted: pace.isCompleted,
@@ -206,62 +114,107 @@ export default function ACEProjectionPage() {
   const currentWeekInQuarter = 5
   const currentSchoolWeek = 14 // Overall week 14 = Q2 Week 5
 
-  // Handle drag and drop
-  const handlePaceDrop = (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
-      const pace = subjectPaces[fromWeek]
-      subjectPaces[fromWeek] = subjectPaces[toWeek]
-      subjectPaces[toWeek] = pace
+  // Handle drag and drop - SAVES TO DATABASE
+  const handlePaceDrop = async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
+    if (!studentId || !projectionId) return
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const fromPace = quarterData[subject][fromWeek]
+      const toPace = quarterData[subject][toWeek]
+
+      // Move the dragged PACE to the target position
+      if (fromPace && fromPace.id) {
+        await api.projections.movePace(studentId, projectionId, fromPace.id, {
+          quarter,
+          week: toWeek + 1 // Convert index to week number
+        })
       }
-    })
+
+      // If there was a PACE at the target position, swap it
+      if (toPace && toPace.id) {
+        await api.projections.movePace(studentId, projectionId, toPace.id, {
+          quarter,
+          week: fromWeek + 1 // Convert index to week number
+        })
+      }
+
+      // Reload projection data to reflect changes
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
+    } catch (err) {
+      console.error('Error moving PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error Moving PACE",
+        message: err instanceof Error ? err.message : 'Failed to move PACE'
+      })
+
+      // Reload data to revert UI on error
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed move:', reloadErr)
+      }
+    }
   }
 
-  // Handle pace completion and grade
-  const handlePaceToggle = (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
-      const pace = subjectPaces[weekIndex]
+  // Handle pace completion and grade - SAVES TO DATABASE
+  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
+    if (!studentId || !projectionId) return
 
-      if (pace) {
-        if (pace.isCompleted && grade === undefined) {
-          // If already completed and no grade provided, uncomplete it
-          subjectPaces[weekIndex] = { ...pace, isCompleted: false, grade: null }
-        } else if (grade !== undefined) {
-          // If grade provided, complete and set grade
-          const newHistory = comment ? [
-            ...(pace.gradeHistory || []),
-            {
-              grade,
-              date: new Date().toISOString(),
-              note: comment
-            }
-          ] : pace.gradeHistory
-          subjectPaces[weekIndex] = { ...pace, isCompleted: true, grade, gradeHistory: newHistory }
-        } else {
-          // If not completed and no grade, just toggle (prompt for grade in component)
-          // Component will handle prompting for grade
-          subjectPaces[weekIndex] = { ...pace, isCompleted: !pace.isCompleted }
-        }
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const pace = quarterData[subject][weekIndex]
+
+      if (!pace || !('id' in pace)) {
+        console.error('PACE not found or missing ID')
+        return
       }
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
+      const paceId = pace.id!
+
+      if (grade !== undefined) {
+        // Update grade
+        await api.projections.updatePaceGrade(studentId, projectionId, paceId, {
+          grade,
+          note: comment,
+        })
+
+        // Reload projection data
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
         }
+        setProjectionData(convertedData)
       }
-    })
+    } catch (err) {
+      console.error('Error updating PACE grade:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error Updating Grade",
+        message: err instanceof Error ? err.message : 'Failed to update PACE grade'
+      })
+    }
   }
 
   // Handle week click to navigate to daily goals
@@ -303,28 +256,51 @@ export default function ACEProjectionPage() {
 
       setPacePickerContext(null)
     } catch (err) {
-      console.error('Error adding PACE:', err)
-      alert(err instanceof Error ? err.message : 'Failed to add PACE')
+      console.error('Error agregando PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error agregando PACE",
+        message: err instanceof Error ? err.message : 'Error al agregar PACE'
+      })
     }
   }
 
-  // Handle deleting a pace
-  const handleDeletePace = (quarter: string, subject: string, weekIndex: number) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
+  // Handle deleting a pace - SAVES TO DATABASE
+  const handleDeletePace = async (quarter: string, subject: string, weekIndex: number) => {
+    if (!studentId || !projectionId) return
 
-      // Remove pace by setting to null
-      subjectPaces[weekIndex] = null
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const pace = quarterData[subject][weekIndex]
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+      if (!pace || !('id' in pace)) {
+        console.error('PACE no encontrado o ID faltante')
+        return
       }
-    })
+
+      const paceId = pace.id!
+
+      // Remove PACE from projection
+      await api.projections.removePace(studentId, projectionId, paceId)
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
+    } catch (err) {
+      console.error('Error eliminando PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error eliminando PACE",
+        message: err instanceof Error ? err.message : 'Error al eliminar PACE'
+      })
+    }
   }
 
   const getInitials = (name: string) => {
@@ -374,13 +350,18 @@ export default function ACEProjectionPage() {
     )
   }
 
-  // Use projection detail for student data if available
+  // Use projection detail for student data
   const student = projectionDetail ? {
     id: projectionDetail.studentId,
     name: projectionDetail.student.fullName,
     currentGrade: projectionDetail.student.currentLevel || 'N/A',
     schoolYear: projectionDetail.schoolYear,
-  } : mockStudent
+  } : {
+    id: '',
+    name: 'Cargando...',
+    currentGrade: '',
+    schoolYear: ''
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -520,6 +501,18 @@ export default function ACEProjectionPage() {
           onDeletePace={handleDeletePace}
         />
       </div>
+
+      {/* Error Dialog */}
+      <AlertDialog
+        isOpen={errorDialog.open}
+        title={errorDialog.title || "Error"}
+        message={errorDialog.message}
+        confirmText="Entendido"
+        cancelText=""
+        variant="danger"
+        onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+        onCancel={() => setErrorDialog(prev => ({ ...prev, open: false }))}
+      />
     </div>
   )
 }

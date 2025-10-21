@@ -5,6 +5,7 @@ export interface GradeHistory {
 }
 
 export interface PaceData {
+  id?: string // ProjectionPace ID for API operations
   number: string
   grade: number | null // Grade score 0-100, null if not graded yet
   isCompleted: boolean

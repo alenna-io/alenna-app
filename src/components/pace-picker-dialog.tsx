@@ -155,7 +155,7 @@ export function PacePickerDialog({
                       </Badge>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" className="cursor-pointer">
                     Seleccionar
                   </Button>
                 </div>
@@ -165,7 +165,7 @@ export function PacePickerDialog({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="cursor-pointer">
             Cancelar
           </Button>
         </div>
