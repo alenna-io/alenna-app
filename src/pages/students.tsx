@@ -288,10 +288,10 @@ export default function StudentsPage() {
           <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
           <div className="flex-1">
             <h3 className="font-semibold text-red-900 dark:text-red-100">
-              Error Loading Students
+              Error al cargar
             </h3>
             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {error}. Please make sure you're connected to the API and try refreshing the page.
+              {error}
             </p>
           </div>
         </div>
