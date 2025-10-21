@@ -141,8 +141,8 @@ export function ACEQuarterlyTable({
   }
 
   const handleAddPaceClick = (subject: string, weekIndex: number) => {
-    setAddingPace({ subject, weekIndex })
-    setPaceNumberInput("")
+    // Directly call onAddPace to open the picker dialog
+    onAddPace?.(quarter, subject, weekIndex)
   }
 
   const handleAddPaceSubmit = (subject: string, weekIndex: number) => {

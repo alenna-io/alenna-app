@@ -9,6 +9,7 @@ import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import type { PaceData, QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
+import { PacePickerDialog } from "@/components/pace-picker-dialog"
 
 interface Student {
   id: string
@@ -136,6 +137,12 @@ export default function ACEProjectionPage() {
   const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
+  const [pacePickerContext, setPacePickerContext] = React.useState<{
+    quarter: string
+    subject: string
+    weekIndex: number
+  } | null>(null)
 
   // Fetch projection detail from API
   React.useEffect(() => {
@@ -262,27 +269,43 @@ export default function ACEProjectionPage() {
     navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
   }
 
-  // Handle adding new pace
-  const handleAddPace = (quarter: string, subject: string, weekIndex: number, paceNumber: string) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
+  // Handle adding new pace - Opens PACE picker
+  const handleAddPace = (quarter: string, subject: string, weekIndex: number) => {
+    // Open PACE picker dialog
+    setPacePickerContext({ quarter, subject, weekIndex })
+    setPacePickerOpen(true)
+  }
 
-      // Add new pace at this position
-      subjectPaces[weekIndex] = {
-        number: paceNumber,
-        grade: null,
-        isCompleted: false
-      }
+  // Handle PACE selection from picker - SAVES TO DATABASE
+  const handlePaceSelect = async (paceId: string) => {
+    if (!studentId || !projectionId || !pacePickerContext) return
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+    try {
+      const { quarter, weekIndex } = pacePickerContext
+
+      // Add PACE to projection
+      await api.projections.addPace(studentId, projectionId, {
+        paceCatalogId: paceId,
+        quarter,
+        week: weekIndex + 1
+      })
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
       }
-    })
+      setProjectionData(convertedData)
+
+      setPacePickerContext(null)
+    } catch (err) {
+      console.error('Error adding PACE:', err)
+      alert(err instanceof Error ? err.message : 'Failed to add PACE')
+    }
   }
 
   // Handle deleting a pace
@@ -430,6 +453,21 @@ export default function ACEProjectionPage() {
           Planificación semanal por bloque para el año escolar {student.schoolYear}
         </p>
       </div>
+
+      {/* PACE Picker Dialog */}
+      {pacePickerContext && (
+        <PacePickerDialog
+          open={pacePickerOpen}
+          onClose={() => {
+            setPacePickerOpen(false)
+            setPacePickerContext(null)
+          }}
+          onSelect={handlePaceSelect}
+          categoryFilter={pacePickerContext.subject}
+          levelFilter={projectionDetail?.student.currentLevel}
+          title={`Agregar PACE - ${pacePickerContext.subject} (${pacePickerContext.quarter} Semana ${pacePickerContext.weekIndex + 1})`}
+        />
+      )}
 
       {/* Quarterly Tables */}
       <div className="space-y-4 md:space-y-8">

@@ -67,6 +67,19 @@ export const projectionsApi = {
     apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (studentId: string, id: string, token: string | null) => 
     apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'DELETE' }),
+  addPace: (studentId: string, projectionId: string, data: { paceCatalogId: string, quarter: string, week: number }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/paces`, token, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// PACE Catalog API
+export const paceCatalogApi = {
+  get: (filters: { category?: string, level?: string }, token: string | null) => {
+    const params = new URLSearchParams();
+    if (filters.category) params.append('category', filters.category);
+    if (filters.level) params.append('level', filters.level);
+    const query = params.toString();
+    return apiFetch(`/pace-catalog${query ? '?' + query : ''}`, token);
+  },
 };
 
 // Auth API
@@ -134,6 +147,16 @@ export function useApi() {
       delete: async (studentId: string, id: string) => {
         const token = await getToken();
         return projectionsApi.delete(studentId, id, token);
+      },
+      addPace: async (studentId: string, projectionId: string, data: { paceCatalogId: string, quarter: string, week: number }) => {
+        const token = await getToken();
+        return projectionsApi.addPace(studentId, projectionId, data, token);
+      },
+    },
+    paceCatalog: {
+      get: async (filters: { category?: string, level?: string } = {}) => {
+        const token = await getToken();
+        return paceCatalogApi.get(filters, token);
       },
     },
     auth: {
