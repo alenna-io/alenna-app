@@ -7,6 +7,8 @@ import { BackButton } from "@/components/ui/back-button"
 import { Calendar, GraduationCap, Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import type { PaceData, QuarterData } from "@/types/pace"
+import { useApi } from "@/services/api"
+import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 
 interface Student {
   id: string
@@ -129,7 +131,67 @@ const initialProjectionData: { Q1: QuarterData, Q2: QuarterData, Q3: QuarterData
 export default function ACEProjectionPage() {
   const navigate = useNavigate()
   const { studentId, projectionId } = useParams()
+  const api = useApi()
   const [projectionData, setProjectionData] = React.useState(initialProjectionData)
+  const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Fetch projection detail from API
+  React.useEffect(() => {
+    const fetchProjectionDetail = async () => {
+      if (!studentId || !projectionId) return
+
+      try {
+        setLoading(true)
+        setError(null)
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+
+        // Convert API data to the format expected by ACEQuarterlyTable
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (err) {
+        console.error('Error fetching projection detail:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load projection')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjectionDetail()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, projectionId])
+
+  // Helper function to convert API pace detail to PaceData
+  const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
+    const result: QuarterData = {}
+
+    Object.keys(quarterPaces).forEach(subject => {
+      result[subject] = quarterPaces[subject].map(pace => {
+        if (!pace) return null
+
+        return {
+          number: pace.number,
+          grade: pace.grade,
+          isCompleted: pace.isCompleted,
+          isFailed: pace.isFailed,
+          gradeHistory: pace.gradeHistory.map(gh => ({
+            grade: gh.grade,
+            date: gh.date,
+            note: gh.note,
+          })),
+        }
+      })
+    })
+
+    return result
+  }
 
   // Calculate current week (mock - in real app this would come from backend)
   // For demo: Q2, Week 5
@@ -251,6 +313,52 @@ export default function ACEProjectionPage() {
       .slice(0, 2)
   }
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+            <span className="hidden sm:inline">Volver a Proyecciones</span>
+            <span className="sm:hidden">Volver</span>
+          </BackButton>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-muted-foreground">Cargando proyección...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+            <span className="hidden sm:inline">Volver a Proyecciones</span>
+            <span className="sm:hidden">Volver</span>
+          </BackButton>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Use projection detail for student data if available
+  const student = projectionDetail ? {
+    id: projectionDetail.studentId,
+    name: projectionDetail.student.fullName,
+    currentGrade: projectionDetail.student.currentLevel || 'N/A',
+    schoolYear: projectionDetail.schoolYear,
+  } : mockStudent
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
@@ -292,19 +400,19 @@ export default function ACEProjectionPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
             <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
               <AvatarFallback className="text-xl md:text-2xl font-semibold">
-                {getInitials(mockStudent.name)}
+                {getInitials(student.name)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{mockStudent.name}</h1>
+              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{student.name}</h1>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{mockStudent.currentGrade}</span>
+                  <span>{student.currentGrade}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Año Escolar: {mockStudent.schoolYear}</span>
+                  <span className="truncate">Año Escolar: {student.schoolYear}</span>
                 </div>
               </div>
             </div>
@@ -319,7 +427,7 @@ export default function ACEProjectionPage() {
       <div>
         <h2 className="text-xl md:text-2xl font-bold">Proyección de PACEs</h2>
         <p className="text-sm md:text-base text-muted-foreground">
-          Planificación semanal por bloque para el año escolar {mockStudent.schoolYear}
+          Planificación semanal por bloque para el año escolar {student.schoolYear}
         </p>
       </div>
 

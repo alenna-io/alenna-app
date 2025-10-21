@@ -9,12 +9,19 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
     throw new Error('Authentication token required');
   }
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    'Authorization': `Bearer ${token}`,
   };
 
-  headers['Authorization'] = `Bearer ${token}`;
+  // Merge any additional headers
+  if (options.headers) {
+    Object.entries(options.headers).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        headers[key] = value;
+      }
+    });
+  }
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
@@ -52,6 +59,8 @@ export const projectionsApi = {
     apiFetch(`/students/${studentId}/projections`, token),
   getById: (studentId: string, id: string, token: string | null) => 
     apiFetch(`/students/${studentId}/projections/${id}`, token),
+  getDetail: (studentId: string, id: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${id}/detail`, token),
   create: (studentId: string, data: Record<string, unknown>, token: string | null) => 
     apiFetch(`/students/${studentId}/projections`, token, { method: 'POST', body: JSON.stringify(data) }),
   update: (studentId: string, id: string, data: Record<string, unknown>, token: string | null) => 
@@ -109,6 +118,10 @@ export function useApi() {
       getById: async (studentId: string, id: string) => {
         const token = await getToken();
         return projectionsApi.getById(studentId, id, token);
+      },
+      getDetail: async (studentId: string, id: string) => {
+        const token = await getToken();
+        return projectionsApi.getDetail(studentId, id, token);
       },
       create: async (studentId: string, data: Record<string, unknown>) => {
         const token = await getToken();
