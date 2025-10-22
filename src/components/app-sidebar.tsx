@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, Settings, Users, FileText, GraduationCap, Loader2 } from "lucide-react"
+import { Home, Settings, Users, FileText, GraduationCap, Loader2, Building } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -22,6 +22,7 @@ import type { ModuleData } from "@/services/api"
 const moduleConfig: Record<string, { url: string; icon: typeof GraduationCap }> = {
   Estudiantes: { url: "/students", icon: GraduationCap },
   Usuarios: { url: "/users", icon: Users },
+  Escuelas: { url: "/schools", icon: Building },
   Configuración: { url: "/configuration", icon: Settings },
   // Add more as modules are created
 }

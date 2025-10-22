@@ -15,6 +15,7 @@ import SchoolInfoPage from '@/pages/school-info'
 import BillingPage from '@/pages/billing'
 import UsersPage from '@/pages/users'
 import UserDetailPage from '@/pages/user-detail'
+import SchoolsPage from '@/pages/schools'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
+          <Route path="schools" element={<SchoolsPage />} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>

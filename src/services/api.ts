@@ -279,9 +279,14 @@ export const dailyGoalsApi = {
 export const schoolsApi = {
   getMy: (token: string | null) => apiFetch('/schools/me', token),
   getAll: (token: string | null) => apiFetch('/schools', token),
-  create: (data: Record<string, unknown>) => apiFetch('/schools', null, { method: 'POST', body: JSON.stringify(data) }),
+  getById: (id: string, token: string | null) => apiFetch(`/schools/${id}`, token),
+  create: (data: Record<string, unknown>, token: string | null) => apiFetch('/schools/admin/create', token, { method: 'POST', body: JSON.stringify(data) }),
   update: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/schools/me', token, { method: 'PUT', body: JSON.stringify(data) }),
+  updateById: (id: string, data: Record<string, unknown>, token: string | null) =>
+    apiFetch(`/schools/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) =>
+    apiFetch(`/schools/${id}`, token, { method: 'DELETE' }),
 };
 
 // Custom hook for authenticated API calls
@@ -392,10 +397,25 @@ export function useApi() {
         const token = await getToken();
         return schoolsApi.getAll(token);
       },
-      create: schoolsApi.create,
+      getById: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getById(id, token);
+      },
+      create: async (data: Record<string, unknown>) => {
+        const token = await getToken();
+        return schoolsApi.create(data, token);
+      },
       update: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolsApi.update(data, token);
+      },
+      updateById: async (id: string, data: Record<string, unknown>) => {
+        const token = await getToken();
+        return schoolsApi.updateById(id, data, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.delete(id, token);
       },
     },
     schoolYears: {
