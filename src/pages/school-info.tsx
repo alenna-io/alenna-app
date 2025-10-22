@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Building2, Mail, Phone, MapPin, Lock } from "lucide-react";
 import { useApi } from "@/services/api";
-import { NoPermission } from "@/components/no-permission";
+import { Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 
 interface SchoolInfo {
@@ -48,7 +48,7 @@ export default function SchoolInfoPage() {
   }, []);
 
   if (!hasPermission) {
-    return <NoPermission onBack={() => navigate("/configuration")} />;
+    return <Navigate to="/404" replace />;
   }
 
   if (loading) {

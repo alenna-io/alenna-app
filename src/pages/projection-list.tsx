@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BackButton } from "@/components/ui/back-button"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
-import { NoPermission } from "@/components/no-permission"
+import { Navigate } from "react-router-dom"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { EmptyState } from "@/components/ui/empty-state"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
@@ -50,8 +50,8 @@ export default function ProjectionListPage() {
         const error = err as Error
         console.error('Error fetching data:', error)
         if (isMounted) {
-          // Check if it's a permission error
-          if (error.message?.includes('permiso')) {
+          // Check if it's a permission error or not found error
+          if (error.message?.includes('permiso') || error.message?.includes('not found') || error.message?.includes('Student not found') || error.message?.includes('no encontrada') || error.message?.includes('no encontrado')) {
             setHasPermission(false)
           } else {
             setError(error.message || 'Failed to load data')
@@ -75,7 +75,7 @@ export default function ProjectionListPage() {
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
-    return <NoPermission onBack={() => navigate(`/students/${studentId}`)} />
+    return <Navigate to="/404" replace />
   }
 
   if (isLoading) {

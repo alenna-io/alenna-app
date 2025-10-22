@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
@@ -134,13 +134,7 @@ export default function ConfigurationPage() {
       </div>
 
       {accessibleModules.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Sin Acceso</h3>
-            <p className="text-muted-foreground">No tienes permisos para acceder a ningún módulo de configuración</p>
-          </CardContent>
-        </Card>
+        <Navigate to="/404" replace />
       )}
     </div>
   );

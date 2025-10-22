@@ -1,6 +1,4 @@
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { CreditCard, DollarSign, Calendar, CheckCircle, Clock, Info } from "lucide-react";
 
 export default function BillingPage() {
-  const navigate = useNavigate();
 
   // Mock data - will be replaced with real API calls
   const subscription = {

@@ -5,14 +5,14 @@ import { BackButton } from "@/components/ui/back-button"
 import { Badge } from "@/components/ui/badge"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
-import { GraduationCap, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ErrorDialog } from "@/components/ui/error-dialog"
-// NoPermission replaced with shadcn Card components
+import { Navigate } from "react-router-dom"
 import type { UserInfo, CurrentWeekInfo } from "@/services/api"
 
 
@@ -111,8 +111,8 @@ export default function ACEProjectionPage() {
         console.error('Error fetching projection detail:', err)
         const errorMessage = err instanceof Error ? err.message : 'Failed to load projection'
 
-        // Check if it's a permission error
-        if (errorMessage.includes('permiso')) {
+        // Check if it's a permission error or not found error
+        if (errorMessage.includes('permiso') || errorMessage.includes('not found') || errorMessage.includes('Student not found') || errorMessage.includes('Proyección no encontrada') || errorMessage.includes('no encontrada') || errorMessage.includes('no encontrado')) {
           setHasPermission(false)
         } else {
           setError(errorMessage)
@@ -360,24 +360,7 @@ export default function ACEProjectionPage() {
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
-    return (
-      <div className="space-y-6">
-        <BackButton to={`/students/${studentId}/projections`}>
-          Volver a Proyecciones
-        </BackButton>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <GraduationCap className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Sin Acceso</h3>
-            <p className="text-muted-foreground mb-4">
-              No tienes permisos para acceder a esta sección
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/404" replace />;
   }
 
   // Show loading state

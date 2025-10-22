@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorDialog } from "@/components/ui/error-dialog";
 import { PageHeader } from "@/components/ui/page-header";
-// NoPermission replaced with shadcn Card components
+import { Navigate } from "react-router-dom";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Plus, Edit, Trash2, CheckCircle, Calendar } from "lucide-react";
 import { useApi } from "@/services/api";
@@ -244,24 +244,7 @@ export default function SchoolYearsPage() {
   };
 
   if (!hasPermission) {
-    return (
-      <div className="space-y-6">
-        <BackButton to="/configuration">
-          Volver a Configuración
-        </BackButton>
-        <Card>
-          <CardContent className="py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <CheckCircle className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Sin Acceso</h3>
-            <p className="text-muted-foreground mb-4">
-              No tienes permisos para acceder a esta sección
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <Navigate to="/404" replace />;
   }
 
   if (loading) {

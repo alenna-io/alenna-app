@@ -67,6 +67,7 @@ export default function App() {
         </Route>
 
         {/* Catch all - show 404 */}
+        <Route path="/404" element={<NotFoundPage isUnauthorized={true} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

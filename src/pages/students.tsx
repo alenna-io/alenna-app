@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
-import { NoPermission } from "@/components/no-permission"
+import { Navigate } from "react-router-dom"
 import { ParentChildrenView } from "@/components/parent-children-view"
 import { Search } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
@@ -172,8 +172,8 @@ export default function StudentsPage() {
         const error = err as Error
         console.error('Error fetching student:', error)
         if (isMounted) {
-          // Check if it's a permission error (403)
-          if (error.message?.includes('permiso')) {
+          // Check if it's a permission error (403) or not found error (404)
+          if (error.message?.includes('permiso') || error.message?.includes('not found') || error.message?.includes('Student not found') || error.message?.includes('no encontrada') || error.message?.includes('no encontrado')) {
             setHasPermission(false)
           } else {
             setStudentError(error.message || 'Failed to load student')
@@ -282,7 +282,7 @@ export default function StudentsPage() {
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
-    return <NoPermission onBack={() => navigate('/dashboard')} />
+    return <Navigate to="/404" replace />
   }
 
   // Show loading state when fetching student profile
