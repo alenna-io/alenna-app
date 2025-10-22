@@ -271,24 +271,40 @@ export default function SchoolYearsPage() {
 
       {/* Form for creating/editing */}
       {(isCreating || editingYear) && (
-        <Card className="mb-6 shadow-none">
-          <CardHeader className="pb-6">
-            <CardTitle>{isCreating ? "Crear Nuevo Año Escolar" : "Editar Año Escolar"}</CardTitle>
-            <CardDescription>Define el año escolar y sus 4 trimestres con fechas de inicio y fin</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            {/* School Year Info */}
+        <div className="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {isCreating ? "Crear Nuevo Año Escolar" : "Editar Año Escolar"}
+              </h2>
+              <p className="text-sm text-gray-600">
+                {isCreating ? "Configura un nuevo año académico para tu escuela" : "Modifica la configuración del año académico"}
+              </p>
+            </div>
+          </div>
+
+          {/* School Year Basic Info */}
+          <div className="bg-white rounded-lg p-4 mb-4 shadow-sm">
+            <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Información Básica
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Nombre del Año Escolar</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Nombre del Año Escolar</label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="2024-2025"
+                  placeholder="Ej: 2024-2025"
+                  className="text-lg"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Fecha de Inicio</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Fecha de Inicio</label>
                 <DatePicker
                   value={formData.startDate}
                   onChange={(date) => setFormData({ ...formData, startDate: date })}
@@ -297,8 +313,8 @@ export default function SchoolYearsPage() {
                   max="2050-12-31"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Fecha de Fin</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Fecha de Fin</label>
                 <DatePicker
                   value={formData.endDate}
                   onChange={(date) => setFormData({ ...formData, endDate: date })}
@@ -308,93 +324,101 @@ export default function SchoolYearsPage() {
                 />
               </div>
             </div>
+          </div>
 
-            {/* Quarters */}
+          {/* Quarters */}
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Configuración de Trimestres
+            </h3>
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Trimestres</h3>
               {formData.quarters.map((quarter, index) => (
-                <Card key={quarter.name} className="shadow-none border-0">
-                  <CardContent className="p-0">
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Nombre</label>
-                        <Input
-                          value={quarter.displayName}
-                          onChange={(e) => {
-                            const newQuarters = [...formData.quarters];
-                            newQuarters[index].displayName = e.target.value;
-                            setFormData({ ...formData, quarters: newQuarters });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Fecha Inicio</label>
-                        <DatePicker
-                          value={quarter.startDate}
-                          onChange={(date) => {
-                            const newQuarters = [...formData.quarters];
-                            newQuarters[index].startDate = date;
-                            setFormData({ ...formData, quarters: newQuarters });
-                          }}
-                          placeholder="Fecha inicio"
-                          min="2020-01-01"
-                          max="2050-12-31"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Fecha Fin</label>
-                        <DatePicker
-                          value={quarter.endDate}
-                          onChange={(date) => {
-                            const newQuarters = [...formData.quarters];
-                            newQuarters[index].endDate = date;
-                            setFormData({ ...formData, quarters: newQuarters });
-                          }}
-                          placeholder="Fecha fin"
-                          min="2020-01-01"
-                          max="2050-12-31"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Orden</label>
-                        <Input type="number" value={quarter.order} disabled />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Semanas</label>
-                        <Input
-                          type="number"
-                          value={quarter.weeksCount}
-                          onChange={(e) => {
-                            const newQuarters = [...formData.quarters];
-                            newQuarters[index].weeksCount = parseInt(e.target.value) || 9;
-                            setFormData({ ...formData, quarters: newQuarters });
-                          }}
-                        />
-                      </div>
+                <div key={quarter.name} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-green-700">{quarter.order}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <h4 className="font-medium text-gray-900">{quarter.displayName}</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Nombre del Trimestre</label>
+                      <Input
+                        value={quarter.displayName}
+                        onChange={(e) => {
+                          const newQuarters = [...formData.quarters];
+                          newQuarters[index].displayName = e.target.value;
+                          setFormData({ ...formData, quarters: newQuarters });
+                        }}
+                        placeholder="Ej: Primer Trimestre"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Fecha de Inicio</label>
+                      <DatePicker
+                        value={quarter.startDate}
+                        onChange={(date) => {
+                          const newQuarters = [...formData.quarters];
+                          newQuarters[index].startDate = date;
+                          setFormData({ ...formData, quarters: newQuarters });
+                        }}
+                        placeholder="Fecha inicio"
+                        min="2020-01-01"
+                        max="2050-12-31"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Fecha de Fin</label>
+                      <DatePicker
+                        value={quarter.endDate}
+                        onChange={(date) => {
+                          const newQuarters = [...formData.quarters];
+                          newQuarters[index].endDate = date;
+                          setFormData({ ...formData, quarters: newQuarters });
+                        }}
+                        placeholder="Fecha fin"
+                        min="2020-01-01"
+                        max="2050-12-31"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Semanas</label>
+                      <Input
+                        type="number"
+                        value={quarter.weeksCount}
+                        onChange={(e) => {
+                          const newQuarters = [...formData.quarters];
+                          newQuarters[index].weeksCount = parseInt(e.target.value) || 9;
+                          setFormData({ ...formData, quarters: newQuarters });
+                        }}
+                        placeholder="9"
+                        className="text-center"
+                      />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
+          </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsCreating(false);
-                  setEditingYear(null);
-                }}
-                className="cursor-pointer"
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} className="cursor-pointer">
-                {isCreating ? "Crear" : "Guardar Cambios"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Actions */}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreating(false);
+                setEditingYear(null);
+              }}
+              className="cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} className="cursor-pointer bg-blue-600 hover:bg-blue-700">
+              {isCreating ? "Crear Año Escolar" : "Guardar Cambios"}
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* List of school years */}
