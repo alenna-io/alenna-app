@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { BackButton } from "@/components/ui/back-button"
+// BackButton replaced with shadcn Button
 import { Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import type { Student } from "@/types/student"
@@ -10,26 +11,23 @@ import type { Student } from "@/types/student"
 interface StudentProfileProps {
   student: Student
   onBack: () => void
+  isParentView?: boolean
 }
 
-export function StudentProfile({ student, onBack }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <BackButton onClick={onBack}>
-          Volver a Estudiantes
-        </BackButton>
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="mb-4"
+        >
+          ← Volver a Estudiantes
+        </Button>
       </div>
 
       <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
@@ -140,9 +138,9 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Proyecciones A.C.E.
+                Proyecciones Académicas
               </CardTitle>
-              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)}>
+              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
                 Ver Todas
               </LinkButton>
             </div>
@@ -155,52 +153,54 @@ export function StudentProfile({ student, onBack }: StudentProfileProps) {
               variant="default"
               size="default"
               showChevron={false}
-              className="w-full"
+              className="w-full cursor-pointer"
               onClick={() => navigate(`/students/${student.id}/projections`)}
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Administrar Proyecciones
+              {isParentView ? 'Ver Proyecciones' : 'Administrar Proyecciones'}
             </LinkButton>
           </CardContent>
         </Card>
 
-        {/* Parents Information */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Información de Padres</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {student.parents.length > 0 ? (
-              <div className="space-y-2">
-                {student.parents.map((parent) => (
-                  <div
-                    key={parent.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback>
-                        {getInitials(parent.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{parent.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Padre/Madre
-                      </p>
+        {/* Parents Information - Hidden for parent users */}
+        {!isParentView && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Información de Padres</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {student.parents.length > 0 ? (
+                <div className="space-y-2">
+                  {student.parents.map((parent) => (
+                    <div
+                      key={parent.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>
+                          {getInitials(parent.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{parent.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Padre/Madre
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="ml-auto" style={{ cursor: 'pointer' }}>
+                        Ver Perfil
+                      </Button>
                     </div>
-                    <Button variant="outline" size="sm" className="ml-auto">
-                      Ver Perfil
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">
-                No se ha registrado información de padres
-              </p>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No se ha registrado información de padres
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

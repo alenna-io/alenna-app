@@ -14,6 +14,8 @@ A modern, responsive educational management platform built with React, TypeScrip
 
 ### 🛠️ Technical Features
 - **🔐 Authentication** - Secure user authentication with Clerk
+- **🏫 Multi-Tenant Architecture** - Data isolation by school/organization
+- **🔌 REST API Integration** - Connected to Node.js/Express backend
 - **📱 Mobile-First Design** - Fully responsive across all devices
 - **🎨 Modern UI** - Beautiful interface built with shadcn/ui components
 - **🗂️ Smart Navigation** - Collapsible sidebar with intuitive routing
@@ -56,10 +58,16 @@ pnpm install
 Create a `.env` file in the root directory:
 
 ```env
+# Backend API URL
+VITE_API_URL=http://localhost:3000/api/v1
+
+# Clerk Authentication (Frontend)
 VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
 ```
 
 Get your Clerk keys from [clerk.com](https://clerk.com)
+
+**Note**: Make sure the backend API is running before starting the frontend. See `../alenna-api/README.md` for backend setup instructions.
 
 ### 4. Run the development server
 

@@ -2,7 +2,15 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { InfoDialog } from "@/components/ui/info-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
@@ -12,6 +20,7 @@ interface QuarterlyTableProps {
   data: QuarterData
   currentWeek?: number // 1-9 for the current week in this quarter, undefined if not current
   isActive?: boolean // Whether this quarter contains the current week
+  isReadOnly?: boolean // Read-only mode for parents
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -32,6 +41,7 @@ export function ACEQuarterlyTable({
   data,
   currentWeek,
   isActive = false,
+  isReadOnly = false,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -141,8 +151,8 @@ export function ACEQuarterlyTable({
   }
 
   const handleAddPaceClick = (subject: string, weekIndex: number) => {
-    setAddingPace({ subject, weekIndex })
-    setPaceNumberInput("")
+    // Directly call onAddPace to open the picker dialog
+    onAddPace?.(quarter, subject, weekIndex, '')
   }
 
   const handleAddPaceSubmit = (subject: string, weekIndex: number) => {
@@ -389,8 +399,8 @@ export function ACEQuarterlyTable({
                         <td
                           key={weekIndex}
                           className="p-2 text-center align-middle border border-gray-300"
-                          draggable={!!pace}
-                          onDragStart={() => setDraggedPace({ subject, weekIndex })}
+                          draggable={!isReadOnly && !!pace}
+                          onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
                           onDragOver={(e) => {
                             if (draggedPace && draggedPace.subject === subject) {
                               e.preventDefault()
@@ -398,7 +408,7 @@ export function ACEQuarterlyTable({
                           }}
                           onDrop={(e) => {
                             e.preventDefault()
-                            if (draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
                               onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                             }
                             setDraggedPace(null)
@@ -492,10 +502,12 @@ export function ACEQuarterlyTable({
                             ) : (
                               <div className="relative flex items-center justify-center w-full group/pace">
                                 <div
-                                  className="inline-flex flex-col items-center cursor-move"
+                                  className={`inline-flex flex-col items-center ${!isReadOnly ? 'cursor-pointer' : ''}`}
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handlePaceClick(subject, weekIndex, pace)
+                                    if (!isReadOnly) {
+                                      handlePaceClick(subject, weekIndex, pace)
+                                    }
                                   }}
                                 >
                                   <Badge
@@ -520,16 +532,18 @@ export function ACEQuarterlyTable({
                                     {pace.grade !== null ? `${pace.grade}%` : "—"}
                                   </span>
                                 </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
-                                  }}
-                                  className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-gray-500" />
-                                </button>
+                                {!isReadOnly && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const rect = e.currentTarget.getBoundingClientRect()
+                                      setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
+                                    }}
+                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </button>
+                                )}
                               </div>
                             )
                           ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
@@ -570,7 +584,7 @@ export function ACEQuarterlyTable({
                                 </button>
                               </div>
                             </div>
-                          ) : (
+                          ) : !isReadOnly ? (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -582,7 +596,7 @@ export function ACEQuarterlyTable({
                                 +
                               </span>
                             </div>
-                          )}
+                          ) : null}
                         </td>
                       ))}
                     </tr>
@@ -688,93 +702,84 @@ export function ACEQuarterlyTable({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={!!deleteDialog}
+      <ConfirmationDialog
+        open={!!deleteDialog}
+        onOpenChange={(open) => !open && setDeleteDialog(null)}
         title="Eliminar PACE"
         message={deleteDialog ? `¿Estás seguro de que deseas eliminar el PACE ${deleteDialog.paceNumber} de ${deleteDialog.subject}?\n\nEsta acción no se puede deshacer.` : ""}
         confirmText="Eliminar"
         cancelText="Cancelar"
-        variant="danger"
+        variant="destructive"
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteDialog(null)}
       />
 
       {/* Alert Dialog */}
-      <ConfirmDialog
-        isOpen={!!alertDialog}
+      <InfoDialog
+        open={!!alertDialog}
+        onOpenChange={(open) => !open && setAlertDialog(null)}
         title={alertDialog?.title || "Alerta"}
         message={alertDialog?.message || ""}
-        confirmText="Entendido"
-        cancelText=""
-        variant="warning"
-        onConfirm={() => setAlertDialog(null)}
-        onCancel={() => setAlertDialog(null)}
+        buttonText="Entendido"
       />
 
       {/* Grade History Dialog */}
-      {historyDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setHistoryDialog(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historial de Calificaciones
-                </h3>
-                <button onClick={() => setHistoryDialog(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                  <X className="h-5 w-5" />
-                </button>
+      <Dialog open={!!historyDialog} onOpenChange={(open) => !open && setHistoryDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historial de Calificaciones
+            </DialogTitle>
+            <DialogDescription>
+              {historyDialog && (
+                <>
+                  PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
+                  Materia: <span className="font-semibold">{historyDialog.subject}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {historyDialog?.history.map((entry, index) => (
+              <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
+                    }`}>{entry.grade}%</span>
+                  <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
+                </div>
+                {entry.note && (
+                  <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
+                )}
               </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span></p>
-                <p className="text-sm text-gray-600">Materia: <span className="font-semibold">{historyDialog.subject}</span></p>
-              </div>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {historyDialog.history.map((entry, index) => (
-                  <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
-                        }`}>{entry.grade}%</span>
-                      <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
-                    </div>
-                    {entry.note && (
-                      <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setHistoryDialog(null)}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setHistoryDialog(null)}
+              className="cursor-pointer"
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Overload Confirmation Dialog */}
-      {confirmAddDialog && (
-        <ConfirmDialog
-          isOpen={true}
-          title="Sobrecarga de Bloque"
-          message={`Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?`}
-          confirmText="Agregar de Todas Formas"
-          cancelText="Cancelar"
-          variant="warning"
-          showRememberOption={true}
-          onConfirm={(remember) => confirmOverloadAdd(remember || false)}
-          onCancel={() => {
-            setConfirmAddDialog(null)
-            setAddingPace(null)
-            setPaceNumberInput("")
-          }}
-        />
-      )}
+      <ConfirmationDialog
+        open={!!confirmAddDialog}
+        onOpenChange={(open) => !open && setConfirmAddDialog(null)}
+        title="Sobrecarga de Bloque"
+        message={confirmAddDialog ? `Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?` : ""}
+        confirmText="Agregar de Todas Formas"
+        cancelText="Cancelar"
+        variant="default"
+        onConfirm={() => {
+          const remember = (document.getElementById('remember-overload') as HTMLInputElement)?.checked || false
+          confirmOverloadAdd(remember)
+        }}
+      />
     </>
   )
 }

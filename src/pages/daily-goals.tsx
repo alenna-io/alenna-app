@@ -1,11 +1,9 @@
 import * as React from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useParams } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
-import { Calendar, Target, GraduationCap, BookOpen } from "lucide-react"
+import { useApi } from "@/services/api"
 import type { DailyGoalData } from "@/types/pace"
 
 interface Student {
@@ -15,61 +13,13 @@ interface Student {
   schoolYear: string
 }
 
-// Mock student data
+// Mock student data (will be replaced with real data later)
 const mockStudent: Student = {
   id: "1",
   name: "Ximena García López",
   currentGrade: "8th Grade",
   schoolYear: "2024-2025"
 }
-
-// Mock daily goals data
-const mockDailyGoals: DailyGoalData = {
-  Math: [
-    { text: "45-46", isCompleted: false },
-    { text: "47-48", isCompleted: false },
-    { text: "49-51", isCompleted: false },
-    { text: "Self Test", isCompleted: false },
-    { text: "", isCompleted: false }
-  ],
-  English: [
-    { text: "1-10", isCompleted: true },
-    { text: "11-20", isCompleted: false },
-    { text: "21-30", isCompleted: false },
-    { text: "31-39", isCompleted: false },
-    { text: "Self Test", isCompleted: false }
-  ],
-  "Word Building": [
-    { text: "7-13", isCompleted: false },
-    { text: "14-21", isCompleted: false },
-    { text: "22-28", isCompleted: false },
-    { text: "29-35", isCompleted: false },
-    { text: "Self Test", isCompleted: false }
-  ],
-  Science: [
-    { text: "45-48", isCompleted: false },
-    { text: "49-52", isCompleted: false },
-    { text: "53-56", isCompleted: false },
-    { text: "57-59", isCompleted: false },
-    { text: "Self Test", isCompleted: false }
-  ],
-  "Social Studies": [
-    { text: "11-19", isCompleted: false },
-    { text: "20-28", isCompleted: false },
-    { text: "29-37", isCompleted: false },
-    { text: "38-46", isCompleted: false },
-    { text: "47-55", isCompleted: false }
-  ],
-  Spanish: [
-    { text: "19-22", isCompleted: false },
-    { text: "23-26", isCompleted: false },
-    { text: "27-30", isCompleted: false },
-    { text: "31-35", isCompleted: false },
-    { text: "Self Test", isCompleted: false }
-  ]
-}
-
-const subjects = Object.keys(mockDailyGoals)
 
 // Helper function to calculate pages from input value
 const calculatePagesFromValue = (value: string): number => {
@@ -108,108 +58,174 @@ const calculatePagesFromValue = (value: string): number => {
 }
 
 export default function DailyGoalsPage() {
-  const navigate = useNavigate()
   const { studentId, projectionId, quarter, week } = useParams()
-  const [goalsData, setGoalsData] = React.useState(mockDailyGoals)
-  const [totalPages, setTotalPages] = React.useState("")
+  const api = useApi()
+  const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Load daily goals from API
+  React.useEffect(() => {
+    const loadDailyGoals = async () => {
+      if (!studentId || !projectionId || !quarter || !week) return
+
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (err) {
+        console.error('Error loading daily goals:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load daily goals')
+        // Fallback to empty data structure
+        const subjects = ['Math', 'English', 'Science', 'Social Studies', 'Word Building', 'Spanish']
+        const emptyData: DailyGoalData = {}
+        subjects.forEach(subject => {
+          emptyData[subject] = Array(5).fill(null).map(() => ({
+            text: '',
+            isCompleted: false,
+            notes: undefined,
+            notesCompleted: false,
+            notesHistory: []
+          }))
+        })
+        setGoalsData(emptyData)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDailyGoals()
+  }, [studentId, projectionId, quarter, week])
 
   // Calculate total pages for a specific day
   const calculateDayTotal = React.useMemo(() => {
     const dayTotals = [0, 0, 0, 0, 0] // 5 days
 
-    subjects.forEach(subject => {
+    Object.keys(goalsData).forEach(subject => {
       goalsData[subject]?.forEach((goal, dayIndex) => {
         const pages = calculatePagesFromValue(goal.text)
         dayTotals[dayIndex] += pages
       })
     })
     return dayTotals
-  }, [goalsData, subjects])
+  }, [goalsData])
 
-  const handleGoalUpdate = (subject: string, dayIndex: number, value: string) => {
-    setGoalsData(prev => ({
-      ...prev,
-      [subject]: prev[subject].map((goal, index) =>
-        index === dayIndex ? { ...goal, text: value } : goal
-      )
-    }))
+  const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+
+      if (currentGoal?.id) {
+        // Update existing goal
+        await api.dailyGoals.update(studentId, projectionId, currentGoal.id, {
+          text: value,
+          subject,
+          quarter,
+          week: parseInt(week),
+          dayOfWeek: dayIndex
+        })
+      } else if (value.trim()) {
+        // Create new goal
+        await api.dailyGoals.create(studentId, projectionId, {
+          subject,
+          quarter,
+          week: parseInt(week),
+          dayOfWeek: dayIndex,
+          text: value,
+          isCompleted: false
+        })
+      }
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error updating goal:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update goal')
+    }
   }
 
-  const handleGoalToggle = (subject: string, dayIndex: number) => {
-    setGoalsData(prev => ({
-      ...prev,
-      [subject]: prev[subject].map((goal, index) => {
-        if (index === dayIndex) {
-          const newCompleted = !goal.isCompleted
+  const handleGoalToggle = async (subject: string, dayIndex: number) => {
+    if (!studentId || !projectionId || !quarter || !week) return
 
-          // If goal is being marked as completed and has pending notes, auto-complete them
-          if (newCompleted && goal.notes && !goal.notesCompleted) {
-            const newHistory = [
-              ...(goal.notesHistory || []),
-              {
-                text: goal.notes,
-                completedDate: new Date().toISOString()
-              }
-            ]
-            return {
-              ...goal,
-              isCompleted: newCompleted,
-              notes: undefined,
-              notesCompleted: undefined,
-              notesHistory: newHistory
-            }
-          }
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id) return
 
-          return { ...goal, isCompleted: newCompleted }
-        }
-        return goal
-      })
-    }))
-  }
+      const newCompleted = !currentGoal.isCompleted
+      await api.dailyGoals.updateCompletion(studentId, projectionId, currentGoal.id, newCompleted)
 
-  const handleNotesUpdate = (subject: string, dayIndex: number, notes: string) => {
-    setGoalsData(prev => ({
-      ...prev,
-      [subject]: prev[subject].map((goal, index) =>
-        index === dayIndex ? { ...goal, notes } : goal
-      )
-    }))
-  }
-
-  const handleNotesToggle = (subject: string, dayIndex: number) => {
-    setGoalsData(prev => ({
-      ...prev,
-      [subject]: prev[subject].map((goal, index) => {
-        if (index === dayIndex && goal.notes && !goal.notesCompleted) {
-          // Move note to history when marking as complete
-          const newHistory = [
-            ...(goal.notesHistory || []),
-            {
-              text: goal.notes,
-              completedDate: new Date().toISOString()
-            }
-          ]
-          return {
-            ...goal,
+      // If goal is being marked as completed and has pending notes, auto-complete them
+      if (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) {
+        try {
+          // Add note to history and clear current note
+          await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
+          await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
             notes: undefined,
-            notesCompleted: undefined,
-            notesHistory: newHistory
-          }
+            notesCompleted: true
+          })
+        } catch (notesErr) {
+          console.error('Error auto-completing notes:', notesErr)
+          // Don't fail the whole operation if notes completion fails
         }
-        return goal
+      }
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error toggling goal completion:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update goal completion')
+    }
+  }
+
+  const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id) return
+
+      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
+        notes: notes || undefined,
+        notesCompleted: false
       })
-    }))
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error updating notes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update notes')
+    }
+  }
+
+  const handleNotesToggle = async (subject: string, dayIndex: number) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id || !currentGoal.notes) return
+
+      // Add note to history and clear current note
+      await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
+      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
+        notes: undefined,
+        notesCompleted: true
+      })
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error completing notes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to complete notes')
+    }
   }
 
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   const getQuarterName = (quarter: string) => {
     const quarterNames: { [key: string]: string } = {
@@ -225,63 +241,55 @@ export default function DailyGoalsPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton onClick={() => navigate(`/students/${studentId}/projections/${projectionId}`)}>
+        <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
           <span className="hidden sm:inline">Volver a Proyección</span>
           <span className="sm:hidden">Volver</span>
         </BackButton>
       </div>
 
-      {/* Student Info Card */}
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-            <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
-              <AvatarFallback className="text-xl md:text-2xl font-semibold">
-                {getInitials(mockStudent.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate flex items-center gap-3">
-                <Target className="h-6 w-6 md:h-8 md:w-8" />
-                {mockStudent.name}
-              </h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{mockStudent.currentGrade}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Año Escolar: {mockStudent.schoolYear}</span>
-                </div>
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-auto">
-              <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
-                {quarter && getQuarterName(quarter)} - Semana {week}
-              </Badge>
-              <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
-                <BookOpen className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                Metas Diarias
-              </Badge>
-            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      {/* Daily Goals Table */}
-      <DailyGoalsTable
-        quarter={quarter || "Q1"}
-        quarterName={quarter ? getQuarterName(quarter) : "Primer Bloque"}
-        week={parseInt(week || "1")}
-        data={goalsData}
-        subjects={subjects}
-        onGoalUpdate={handleGoalUpdate}
-        onGoalToggle={handleGoalToggle}
-        onNotesUpdate={handleNotesUpdate}
-        onNotesToggle={handleNotesToggle}
-        dayTotals={calculateDayTotal}
+      {/* Student Info Card */}
+      <StudentInfoCard
+        student={mockStudent}
+        showBadge={false}
       />
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-600">Cargando metas diarias...</p>
+          </div>
+        </div>
+      ) : (
+        /* Daily Goals Table */
+        <DailyGoalsTable
+          quarter={quarter || "Q1"}
+          quarterName={quarter ? getQuarterName(quarter) : "Primer Bloque"}
+          week={parseInt(week || "1")}
+          data={goalsData}
+          subjects={Object.keys(goalsData)}
+          onGoalUpdate={handleGoalUpdate}
+          onGoalToggle={handleGoalToggle}
+          onNotesUpdate={handleNotesUpdate}
+          onNotesToggle={handleNotesToggle}
+          dayTotals={calculateDayTotal}
+        />
+      )}
     </div>
   )
 }

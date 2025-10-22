@@ -9,13 +9,21 @@ import StudentsPage from '@/pages/students'
 import ProjectionListPage from '@/pages/projection-list'
 import ACEProjectionPage from '@/pages/ace-projection'
 import DailyGoalsPage from '@/pages/daily-goals'
+import ConfigurationPage from '@/pages/configuration'
+import SchoolYearsPage from '@/pages/school-years'
+import SchoolInfoPage from '@/pages/school-info'
+import BillingPage from '@/pages/billing'
+import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
+import { AuthSync } from '@/components/auth-sync'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <SignedIn>{children}</SignedIn>
+      <SignedIn>
+        <AuthSync>{children}</AuthSync>
+      </SignedIn>
       <SignedOut>
         <RedirectToSignIn />
       </SignedOut>
@@ -24,13 +32,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
         {/* Public routes - without sidebar */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/*" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/signup/*" element={<SignUpPage />} />
 
         {/* Protected routes - with sidebar */}
         <Route
@@ -48,13 +59,18 @@ export default function App() {
           <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
           <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
           <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
+          <Route path="configuration" element={<ConfigurationPage />} />
+          <Route path="configuration/school-info" element={<SchoolInfoPage />} />
+          <Route path="configuration/school-years" element={<SchoolYearsPage />} />
+          <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<div className="text-2xl font-bold">Users Page</div>} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all - show 404 */}
+        <Route path="/404" element={<NotFoundPage isUnauthorized={true} />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

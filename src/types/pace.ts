@@ -5,6 +5,7 @@ export interface GradeHistory {
 }
 
 export interface PaceData {
+  id?: string // ProjectionPace ID for API operations
   number: string
   grade: number | null // Grade score 0-100, null if not graded yet
   isCompleted: boolean
@@ -24,6 +25,7 @@ export interface NoteHistory {
 }
 
 export interface DailyGoal {
+  id?: string // Daily goal ID for API operations
   text: string
   isCompleted: boolean
   notes?: string // Single note for partial completion or pending items

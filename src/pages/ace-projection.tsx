@@ -1,198 +1,270 @@
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BackButton } from "@/components/ui/back-button"
-import { Calendar, GraduationCap, Clock } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
+import { SectionHeader } from "@/components/ui/section-header"
+import { Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
-import type { PaceData, QuarterData } from "@/types/pace"
+import type { QuarterData } from "@/types/pace"
+import { useApi } from "@/services/api"
+import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
+import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { ErrorDialog } from "@/components/ui/error-dialog"
+import { Navigate } from "react-router-dom"
+import type { UserInfo, CurrentWeekInfo } from "@/services/api"
 
-interface Student {
-  id: string
-  name: string
-  currentGrade: string
-  schoolYear: string
-}
 
-// Mock student data
-const mockStudent: Student = {
-  id: "1",
-  name: "María González López",
-  currentGrade: "8th Grade",
-  schoolYear: "2024-2025"
-}
-
-// Helper to create pace data
-const createPace = (
-  number: string,
-  grade: number | null = null,
-  isCompleted: boolean = false,
-  gradeHistory?: Array<{ grade: number, date: string, note?: string }>
-): PaceData => ({
-  number,
-  grade,
-  isCompleted,
-  gradeHistory
+// Helper to create empty quarter data structure
+const createEmptyQuarterData = (): QuarterData => ({
+  Math: Array(9).fill(null),
+  English: Array(9).fill(null),
+  Science: Array(9).fill(null),
+  "Social Studies": Array(9).fill(null),
+  "Word Building": Array(9).fill(null),
+  Spanish: Array(9).fill(null)
 })
 
-// Mock PACE projection data with completion status and grades (0-100)
-// Note: Each array position = one week. Position 0 = Week 1, Position 1 = Week 2, etc.
-// Week 1 (index 0) has 24 PACEs total (4 per subject) - OVERLOADED to show warning!
-const initialProjectionData: { Q1: QuarterData, Q2: QuarterData, Q3: QuarterData, Q4: QuarterData } = {
-  Q1: {
-    Math: [
-      createPace("1001", 95, true, [
-        { grade: 75, date: "2024-09-15", note: "Primera vez - necesita repasar multiplicación" },
-        { grade: 82, date: "2024-09-20", note: "Mejor, pero aún tiene errores" },
-        { grade: 95, date: "2024-09-25" }
-      ]),
-      createPace("1002", 88, true),
-      createPace("1003", 92),
-      createPace("1004", 85, true),
-      null, null, null, null,
-      createPace("1005")
-    ],
-    English: [
-      createPace("1011", 92, true),
-      createPace("1012", 85),
-      createPace("1013", 90),
-      createPace("1014"),
-      null, null, null, null,
-      createPace("1015")
-    ],
-    Science: [
-      createPace("1021", 85, true),
-      createPace("1022", 88),
-      createPace("1023", 84),
-      createPace("1024"),
-      null, null, null, null,
-      createPace("1025")
-    ],
-    "Social Studies": [
-      createPace("1031", 90, true),
-      createPace("1032", 87),
-      createPace("1033", 92),
-      createPace("1034"),
-      null, null, null, null,
-      createPace("1035")
-    ],
-    "Word Building": [
-      createPace("1041", 78, true, [
-        { grade: 65, date: "2024-09-10", note: "Dificultad con vocabulario nuevo" },
-        { grade: 72, date: "2024-09-17", note: "Mejorando pero necesita más práctica" },
-        { grade: 78, date: "2024-09-22", note: "Aún no alcanza el 80% requerido" }
-      ]),
-      createPace("1042", 80),
-      createPace("1043", 83),
-      createPace("1044"),
-      null, null, null, null,
-      createPace("1045")
-    ],
-    Spanish: [
-      createPace("1051", 88, true, [
-        { grade: 88, date: "2024-09-12" }
-      ]),
-      createPace("1052", 85),
-      createPace("1053", 90),
-      createPace("1054"),
-      null, null, null, null,
-      createPace("1055")
-    ]
-  },
-  Q2: {
-    Math: [createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null, null],
-    English: [createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null, null],
-    Science: [null, null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006")],
-    "Social Studies": [null, null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006")],
-    "Word Building": [null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null],
-    Spanish: [null, createPace("1004"), null, null, createPace("1005"), null, null, createPace("1006"), null]
-  },
-  Q3: {
-    Math: [createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null, null],
-    English: [createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null, null],
-    Science: [null, null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009")],
-    "Social Studies": [null, null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009")],
-    "Word Building": [null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null],
-    Spanish: [null, createPace("1007"), null, null, createPace("1008"), null, null, createPace("1009"), null]
-  },
-  Q4: {
-    Math: [createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null, null],
-    English: [createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null, null],
-    Science: [null, null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012")],
-    "Social Studies": [null, null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012")],
-    "Word Building": [null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null],
-    Spanish: [null, createPace("1010"), null, null, createPace("1011"), null, null, createPace("1012"), null]
-  },
+// Empty initial state (will be replaced by API data)
+const initialProjectionData = {
+  Q1: createEmptyQuarterData(),
+  Q2: createEmptyQuarterData(),
+  Q3: createEmptyQuarterData(),
+  Q4: createEmptyQuarterData(),
 }
 
 export default function ACEProjectionPage() {
   const navigate = useNavigate()
   const { studentId, projectionId } = useParams()
+  const api = useApi()
   const [projectionData, setProjectionData] = React.useState(initialProjectionData)
+  const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+  const [hasPermission, setHasPermission] = React.useState(true)
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
+  const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
+  const [pacePickerContext, setPacePickerContext] = React.useState<{
+    quarter: string
+    subject: string
+    weekIndex: number
+  } | null>(null)
+  const [errorDialog, setErrorDialog] = React.useState<{
+    open: boolean
+    title?: string
+    message: string
+  }>({ open: false, message: "" })
 
-  // Calculate current week (mock - in real app this would come from backend)
-  // For demo: Q2, Week 5
-  const currentQuarter: string = "Q2"
-  const currentWeekInQuarter = 5
-  const currentSchoolWeek = 14 // Overall week 14 = Q2 Week 5
-
-  // Handle drag and drop
-  const handlePaceDrop = (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
-      const pace = subjectPaces[fromWeek]
-      subjectPaces[fromWeek] = subjectPaces[toWeek]
-      subjectPaces[toWeek] = pace
-
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+  // Fetch user info to check if parent
+  React.useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const info = await api.auth.getUserInfo()
+        setUserInfo(info)
+      } catch (err) {
+        console.error('Error fetching user info:', err)
       }
+    }
+
+    fetchUserInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch current week info from school year configuration
+  React.useEffect(() => {
+    const fetchCurrentWeek = async () => {
+      try {
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        setCurrentWeekInfo(weekInfo)
+      } catch (err) {
+        console.error('Error fetching current week:', err)
+        // Don't fail the whole page if current week can't be fetched
+      }
+    }
+
+    fetchCurrentWeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch projection detail from API
+  React.useEffect(() => {
+    const fetchProjectionDetail = async () => {
+      if (!studentId || !projectionId) return
+
+      try {
+        setLoading(true)
+        setError(null)
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+
+        // Convert API data to the format expected by ACEQuarterlyTable
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (err) {
+        console.error('Error fetching projection detail:', err)
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load projection'
+
+        // Check if it's a permission error or not found error
+        if (errorMessage.includes('permiso') || errorMessage.includes('not found') || errorMessage.includes('Student not found') || errorMessage.includes('Proyección no encontrada') || errorMessage.includes('no encontrada') || errorMessage.includes('no encontrado')) {
+          setHasPermission(false)
+        } else {
+          setError(errorMessage)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjectionDetail()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, projectionId])
+
+  // Helper function to convert API pace detail to PaceData (including ID for updates)
+  const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
+    const result: QuarterData = {}
+
+    Object.keys(quarterPaces).forEach(subject => {
+      result[subject] = quarterPaces[subject].map(pace => {
+        if (!pace) return null
+
+        return {
+          id: pace.id, // Include ID for updates/deletes
+          number: pace.number,
+          grade: pace.grade,
+          isCompleted: pace.isCompleted,
+          isFailed: pace.isFailed,
+          gradeHistory: pace.gradeHistory.map(gh => ({
+            grade: gh.grade,
+            date: gh.date,
+            note: gh.note,
+          })),
+        }
+      })
     })
+
+    return result
   }
 
-  // Handle pace completion and grade
-  const handlePaceToggle = (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
-      const pace = subjectPaces[weekIndex]
+  // Get current week from school year configuration (dynamic from backend)
+  const currentQuarter = currentWeekInfo?.currentQuarter?.name || null
+  const currentWeekInQuarter = currentWeekInfo?.currentWeek || null
+  // Calculate overall school week (quarter order * 9 weeks + current week in quarter)
+  const quarterOrder = currentWeekInfo?.currentQuarter?.order || 0
+  const currentSchoolWeek = currentWeekInfo?.currentWeek
+    ? ((quarterOrder - 1) * 9) + currentWeekInfo.currentWeek
+    : null
 
-      if (pace) {
-        if (pace.isCompleted && grade === undefined) {
-          // If already completed and no grade provided, uncomplete it
-          subjectPaces[weekIndex] = { ...pace, isCompleted: false, grade: null }
-        } else if (grade !== undefined) {
-          // If grade provided, complete and set grade
-          const newHistory = comment ? [
-            ...(pace.gradeHistory || []),
-            {
-              grade,
-              date: new Date().toISOString(),
-              note: comment
-            }
-          ] : pace.gradeHistory
-          subjectPaces[weekIndex] = { ...pace, isCompleted: true, grade, gradeHistory: newHistory }
-        } else {
-          // If not completed and no grade, just toggle (prompt for grade in component)
-          // Component will handle prompting for grade
-          subjectPaces[weekIndex] = { ...pace, isCompleted: !pace.isCompleted }
-        }
+  // Handle drag and drop - SAVES TO DATABASE
+  const handlePaceDrop = async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
+    if (!studentId || !projectionId) return
+
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const fromPace = quarterData[subject][fromWeek]
+      const toPace = quarterData[subject][toWeek]
+
+      // Move the dragged PACE to the target position
+      if (fromPace && fromPace.id) {
+        await api.projections.movePace(studentId, projectionId, fromPace.id, {
+          quarter,
+          week: toWeek + 1 // Convert index to week number
+        })
       }
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+      // If there was a PACE at the target position, swap it
+      if (toPace && toPace.id) {
+        await api.projections.movePace(studentId, projectionId, toPace.id, {
+          quarter,
+          week: fromWeek + 1 // Convert index to week number
+        })
       }
-    })
+
+      // Reload projection data to reflect changes
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
+    } catch (err) {
+      console.error('Error moving PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error Moving PACE",
+        message: err instanceof Error ? err.message : 'Failed to move PACE'
+      })
+
+      // Reload data to revert UI on error
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed move:', reloadErr)
+      }
+    }
+  }
+
+  // Handle pace completion and grade - SAVES TO DATABASE
+  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
+    if (!studentId || !projectionId) return
+
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const pace = quarterData[subject][weekIndex]
+
+      if (!pace || !('id' in pace)) {
+        console.error('PACE not found or missing ID')
+        return
+      }
+
+      const paceId = pace.id!
+
+      if (grade !== undefined) {
+        // Update grade
+        await api.projections.updatePaceGrade(studentId, projectionId, paceId, {
+          grade,
+          note: comment,
+        })
+      } else {
+        // No grade provided = mark as incomplete
+        await api.projections.markIncomplete(studentId, projectionId, paceId)
+      }
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
+    } catch (err) {
+      console.error('Error actualizando PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error actualizando PACE",
+        message: err instanceof Error ? err.message : 'Error al actualizar PACE'
+      })
+    }
   }
 
   // Handle week click to navigate to daily goals
@@ -200,62 +272,153 @@ export default function ACEProjectionPage() {
     navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
   }
 
-  // Handle adding new pace
-  const handleAddPace = (quarter: string, subject: string, weekIndex: number, paceNumber: string) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
-
-      // Add new pace at this position
-      subjectPaces[weekIndex] = {
-        number: paceNumber,
-        grade: null,
-        isCompleted: false
-      }
-
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
-      }
-    })
+  // Handle adding new pace - Opens PACE picker
+  const handleAddPace = (quarter: string, subject: string, weekIndex: number) => {
+    // Open PACE picker dialog
+    setPacePickerContext({ quarter, subject, weekIndex })
+    setPacePickerOpen(true)
   }
 
-  // Handle deleting a pace
-  const handleDeletePace = (quarter: string, subject: string, weekIndex: number) => {
-    setProjectionData(prev => {
-      const quarterData = prev[quarter as keyof typeof prev]
-      const subjectPaces = [...quarterData[subject]]
+  // Handle PACE selection from picker - SAVES TO DATABASE
+  const handlePaceSelect = async (paceId: string) => {
+    if (!studentId || !projectionId || !pacePickerContext) return
 
-      // Remove pace by setting to null
-      subjectPaces[weekIndex] = null
+    try {
+      const { quarter, weekIndex } = pacePickerContext
 
-      return {
-        ...prev,
-        [quarter]: {
-          ...quarterData,
-          [subject]: subjectPaces
-        }
+      // Add PACE to projection
+      await api.projections.addPace(studentId, projectionId, {
+        paceCatalogId: paceId,
+        quarter,
+        week: weekIndex + 1
+      })
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
       }
-    })
+      setProjectionData(convertedData)
+
+      setPacePickerContext(null)
+    } catch (err) {
+      console.error('Error agregando PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error agregando PACE",
+        message: err instanceof Error ? err.message : 'Error al agregar PACE'
+      })
+    }
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
+  // Handle deleting a pace - SAVES TO DATABASE
+  const handleDeletePace = async (quarter: string, subject: string, weekIndex: number) => {
+    if (!studentId || !projectionId) return
+
+    try {
+      const quarterData = projectionData[quarter as keyof typeof projectionData]
+      const pace = quarterData[subject][weekIndex]
+
+      if (!pace || !('id' in pace)) {
+        console.error('PACE no encontrado o ID faltante')
+        return
+      }
+
+      const paceId = pace.id!
+
+      // Remove PACE from projection
+      await api.projections.removePace(studentId, projectionId, paceId)
+
+      // Reload projection data
+      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      setProjectionDetail(detail)
+      const convertedData = {
+        Q1: convertQuarterData(detail.quarters.Q1),
+        Q2: convertQuarterData(detail.quarters.Q2),
+        Q3: convertQuarterData(detail.quarters.Q3),
+        Q4: convertQuarterData(detail.quarters.Q4),
+      }
+      setProjectionData(convertedData)
+    } catch (err) {
+      console.error('Error eliminando PACE:', err)
+      setErrorDialog({
+        open: true,
+        title: "Error eliminando PACE",
+        message: err instanceof Error ? err.message : 'Error al eliminar PACE'
+      })
+    }
+  }
+
+
+  // Check if user is a parent (read-only mode)
+  const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
+    !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+
+  // Show permission error if user doesn't have access
+  if (!hasPermission) {
+    return <Navigate to="/404" replace />;
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton to={`/students/${studentId}/projections`}>
+            <span className="hidden sm:inline">Volver a Proyecciones</span>
+            <span className="sm:hidden">Volver</span>
+          </BackButton>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-muted-foreground">Cargando proyección...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton to={`/students/${studentId}/projections`}>
+            <span className="hidden sm:inline">Volver a Proyecciones</span>
+            <span className="sm:hidden">Volver</span>
+          </BackButton>
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Use projection detail for student data
+  const student = projectionDetail ? {
+    id: projectionDetail.studentId,
+    name: projectionDetail.student.fullName,
+    currentGrade: projectionDetail.student.currentLevel || 'N/A',
+    schoolYear: projectionDetail.schoolYear,
+  } : {
+    id: '',
+    name: 'Cargando...',
+    currentGrade: '',
+    schoolYear: ''
   }
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+        <BackButton to={`/students/${studentId}/projections`}>
           <span className="hidden sm:inline">Volver a Proyecciones</span>
           <span className="sm:hidden">Volver</span>
         </BackButton>
@@ -272,8 +435,14 @@ export default function ACEProjectionPage() {
               <div>
                 <h3 className="text-base md:text-lg font-bold text-green-900">Semana Actual</h3>
                 <p className="text-xs md:text-sm text-green-700">
-                  {currentQuarter} - Semana {currentWeekInQuarter}
-                  <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
+                  {currentWeekInfo?.currentQuarter ? (
+                    <>
+                      {currentWeekInfo.currentQuarter.displayName} - Semana {currentWeekInQuarter}
+                      <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No hay un año escolar activo</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -287,41 +456,28 @@ export default function ACEProjectionPage() {
       </Card>
 
       {/* Student Info Card */}
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-            <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
-              <AvatarFallback className="text-xl md:text-2xl font-semibold">
-                {getInitials(mockStudent.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{mockStudent.name}</h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{mockStudent.currentGrade}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Año Escolar: {mockStudent.schoolYear}</span>
-                </div>
-              </div>
-            </div>
-            <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2 self-end sm:self-auto">
-              A.C.E. System
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <StudentInfoCard student={student} />
 
       {/* Title */}
-      <div>
-        <h2 className="text-xl md:text-2xl font-bold">Proyección de PACEs</h2>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Planificación semanal por bloque para el año escolar {mockStudent.schoolYear}
-        </p>
-      </div>
+      <SectionHeader
+        title="Proyección de PACEs"
+        description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
+      />
+
+      {/* PACE Picker Dialog */}
+      {pacePickerContext && (
+        <PacePickerDialog
+          open={pacePickerOpen}
+          onClose={() => {
+            setPacePickerOpen(false)
+            setPacePickerContext(null)
+          }}
+          onSelect={handlePaceSelect}
+          categoryFilter={pacePickerContext.subject}
+          levelFilter={projectionDetail?.student.currentLevel}
+          title={`Agregar PACE - ${pacePickerContext.subject} (${pacePickerContext.quarter} Semana ${pacePickerContext.weekIndex + 1})`}
+        />
+      )}
 
       {/* Quarterly Tables */}
       <div className="space-y-4 md:space-y-8">
@@ -330,50 +486,63 @@ export default function ACEProjectionPage() {
           quarterName="Bloque 1"
           data={projectionData.Q1}
           isActive={currentQuarter === "Q1"}
-          currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q2"
           quarterName="Bloque 2"
           data={projectionData.Q2}
           isActive={currentQuarter === "Q2"}
-          currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q3"
           quarterName="Bloque 3"
           data={projectionData.Q3}
           isActive={currentQuarter === "Q3"}
-          currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
         <ACEQuarterlyTable
           quarter="Q4"
           quarterName="Bloque 4"
           data={projectionData.Q4}
           isActive={currentQuarter === "Q4"}
-          currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter : undefined}
-          onPaceDrop={handlePaceDrop}
-          onPaceToggle={handlePaceToggle}
+          currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
+          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
-          onAddPace={handleAddPace}
-          onDeletePace={handleDeletePace}
+          onAddPace={isParentOnly ? undefined : handleAddPace}
+          onDeletePace={isParentOnly ? undefined : handleDeletePace}
+          isReadOnly={isParentOnly}
         />
       </div>
+
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title || "Error"}
+        message={errorDialog.message}
+        confirmText="Entendido"
+      />
     </div>
   )
 }
