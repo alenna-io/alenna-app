@@ -14,6 +14,22 @@ import { Plus, Edit, Trash2, CheckCircle, Calendar } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { SchoolYear, ModuleData } from "@/services/api";
 
+// Helper function to format date strings without timezone issues
+function formatDateString(dateString: string): string {
+  // Parse the date string as local date to avoid timezone issues
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month is 0-indexed
+  return date.toLocaleDateString("es-MX", { month: "short", day: "numeric" });
+}
+
+// Helper function to format date strings with year
+function formatDateStringWithYear(dateString: string): string {
+  // Parse the date string as local date to avoid timezone issues
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  const date = new Date(year, month - 1, day); // month is 0-indexed
+  return date.toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" });
+}
+
 export default function SchoolYearsPage() {
   const navigate = useNavigate();
   const api = useApi();
@@ -255,12 +271,12 @@ export default function SchoolYearsPage() {
 
       {/* Form for creating/editing */}
       {(isCreating || editingYear) && (
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 shadow-none">
+          <CardHeader className="pb-6">
             <CardTitle>{isCreating ? "Crear Nuevo Año Escolar" : "Editar Año Escolar"}</CardTitle>
             <CardDescription>Define el año escolar y sus 4 trimestres con fechas de inicio y fin</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             {/* School Year Info */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -297,8 +313,8 @@ export default function SchoolYearsPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Trimestres</h3>
               {formData.quarters.map((quarter, index) => (
-                <Card key={quarter.name} className="bg-muted/50">
-                  <CardContent className="pt-4">
+                <Card key={quarter.name} className="shadow-none border-0">
+                  <CardContent className="p-0">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div>
                         <label className="text-sm font-medium mb-2 block">Nombre</label>
@@ -385,7 +401,7 @@ export default function SchoolYearsPage() {
       {!isCreating && !editingYear && (
         <div className="grid gap-4">
           {schoolYears.map((year) => (
-            <Card key={year.id} className={year.isActive ? "border-2 border-green-500" : ""}>
+            <Card key={year.id} className="shadow-none">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -398,8 +414,8 @@ export default function SchoolYearsPage() {
                         </Badge>
                       )}
                     </div>
-                    <CardDescription>
-                      {new Date(year.startDate).toLocaleDateString("es-MX")} - {new Date(year.endDate).toLocaleDateString("es-MX")}
+                    <CardDescription className="mt-2">
+                      {formatDateStringWithYear(year.startDate)} - {formatDateStringWithYear(year.endDate)}
                     </CardDescription>
                   </div>
                   {!isReadOnly && (
@@ -434,24 +450,26 @@ export default function SchoolYearsPage() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {year.quarters?.map((quarter) => (
-                    <Card key={quarter.id} className="bg-muted/50">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold">{quarter.displayName}</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(quarter.startDate).toLocaleDateString("es-MX", { month: "short", day: "numeric" })} - {new Date(quarter.endDate).toLocaleDateString("es-MX", { month: "short", day: "numeric" })}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">{quarter.weeksCount} semanas</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
+              {year.isActive && (
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {year.quarters?.map((quarter) => (
+                      <Card key={quarter.id} className="bg-muted/50 shadow-none">
+                        <CardContent className="pt-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <h4 className="font-semibold">{quarter.displayName}</h4>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDateString(quarter.startDate)} - {formatDateString(quarter.endDate)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">{quarter.weeksCount} semanas</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              )}
             </Card>
           ))}
         </div>
