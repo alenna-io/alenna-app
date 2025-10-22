@@ -1,11 +1,8 @@
 import * as React from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useParams } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
-import { Calendar, Target, GraduationCap, BookOpen } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 
 interface Student {
@@ -108,10 +105,8 @@ const calculatePagesFromValue = (value: string): number => {
 }
 
 export default function DailyGoalsPage() {
-  const navigate = useNavigate()
   const { studentId, projectionId, quarter, week } = useParams()
   const [goalsData, setGoalsData] = React.useState(mockDailyGoals)
-  const [totalPages, setTotalPages] = React.useState("")
 
   // Calculate total pages for a specific day
   const calculateDayTotal = React.useMemo(() => {
@@ -124,7 +119,7 @@ export default function DailyGoalsPage() {
       })
     })
     return dayTotals
-  }, [goalsData, subjects])
+  }, [goalsData])
 
   const handleGoalUpdate = (subject: string, dayIndex: number, value: string) => {
     setGoalsData(prev => ({
@@ -202,14 +197,6 @@ export default function DailyGoalsPage() {
   }
 
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   const getQuarterName = (quarter: string) => {
     const quarterNames: { [key: string]: string } = {
@@ -225,49 +212,17 @@ export default function DailyGoalsPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton onClick={() => navigate(`/students/${studentId}/projections/${projectionId}`)}>
+        <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
           <span className="hidden sm:inline">Volver a Proyección</span>
           <span className="sm:hidden">Volver</span>
         </BackButton>
       </div>
 
       {/* Student Info Card */}
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-            <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
-              <AvatarFallback className="text-xl md:text-2xl font-semibold">
-                {getInitials(mockStudent.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate flex items-center gap-3">
-                <Target className="h-6 w-6 md:h-8 md:w-8" />
-                {mockStudent.name}
-              </h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{mockStudent.currentGrade}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Año Escolar: {mockStudent.schoolYear}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-auto">
-              <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
-                {quarter && getQuarterName(quarter)} - Semana {week}
-              </Badge>
-              <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
-                <BookOpen className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                Metas Diarias
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StudentInfoCard
+        student={mockStudent}
+        showBadge={false}
+      />
 
       {/* Daily Goals Table */}
       <DailyGoalsTable

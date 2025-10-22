@@ -71,7 +71,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
   return (
     <Card className="w-full" style={{ border: "none", boxShadow: "none" }}>
       <CardHeader className='p-0'>
-        <div className="flex items-center justify-start gap-3">
+        <div className="flex items-center justify-start gap-3 mb-2">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Filtros</CardTitle>
@@ -81,7 +81,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
           </div>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
-              <Button variant="outline" size="sm" onClick={clearFilters}>
+              <Button variant="outline" size="sm" onClick={clearFilters} className="cursor-pointer">
                 <X className="h-4 w-4 mr-1" />
                 Limpiar
               </Button>

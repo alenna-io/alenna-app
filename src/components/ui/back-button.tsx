@@ -1,31 +1,44 @@
+import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { cn } from "@/lib/utils"
 
-interface BackButtonProps {
+interface BackButtonProps extends React.ComponentPropsWithoutRef<typeof Button> {
+  to?: string
   onClick?: () => void
-  children?: React.ReactNode
-  variant?: "default" | "outline" | "ghost" | "secondary"
-  size?: "default" | "sm" | "lg" | "icon"
-  className?: string
+  children: React.ReactNode
 }
 
-export function BackButton({
-  onClick,
-  children = "Volver",
-  variant = "ghost",
-  size = "sm",
-  className = ""
-}: BackButtonProps) {
+const BackButton = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  BackButtonProps
+>(({ to, onClick, children, className, ...props }, ref) => {
+  const navigate = useNavigate()
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick()
+    } else if (to) {
+      navigate(to)
+    } else {
+      navigate(-1) // Go back in history
+    }
+  }
+
   return (
     <Button
-      variant={variant}
-      size={size}
-      onClick={onClick}
-      className={`cursor-pointer ${className}`}
+      ref={ref}
+      variant="outline"
+      onClick={handleClick}
+      className={cn("mb-4", className)}
+      style={{ cursor: 'pointer' }}
+      {...props}
     >
-      <ArrowLeft className="h-4 w-4 mr-2" />
-      {children}
+      ← {children}
     </Button>
   )
-}
+})
 
+BackButton.displayName = "BackButton"
+
+export { BackButton }

@@ -2,7 +2,15 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertDialog } from "@/components/ui/alert-dialog"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { InfoDialog } from "@/components/ui/info-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog"
 import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
@@ -694,93 +702,84 @@ export function ACEQuarterlyTable({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        isOpen={!!deleteDialog}
+      <ConfirmationDialog
+        open={!!deleteDialog}
+        onOpenChange={(open) => !open && setDeleteDialog(null)}
         title="Eliminar PACE"
         message={deleteDialog ? `¿Estás seguro de que deseas eliminar el PACE ${deleteDialog.paceNumber} de ${deleteDialog.subject}?\n\nEsta acción no se puede deshacer.` : ""}
         confirmText="Eliminar"
         cancelText="Cancelar"
-        variant="danger"
+        variant="destructive"
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteDialog(null)}
       />
 
       {/* Alert Dialog */}
-      <AlertDialog
-        isOpen={!!alertDialog}
+      <InfoDialog
+        open={!!alertDialog}
+        onOpenChange={(open) => !open && setAlertDialog(null)}
         title={alertDialog?.title || "Alerta"}
         message={alertDialog?.message || ""}
-        confirmText="Entendido"
-        cancelText=""
-        variant="info"
-        onConfirm={() => setAlertDialog(null)}
-        onCancel={() => setAlertDialog(null)}
+        buttonText="Entendido"
       />
 
       {/* Grade History Dialog */}
-      {historyDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setHistoryDialog(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historial de Calificaciones
-                </h3>
-                <button onClick={() => setHistoryDialog(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                  <X className="h-5 w-5" />
-                </button>
+      <Dialog open={!!historyDialog} onOpenChange={(open) => !open && setHistoryDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historial de Calificaciones
+            </DialogTitle>
+            <DialogDescription>
+              {historyDialog && (
+                <>
+                  PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
+                  Materia: <span className="font-semibold">{historyDialog.subject}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {historyDialog?.history.map((entry, index) => (
+              <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                }`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
+                    }`}>{entry.grade}%</span>
+                  <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
+                </div>
+                {entry.note && (
+                  <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
+                )}
               </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span></p>
-                <p className="text-sm text-gray-600">Materia: <span className="font-semibold">{historyDialog.subject}</span></p>
-              </div>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {historyDialog.history.map((entry, index) => (
-                  <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
-                        }`}>{entry.grade}%</span>
-                      <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
-                    </div>
-                    {entry.note && (
-                      <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setHistoryDialog(null)}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setHistoryDialog(null)}
+              className="cursor-pointer"
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Overload Confirmation Dialog */}
-      {confirmAddDialog && (
-        <AlertDialog
-          isOpen={true}
-          title="Sobrecarga de Bloque"
-          message={`Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?`}
-          confirmText="Agregar de Todas Formas"
-          cancelText="Cancelar"
-          variant="warning"
-          showRememberOption={true}
-          onConfirm={(remember: boolean) => confirmOverloadAdd(remember || false)}
-          onCancel={() => {
-            setConfirmAddDialog(null)
-            setAddingPace(null)
-            setPaceNumberInput("")
-          }}
-        />
-      )}
+      <ConfirmationDialog
+        open={!!confirmAddDialog}
+        onOpenChange={(open) => !open && setConfirmAddDialog(null)}
+        title="Sobrecarga de Bloque"
+        message={confirmAddDialog ? `Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?` : ""}
+        confirmText="Agregar de Todas Formas"
+        cancelText="Cancelar"
+        variant="default"
+        onConfirm={() => {
+          const remember = (document.getElementById('remember-overload') as HTMLInputElement)?.checked || false
+          confirmOverloadAdd(remember)
+        }}
+      />
     </>
   )
 }

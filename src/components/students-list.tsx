@@ -2,6 +2,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 import { ChevronLeft } from "lucide-react"
 import type { Student } from "@/types/student"
@@ -23,14 +24,6 @@ export function StudentsList({
   totalItems,
   onPageChange
 }: StudentsListProps) {
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   const getCertificationBadgeVariant = (type: string) => {
     switch (type) {

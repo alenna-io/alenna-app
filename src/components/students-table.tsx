@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 import { Users, Calendar, Phone, MapPin, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft } from "lucide-react"
 import type { Student } from "@/types/student"
@@ -29,14 +30,6 @@ export function StudentsTable({
   totalItems,
   onPageChange
 }: StudentsTableProps) {
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   const getSortIcon = (field: "firstName" | "lastName") => {
     if (sortField !== field) {
@@ -223,6 +216,7 @@ export function StudentsTable({
                         onStudentSelect(student)
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ cursor: 'pointer' }}
                     >
                       Ver Perfil
                     </Button>

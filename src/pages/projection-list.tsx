@@ -1,13 +1,15 @@
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { BackButton } from "@/components/ui/back-button"
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { LoadingState } from "@/components/ui/loading-state"
+import { PageHeader } from "@/components/ui/page-header"
 import { NoPermission } from "@/components/no-permission"
-import { Calendar, ChevronRight, BookOpen, AlertCircle } from "lucide-react"
+import { ErrorAlert } from "@/components/ui/error-alert"
+import { EmptyState } from "@/components/ui/empty-state"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
+import { StatusBadge } from "@/components/ui/status-badge"
+import { Calendar, ChevronRight, BookOpen } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
@@ -70,24 +72,6 @@ export default function ProjectionListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId])
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
-  const getStatusColor = (isActive: boolean) => {
-    return isActive
-      ? "bg-green-100 text-green-800 border-green-200"
-      : "bg-gray-100 text-gray-800 border-gray-200"
-  }
-
-  const getStatusLabel = (isActive: boolean) => {
-    return isActive ? "Activo" : "Inactivo"
-  }
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
@@ -95,26 +79,19 @@ export default function ProjectionListPage() {
   }
 
   if (isLoading) {
-    return <LoadingSkeleton variant="list" />
+    return <LoadingState variant="list" />
   }
 
   if (error || !student) {
     return (
       <div className="space-y-6">
-        <BackButton onClick={() => navigate(`/students/${studentId}`)}>
+        <BackButton to={`/students/${studentId}`}>
           Volver al Perfil
         </BackButton>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-red-900 dark:text-red-100">
-              Error al cargar datos
-            </h3>
-            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {error || 'No se pudo cargar el estudiante'}
-            </p>
-          </div>
-        </div>
+        <ErrorAlert
+          title="Error al cargar datos"
+          message={error || 'No se pudo cargar el estudiante'}
+        />
       </div>
     )
   }
@@ -123,38 +100,28 @@ export default function ProjectionListPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton onClick={() => navigate(`/students/${studentId}`)}>
+        <BackButton to={`/students/${studentId}`}>
           Volver al Perfil
         </BackButton>
       </div>
 
       {/* Student Info */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-xl font-semibold">
-                {getInitials(student.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold">{student.name}</h1>
-              <p className="text-muted-foreground">{student.certificationType}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <StudentInfoCard
+        student={{
+          id: student.id,
+          name: student.name,
+          currentGrade: student.certificationType,
+          schoolYear: ''
+        }}
+        showBadge={false}
+      />
 
       {/* Page Title */}
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Calendar className="h-6 w-6" />
-          Proyecciones A.C.E.
-        </h2>
-        <p className="text-muted-foreground">
-          Historial de proyecciones por año escolar
-        </p>
-      </div>
+      <PageHeader
+        icon={Calendar}
+        title="Proyecciones Académicas"
+        description="Historial de proyecciones por año escolar"
+      />
 
       {/* Projections List */}
       {projections.length > 0 ? (
@@ -181,9 +148,7 @@ export default function ProjectionListPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge className={getStatusColor(projection.isActive)}>
-                      {getStatusLabel(projection.isActive)}
-                    </Badge>
+                    <StatusBadge isActive={projection.isActive} />
                     <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </div>
@@ -200,18 +165,18 @@ export default function ProjectionListPage() {
         /* Empty State */
         <Card>
           <CardContent className="p-12 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay proyecciones</h3>
-            <p className="text-muted-foreground mb-4">
-              No se han creado proyecciones para este estudiante
-            </p>
-            <Button onClick={() => {
-              // TODO: Implement create projection dialog
-              console.log('Create projection')
-            }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Crear Primera Proyección
-            </Button>
+            <EmptyState
+              icon={Calendar}
+              title="No hay proyecciones"
+              description="No se han creado proyecciones para este estudiante"
+              action={{
+                label: "Crear Primera Proyección",
+                onClick: () => {
+                  // TODO: Implement create projection dialog
+                  console.log('Create projection')
+                }
+              }}
+            />
           </CardContent>
         </Card>
       )}

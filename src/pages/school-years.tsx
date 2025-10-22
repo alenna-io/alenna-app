@@ -2,14 +2,16 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
+// BackButton replaced with shadcn Button
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { AlertDialog } from "@/components/ui/alert-dialog";
-import { NoPermission } from "@/components/no-permission";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorDialog } from "@/components/ui/error-dialog";
+import { PageHeader } from "@/components/ui/page-header";
+// NoPermission replaced with shadcn Card components
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Plus, Edit, Trash2, CheckCircle, Calendar } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { SchoolYear, ModuleData } from "@/services/api";
@@ -206,6 +208,7 @@ export default function SchoolYearsPage() {
       setEditingYear(null);
       fetchSchoolYears();
     } catch (error) {
+      console.error('Error saving school year:', error);
       setErrorDialog({
         open: true,
         title: "Error",
@@ -241,24 +244,75 @@ export default function SchoolYearsPage() {
   };
 
   if (!hasPermission) {
-    return <NoPermission onBack={() => navigate("/configuration")} />;
+    return (
+      <div className="space-y-6">
+        <BackButton to="/configuration">
+          Volver a Configuración
+        </BackButton>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <CheckCircle className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Sin Acceso</h3>
+            <p className="text-muted-foreground mb-4">
+              No tienes permisos para acceder a esta sección
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (loading) {
-    return <LoadingSkeleton variant="profile" />;
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+        <Skeleton className="h-4 w-full" />
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="shadow-none">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <BackButton onClick={() => navigate("/configuration")}>
-        Volver a Configuración
-      </BackButton>
+      <Button
+        variant="outline"
+        onClick={() => navigate("/configuration")}
+        className="mb-4"
+      >
+        ← Volver a Configuración
+      </Button>
 
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Años Escolares</h1>
-          <p className="text-muted-foreground">Gestiona los años escolares y sus trimestres</p>
-        </div>
+        <PageHeader
+          title="Años Escolares"
+          description="Gestiona los años escolares y sus trimestres"
+        />
         {!isCreating && !editingYear && !isReadOnly && (
           <Button onClick={handleCreate} className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
@@ -293,37 +347,40 @@ export default function SchoolYearsPage() {
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               Información Básica
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Nombre del Año Escolar</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ej: 2024-2025"
-                  className="text-lg"
-                />
+            <FieldGroup>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="school-year-name">Nombre del Año Escolar</FieldLabel>
+                  <Input
+                    id="school-year-name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Ej: 2024-2025"
+                    className="text-lg"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="school-year-start">Fecha de Inicio</FieldLabel>
+                  <DatePicker
+                    value={formData.startDate}
+                    onChange={(date) => setFormData({ ...formData, startDate: date })}
+                    placeholder="Selecciona fecha de inicio"
+                    min="2020-01-01"
+                    max="2050-12-31"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="school-year-end">Fecha de Fin</FieldLabel>
+                  <DatePicker
+                    value={formData.endDate}
+                    onChange={(date) => setFormData({ ...formData, endDate: date })}
+                    placeholder="Selecciona fecha de fin"
+                    min="2020-01-01"
+                    max="2050-12-31"
+                  />
+                </Field>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Fecha de Inicio</label>
-                <DatePicker
-                  value={formData.startDate}
-                  onChange={(date) => setFormData({ ...formData, startDate: date })}
-                  placeholder="Selecciona fecha de inicio"
-                  min="2020-01-01"
-                  max="2050-12-31"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Fecha de Fin</label>
-                <DatePicker
-                  value={formData.endDate}
-                  onChange={(date) => setFormData({ ...formData, endDate: date })}
-                  placeholder="Selecciona fecha de fin"
-                  min="2020-01-01"
-                  max="2050-12-31"
-                />
-              </div>
-            </div>
+            </FieldGroup>
           </div>
 
           {/* Quarters */}
@@ -341,62 +398,66 @@ export default function SchoolYearsPage() {
                     </div>
                     <h4 className="font-medium text-gray-900">{quarter.displayName}</h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Nombre del Trimestre</label>
-                      <Input
-                        value={quarter.displayName}
-                        onChange={(e) => {
-                          const newQuarters = [...formData.quarters];
-                          newQuarters[index].displayName = e.target.value;
-                          setFormData({ ...formData, quarters: newQuarters });
-                        }}
-                        placeholder="Ej: Primer Trimestre"
-                      />
+                  <FieldGroup>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <Field>
+                        <FieldLabel htmlFor={`quarter-${index}-name`}>Nombre del Trimestre</FieldLabel>
+                        <Input
+                          id={`quarter-${index}-name`}
+                          value={quarter.displayName}
+                          onChange={(e) => {
+                            const newQuarters = [...formData.quarters];
+                            newQuarters[index].displayName = e.target.value;
+                            setFormData({ ...formData, quarters: newQuarters });
+                          }}
+                          placeholder="Ej: Primer Trimestre"
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`quarter-${index}-start`}>Fecha de Inicio</FieldLabel>
+                        <DatePicker
+                          value={quarter.startDate}
+                          onChange={(date) => {
+                            const newQuarters = [...formData.quarters];
+                            newQuarters[index].startDate = date;
+                            setFormData({ ...formData, quarters: newQuarters });
+                          }}
+                          placeholder="Fecha inicio"
+                          min="2020-01-01"
+                          max="2050-12-31"
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`quarter-${index}-end`}>Fecha de Fin</FieldLabel>
+                        <DatePicker
+                          value={quarter.endDate}
+                          onChange={(date) => {
+                            const newQuarters = [...formData.quarters];
+                            newQuarters[index].endDate = date;
+                            setFormData({ ...formData, quarters: newQuarters });
+                          }}
+                          placeholder="Fecha fin"
+                          min="2020-01-01"
+                          max="2050-12-31"
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`quarter-${index}-weeks`}>Semanas</FieldLabel>
+                        <Input
+                          id={`quarter-${index}-weeks`}
+                          type="number"
+                          value={quarter.weeksCount}
+                          onChange={(e) => {
+                            const newQuarters = [...formData.quarters];
+                            newQuarters[index].weeksCount = parseInt(e.target.value) || 9;
+                            setFormData({ ...formData, quarters: newQuarters });
+                          }}
+                          placeholder="9"
+                          className="text-center"
+                        />
+                      </Field>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Fecha de Inicio</label>
-                      <DatePicker
-                        value={quarter.startDate}
-                        onChange={(date) => {
-                          const newQuarters = [...formData.quarters];
-                          newQuarters[index].startDate = date;
-                          setFormData({ ...formData, quarters: newQuarters });
-                        }}
-                        placeholder="Fecha inicio"
-                        min="2020-01-01"
-                        max="2050-12-31"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Fecha de Fin</label>
-                      <DatePicker
-                        value={quarter.endDate}
-                        onChange={(date) => {
-                          const newQuarters = [...formData.quarters];
-                          newQuarters[index].endDate = date;
-                          setFormData({ ...formData, quarters: newQuarters });
-                        }}
-                        placeholder="Fecha fin"
-                        min="2020-01-01"
-                        max="2050-12-31"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Semanas</label>
-                      <Input
-                        type="number"
-                        value={quarter.weeksCount}
-                        onChange={(e) => {
-                          const newQuarters = [...formData.quarters];
-                          newQuarters[index].weeksCount = parseInt(e.target.value) || 9;
-                          setFormData({ ...formData, quarters: newQuarters });
-                        }}
-                        placeholder="9"
-                        className="text-center"
-                      />
-                    </div>
-                  </div>
+                  </FieldGroup>
                 </div>
               ))}
             </div>
@@ -514,11 +575,11 @@ export default function SchoolYearsPage() {
       )}
 
       {/* Error Dialog */}
-      <AlertDialog
-        isOpen={errorDialog.open}
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
         title={errorDialog.title || "Error"}
         message={errorDialog.message}
-        onConfirm={() => setErrorDialog({ ...errorDialog, open: false })}
         confirmText="Aceptar"
       />
     </div>

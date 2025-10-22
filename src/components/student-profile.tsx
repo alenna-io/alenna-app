@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { BackButton } from "@/components/ui/back-button"
+// BackButton replaced with shadcn Button
 import { Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import type { Student } from "@/types/student"
@@ -16,21 +17,17 @@ interface StudentProfileProps {
 export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <BackButton onClick={onBack}>
-          Volver a Estudiantes
-        </BackButton>
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="mb-4"
+        >
+          ← Volver a Estudiantes
+        </Button>
       </div>
 
       <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
@@ -141,9 +138,9 @@ export function StudentProfile({ student, onBack, isParentView = false }: Studen
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Proyecciones A.C.E.
+                Proyecciones Académicas
               </CardTitle>
-              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)}>
+              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
                 Ver Todas
               </LinkButton>
             </div>
@@ -190,7 +187,7 @@ export function StudentProfile({ student, onBack, isParentView = false }: Studen
                           Padre/Madre
                         </p>
                       </div>
-                      <Button variant="outline" size="sm" className="ml-auto cursor-pointer">
+                      <Button variant="outline" size="sm" className="ml-auto" style={{ cursor: 'pointer' }}>
                         Ver Perfil
                       </Button>
                     </div>

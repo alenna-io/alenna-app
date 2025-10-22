@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
 import { GraduationCap, Calendar, MapPin, Phone, ChevronRight } from "lucide-react"
 import type { Student } from "@/types/student"
 
@@ -13,14 +14,6 @@ interface ParentChildrenViewProps {
 export function ParentChildrenView({ students }: ParentChildrenViewProps) {
   const navigate = useNavigate()
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   if (students.length === 0) {
     return (
@@ -95,7 +88,8 @@ export function ParentChildrenView({ students }: ParentChildrenViewProps) {
 
               <div className="pt-3 border-t">
                 <Button
-                  className="w-full cursor-pointer"
+                  className="w-full"
+                  style={{ cursor: 'pointer' }}
                   onClick={() => navigate(`/students/${student.id}`)}
                 >
                   Ver Perfil

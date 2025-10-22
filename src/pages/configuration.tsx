@@ -1,7 +1,8 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import { Building2, Calendar, CreditCard, ChevronRight, Lock } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { ModuleData } from "@/services/api";
@@ -92,10 +93,10 @@ export default function ConfigurationPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Configuración</h1>
-        <p className="text-muted-foreground">Gestiona la configuración de tu escuela</p>
-      </div>
+      <PageHeader
+        title="Configuración"
+        description="Gestiona la configuración de tu escuela"
+      />
 
       <div className="space-y-3">
         {accessibleModules.map((module) => {

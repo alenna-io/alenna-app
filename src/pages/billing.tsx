@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { CreditCard, DollarSign, Calendar, CheckCircle, Clock, Info } from "lucide-react";
@@ -27,15 +29,15 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton onClick={() => navigate("/configuration")}>
+      <BackButton to="/configuration">
         Volver a Configuración
       </BackButton>
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Facturación</h1>
-          <p className="text-muted-foreground">Gestiona tu suscripción, pagos e historial de facturas</p>
-        </div>
+        <PageHeader
+          title="Facturación"
+          description="Gestiona tu suscripción, pagos e historial de facturas"
+        />
         <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
           <Info className="mr-1 h-3 w-3" />
           Próximamente

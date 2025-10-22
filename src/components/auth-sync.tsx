@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useApi } from '@/services/api';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorAlert } from '@/components/ui/error-alert';
 
 interface AuthSyncProps {
   children: React.ReactNode;
@@ -38,10 +40,7 @@ export function AuthSync({ children }: AuthSyncProps) {
   if (syncStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-lg">Loading...</div>
-          <div className="text-sm text-muted-foreground">Syncing your account</div>
-        </div>
+        <LoadingState variant="default" />
       </div>
     );
   }
@@ -50,14 +49,11 @@ export function AuthSync({ children }: AuthSyncProps) {
   if (syncStatus === 'error') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="max-w-md rounded-lg border bg-card p-6 text-center">
-          <h2 className="mb-2 text-xl font-semibold text-destructive">Account Not Found</h2>
-          <p className="mb-4 text-muted-foreground">
-            {errorMessage}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Please contact your administrator to set up your account.
-          </p>
+        <div className="max-w-md">
+          <ErrorAlert
+            title="Account Not Found"
+            message={`${errorMessage}. Please contact your administrator to set up your account.`}
+          />
         </div>
       </div>
     );

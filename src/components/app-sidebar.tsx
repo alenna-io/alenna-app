@@ -20,9 +20,9 @@ import type { ModuleData } from "@/services/api"
 
 // Module to route/icon mapping
 const moduleConfig: Record<string, { url: string; icon: typeof GraduationCap }> = {
-  Students: { url: "/students", icon: GraduationCap },
-  Users: { url: "/users", icon: Users },
-  Configuration: { url: "/configuration", icon: Settings },
+  Estudiantes: { url: "/students", icon: GraduationCap },
+  Usuarios: { url: "/users", icon: Users },
+  Configuración: { url: "/configuration", icon: Settings },
   // Add more as modules are created
 }
 
@@ -131,8 +131,8 @@ export function AppSidebar() {
               <div className="flex items-center gap-2 cursor-pointer">
                 <UserButton />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">User Account</span>
-                  <span className="truncate text-xs text-sidebar-foreground/70">Manage account</span>
+                  <span className="truncate font-semibold">Usuario</span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">Administrar</span>
                 </div>
               </div>
             </SidebarMenuButton>

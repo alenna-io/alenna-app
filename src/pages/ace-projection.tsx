@@ -1,17 +1,18 @@
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { BackButton } from "@/components/ui/back-button"
-import { Calendar, GraduationCap, Clock } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
+import { SectionHeader } from "@/components/ui/section-header"
+import { GraduationCap, Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
-import { AlertDialog } from "@/components/ui/alert-dialog"
-import { NoPermission } from "@/components/no-permission"
+import { ErrorDialog } from "@/components/ui/error-dialog"
+// NoPermission replaced with shadcn Card components
 import type { UserInfo, CurrentWeekInfo } from "@/services/api"
 
 
@@ -352,14 +353,6 @@ export default function ACEProjectionPage() {
     }
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  }
 
   // Check if user is a parent (read-only mode)
   const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
@@ -367,7 +360,24 @@ export default function ACEProjectionPage() {
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
-    return <NoPermission onBack={() => navigate(`/students/${studentId}/projections`)} />
+    return (
+      <div className="space-y-6">
+        <BackButton to={`/students/${studentId}/projections`}>
+          Volver a Proyecciones
+        </BackButton>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <GraduationCap className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Sin Acceso</h3>
+            <p className="text-muted-foreground mb-4">
+              No tienes permisos para acceder a esta sección
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Show loading state
@@ -375,7 +385,7 @@ export default function ACEProjectionPage() {
     return (
       <div className="space-y-4 md:space-y-6">
         <div className="flex items-center gap-4">
-          <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+          <BackButton to={`/students/${studentId}/projections`}>
             <span className="hidden sm:inline">Volver a Proyecciones</span>
             <span className="sm:hidden">Volver</span>
           </BackButton>
@@ -394,7 +404,7 @@ export default function ACEProjectionPage() {
     return (
       <div className="space-y-4 md:space-y-6">
         <div className="flex items-center gap-4">
-          <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+          <BackButton to={`/students/${studentId}/projections`}>
             <span className="hidden sm:inline">Volver a Proyecciones</span>
             <span className="sm:hidden">Volver</span>
           </BackButton>
@@ -425,7 +435,7 @@ export default function ACEProjectionPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton onClick={() => navigate(`/students/${studentId}/projections`)}>
+        <BackButton to={`/students/${studentId}/projections`}>
           <span className="hidden sm:inline">Volver a Proyecciones</span>
           <span className="sm:hidden">Volver</span>
         </BackButton>
@@ -463,41 +473,13 @@ export default function ACEProjectionPage() {
       </Card>
 
       {/* Student Info Card */}
-      <Card>
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-            <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
-              <AvatarFallback className="text-xl md:text-2xl font-semibold">
-                {getInitials(student.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{student.name}</h1>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4 shrink-0" />
-                  <span>{student.currentGrade}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Año Escolar: {student.schoolYear}</span>
-                </div>
-              </div>
-            </div>
-            <Badge variant="outline" className="text-sm md:text-lg px-3 md:px-4 py-1 md:py-2 self-end sm:self-auto">
-              A.C.E. System
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <StudentInfoCard student={student} />
 
       {/* Title */}
-      <div>
-        <h2 className="text-xl md:text-2xl font-bold">Proyección de PACEs</h2>
-        <p className="text-sm md:text-base text-muted-foreground">
-          Planificación semanal por bloque para el año escolar {student.schoolYear}
-        </p>
-      </div>
+      <SectionHeader
+        title="Proyección de PACEs"
+        description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
+      />
 
       {/* PACE Picker Dialog */}
       {pacePickerContext && (
@@ -571,15 +553,12 @@ export default function ACEProjectionPage() {
       </div>
 
       {/* Error Dialog */}
-      <AlertDialog
-        isOpen={errorDialog.open}
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
         title={errorDialog.title || "Error"}
         message={errorDialog.message}
         confirmText="Entendido"
-        cancelText=""
-        variant="danger"
-        onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
-        onCancel={() => setErrorDialog(prev => ({ ...prev, open: false }))}
       />
     </div>
   )

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackButton } from "@/components/ui/back-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { Building2, Mail, Phone, MapPin, Lock } from "lucide-react";
@@ -56,16 +57,14 @@ export default function SchoolInfoPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton onClick={() => navigate("/configuration")}>
+      <BackButton to="/configuration">
         Volver a Configuración
       </BackButton>
 
-      <div>
-        <h1 className="text-3xl font-bold">Información de la Escuela</h1>
-        <p className="text-muted-foreground">
-          Esta información es gestionada por Alenna. Para cambios, contacta a soporte.
-        </p>
-      </div>
+      <PageHeader
+        title="Información de la Escuela"
+        description="Esta información es gestionada por Alenna. Para cambios, contacta a soporte."
+      />
 
       <Separator />
 

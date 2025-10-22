@@ -6,11 +6,13 @@ import { StudentProfile } from "@/components/student-profile"
 import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
 import { Input } from "@/components/ui/input"
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { LoadingState } from "@/components/ui/loading-state"
+import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
+import { ErrorAlert } from "@/components/ui/error-alert"
 import { NoPermission } from "@/components/no-permission"
 import { ParentChildrenView } from "@/components/parent-children-view"
-import { Search, AlertCircle } from "lucide-react"
+import { Search } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
@@ -285,7 +287,7 @@ export default function StudentsPage() {
 
   // Show loading state when fetching student profile
   if (isLoadingStudent) {
-    return <LoadingSkeleton variant="profile" />
+    return <LoadingState variant="profile" />
   }
 
   // Show error state for student profile
@@ -295,17 +297,10 @@ export default function StudentsPage() {
         <BackButton onClick={handleBackToList}>
           Volver a Estudiantes
         </BackButton>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-red-900 dark:text-red-100">
-              Error al cargar estudiante
-            </h3>
-            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {studentError}
-            </p>
-          </div>
-        </div>
+        <ErrorAlert
+          title="Error al cargar estudiante"
+          message={studentError}
+        />
       </div>
     )
   }
@@ -317,7 +312,7 @@ export default function StudentsPage() {
 
   // Show loading state for students list
   if (isLoading) {
-    return <LoadingSkeleton variant="list" />
+    return <LoadingState variant="list" />
   }
 
   // Show parent-specific view
@@ -325,17 +320,10 @@ export default function StudentsPage() {
     return (
       <div className="space-y-6">
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-red-900 dark:text-red-100">
-                Error al cargar
-              </h3>
-              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                {error}
-              </p>
-            </div>
-          </div>
+          <ErrorAlert
+            title="Error al cargar"
+            message={error}
+          />
         )}
         <ParentChildrenView students={students} />
       </div>
@@ -347,24 +335,15 @@ export default function StudentsPage() {
     <div className="space-y-6">
       {/* Error banner */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-500 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-red-900 dark:text-red-100">
-              Error al cargar
-            </h3>
-            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {error}
-            </p>
-          </div>
-        </div>
+        <ErrorAlert
+          title="Error al cargar"
+          message={error}
+        />
       )}
-      <div>
-        <h1 className="text-3xl font-bold">Estudiantes</h1>
-        <p className="text-muted-foreground">
-          Gestiona la información de todos los estudiantes
-        </p>
-      </div>
+      <PageHeader
+        title="Estudiantes"
+        description="Gestiona la información de todos los estudiantes"
+      />
 
       {/* Search */}
       <div className="relative">
