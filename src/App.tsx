@@ -13,6 +13,7 @@ import ConfigurationPage from '@/pages/configuration'
 import SchoolYearsPage from '@/pages/school-years'
 import SchoolInfoPage from '@/pages/school-info'
 import BillingPage from '@/pages/billing'
+import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
 
@@ -65,8 +66,8 @@ export default function App() {
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>
 
-        {/* Catch all - redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Catch all - show 404 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

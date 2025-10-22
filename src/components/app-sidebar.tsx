@@ -36,22 +36,32 @@ export function AppSidebar() {
   const api = useApi()
   const [modules, setModules] = React.useState<ModuleData[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [schoolName, setSchoolName] = React.useState<string>("Alenna")
+  const [isLoadingSchool, setIsLoadingSchool] = React.useState(true)
 
-  // Fetch user's modules
+  // Fetch user's modules and school name
   React.useEffect(() => {
-    const fetchModules = async () => {
+    const fetchData = async () => {
       try {
-        const userModules = await api.modules.getUserModules()
+        // Fetch modules and school name in parallel
+        const [userModules, userInfo] = await Promise.all([
+          api.modules.getUserModules(),
+          api.auth.getUserInfo()
+        ])
+
         setModules(userModules)
+        setSchoolName(userInfo.schoolName)
       } catch (error) {
-        console.error('Error fetching modules:', error)
+        console.error('Error fetching data:', error)
         setModules([])
+        // Keep default school name if fetch fails
       } finally {
         setIsLoading(false)
+        setIsLoadingSchool(false)
       }
     }
 
-    fetchModules()
+    fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only fetch once on mount
 
@@ -68,18 +78,29 @@ export function AppSidebar() {
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
 
   return (
-    <Sidebar collapsible="icon" variant="floating">
+    <Sidebar collapsible="icon" variant="floating" className="w-[170px]">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <span className="text-lg font-bold">A</span>
+                  <span className="text-lg font-bold">
+                    {isLoadingSchool ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      schoolName.charAt(0).toUpperCase()
+                    )}
+                  </span>
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Alenna</span>
-                  <span className="truncate text-xs text-sidebar-foreground/70">A.C.E.</span>
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <span className="font-semibold break-words leading-tight">
+                    {isLoadingSchool ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      schoolName
+                    )}
+                  </span>
                 </div>
               </Link>
             </SidebarMenuButton>
