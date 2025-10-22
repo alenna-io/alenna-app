@@ -103,6 +103,46 @@ export const modulesApi = {
   getUserModules: (token: string | null) => apiFetch<ModuleData[]>('/modules/me', token),
 };
 
+// School Year API
+export interface Quarter {
+  id: string;
+  schoolYearId: string;
+  name: string;
+  displayName: string;
+  startDate: string;
+  endDate: string;
+  order: number;
+  weeksCount: number;
+}
+
+export interface SchoolYear {
+  id: string;
+  schoolId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  quarters?: Quarter[];
+}
+
+export interface CurrentWeekInfo {
+  schoolYear: SchoolYear;
+  currentQuarter: Quarter | null;
+  currentWeek: number | null;
+  weekStartDate: string | null;
+  weekEndDate: string | null;
+}
+
+export const schoolYearsApi = {
+  getCurrentWeek: (token: string | null) => apiFetch<CurrentWeekInfo>('/school-years/current-week', token),
+  getAll: (token: string | null) => apiFetch<SchoolYear[]>('/school-years', token),
+  getById: (id: string, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}`, token),
+  create: (data: any, token: string | null) => apiFetch<SchoolYear>('/school-years', token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) => apiFetch<void>(`/school-years/${id}`, token, { method: 'DELETE' }),
+  setActive: (id: string, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}/activate`, token, { method: 'POST' }),
+};
+
 // Auth API
 export interface UserInfo {
   id: string;
@@ -241,6 +281,36 @@ export function useApi() {
       update: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolsApi.update(data, token);
+      },
+    },
+    schoolYears: {
+      getCurrentWeek: async () => {
+        const token = await getToken();
+        return schoolYearsApi.getCurrentWeek(token);
+      },
+      getAll: async () => {
+        const token = await getToken();
+        return schoolYearsApi.getAll(token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return schoolYearsApi.getById(id, token);
+      },
+      create: async (data: any) => {
+        const token = await getToken();
+        return schoolYearsApi.create(data, token);
+      },
+      update: async (id: string, data: any) => {
+        const token = await getToken();
+        return schoolYearsApi.update(id, data, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return schoolYearsApi.delete(id, token);
+      },
+      setActive: async (id: string) => {
+        const token = await getToken();
+        return schoolYearsApi.setActive(id, token);
       },
     },
   };

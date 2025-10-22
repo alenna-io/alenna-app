@@ -12,7 +12,7 @@ import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { NoPermission } from "@/components/no-permission"
-import type { UserInfo } from "@/services/api"
+import type { UserInfo, CurrentWeekInfo } from "@/services/api"
 
 
 // Helper to create empty quarter data structure
@@ -43,6 +43,7 @@ export default function ACEProjectionPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
     quarter: string
@@ -67,6 +68,22 @@ export default function ACEProjectionPage() {
     }
 
     fetchUserInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch current week info from school year configuration
+  React.useEffect(() => {
+    const fetchCurrentWeek = async () => {
+      try {
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        setCurrentWeekInfo(weekInfo)
+      } catch (err) {
+        console.error('Error fetching current week:', err)
+        // Don't fail the whole page if current week can't be fetched
+      }
+    }
+
+    fetchCurrentWeek()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -134,11 +151,14 @@ export default function ACEProjectionPage() {
     return result
   }
 
-  // Calculate current week (mock - in real app this would come from backend)
-  // For demo: Q2, Week 5
-  const currentQuarter: string = "Q2"
-  const currentWeekInQuarter = 5
-  const currentSchoolWeek = 14 // Overall week 14 = Q2 Week 5
+  // Get current week from school year configuration (dynamic from backend)
+  const currentQuarter = currentWeekInfo?.currentQuarter?.name || null
+  const currentWeekInQuarter = currentWeekInfo?.currentWeek || null
+  // Calculate overall school week (quarter order * 9 weeks + current week in quarter)
+  const quarterOrder = currentWeekInfo?.currentQuarter?.order || 0
+  const currentSchoolWeek = currentWeekInfo?.currentWeek
+    ? ((quarterOrder - 1) * 9) + currentWeekInfo.currentWeek
+    : null
 
   // Handle drag and drop - SAVES TO DATABASE
   const handlePaceDrop = async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
@@ -422,8 +442,14 @@ export default function ACEProjectionPage() {
               <div>
                 <h3 className="text-base md:text-lg font-bold text-green-900">Semana Actual</h3>
                 <p className="text-xs md:text-sm text-green-700">
-                  {currentQuarter} - Semana {currentWeekInQuarter}
-                  <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
+                  {currentWeekInfo?.currentQuarter ? (
+                    <>
+                      {currentWeekInfo.currentQuarter.displayName} - Semana {currentWeekInQuarter}
+                      <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No hay un año escolar activo</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -495,7 +521,7 @@ export default function ACEProjectionPage() {
           quarterName="Bloque 1"
           data={projectionData.Q1}
           isActive={currentQuarter === "Q1"}
-          currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter : undefined}
+          currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
           onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
           onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
@@ -508,7 +534,7 @@ export default function ACEProjectionPage() {
           quarterName="Bloque 2"
           data={projectionData.Q2}
           isActive={currentQuarter === "Q2"}
-          currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter : undefined}
+          currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
           onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
           onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
@@ -521,7 +547,7 @@ export default function ACEProjectionPage() {
           quarterName="Bloque 3"
           data={projectionData.Q3}
           isActive={currentQuarter === "Q3"}
-          currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter : undefined}
+          currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
           onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
           onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}
@@ -534,7 +560,7 @@ export default function ACEProjectionPage() {
           quarterName="Bloque 4"
           data={projectionData.Q4}
           isActive={currentQuarter === "Q4"}
-          currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter : undefined}
+          currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
           onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
           onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
           onWeekClick={handleWeekClick}

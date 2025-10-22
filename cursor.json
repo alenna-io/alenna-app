@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "shadcn-docs": {
+      "command": "node",
+      "args": ["./tools/shadcn-docs/server.js"],
+      "env": {
+        "PORT": "3333"
+      }
+    }
+  }
+}

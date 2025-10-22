@@ -22,7 +22,7 @@ import type { ModuleData } from "@/services/api"
 const moduleConfig: Record<string, { url: string; icon: typeof GraduationCap }> = {
   Students: { url: "/students", icon: GraduationCap },
   Users: { url: "/users", icon: Users },
-  Configuration: { url: "/settings", icon: Settings },
+  Configuration: { url: "/configuration", icon: Settings },
   // Add more as modules are created
 }
 
