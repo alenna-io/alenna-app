@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 
@@ -405,46 +406,37 @@ export function DailyGoalsTable({
       </CardContent>
 
       {/* Notes History Dialog */}
-      {notesHistory && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setNotesHistory(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historial de Notas
-                </h3>
-                <button onClick={() => setNotesHistory(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span></p>
-                <p className="text-sm text-gray-600">Materia: <span className="font-semibold">{notesHistory.subject}</span></p>
-              </div>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {notesHistory.history.map((entry, index) => (
-                  <div key={index} className="p-3 rounded-lg border-2 bg-green-50 border-green-200">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm text-gray-800 flex-1">{entry.text}</p>
-                      <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{new Date(entry.completedDate).toLocaleDateString()}</p>
+      <Dialog open={!!notesHistory} onOpenChange={(open) => !open && setNotesHistory(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historial de Notas
+            </DialogTitle>
+            <DialogDescription>
+              {notesHistory && (
+                <>
+                  Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span> •
+                  Materia: <span className="font-semibold">{notesHistory.subject}</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {notesHistory && (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {notesHistory.history.map((entry, index) => (
+                <div key={index} className="p-3 rounded-lg border-2 bg-green-50 border-green-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-gray-800 flex-1">{entry.text}</p>
+                    <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                   </div>
-                ))}
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setNotesHistory(null)}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm font-medium transition-colors cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
+                  <p className="text-xs text-gray-500 mt-1">{new Date(entry.completedDate).toLocaleDateString()}</p>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

@@ -39,7 +39,9 @@ export default function App() {
       <Routes>
         {/* Public routes - without sidebar */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/*" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/signup/*" element={<SignUpPage />} />
 
         {/* Protected routes - with sidebar */}
         <Route

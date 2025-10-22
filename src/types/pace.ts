@@ -25,6 +25,7 @@ export interface NoteHistory {
 }
 
 export interface DailyGoal {
+  id?: string // Daily goal ID for API operations
   text: string
   isCompleted: boolean
   notes?: string // Single note for partial completion or pending items

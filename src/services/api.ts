@@ -100,7 +100,7 @@ export interface ModuleData {
 }
 
 export const modulesApi = {
-  getUserModules: (token: string | null) => apiFetch<ModuleData[]>('/modules/me', token),
+  getUserModules: (token: string | null) => apiFetch('/modules/me', token),
 };
 
 // School Year API
@@ -134,13 +134,13 @@ export interface CurrentWeekInfo {
 }
 
 export const schoolYearsApi = {
-  getCurrentWeek: (token: string | null) => apiFetch<CurrentWeekInfo>('/school-years/current-week', token),
-  getAll: (token: string | null) => apiFetch<SchoolYear[]>('/school-years', token),
-  getById: (id: string, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}`, token),
-  create: (data: any, token: string | null) => apiFetch<SchoolYear>('/school-years', token, { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: any, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: string, token: string | null) => apiFetch<void>(`/school-years/${id}`, token, { method: 'DELETE' }),
-  setActive: (id: string, token: string | null) => apiFetch<SchoolYear>(`/school-years/${id}/activate`, token, { method: 'POST' }),
+  getCurrentWeek: (token: string | null) => apiFetch('/school-years/current-week', token),
+  getAll: (token: string | null) => apiFetch('/school-years', token),
+  getById: (id: string, token: string | null) => apiFetch(`/school-years/${id}`, token),
+  create: (data: Record<string, unknown>, token: string | null) => apiFetch('/school-years', token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Record<string, unknown>, token: string | null) => apiFetch(`/school-years/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) => apiFetch(`/school-years/${id}`, token, { method: 'DELETE' }),
+  setActive: (id: string, token: string | null) => apiFetch(`/school-years/${id}/activate`, token, { method: 'POST' }),
 };
 
 // Auth API
@@ -162,7 +162,104 @@ export interface UserInfo {
 export const authApi = {
   syncUser: (token: string | null) => apiFetch('/auth/sync', token, { method: 'POST' }),
   getCurrentUser: (token: string | null) => apiFetch('/auth/me', token),
-  getUserInfo: (token: string | null) => apiFetch<UserInfo>('/auth/info', token),
+  getUserInfo: (token: string | null) => apiFetch('/auth/info', token),
+};
+
+// Daily Goals API
+export interface DailyGoalData {
+  [subject: string]: Array<{
+    id?: string;
+    text: string;
+    isCompleted: boolean;
+    notes?: string;
+    notesCompleted?: boolean;
+    notesHistory?: Array<{
+      text: string;
+      completedDate: string;
+    }>;
+  }>;
+}
+
+export interface DailyGoal {
+  id: string;
+  projectionId: string;
+  subject: string;
+  quarter: string;
+  week: number;
+  dayOfWeek: number;
+  text: string;
+  isCompleted: boolean;
+  notes?: string;
+  notesCompleted: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NoteHistory {
+  id: string;
+  dailyGoalId: string;
+  text: string;
+  completedDate: string;
+  createdAt?: string;
+}
+
+export const dailyGoalsApi = {
+  get: (studentId: string, projectionId: string, quarter: string, week: number, token: string | null) => {
+    const params = new URLSearchParams({ quarter, week: week.toString() });
+    return apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals?${params}`, token);
+  },
+  create: (studentId: string, projectionId: string, data: {
+    subject: string;
+    quarter: string;
+    week: number;
+    dayOfWeek: number;
+    text: string;
+    isCompleted?: boolean;
+    notes?: string;
+    notesCompleted?: boolean;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals`, token, { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+  update: (studentId: string, projectionId: string, goalId: string, data: {
+    subject?: string;
+    quarter?: string;
+    week?: number;
+    dayOfWeek?: number;
+    text?: string;
+    isCompleted?: boolean;
+    notes?: string;
+    notesCompleted?: boolean;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, { 
+      method: 'PUT', 
+      body: JSON.stringify(data) 
+    }),
+  updateCompletion: (studentId: string, projectionId: string, goalId: string, isCompleted: boolean, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/completion`, token, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ isCompleted }) 
+    }),
+  updateNotes: (studentId: string, projectionId: string, goalId: string, data: {
+    notes?: string;
+    notesCompleted?: boolean;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, { 
+      method: 'PATCH', 
+      body: JSON.stringify(data) 
+    }),
+  addNoteToHistory: (studentId: string, projectionId: string, goalId: string, text: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, { 
+      method: 'POST', 
+      body: JSON.stringify({ text }) 
+    }),
+  getNoteHistory: (studentId: string, projectionId: string, goalId: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token),
+  delete: (studentId: string, projectionId: string, goalId: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, { 
+      method: 'DELETE' 
+    }),
 };
 
 // Schools API
@@ -296,11 +393,11 @@ export function useApi() {
         const token = await getToken();
         return schoolYearsApi.getById(id, token);
       },
-      create: async (data: any) => {
+      create: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolYearsApi.create(data, token);
       },
-      update: async (id: string, data: any) => {
+      update: async (id: string, data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolYearsApi.update(id, data, token);
       },
@@ -311,6 +408,61 @@ export function useApi() {
       setActive: async (id: string) => {
         const token = await getToken();
         return schoolYearsApi.setActive(id, token);
+      },
+    },
+    dailyGoals: {
+      get: async (studentId: string, projectionId: string, quarter: string, week: number) => {
+        const token = await getToken();
+        return dailyGoalsApi.get(studentId, projectionId, quarter, week, token);
+      },
+      create: async (studentId: string, projectionId: string, data: {
+        subject: string;
+        quarter: string;
+        week: number;
+        dayOfWeek: number;
+        text: string;
+        isCompleted?: boolean;
+        notes?: string;
+        notesCompleted?: boolean;
+      }) => {
+        const token = await getToken();
+        return dailyGoalsApi.create(studentId, projectionId, data, token);
+      },
+      update: async (studentId: string, projectionId: string, goalId: string, data: {
+        subject?: string;
+        quarter?: string;
+        week?: number;
+        dayOfWeek?: number;
+        text?: string;
+        isCompleted?: boolean;
+        notes?: string;
+        notesCompleted?: boolean;
+      }) => {
+        const token = await getToken();
+        return dailyGoalsApi.update(studentId, projectionId, goalId, data, token);
+      },
+      updateCompletion: async (studentId: string, projectionId: string, goalId: string, isCompleted: boolean) => {
+        const token = await getToken();
+        return dailyGoalsApi.updateCompletion(studentId, projectionId, goalId, isCompleted, token);
+      },
+      updateNotes: async (studentId: string, projectionId: string, goalId: string, data: {
+        notes?: string;
+        notesCompleted?: boolean;
+      }) => {
+        const token = await getToken();
+        return dailyGoalsApi.updateNotes(studentId, projectionId, goalId, data, token);
+      },
+      addNoteToHistory: async (studentId: string, projectionId: string, goalId: string, text: string) => {
+        const token = await getToken();
+        return dailyGoalsApi.addNoteToHistory(studentId, projectionId, goalId, text, token);
+      },
+      getNoteHistory: async (studentId: string, projectionId: string, goalId: string) => {
+        const token = await getToken();
+        return dailyGoalsApi.getNoteHistory(studentId, projectionId, goalId, token);
+      },
+      delete: async (studentId: string, projectionId: string, goalId: string) => {
+        const token = await getToken();
+        return dailyGoalsApi.delete(studentId, projectionId, goalId, token);
       },
     },
   };
