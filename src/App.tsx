@@ -69,6 +69,9 @@ export default function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="schools" element={<SchoolsPage />} />
+          <Route path="schools/:schoolId" element={<SchoolInfoPage />} />
+          <Route path="schools/:schoolId/students" element={<StudentsPage />} />
+          <Route path="schools/:schoolId/teachers" element={<UsersPage />} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>

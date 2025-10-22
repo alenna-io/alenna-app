@@ -1,11 +1,12 @@
 import * as React from "react"
-import { Navigate, useNavigate } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
+import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -47,6 +48,7 @@ interface Role {
 }
 
 export default function UsersPage() {
+  const { schoolId } = useParams()
   const api = useApi()
   const navigate = useNavigate()
   const [users, setUsers] = React.useState<User[]>([])
@@ -102,7 +104,13 @@ export default function UsersPage() {
   const loadUsers = React.useCallback(async () => {
     try {
       setIsLoading(true)
-      const usersData = await api.getUsers()
+
+      // If we have a schoolId from the route, fetch teachers for that specific school
+      // Otherwise, fetch all users (filtered by permissions)
+      const usersData = schoolId
+        ? await api.schools.getTeachers(schoolId)
+        : await api.getUsers()
+
       setUsers(usersData)
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Error al cargar usuarios"
@@ -110,7 +118,7 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [schoolId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadRoles = React.useCallback(async () => {
     try {
@@ -281,9 +289,16 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Back button for school context */}
+      {schoolId && (
+        <BackButton onClick={() => navigate(`/schools/${schoolId}`)}>
+          Volver a Información de la Escuela
+        </BackButton>
+      )}
+
       <PageHeader
-        title="Gestión de Usuarios"
-        description="Administra los usuarios del sistema"
+        title={schoolId ? "Maestros de la Escuela" : "Gestión de Usuarios"}
+        description={schoolId ? "Administra los maestros de esta escuela específica" : "Administra los usuarios del sistema"}
       />
 
       {error && (

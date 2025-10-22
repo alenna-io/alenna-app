@@ -287,6 +287,10 @@ export const schoolsApi = {
     apiFetch(`/schools/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) =>
     apiFetch(`/schools/${id}`, token, { method: 'DELETE' }),
+  getStudentsCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/students/count`, token),
+  getStudents: (id: string, token: string | null) => apiFetch(`/schools/${id}/students`, token),
+  getTeachersCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers/count`, token),
+  getTeachers: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers`, token),
 };
 
 // Custom hook for authenticated API calls
@@ -416,6 +420,22 @@ export function useApi() {
       delete: async (id: string) => {
         const token = await getToken();
         return schoolsApi.delete(id, token);
+      },
+      getStudentsCount: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getStudentsCount(id, token);
+      },
+      getStudents: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getStudents(id, token);
+      },
+      getTeachersCount: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getTeachersCount(id, token);
+      },
+      getTeachers: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getTeachers(id, token);
       },
     },
     schoolYears: {

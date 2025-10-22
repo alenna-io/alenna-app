@@ -28,7 +28,7 @@ type SortField = "firstName" | "lastName" | null
 type SortDirection = "asc" | "desc"
 
 export default function StudentsPage() {
-  const { studentId } = useParams()
+  const { studentId, schoolId } = useParams()
   const navigate = useNavigate()
   const api = useApi()
   const [students, setStudents] = React.useState<Student[]>([])
@@ -66,7 +66,7 @@ export default function StudentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch students list from API (scoped to user's school) - only when not viewing a specific student
+  // Fetch students list from API (scoped to user's school or specific school) - only when not viewing a specific student
   React.useEffect(() => {
     // Don't fetch list if we're viewing a specific student profile
     if (studentId) return
@@ -77,10 +77,14 @@ export default function StudentsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await api.students.getAll()
+
+        // If we have a schoolId from the route, fetch students for that specific school
+        // Otherwise, fetch students for the current user's school
+        const data = schoolId
+          ? await api.schools.getStudents(schoolId)
+          : await api.students.getAll()
 
         if (isMounted) {
-          // Backend returns students for the authenticated user's school only
           // Transform API data to match frontend Student type
           const transformedStudents: Student[] = data.map((student: unknown) => {
             const s = student as Record<string, unknown>
@@ -130,7 +134,7 @@ export default function StudentsPage() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId])
+  }, [studentId, schoolId])
 
   // Fetch individual student from API when viewing profile
   React.useEffect(() => {
@@ -258,7 +262,11 @@ export default function StudentsPage() {
   }
 
   const handleBackToList = () => {
-    navigate('/students')
+    if (schoolId) {
+      navigate(`/schools/${schoolId}/students`)
+    } else {
+      navigate('/students')
+    }
   }
 
   const handleFiltersChange = (newFilters: Filters) => {
@@ -333,6 +341,13 @@ export default function StudentsPage() {
   // Show admin/teacher students list
   return (
     <div className="space-y-6">
+      {/* Back button for school context */}
+      {schoolId && (
+        <BackButton onClick={() => navigate('/configuration/school-info')}>
+          Volver a Información de la Escuela
+        </BackButton>
+      )}
+
       {/* Error banner */}
       {error && (
         <ErrorAlert
@@ -341,8 +356,8 @@ export default function StudentsPage() {
         />
       )}
       <PageHeader
-        title="Estudiantes"
-        description="Gestiona la información de todos los estudiantes"
+        title={schoolId ? "Estudiantes de la Escuela" : "Estudiantes"}
+        description={schoolId ? "Gestiona los estudiantes de esta escuela específica" : "Gestiona la información de todos los estudiantes"}
       />
 
       {/* Search */}

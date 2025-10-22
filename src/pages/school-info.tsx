@@ -4,10 +4,11 @@ import { BackButton } from "@/components/ui/back-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { Building2, Mail, Phone, MapPin, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Building2, Mail, Phone, MapPin, Lock, Users, Plus, Eye, GraduationCap } from "lucide-react";
 import { useApi } from "@/services/api";
-import { Navigate } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
+import type { UserInfo } from "@/services/api";
 
 interface SchoolInfo {
   id: string;
@@ -20,30 +21,77 @@ interface SchoolInfo {
 }
 
 export default function SchoolInfoPage() {
+  const { schoolId } = useParams();
   const api = useApi();
   const navigate = useNavigate();
   const [school, setSchool] = React.useState<SchoolInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
+  const [, setUserInfo] = React.useState<UserInfo | null>(null);
+  const [studentsCount, setStudentsCount] = React.useState<number>(0);
+  const [loadingStudentsCount, setLoadingStudentsCount] = React.useState(false);
+  const [teachersCount, setTeachersCount] = React.useState<number>(0);
+  const [loadingTeachersCount, setLoadingTeachersCount] = React.useState(false);
 
   React.useEffect(() => {
-    const fetchSchool = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await api.schools.getMy();
-        setSchool(data as SchoolInfo);
+
+        // Load user info first
+        const userData = await api.auth.getUserInfo();
+        setUserInfo(userData);
+
+        // Check if user has permission to manage students
+        const canManageStudents = userData.permissions.includes('students.read') &&
+          (userData.roles.some((role: { name: string }) => role.name === 'SUPERADMIN') ||
+            userData.schoolName === 'Alenna School');
+
+        if (!canManageStudents) {
+          setHasPermission(false);
+          return;
+        }
+
+        // Load school data
+        const schoolData = schoolId
+          ? await api.schools.getById(schoolId)
+          : await api.schools.getMy();
+        setSchool(schoolData as SchoolInfo);
+
+        // Load students count
+        setLoadingStudentsCount(true);
+        try {
+          const countData = await api.schools.getStudentsCount(schoolData.id);
+          setStudentsCount(countData.count);
+        } catch (error) {
+          console.error("Error fetching students count:", error);
+        } finally {
+          setLoadingStudentsCount(false);
+        }
+
+        // Load teachers count
+        setLoadingTeachersCount(true);
+        try {
+          const teachersCountData = await api.schools.getTeachersCount(schoolData.id);
+          setTeachersCount(teachersCountData.count);
+        } catch (error) {
+          console.error("Error fetching teachers count:", error);
+        } finally {
+          setLoadingTeachersCount(false);
+        }
+
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (errorMessage.includes("permiso")) {
           setHasPermission(false);
         }
-        console.error("Error fetching school:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSchool();
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -57,8 +105,8 @@ export default function SchoolInfoPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton to="/configuration">
-        Volver a Configuración
+      <BackButton to={schoolId ? "/schools" : "/configuration"}>
+        {schoolId ? "Volver a Escuelas" : "Volver a Configuración"}
       </BackButton>
 
       <PageHeader
@@ -132,6 +180,94 @@ export default function SchoolInfoPage() {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Student Management Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Gestión de Estudiantes
+                </CardTitle>
+                <CardDescription>Administra los estudiantes de la escuela</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                      Total de Estudiantes
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {loadingStudentsCount ? (
+                        <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                      ) : (
+                        <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => navigate(`/schools/${school.id}/students`)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Lista de Estudiantes
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/students')}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Nuevo Estudiante
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Teachers Management Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5" />
+                  Gestión de Maestros
+                </CardTitle>
+                <CardDescription>Administra los maestros de la escuela</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                      Total de Maestros
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {loadingTeachersCount ? (
+                        <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                      ) : (
+                        <p className="text-2xl font-bold text-green-600">{teachersCount}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={() => navigate(`/schools/${school.id}/teachers`)}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Lista de Maestros
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/users')}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Nuevo Maestro
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

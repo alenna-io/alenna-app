@@ -1,12 +1,12 @@
 import * as React from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Search, Plus, Edit, Trash2, Building, MoreVertical } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Building, MoreVertical, Eye } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
 
@@ -28,6 +28,7 @@ interface School {
 
 export default function SchoolsPage() {
   const api = useApi()
+  const navigate = useNavigate()
   const [schools, setSchools] = React.useState<School[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -61,7 +62,7 @@ export default function SchoolsPage() {
 
       // Check if user has permission to manage schools (superadmin only)
       const canManageSchools = info.permissions.includes('schools.read') &&
-        info.roles.some((role: any) => role.name === 'SUPERADMIN')
+        info.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
       setHasPermission(canManageSchools)
 
       if (!canManageSchools) {
@@ -207,7 +208,6 @@ export default function SchoolsPage() {
         <ErrorAlert
           title="Error"
           message={error}
-          onClose={() => setError(null)}
         />
       )}
 
@@ -268,6 +268,10 @@ export default function SchoolsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/schools/${school.id}`)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalles
+                            </DropdownMenuItem>
                             {userInfo?.permissions.includes('schools.update') && (
                               <DropdownMenuItem onClick={() => openEditDialog(school)}>
                                 <Edit className="h-4 w-4 mr-2" />
