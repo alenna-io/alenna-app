@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { LoginPage } from '@/pages/login'
@@ -13,6 +13,8 @@ import ConfigurationPage from '@/pages/configuration'
 import SchoolYearsPage from '@/pages/school-years'
 import SchoolInfoPage from '@/pages/school-info'
 import BillingPage from '@/pages/billing'
+import UsersPage from '@/pages/users'
+import UserDetailPage from '@/pages/user-detail'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
@@ -63,7 +65,8 @@ export default function App() {
           <Route path="configuration/school-info" element={<SchoolInfoPage />} />
           <Route path="configuration/school-years" element={<SchoolYearsPage />} />
           <Route path="configuration/billing" element={<BillingPage />} />
-          <Route path="users" element={<div className="text-2xl font-bold">Users Page</div>} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>
