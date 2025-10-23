@@ -1,0 +1,296 @@
+import * as React from "react"
+import { useParams } from "react-router-dom"
+import { BackButton } from "@/components/ui/back-button"
+import { StudentInfoCard } from "@/components/ui/student-info-card"
+import { DailyGoalsTable } from "@/components/daily-goals-table"
+import { useApi } from "@/services/api"
+import type { DailyGoalData } from "@/types/pace"
+
+interface Student {
+  id: string
+  name: string
+  currentGrade: string
+  schoolYear: string
+}
+
+// Mock student data (will be replaced with real data later)
+const mockStudent: Student = {
+  id: "1",
+  name: "Ximena García López",
+  currentGrade: "8th Grade",
+  schoolYear: "2024-2025"
+}
+
+// Helper function to calculate pages from input value
+const calculatePagesFromValue = (value: string): number => {
+  if (!value.trim()) return 0
+
+  const trimmedValue = value.trim()
+
+  // Check for "Self Test" (case insensitive)
+  if (/^self\s*test$/i.test(trimmedValue)) {
+    return 3
+  }
+
+  // Check for range format (e.g., "45-46", "1-10") - must be valid numbers 1-1000
+  const rangeMatch = trimmedValue.match(/^([1-9]\d{0,3})-([1-9]\d{0,3})$/)
+  if (rangeMatch) {
+    const start = parseInt(rangeMatch[1])
+    const end = parseInt(rangeMatch[2])
+    // Validate range is within 1-1000 and start <= end
+    if (start >= 1 && end <= 1000 && start <= end) {
+      const pages = end - start + 1 // +1 because both start and end are included
+      return pages
+    }
+  }
+
+  // Check for single number (1-1000) - no leading zeros
+  const singleMatch = trimmedValue.match(/^[1-9]\d{0,3}$/)
+  if (singleMatch) {
+    const num = parseInt(singleMatch[0])
+    if (num >= 1 && num <= 1000) {
+      return 1
+    }
+  }
+
+  // If no valid format, return 0
+  return 0
+}
+
+export default function DailyGoalsPage() {
+  const { studentId, projectionId, quarter, week } = useParams()
+  const api = useApi()
+  const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
+
+  // Load daily goals from API
+  React.useEffect(() => {
+    const loadDailyGoals = async () => {
+      if (!studentId || !projectionId || !quarter || !week) return
+
+      try {
+        setLoading(true)
+        setError(null)
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (err) {
+        console.error('Error loading daily goals:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load daily goals')
+        // Fallback to empty data structure
+        const subjects = ['Math', 'English', 'Science', 'Social Studies', 'Word Building', 'Spanish']
+        const emptyData: DailyGoalData = {}
+        subjects.forEach(subject => {
+          emptyData[subject] = Array(5).fill(null).map(() => ({
+            text: '',
+            isCompleted: false,
+            notes: undefined,
+            notesCompleted: false,
+            notesHistory: []
+          }))
+        })
+        setGoalsData(emptyData)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDailyGoals()
+  }, [studentId, projectionId, quarter, week])
+
+  // Calculate total pages for a specific day
+  const calculateDayTotal = React.useMemo(() => {
+    const dayTotals = [0, 0, 0, 0, 0] // 5 days
+
+    Object.keys(goalsData).forEach(subject => {
+      goalsData[subject]?.forEach((goal, dayIndex) => {
+        const pages = calculatePagesFromValue(goal.text)
+        dayTotals[dayIndex] += pages
+      })
+    })
+    return dayTotals
+  }, [goalsData])
+
+  const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+
+      if (currentGoal?.id) {
+        // Update existing goal
+        await api.dailyGoals.update(studentId, projectionId, currentGoal.id, {
+          text: value,
+          subject,
+          quarter,
+          week: parseInt(week),
+          dayOfWeek: dayIndex
+        })
+      } else if (value.trim()) {
+        // Create new goal
+        await api.dailyGoals.create(studentId, projectionId, {
+          subject,
+          quarter,
+          week: parseInt(week),
+          dayOfWeek: dayIndex,
+          text: value,
+          isCompleted: false
+        })
+      }
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error updating goal:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update goal')
+    }
+  }
+
+  const handleGoalToggle = async (subject: string, dayIndex: number) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id) return
+
+      const newCompleted = !currentGoal.isCompleted
+      await api.dailyGoals.updateCompletion(studentId, projectionId, currentGoal.id, newCompleted)
+
+      // If goal is being marked as completed and has pending notes, auto-complete them
+      if (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) {
+        try {
+          // Add note to history and clear current note
+          await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
+          await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
+            notes: undefined,
+            notesCompleted: true
+          })
+        } catch (notesErr) {
+          console.error('Error auto-completing notes:', notesErr)
+          // Don't fail the whole operation if notes completion fails
+        }
+      }
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error toggling goal completion:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update goal completion')
+    }
+  }
+
+  const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id) return
+
+      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
+        notes: notes || undefined,
+        notesCompleted: false
+      })
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error updating notes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update notes')
+    }
+  }
+
+  const handleNotesToggle = async (subject: string, dayIndex: number) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    try {
+      const currentGoal = goalsData[subject]?.[dayIndex]
+      if (!currentGoal?.id || !currentGoal.notes) return
+
+      // Add note to history and clear current note
+      await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
+      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
+        notes: undefined,
+        notesCompleted: true
+      })
+
+      // Refresh data
+      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+      setGoalsData(data)
+    } catch (err) {
+      console.error('Error completing notes:', err)
+      setError(err instanceof Error ? err.message : 'Failed to complete notes')
+    }
+  }
+
+
+
+  const getQuarterName = (quarter: string) => {
+    const quarterNames: { [key: string]: string } = {
+      'Q1': 'Primer Bloque',
+      'Q2': 'Segundo Bloque',
+      'Q3': 'Tercer Bloque',
+      'Q4': 'Cuarto Bloque'
+    }
+    return quarterNames[quarter] || quarter
+  }
+
+  return (
+    <div className="space-y-4 md:space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
+          <span className="hidden sm:inline">Volver a Proyección</span>
+          <span className="sm:hidden">Volver</span>
+        </BackButton>
+      </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Info Card */}
+      <StudentInfoCard
+        student={mockStudent}
+        showBadge={false}
+      />
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-600">Cargando metas diarias...</p>
+          </div>
+        </div>
+      ) : (
+        /* Daily Goals Table */
+        <DailyGoalsTable
+          quarter={quarter || "Q1"}
+          quarterName={quarter ? getQuarterName(quarter) : "Primer Bloque"}
+          week={parseInt(week || "1")}
+          data={goalsData}
+          subjects={Object.keys(goalsData)}
+          onGoalUpdate={handleGoalUpdate}
+          onGoalToggle={handleGoalToggle}
+          onNotesUpdate={handleNotesUpdate}
+          onNotesToggle={handleNotesToggle}
+          dayTotals={calculateDayTotal}
+        />
+      )}
+    </div>
+  )
+}
+

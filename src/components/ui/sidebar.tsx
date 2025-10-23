@@ -27,9 +27,9 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH = "11rem"
+const SIDEBAR_WIDTH_COLLAPSED = "3rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContextProps = {
@@ -142,7 +142,7 @@ const SidebarProvider = React.forwardRef<
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH,
-                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                "--sidebar-width-icon": SIDEBAR_WIDTH_COLLAPSED,
                 ...style,
               } as React.CSSProperties
             }
@@ -328,9 +328,22 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
+  const { state, isMobile } = useSidebar()
+
+  // Calculate the padding based on sidebar state and device type
+  // On mobile: always use 0 padding (mobile sidebar is overlay)
+  // On desktop: use sidebar width when expanded, 0 when collapsed
+  const paddingLeft = isMobile
+    ? "0rem"
+    : state === "expanded" ? SIDEBAR_WIDTH : "0rem"
+
   return (
     <main
       ref={ref}
+      style={{
+        paddingLeft: paddingLeft,
+        ...props.style,
+      } as React.CSSProperties}
       className={cn(
         "relative flex w-full flex-1 flex-col bg-background",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",

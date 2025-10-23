@@ -1,0 +1,207 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { getInitials } from "@/lib/string-utils"
+import { LinkButton } from "@/components/ui/link-button"
+// BackButton replaced with shadcn Button
+import { Calendar } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import type { Student } from "@/types/student"
+
+interface StudentProfileProps {
+  student: Student
+  onBack: () => void
+  isParentView?: boolean
+}
+
+export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
+  const navigate = useNavigate()
+
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="mb-4"
+        >
+          ← Volver a Estudiantes
+        </Button>
+      </div>
+
+      <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Profile Header */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback className="text-lg">
+                  {getInitials(student.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-2xl">{student.name}</CardTitle>
+                <p className="text-muted-foreground">
+                  {student.certificationType} • {student.age} años
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Información Personal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Nombre Completo
+              </label>
+              <p className="text-sm">{student.name}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Edad
+              </label>
+              <p className="text-sm">{student.age} años</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Fecha de Nacimiento
+              </label>
+              <p className="text-sm">
+                {new Date(student.birthDate).toLocaleDateString("es-MX")}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Dirección
+              </label>
+              <p className="text-sm">{student.address}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Teléfono de Contacto
+              </label>
+              <p className="text-sm">{student.contactPhone}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Academic Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Información Académica</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Tipo de Certificación
+              </label>
+              <p className="text-sm">{student.certificationType}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Fecha de Graduación
+              </label>
+              <p className="text-sm">
+                {new Date(student.graduationDate).toLocaleDateString("es-MX")}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Va Nivelado
+              </label>
+              <p className="text-sm">
+                {student.isLeveled ? "Sí" : "No"}
+              </p>
+            </div>
+            {student.isLeveled && student.expectedLevel && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Nivel Esperado
+                </label>
+                <p className="text-sm">{student.expectedLevel}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* A.C.E. Projections */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Proyecciones Académicas
+              </CardTitle>
+              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
+                Ver Todas
+              </LinkButton>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Planificación semanal de PACEs por año escolar
+            </p>
+            <LinkButton
+              variant="default"
+              size="default"
+              showChevron={false}
+              className="w-full cursor-pointer"
+              onClick={() => navigate(`/students/${student.id}/projections`)}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              {isParentView ? 'Ver Proyecciones' : 'Administrar Proyecciones'}
+            </LinkButton>
+          </CardContent>
+        </Card>
+
+        {/* Parents Information - Hidden for parent users */}
+        {!isParentView && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Información de Padres</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {student.parents.length > 0 ? (
+                <div className="space-y-2">
+                  {student.parents.map((parent) => (
+                    <div
+                      key={parent.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>
+                          {getInitials(parent.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{parent.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Padre/Madre
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" className="ml-auto" style={{ cursor: 'pointer' }}>
+                        Ver Perfil
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No se ha registrado información de padres
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  )
+}

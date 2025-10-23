@@ -1,71 +1,168 @@
-import { Home, Settings, Users, FileText, LayoutDashboard } from "lucide-react"
+import * as React from "react"
+import { Home, Settings, Users, FileText, GraduationCap, Loader2, Building } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { useApi } from "@/services/api"
+import type { ModuleData } from "@/services/api"
 
-const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Home", url: "/", icon: Home },
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Settings", url: "/settings", icon: Settings },
-]
-
-interface AppSidebarProps {
-  isCollapsed?: boolean
+// Module to route/icon mapping
+const moduleConfig: Record<string, { url: string; icon: typeof GraduationCap }> = {
+  Estudiantes: { url: "/students", icon: GraduationCap },
+  Usuarios: { url: "/users", icon: Users },
+  Escuelas: { url: "/schools", icon: Building },
+  Configuración: { url: "/configuration", icon: Settings },
+  // Add more as modules are created
 }
 
-export function AppSidebar({ isCollapsed = false }: AppSidebarProps) {
+// Always visible items (no module required)
+const staticMenuItems = [
+  { title: "Inicio", url: "/", icon: Home },
+]
+
+export function AppSidebar() {
+  const location = useLocation()
+  const api = useApi()
+  const [modules, setModules] = React.useState<ModuleData[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [schoolName, setSchoolName] = React.useState<string>("Alenna")
+  const [isLoadingSchool, setIsLoadingSchool] = React.useState(true)
+
+  // Fetch user's modules and school name
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch modules and school name in parallel
+        const [userModules, userInfo] = await Promise.all([
+          api.modules.getUserModules(),
+          api.auth.getUserInfo()
+        ])
+
+        setModules(userModules)
+        setSchoolName(userInfo.schoolName)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setModules([])
+        // Keep default school name if fetch fails
+      } finally {
+        setIsLoading(false)
+        setIsLoadingSchool(false)
+      }
+    }
+
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only fetch once on mount
+
+  // Build menu items from modules
+  const dynamicMenuItems = modules.map(module => {
+    const config = moduleConfig[module.name] || { url: `/${module.name.toLowerCase()}`, icon: FileText }
+    return {
+      title: module.name,
+      url: config.url,
+      icon: config.icon,
+    }
+  })
+
+  const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
+
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      {/* Header */}
-      <div className={`border-b border-sidebar-border py-4 ${isCollapsed ? 'px-2' : 'px-6'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <span className="text-lg font-bold">A</span>
-          </div>
-          <div className={`overflow-hidden transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'}`}>
-            <div className="flex flex-col whitespace-nowrap">
-              <span className="text-sm font-semibold">Alenna</span>
-              <span className="text-xs text-sidebar-foreground/70">Your SaaS App</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <Sidebar collapsible="icon" variant="floating" className="w-[170px]">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link to="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <span className="text-lg font-bold">
+                    {isLoadingSchool ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      schoolName.charAt(0).toUpperCase()
+                    )}
+                  </span>
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <span className="font-semibold break-words leading-tight">
+                    {isLoadingSchool ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      schoolName
+                    )}
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
-      {/* Navigation */}
-      <div className={`flex-1 py-4 ${isCollapsed ? 'px-2' : 'px-3'}`}>
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <div className="px-3 py-2 text-xs font-semibold text-sidebar-foreground/70">
-              Navigation
-            </div>
-          )}
-          {menuItems.map((item) => (
-            <Link
-              key={item.title}
-              to={item.url}
-              className={`flex items-center gap-3 rounded-md text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${isCollapsed ? 'justify-center px-2 py-2' : 'px-3 py-2'
-                }`}
-              title={isCollapsed ? item.title : undefined}
-            >
-              <item.icon className="h-4 w-4" />
-              {!isCollapsed && <span>{item.title}</span>}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+          <SidebarGroupContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <SidebarMenu>
+                {allMenuItems.map((item) => {
+                  const isActive = item.url === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.url)
 
-      {/* Footer */}
-      <div className={`border-t border-sidebar-border ${isCollapsed ? 'p-2' : 'p-4'}`}>
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
-          <UserButton />
-          {!isCollapsed && (
-            <div className="flex flex-col text-sm">
-              <span className="font-medium">User Account</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.title}
+                        className={isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}
+                      >
+                        <Link to={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <UserButton />
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Usuario</span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">Administrar</span>
+                </div>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   )
 }
