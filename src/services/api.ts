@@ -157,12 +157,25 @@ export interface UserInfo {
     name: string;
     displayName: string;
   }>;
+  permissions: string[];
 }
 
 export const authApi = {
   syncUser: (token: string | null) => apiFetch('/auth/sync', token, { method: 'POST' }),
   getCurrentUser: (token: string | null) => apiFetch('/auth/me', token),
   getUserInfo: (token: string | null) => apiFetch('/auth/info', token),
+};
+
+// Users API
+export const usersApi = {
+  getUsers: (token: string | null) => apiFetch('/users', token),
+  getAvailableRoles: (token: string | null) => apiFetch('/users/roles', token),
+  createUser: (data: Record<string, unknown>, token: string | null) => 
+    apiFetch('/users', token, { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id: string, data: Record<string, unknown>, token: string | null) => 
+    apiFetch(`/users/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteUser: (id: string, token: string | null) => 
+    apiFetch(`/users/${id}`, token, { method: 'DELETE' }),
 };
 
 // Daily Goals API
@@ -265,9 +278,19 @@ export const dailyGoalsApi = {
 // Schools API
 export const schoolsApi = {
   getMy: (token: string | null) => apiFetch('/schools/me', token),
-  create: (data: Record<string, unknown>) => apiFetch('/schools', null, { method: 'POST', body: JSON.stringify(data) }),
-  update: (data: Record<string, unknown>, token: string | null) => 
+  getAll: (token: string | null) => apiFetch('/schools', token),
+  getById: (id: string, token: string | null) => apiFetch(`/schools/${id}`, token),
+  create: (data: Record<string, unknown>, token: string | null) => apiFetch('/schools/admin/create', token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/schools/me', token, { method: 'PUT', body: JSON.stringify(data) }),
+  updateById: (id: string, data: Record<string, unknown>, token: string | null) =>
+    apiFetch(`/schools/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) =>
+    apiFetch(`/schools/${id}`, token, { method: 'DELETE' }),
+  getStudentsCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/students/count`, token),
+  getStudents: (id: string, token: string | null) => apiFetch(`/schools/${id}/students`, token),
+  getTeachersCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers/count`, token),
+  getTeachers: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers`, token),
 };
 
 // Custom hook for authenticated API calls
@@ -374,10 +397,45 @@ export function useApi() {
         const token = await getToken();
         return schoolsApi.getMy(token);
       },
-      create: schoolsApi.create,
+      getAll: async () => {
+        const token = await getToken();
+        return schoolsApi.getAll(token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getById(id, token);
+      },
+      create: async (data: Record<string, unknown>) => {
+        const token = await getToken();
+        return schoolsApi.create(data, token);
+      },
       update: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolsApi.update(data, token);
+      },
+      updateById: async (id: string, data: Record<string, unknown>) => {
+        const token = await getToken();
+        return schoolsApi.updateById(id, data, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.delete(id, token);
+      },
+      getStudentsCount: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getStudentsCount(id, token);
+      },
+      getStudents: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getStudents(id, token);
+      },
+      getTeachersCount: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getTeachersCount(id, token);
+      },
+      getTeachers: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getTeachers(id, token);
       },
     },
     schoolYears: {
@@ -464,6 +522,27 @@ export function useApi() {
         const token = await getToken();
         return dailyGoalsApi.delete(studentId, projectionId, goalId, token);
       },
+    },
+    // Users API
+    getUsers: async () => {
+      const token = await getToken();
+      return usersApi.getUsers(token);
+    },
+    getAvailableRoles: async () => {
+      const token = await getToken();
+      return usersApi.getAvailableRoles(token);
+    },
+    createUser: async (userData: any) => {
+      const token = await getToken();
+      return usersApi.createUser(userData, token);
+    },
+    updateUser: async (userId: string, userData: any) => {
+      const token = await getToken();
+      return usersApi.updateUser(userId, userData, token);
+    },
+    deleteUser: async (userId: string) => {
+      const token = await getToken();
+      return usersApi.deleteUser(userId, token);
     },
   };
 }
