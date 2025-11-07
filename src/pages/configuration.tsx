@@ -62,7 +62,7 @@ export default function ConfigurationPage() {
         const modules = await api.modules.getUserModules();
         const allPermissions = new Set<string>();
         modules.forEach((module: ModuleData) => {
-          module.permissions.forEach((perm: string) => allPermissions.add(perm));
+          module.actions.forEach((action: string) => allPermissions.add(action));
         });
         setUserPermissions(allPermissions);
       } catch (error) {

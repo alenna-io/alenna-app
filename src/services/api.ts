@@ -93,10 +93,11 @@ export const paceCatalogApi = {
 // Modules API
 export interface ModuleData {
   id: string;
+  key: string;
   name: string;
   description?: string;
   displayOrder: number;
-  permissions: string[];
+  actions: string[];
 }
 
 export const modulesApi = {
@@ -158,6 +159,7 @@ export interface UserInfo {
     displayName: string;
   }>;
   permissions: string[];
+  modules: ModuleData[];
 }
 
 export const authApi = {
