@@ -12,6 +12,7 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
+    'Cache-Control': 'no-cache',
   };
 
   // Merge any additional headers
@@ -24,12 +25,17 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   }
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
+    cache: 'no-store',
     ...options,
     headers,
   });
 
   // Handle 204 No Content (for DELETE operations)
   if (response.status === 204) {
+    return null;
+  }
+
+  if (response.status === 304) {
     return null;
   }
 
@@ -153,6 +159,21 @@ export interface UserInfo {
   fullName: string;
   schoolId: string;
   schoolName: string;
+  studentId?: string | null;
+  studentProfile?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    name: string;
+    birthDate: string;
+    graduationDate: string;
+    certificationType?: string;
+    contactPhone?: string;
+    isLeveled: boolean;
+    expectedLevel?: string;
+    address?: string;
+    parents: Array<{ id: string; name: string }>;
+  } | null;
   roles: Array<{
     id: string;
     name: string;

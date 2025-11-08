@@ -44,6 +44,11 @@ export function DailyGoalsTable({
   const [notesValue, setNotesValue] = React.useState("")
   const [notesHistory, setNotesHistory] = React.useState<{ subject: string, dayIndex: number, history: Array<{ text: string, completedDate: string }> } | null>(null)
 
+  const isEditable = Boolean(onGoalUpdate)
+  const canToggleGoal = Boolean(onGoalToggle)
+  const canEditNotes = Boolean(onNotesUpdate)
+  const canToggleNotes = Boolean(onNotesToggle)
+
   // Prevent body scroll when modal is open
   React.useEffect(() => {
     if (notesHistory) {
@@ -57,6 +62,7 @@ export function DailyGoalsTable({
   }, [notesHistory])
 
   const handleGoalClick = (subject: string, dayIndex: number) => {
+    if (!onGoalUpdate) return
     const currentGoal = data[subject]?.[dayIndex]
     const currentValue = currentGoal?.text || ""
     setEditingCell({ subject, dayIndex })
@@ -65,6 +71,11 @@ export function DailyGoalsTable({
 
   const handleGoalSubmit = () => {
     if (editingCell) {
+      if (!onGoalUpdate) {
+        setEditingCell(null)
+        setEditValue("")
+        return
+      }
       // Only submit if the value is valid (1-1000 or Self Test)
       const trimmedValue = editValue.trim()
       const isValid =
@@ -96,6 +107,7 @@ export function DailyGoalsTable({
   }
 
   const handleNotesClick = (subject: string, dayIndex: number) => {
+    if (!onNotesUpdate) return
     const currentNotes = data[subject]?.[dayIndex]?.notes || ""
     setEditingNotes({ subject, dayIndex })
     setNotesValue(currentNotes)
@@ -103,6 +115,11 @@ export function DailyGoalsTable({
 
   const handleNotesSubmit = () => {
     if (editingNotes) {
+      if (!onNotesUpdate) {
+        setEditingNotes(null)
+        setNotesValue("")
+        return
+      }
       onNotesUpdate?.(editingNotes.subject, editingNotes.dayIndex, notesValue)
       setEditingNotes(null)
       setNotesValue("")
@@ -279,35 +296,45 @@ export function DailyGoalsTable({
                       ) : (
                         <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
                           <div className="flex items-center justify-center w-full gap-2">
-                            {data[subject]?.[dayIndex]?.text && (
+                            {data[subject]?.[dayIndex]?.text && canToggleGoal && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  onGoalToggle?.(subject, dayIndex)
+                                  if (canToggleGoal) {
+                                    onGoalToggle?.(subject, dayIndex)
+                                  }
                                 }}
                                 className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${data[subject]?.[dayIndex]?.isCompleted
                                   ? "bg-green-500 border-green-500"
                                   : "bg-white border-gray-300 hover:border-green-400"
                                   }`}
                                 title={data[subject]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
+                                disabled={!canToggleGoal}
                               >
                                 {data[subject]?.[dayIndex]?.isCompleted && (
                                   <Check className="h-3 w-3 text-white" />
                                 )}
                               </button>
                             )}
+                            {data[subject]?.[dayIndex]?.text && !canToggleGoal && data[subject]?.[dayIndex]?.isCompleted && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                                <Check className="h-3 w-3" />
+                              </Badge>
+                            )}
                             <div
                               onClick={() => handleGoalClick(subject, dayIndex)}
-                              className="flex-1 min-h-[32px] flex items-center justify-center transition-all cursor-pointer hover:bg-muted/50 rounded"
+                              className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                             >
                               <span className={`text-sm font-mono text-center ${data[subject]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
                                 }`}>
                                 {data[subject]?.[dayIndex]?.text || (
-                                  <span className="text-muted-foreground/50 text-xs">Agregar</span>
+                                  <span className="text-muted-foreground/50 text-xs">
+                                    {isEditable ? 'Agregar' : '—'}
+                                  </span>
                                 )}
                               </span>
                             </div>
-                            {data[subject]?.[dayIndex]?.text && (
+                            {data[subject]?.[dayIndex]?.text && (canEditNotes || (data[subject]?.[dayIndex]?.notesHistory?.length ?? 0) > 0) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -319,7 +346,7 @@ export function DailyGoalsTable({
                                       dayIndex,
                                       history: goal.notesHistory
                                     })
-                                  } else {
+                                  } else if (canEditNotes) {
                                     // Otherwise edit/add note
                                     handleNotesClick(subject, dayIndex)
                                   }
@@ -351,10 +378,13 @@ export function DailyGoalsTable({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  onNotesToggle?.(subject, dayIndex)
+                                  if (canToggleNotes) {
+                                    onNotesToggle?.(subject, dayIndex)
+                                  }
                                 }}
                                 className="shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer bg-white border-red-500 hover:bg-red-50 hover:border-red-600"
                                 title="Marcar completo"
+                                disabled={!canToggleNotes}
                               >
                               </button>
                               <div className="flex-1">

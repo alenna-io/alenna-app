@@ -58,7 +58,7 @@ export function StudentsTable({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Lista de Estudiantes ({students.length})
+          Lista de Estudiantes
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">

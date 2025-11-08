@@ -11,6 +11,7 @@ import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Calendar, ChevronRight, BookOpen } from "lucide-react"
 import { useApi } from "@/services/api"
+import type { UserInfo } from "@/services/api"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
 
@@ -24,6 +25,33 @@ export default function ProjectionListPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+  const [permissionsLoaded, setPermissionsLoaded] = React.useState(false)
+
+  React.useEffect(() => {
+    let isMounted = true
+
+    const loadUserInfo = async () => {
+      try {
+        const info = await api.auth.getUserInfo()
+        if (isMounted) {
+          setUserInfo(info)
+        }
+      } catch (err) {
+        console.error('Error loading user info:', err)
+      } finally {
+        if (isMounted) {
+          setPermissionsLoaded(true)
+        }
+      }
+    }
+
+    loadUserInfo()
+
+    return () => {
+      isMounted = false
+    }
+  }, [api])
 
   // Fetch student and projections
   React.useEffect(() => {
@@ -78,7 +106,7 @@ export default function ProjectionListPage() {
     return <Navigate to="/404" replace />
   }
 
-  if (isLoading) {
+  if (isLoading || !permissionsLoaded) {
     return <LoadingState variant="list" />
   }
 
@@ -96,11 +124,19 @@ export default function ProjectionListPage() {
     )
   }
 
+  const roles = userInfo?.roles.map((role) => role.name) ?? []
+  const hasRole = (role: string) => roles.includes(role)
+  const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('SCHOOL_ADMIN') && !hasRole('ADMIN') && !hasRole('SUPERADMIN')
+  const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('SCHOOL_ADMIN') && !hasRole('ADMIN') && !hasRole('SUPERADMIN')
+  const canCreateProjection = userInfo?.permissions.includes('projections.create') ?? false
+
+  const backDestination = isStudentOnly ? '/my-profile' : `/students/${studentId}`
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton to={`/students/${studentId}`}>
+        <BackButton to={backDestination}>
           Volver al Perfil
         </BackButton>
       </div>
@@ -169,13 +205,12 @@ export default function ProjectionListPage() {
               icon={Calendar}
               title="No hay proyecciones"
               description="No se han creado proyecciones para este estudiante"
-              action={{
+              action={canCreateProjection && !isStudentOnly && !isParentOnly ? {
                 label: "Crear Primera Proyección",
                 onClick: () => {
-                  // TODO: Implement create projection dialog
                   console.log('Create projection')
                 }
-              }}
+              } : undefined}
             />
           </CardContent>
         </Card>

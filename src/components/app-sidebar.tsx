@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Home, Settings, Users, FileText, GraduationCap, Loader2, Building } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -16,20 +16,22 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { useApi } from "@/services/api"
-import type { ModuleData } from "@/services/api"
+import type { ModuleData, UserInfo } from "@/services/api"
 
-// Module to route/icon mapping
-const moduleConfig: Record<string, { url: string; icon: typeof GraduationCap }> = {
-  Estudiantes: { url: "/students", icon: GraduationCap },
-  Usuarios: { url: "/users", icon: Users },
-  Escuelas: { url: "/schools", icon: Building },
-  Configuración: { url: "/configuration", icon: Settings },
+type MenuIcon = typeof GraduationCap
+
+// Module to route/icon mapping keyed by module key
+const moduleConfig: Record<string, { title: string; url: string; icon: MenuIcon }> = {
+  students: { title: "Estudiantes", url: "/students", icon: GraduationCap },
+  users: { title: "Usuarios", url: "/users", icon: Users },
+  schools: { title: "Escuelas", url: "/schools", icon: Building },
+  configuration: { title: "Configuración", url: "/configuration", icon: Settings },
   // Add more as modules are created
 }
 
 // Always visible items (no module required)
-const staticMenuItems = [
-  { title: "Inicio", url: "/", icon: Home },
+const staticMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
+  // { title: "Inicio", url: "/", icon: Home },
 ]
 
 export function AppSidebar() {
@@ -39,6 +41,7 @@ export function AppSidebar() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [schoolName, setSchoolName] = React.useState<string>("Alenna")
   const [isLoadingSchool, setIsLoadingSchool] = React.useState(true)
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
 
   // Fetch user's modules and school name
   React.useEffect(() => {
@@ -52,6 +55,7 @@ export function AppSidebar() {
 
         setModules(userModules)
         setSchoolName(userInfo.schoolName)
+        setUserInfo(userInfo)
       } catch (error) {
         console.error('Error fetching data:', error)
         setModules([])
@@ -66,15 +70,53 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only fetch once on mount
 
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+
+  const isSuperAdmin = hasRole('SUPERADMIN')
+  const isSchoolAdmin = hasRole('SCHOOL_ADMIN')
+  const isTeacherOnly = hasRole('TEACHER') && !isSuperAdmin && !isSchoolAdmin
+  const isParentOnly = hasRole('PARENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER')
+  const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
+
   // Build menu items from modules
-  const dynamicMenuItems = modules.map(module => {
-    const config = moduleConfig[module.name] || { url: `/${module.name.toLowerCase()}`, icon: FileText }
-    return {
-      title: module.name,
-      url: config.url,
-      icon: config.icon,
+  const filteredModules = modules.filter(module => {
+    const hasActions = (module.actions?.length ?? 0) > 0
+    if (!hasActions) return false
+
+    if (module.key === 'configuration' && (isTeacherOnly || isParentOnly || isStudentOnly)) {
+      return false
     }
+
+    if (module.key === 'students' && isStudentOnly) {
+      return false
+    }
+
+    return true
   })
+
+  const dynamicMenuItems = filteredModules
+    .map(module => {
+      const config = moduleConfig[module.key] || {
+        title: module.name,
+        url: `/${module.key}`,
+        icon: FileText,
+      }
+
+      return {
+        title: config.title,
+        url: config.url,
+        icon: config.icon,
+      }
+    })
+
+  if (isStudentOnly) {
+    dynamicMenuItems.push({
+      title: "Mi Perfil",
+      url: "/my-profile",
+      icon: UserIcon,
+    })
+  }
 
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
 

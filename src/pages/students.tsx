@@ -66,10 +66,42 @@ export default function StudentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+
+  const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+  const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+
+  if (isStudentOnly && !studentId) {
+    return <Navigate to="/my-profile" replace />
+  }
+
+  React.useEffect(() => {
+    if (!userInfo || !isStudentOnly) return
+
+    const ownId = userInfo.studentId
+    if (!ownId) {
+      setHasPermission(false)
+      return
+    }
+
+    if (!studentId) {
+      return
+    }
+
+    if (studentId !== ownId) {
+      navigate('/my-profile', { replace: true })
+    }
+  }, [userInfo, isStudentOnly, studentId, navigate])
+
   // Fetch students list from API (scoped to user's school or specific school) - only when not viewing a specific student
   React.useEffect(() => {
-    // Don't fetch list if we're viewing a specific student profile
     if (studentId) return
+    if (isStudentOnly) {
+      setStudents([])
+      setIsLoading(false)
+      return
+    }
 
     let isMounted = true
 
@@ -134,7 +166,7 @@ export default function StudentsPage() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, schoolId])
+  }, [studentId, schoolId, isStudentOnly])
 
   // Fetch individual student from API when viewing profile
   React.useEffect(() => {
@@ -285,8 +317,7 @@ export default function StudentsPage() {
   }
 
   // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
-  const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
-    !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+  const parentOnly = isParentOnly
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
@@ -313,9 +344,14 @@ export default function StudentsPage() {
     )
   }
 
+  if (isStudentOnly && selectedStudent) {
+    navigate('/my-profile', { replace: true })
+    return null
+  }
+
   // Show student profile if we have a selected student
   if (selectedStudent) {
-    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={isParentOnly} />
+    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={parentOnly} />
   }
 
   // Show loading state for students list
@@ -324,7 +360,7 @@ export default function StudentsPage() {
   }
 
   // Show parent-specific view
-  if (isParentOnly && !studentId) {
+  if (parentOnly && !studentId) {
     return (
       <div className="space-y-6">
         {error && (

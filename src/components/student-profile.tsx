@@ -12,23 +12,26 @@ interface StudentProfileProps {
   student: Student
   onBack: () => void
   isParentView?: boolean
+  isStudentView?: boolean
 }
 
-export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="mb-4"
-        >
-          ← Volver a Estudiantes
-        </Button>
-      </div>
+      {!isStudentView && (
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="mb-4"
+          >
+            ← Volver a Estudiantes
+          </Button>
+        </div>
+      )}
 
       <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
 
@@ -140,30 +143,45 @@ export function StudentProfile({ student, onBack, isParentView = false }: Studen
                 <Calendar className="h-5 w-5" />
                 Proyecciones Académicas
               </CardTitle>
-              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
-                Ver Todas
-              </LinkButton>
+              {!isStudentView && (
+                <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
+                  Ver Todas
+                </LinkButton>
+              )}
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
               Planificación semanal de PACEs por año escolar
             </p>
-            <LinkButton
-              variant="default"
-              size="default"
-              showChevron={false}
-              className="w-full cursor-pointer"
-              onClick={() => navigate(`/students/${student.id}/projections`)}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              {isParentView ? 'Ver Proyecciones' : 'Administrar Proyecciones'}
-            </LinkButton>
+            {(isParentView || isStudentView) ? (
+              <LinkButton
+                variant="outline"
+                size="default"
+                showChevron={false}
+                className="w-full cursor-pointer"
+                onClick={() => navigate(`/students/${student.id}/projections`)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Ver Proyecciones
+              </LinkButton>
+            ) : (
+              <LinkButton
+                variant="default"
+                size="default"
+                showChevron={false}
+                className="w-full cursor-pointer"
+                onClick={() => navigate(`/students/${student.id}/projections`)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Administrar Proyecciones
+              </LinkButton>
+            )}
           </CardContent>
         </Card>
 
         {/* Parents Information - Hidden for parent users */}
-        {!isParentView && (
+        {!isParentView && !isStudentView && (
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Información de Padres</CardTitle>
