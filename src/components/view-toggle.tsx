@@ -9,7 +9,7 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   return (
-    <Card style={{ border: "none", boxShadow: "none" }}>
+    <Card style={{ border: "none", boxShadow: "none", backgroundColor: "transparent" }}>
       <CardContent className="p-0">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">Vista:</span>

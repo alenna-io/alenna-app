@@ -1,24 +1,32 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet } from "react-router-dom"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
+import { SidebarProvider } from "@/components/ui/sidebar"
 import { Footer } from "@/components/footer"
+import { Header } from "@/components/header"
 
 export function DashboardLayout() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col min-h-screen">
-        <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 px-3 md:px-4 border-b">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          {/* <h1 className="text-lg md:text-xl font-semibold">Alenna</h1> */}
-        </header>
-        <div className="flex-1 p-3 md:p-6">
-          <Outlet />
+    <SidebarProvider defaultOpen={true}>
+      <div className="flex h-screen w-screen overflow-hidden">
+        {/* Sidebar - full height (100vh), fixed on desktop, overlay on mobile */}
+        <AppSidebar />
+
+        {/* Main content wrapper - positioned to the right of sidebar on desktop, full width on mobile */}
+        <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden md:ml-[200px]">
+          {/* Header - fixed at top, non-scrollable */}
+          <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 px-4 md:px-6 border-b bg-card z-20">
+            <Header />
+          </header>
+
+          {/* Content area - only this section scrolls */}
+          <div className="flex flex-col flex-1 overflow-y-auto">
+            <div className="flex-1 p-3 md:p-6">
+              <Outlet />
+            </div>
+            <Footer />
+          </div>
         </div>
-        <Footer />
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   )
 }

@@ -1,10 +1,27 @@
 @import "tailwindcss";
 
+/* Sharp Grotesk Font - Book as default, Medium for bold */
+@font-face {
+  font-family: 'Sharp Grotesk';
+  src: url('/fonts/SharpGrotesk-Book20.otf') format('opentype');
+  font-weight: 100 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sharp Grotesk';
+  src: url('/fonts/SharpGrotesk-Medium20.otf') format('opentype');
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Light Theme - Primary Colors */
-  --color-background: hsl(0 0% 100%);
+  --color-background: hsl(0 0% 96.1%); /* #f5f5f5 - Light gray background */
   --color-foreground: hsl(222.2 84% 4.9%);
-  --color-card: hsl(0 0% 100%);
+  --color-card: hsl(0 0% 100%); /* Pure white for cards */
   --color-card-foreground: hsl(222.2 84% 4.9%);
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(222.2 84% 4.9%);
@@ -22,14 +39,14 @@
   --color-input: hsl(214.3 31.8% 91.4%);
   --color-ring: hsl(221.2 83.2% 53.3%);
   
-  /* Sidebar Colors */
-  --color-sidebar: hsl(0 0% 98%);
-  --color-sidebar-foreground: hsl(240 5.3% 26.1%);
+  /* Sidebar Colors - Dark slate for better contrast */
+  --color-sidebar: hsl(215 25% 27%); /* Dark slate blue */
+  --color-sidebar-foreground: hsl(0 0% 95%); /* Light text */
   --color-sidebar-primary: hsl(221.2 83.2% 53.3%);
-  --color-sidebar-primary-foreground: hsl(0 0% 98%);
-  --color-sidebar-accent: hsl(240 4.8% 95.9%);
-  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --color-sidebar-border: hsl(220 13% 91%);
+  --color-sidebar-primary-foreground: hsl(0 0% 100%);
+  --color-sidebar-accent: hsl(215 25% 35%); /* Slightly lighter slate for hover */
+  --color-sidebar-accent-foreground: hsl(0 0% 100%);
+  --color-sidebar-border: hsl(215 25% 20%); /* Darker border */
   --color-sidebar-ring: hsl(221.2 83.2% 53.3%);
 
   /* Border Radius */
@@ -48,6 +65,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: 'Sharp Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   body {
@@ -55,11 +73,31 @@
   }
 }
 
-/* Fix sidebar positioning - only for desktop */
+/* Fix sidebar positioning and layout */
 @layer components {
-  @media (min-width: 768px) {
-    [data-sidebar="sidebar"] {
-      position: relative !important;
-    }
+  /* Sidebar provider wrapper should flex properly */
+  .group\/sidebar-wrapper {
+    display: flex !important;
+    min-height: 0 !important;
+  }
+  
+  [data-sidebar="sidebar"] {
+    position: relative !important;
+    height: 100vh !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Prevent sidebar inset from taking full width */
+  [data-sidebar="inset"] {
+    left: 0 !important;
+  }
+  
+  /* Slow down sidebar collapse/expand transition */
+  [data-sidebar="sidebar"] {
+    transition-duration: 400ms !important;
+  }
+  
+  [data-sidebar="sidebar"] * {
+    transition-duration: 400ms !important;
   }
 }

@@ -7,11 +7,10 @@ import { PageHeader } from "@/components/ui/page-header"
 import { Navigate } from "react-router-dom"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { EmptyState } from "@/components/ui/empty-state"
-import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { Calendar, ChevronRight, BookOpen } from "lucide-react"
 import { useApi } from "@/services/api"
-import type { UserInfo } from "@/services/api"
+import { useUser } from "@/contexts/UserContext"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
 
@@ -25,33 +24,7 @@ export default function ProjectionListPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
-  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
-  const [permissionsLoaded, setPermissionsLoaded] = React.useState(false)
-
-  React.useEffect(() => {
-    let isMounted = true
-
-    const loadUserInfo = async () => {
-      try {
-        const info = await api.auth.getUserInfo()
-        if (isMounted) {
-          setUserInfo(info)
-        }
-      } catch (err) {
-        console.error('Error loading user info:', err)
-      } finally {
-        if (isMounted) {
-          setPermissionsLoaded(true)
-        }
-      }
-    }
-
-    loadUserInfo()
-
-    return () => {
-      isMounted = false
-    }
-  }, [api])
+  const { userInfo, isLoading: isLoadingUser } = useUser()
 
   // Fetch student and projections
   React.useEffect(() => {
@@ -106,16 +79,13 @@ export default function ProjectionListPage() {
     return <Navigate to="/404" replace />
   }
 
-  if (isLoading || !permissionsLoaded) {
+  if (isLoading || isLoadingUser) {
     return <LoadingState variant="list" />
   }
 
   if (error || !student) {
     return (
       <div className="space-y-6">
-        <BackButton to={`/students/${studentId}`}>
-          Volver al Perfil
-        </BackButton>
         <ErrorAlert
           title="Error al cargar datos"
           message={error || 'No se pudo cargar el estudiante'}
@@ -134,27 +104,15 @@ export default function ProjectionListPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+      {/* Mobile back button */}
+      <div className="md:hidden">
         <BackButton to={backDestination}>
-          Volver al Perfil
+          Volver
         </BackButton>
       </div>
 
-      {/* Student Info */}
-      <StudentInfoCard
-        student={{
-          id: student.id,
-          name: student.name,
-          currentGrade: student.certificationType,
-          schoolYear: ''
-        }}
-        showBadge={false}
-      />
-
       {/* Page Title */}
       <PageHeader
-        icon={Calendar}
         title="Proyecciones Académicas"
         description="Historial de proyecciones por año escolar"
       />

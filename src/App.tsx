@@ -20,13 +20,16 @@ import MyProfilePage from '@/pages/my-profile'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
+import { UserProvider } from '@/contexts/UserContext'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SignedIn>
-        <AuthSync>{children}</AuthSync>
+        <AuthSync>
+          <UserProvider>{children}</UserProvider>
+        </AuthSync>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />

@@ -69,7 +69,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
   }
 
   return (
-    <Card className="w-full" style={{ border: "none", boxShadow: "none" }}>
+    <Card className="w-full" style={{ border: "none", boxShadow: "none", backgroundColor: "transparent" }}>
       <CardHeader className='p-0'>
         <div className="flex items-center justify-start gap-3 mb-2">
           <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
-import { useApi } from "@/services/api"
+import { useUser } from "@/contexts/UserContext"
 import { LoadingState } from "@/components/ui/loading-state"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -11,11 +11,11 @@ import { getInitials } from "@/lib/string-utils"
 import type { Student } from "@/types/student"
 
 export default function MyProfilePage() {
-  const api = useApi()
+  const { userInfo, isLoading: isLoadingUser } = useUser()
   const navigate = useNavigate()
   const [student, setStudent] = React.useState<Student | null>(null)
   const [error, setError] = React.useState<string | null>(null)
-  const [status, setStatus] = React.useState<'loading' | 'ready' | 'error' | 'forbidden'>("loading")
+  const [status, setStatus] = React.useState<'loading' | 'ready' | 'error'>("loading")
 
   const calculateAge = (birthDateIso: string): number => {
     const birthDate = new Date(birthDateIso)
@@ -30,14 +30,15 @@ export default function MyProfilePage() {
 
   React.useEffect(() => {
     const loadProfile = async () => {
+      if (!userInfo) return
+
       try {
         setStatus('loading')
-        const userInfo = await api.auth.getUserInfo()
         console.info('[MyProfile] User info loaded:', {
           id: userInfo.id,
           studentId: userInfo.studentId,
           studentProfile: userInfo.studentProfile,
-          roles: userInfo.roles.map((role: typeof userInfo.roles[number]) => role.name),
+          roles: userInfo.roles.map((role) => role.name),
         })
 
         if (userInfo.studentProfile) {
@@ -60,71 +61,11 @@ export default function MyProfilePage() {
 
           setStudent(derivedStudent)
           setStatus('ready')
-          return
-        }
-
-        let studentRecord: Record<string, unknown> | null = null
-
-        if (userInfo.studentId) {
-          try {
-            const data = await api.students.getById(userInfo.studentId)
-            studentRecord = data as Record<string, unknown>
-            console.info('[MyProfile] Student retrieved by id:', studentRecord)
-          } catch (error) {
-            console.error('Error loading student by id:', error)
-          }
-        }
-
-        if (!studentRecord) {
-          try {
-            const list = await api.students.getAll()
-            if (Array.isArray(list)) {
-              const asRecords = list as Array<Record<string, unknown>>
-              if (userInfo.id) {
-                studentRecord = asRecords.find((student) => {
-                  const parents = (student.parents as Array<{ id: string }> | undefined) ?? []
-                  return parents.some((parent) => parent.id === userInfo.id)
-                }) ?? null
-                if (studentRecord) {
-                  console.info('[MyProfile] Student matched via parent link:', studentRecord)
-                }
-              }
-
-              if (!studentRecord && asRecords.length > 0) {
-                studentRecord = asRecords[0]
-                console.info('[MyProfile] Using fallback first student in list:', studentRecord)
-              }
-            }
-          } catch (error) {
-            console.error('Error loading student list for profile:', error)
-          }
-        }
-
-        if (!studentRecord) {
-          console.warn('[MyProfile] No student record found after all checks')
+        } else {
+          console.warn('[MyProfile] No student profile found in userInfo')
           setStatus('error')
           setError('Aún no se ha registrado tu perfil como estudiante. Contacta al administrador de la escuela.')
-          return
         }
-
-        const transformedStudent: Student = {
-          id: studentRecord.id as string,
-          firstName: studentRecord.firstName as string,
-          lastName: studentRecord.lastName as string,
-          name: studentRecord.name as string,
-          age: calculateAge(studentRecord.birthDate as string),
-          birthDate: studentRecord.birthDate as string,
-          certificationType: studentRecord.certificationType as string,
-          graduationDate: studentRecord.graduationDate as string,
-          parents: (studentRecord.parents || []) as Student['parents'],
-          contactPhone: (studentRecord.contactPhone || '') as string,
-          isLeveled: studentRecord.isLeveled as boolean,
-          expectedLevel: studentRecord.expectedLevel as string | undefined,
-          address: (studentRecord.address || '') as string,
-        }
-
-        setStudent(transformedStudent)
-        setStatus('ready')
       } catch (err) {
         const message = err instanceof Error ? err.message : 'No se pudo cargar el perfil'
         console.error('Error loading my profile (outer catch):', err)
@@ -134,10 +75,9 @@ export default function MyProfilePage() {
     }
 
     loadProfile()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [userInfo])
 
-  if (status === 'loading') {
+  if (isLoadingUser || status === 'loading') {
     return <LoadingState variant="profile" />
   }
 

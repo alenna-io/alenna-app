@@ -16,7 +16,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { useApi } from "@/services/api"
-import type { ModuleData, UserInfo } from "@/services/api"
+import type { ModuleData } from "@/services/api"
+import { useUser } from "@/contexts/UserContext"
 
 type MenuIcon = typeof GraduationCap
 
@@ -37,38 +38,29 @@ const staticMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
 export function AppSidebar() {
   const location = useLocation()
   const api = useApi()
+  const { userInfo, isLoading: isLoadingUser } = useUser()
   const [modules, setModules] = React.useState<ModuleData[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const [schoolName, setSchoolName] = React.useState<string>("Alenna")
-  const [isLoadingSchool, setIsLoadingSchool] = React.useState(true)
-  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
 
-  // Fetch user's modules and school name
+  // Fetch user's modules
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch modules and school name in parallel
-        const [userModules, userInfo] = await Promise.all([
-          api.modules.getUserModules(),
-          api.auth.getUserInfo()
-        ])
-
+        const userModules = await api.modules.getUserModules()
         setModules(userModules)
-        setSchoolName(userInfo.schoolName)
-        setUserInfo(userInfo)
       } catch (error) {
-        console.error('Error fetching data:', error)
+        console.error('Error fetching modules:', error)
         setModules([])
-        // Keep default school name if fetch fails
       } finally {
         setIsLoading(false)
-        setIsLoadingSchool(false)
       }
     }
 
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only fetch once on mount
+
+  const schoolName = userInfo?.schoolName ?? "Alenna"
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
   const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
@@ -121,41 +113,43 @@ export function AppSidebar() {
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
 
   return (
-    <Sidebar collapsible="icon" variant="floating" className="w-[170px]">
+    <Sidebar collapsible="offcanvas" className="w-[200px]">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <span className="text-lg font-bold">
-                    {isLoadingSchool ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      schoolName.charAt(0).toUpperCase()
-                    )}
-                  </span>
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <span className="font-semibold break-words leading-tight">
-                    {isLoadingSchool ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      schoolName
-                    )}
-                  </span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center justify-between">
+          <SidebarMenu className="flex-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link to="/">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <span className="text-lg font-bold">
+                      {isLoadingUser ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        schoolName.charAt(0).toUpperCase()
+                      )}
+                    </span>
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                    <span className="font-semibold break-words leading-tight">
+                      {isLoadingUser ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        schoolName
+                      )}
+                    </span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navegación</SidebarGroupLabel>
           <SidebarGroupContent>
-            {isLoading ? (
+            {(isLoading || isLoadingUser) ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
@@ -194,9 +188,17 @@ export function AppSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <div className="flex items-center gap-2 cursor-pointer">
                 <UserButton />
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Usuario</span>
-                  <span className="truncate text-xs text-sidebar-foreground/70">Administrar</span>
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                  <span className="truncate font-semibold">
+                    {isLoadingUser ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      userInfo?.fullName || 'Usuario'
+                    )}
+                  </span>
+                  <span className="truncate text-xs text-sidebar-foreground/70">
+                    {isLoadingUser ? '...' : userInfo?.email || 'Administrar'}
+                  </span>
                 </div>
               </div>
             </SidebarMenuButton>

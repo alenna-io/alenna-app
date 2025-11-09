@@ -2,10 +2,8 @@ import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { BackButton } from "@/components/ui/back-button"
-import { Badge } from "@/components/ui/badge"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
-import { Clock } from "lucide-react"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
@@ -13,7 +11,7 @@ import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ErrorDialog } from "@/components/ui/error-dialog"
 import { Navigate } from "react-router-dom"
-import type { UserInfo, CurrentWeekInfo } from "@/services/api"
+import type { UserInfo } from "@/services/api"
 
 
 // Helper to create empty quarter data structure
@@ -44,7 +42,6 @@ export default function ACEProjectionPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
-  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
     quarter: string
@@ -69,22 +66,6 @@ export default function ACEProjectionPage() {
     }
 
     fetchUserInfo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Fetch current week info from school year configuration
-  React.useEffect(() => {
-    const fetchCurrentWeek = async () => {
-      try {
-        const weekInfo = await api.schoolYears.getCurrentWeek()
-        setCurrentWeekInfo(weekInfo)
-      } catch (err) {
-        console.error('Error fetching current week:', err)
-        // Don't fail the whole page if current week can't be fetched
-      }
-    }
-
-    fetchCurrentWeek()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -152,14 +133,28 @@ export default function ACEProjectionPage() {
     return result
   }
 
-  // Get current week from school year configuration (dynamic from backend)
-  const currentQuarter = currentWeekInfo?.currentQuarter?.name || null
-  const currentWeekInQuarter = currentWeekInfo?.currentWeek || null
-  // Calculate overall school week (quarter order * 9 weeks + current week in quarter)
-  const quarterOrder = currentWeekInfo?.currentQuarter?.order || 0
-  const currentSchoolWeek = currentWeekInfo?.currentWeek
-    ? ((quarterOrder - 1) * 9) + currentWeekInfo.currentWeek
-    : null
+  // Get current quarter and week from API (this will be null if no active school year)
+  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<{ quarter: string | null, week: number | null }>({ quarter: null, week: null })
+
+  React.useEffect(() => {
+    const fetchCurrentWeek = async () => {
+      try {
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        setCurrentWeekInfo({
+          quarter: weekInfo.currentQuarter?.name || null,
+          week: weekInfo.currentWeek || null
+        })
+      } catch (err) {
+        console.error('Error fetching current week:', err)
+      }
+    }
+
+    fetchCurrentWeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const currentQuarter = currentWeekInfo.quarter
+  const currentWeekInQuarter = currentWeekInfo.week
 
   // Handle drag and drop - SAVES TO DATABASE
   const handlePaceDrop = async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
@@ -367,10 +362,10 @@ export default function ACEProjectionPage() {
   if (loading) {
     return (
       <div className="space-y-4 md:space-y-6">
-        <div className="flex items-center gap-4">
+        {/* Mobile back button */}
+        <div className="md:hidden">
           <BackButton to={`/students/${studentId}/projections`}>
-            <span className="hidden sm:inline">Volver a Proyecciones</span>
-            <span className="sm:hidden">Volver</span>
+            Volver
           </BackButton>
         </div>
         <Card>
@@ -386,10 +381,10 @@ export default function ACEProjectionPage() {
   if (error) {
     return (
       <div className="space-y-4 md:space-y-6">
-        <div className="flex items-center gap-4">
+        {/* Mobile back button */}
+        <div className="md:hidden">
           <BackButton to={`/students/${studentId}/projections`}>
-            <span className="hidden sm:inline">Volver a Proyecciones</span>
-            <span className="sm:hidden">Volver</span>
+            Volver
           </BackButton>
         </div>
         <Card>
@@ -416,51 +411,19 @@ export default function ACEProjectionPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+      {/* Mobile back button */}
+      <div className="md:hidden">
         <BackButton to={`/students/${studentId}/projections`}>
-          <span className="hidden sm:inline">Volver a Proyecciones</span>
-          <span className="sm:hidden">Volver</span>
+          Volver
         </BackButton>
       </div>
 
-      {/* Current Week Indicator */}
-      <Card className="border-green-500 bg-green-50/50">
-        <CardContent className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-            <div className="flex items-center gap-3 md:gap-4">
-              <div className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Clock className="h-5 w-5 md:h-6 md:w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-base md:text-lg font-bold text-green-900">Semana Actual</h3>
-                <p className="text-xs md:text-sm text-green-700">
-                  {currentWeekInfo?.currentQuarter ? (
-                    <>
-                      {currentWeekInfo.currentQuarter.displayName} - Semana {currentWeekInQuarter}
-                      <span className="hidden sm:inline"> (Semana {currentSchoolWeek} del año escolar)</span>
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No hay un año escolar activo</span>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="self-end sm:self-auto">
-              <Badge className="bg-green-600 text-white text-sm md:text-lg px-3 md:px-4 py-1 md:py-2">
-                Semana {currentSchoolWeek}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Student Info Card */}
-      <StudentInfoCard student={student} />
+      <StudentInfoCard student={student} showBadge={false} />
 
       {/* Title */}
       <SectionHeader
-        title="Proyección de PACEs"
+        title="Proyección Anual"
         description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
       />
 

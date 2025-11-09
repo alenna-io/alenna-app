@@ -105,7 +105,7 @@ export function StudentsList({
         <Card>
           <CardFooter className="flex items-center justify-between px-6 py-4">
             <div className="text-sm text-muted-foreground">
-              Mostrando {startItem} - {endItem} de {totalItems} estudiantes
+              Mostrando {startItem} - {endItem} de {totalItems} resultados
             </div>
             <div className="flex items-center gap-2">
               <Button
