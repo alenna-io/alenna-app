@@ -1,21 +1,5 @@
 @import "tailwindcss";
-
-/* Sharp Grotesk Font - Book as default, Medium for bold */
-@font-face {
-  font-family: 'Sharp Grotesk';
-  src: url('/fonts/SharpGrotesk-Book20.otf') format('opentype');
-  font-weight: 100 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Sharp Grotesk';
-  src: url('/fonts/SharpGrotesk-Medium20.otf') format('opentype');
-  font-weight: 600 900;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Space+Grotesk:wght@300..700&display=swap');
 
 @theme {
   /* Light Theme - Primary Colors */
@@ -65,7 +49,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Sharp Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   body {
