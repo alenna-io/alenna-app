@@ -75,43 +75,39 @@ export function Header() {
     console.log('Fallback quarter selected:', activeQuarter)
   }
 
-  // Don't render if no quarter could be determined
-  if (!activeQuarter) {
-    console.log('No quarter could be determined')
-    return null
-  }
-
-  const currentWeekInQuarter = activeWeek
-  const quarterOrder = activeQuarter.order || 0
+  const currentWeekInQuarter = activeQuarter ? activeWeek : 0
+  const quarterOrder = activeQuarter?.order || 0
   const currentSchoolWeek = activeWeek
     ? ((quarterOrder - 1) * 9) + activeWeek
     : 0
 
   return (
     <>
-      {/* Mobile menu trigger */}
+      {/* Mobile menu trigger - always render */}
       <SidebarTrigger className="md:hidden" />
 
       {/* Breadcrumbs on the left (desktop only) */}
       <BreadcrumbNav />
 
-      {/* Week indicator on the right */}
-      <div className="flex items-center gap-3 ml-auto">
-        <div className="hidden md:flex items-center gap-2">
-          <Clock className="h-4 w-4 text-green-600" />
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-green-900">
-              {activeQuarter.displayName} - Semana {currentWeekInQuarter}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Semana {currentSchoolWeek} del año escolar
-            </span>
+      {/* Week indicator on the right - only render if we have a quarter */}
+      {activeQuarter && (
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="hidden md:flex items-center gap-2">
+            <Clock className="h-4 w-4 text-green-600" />
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-green-900">
+                {activeQuarter.displayName} - Semana {currentWeekInQuarter}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Semana {currentSchoolWeek} del año escolar
+              </span>
+            </div>
           </div>
+          <Badge className="bg-green-600 hover:bg-green-700 text-white">
+            Semana {currentSchoolWeek}
+          </Badge>
         </div>
-        <Badge className="bg-green-600 hover:bg-green-700 text-white">
-          Semana {currentSchoolWeek}
-        </Badge>
-      </div>
+      )}
     </>
   )
 }

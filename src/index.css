@@ -55,6 +55,50 @@
   body {
     min-height: 100vh;
   }
+  
+  /* Prevent #root from creating stacking context isolation */
+  #root {
+    isolation: auto !important;
+    transform: none !important;
+  }
+  
+  /* Fix Radix Dialog/Sheet blocking pointer events and visibility */
+  body[data-scroll-locked] {
+    pointer-events: auto !important;
+  }
+  
+  body[data-scroll-locked] > *:not(#portal-root) {
+    pointer-events: none !important;
+  }
+  
+  #portal-root {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 9999 !important;
+  }
+  
+  #portal-root * {
+    pointer-events: auto !important;
+  }
+  
+  /* Ensure sheet overlay and content are visible and interactive */
+  [data-slot="sheet-overlay"] {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  [data-slot="sheet-content"] {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+  }
+  
+  [data-slot="sheet-content"] * {
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
 }
 
 /* Fix sidebar positioning and layout */
