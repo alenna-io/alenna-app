@@ -16,16 +16,20 @@ import BillingPage from '@/pages/billing'
 import UsersPage from '@/pages/users'
 import UserDetailPage from '@/pages/user-detail'
 import SchoolsPage from '@/pages/schools'
+import MyProfilePage from '@/pages/my-profile'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
+import { UserProvider } from '@/contexts/UserContext'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SignedIn>
-        <AuthSync>{children}</AuthSync>
+        <AuthSync>
+          <UserProvider>{children}</UserProvider>
+        </AuthSync>
       </SignedIn>
       <SignedOut>
         <RedirectToSignIn />
@@ -62,6 +66,7 @@ export default function App() {
           <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
           <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
           <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
+          <Route path="my-profile" element={<MyProfilePage />} />
           <Route path="configuration" element={<ConfigurationPage />} />
           <Route path="configuration/school-info" element={<SchoolInfoPage />} />
           <Route path="configuration/school-years" element={<SchoolYearsPage />} />

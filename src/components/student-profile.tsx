@@ -12,38 +12,42 @@ interface StudentProfileProps {
   student: Student
   onBack: () => void
   isParentView?: boolean
+  isStudentView?: boolean
 }
 
-export function StudentProfile({ student, onBack, isParentView = false }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="mb-4"
-        >
-          ← Volver a Estudiantes
-        </Button>
-      </div>
+      {/* Mobile back button */}
+      {!isStudentView && (
+        <div className="md:hidden">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="mb-4"
+          >
+            ← Volver a Estudiantes
+          </Button>
+        </div>
+      )}
 
-      <h1 className="text-3xl font-bold">Perfil del Estudiante</h1>
+      <h1 className="text-xl font-bold">Perfil del Estudiante</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Header */}
         <Card className="md:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-10 w-10">
                 <AvatarFallback className="text-lg">
                   {getInitials(student.name)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-2xl">{student.name}</CardTitle>
+                <CardTitle className="text-xl">{student.name}</CardTitle>
                 <p className="text-muted-foreground">
                   {student.certificationType} • {student.age} años
                 </p>
@@ -137,33 +141,42 @@ export function StudentProfile({ student, onBack, isParentView = false }: Studen
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
                 Proyecciones Académicas
               </CardTitle>
-              <LinkButton onClick={() => navigate(`/students/${student.id}/projections`)} className="cursor-pointer">
-                Ver Todas
-              </LinkButton>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
               Planificación semanal de PACEs por año escolar
             </p>
-            <LinkButton
-              variant="default"
-              size="default"
-              showChevron={false}
-              className="w-full cursor-pointer"
-              onClick={() => navigate(`/students/${student.id}/projections`)}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              {isParentView ? 'Ver Proyecciones' : 'Administrar Proyecciones'}
-            </LinkButton>
+            {(isParentView || isStudentView) ? (
+              <LinkButton
+                variant="outline"
+                size="default"
+                showChevron={false}
+                className="w-full cursor-pointer"
+                onClick={() => navigate(`/students/${student.id}/projections`)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Ver Proyecciones
+              </LinkButton>
+            ) : (
+              <LinkButton
+                variant="default"
+                size="lg"
+                showChevron={false}
+                className="w-full max-w-xs cursor-pointer"
+                onClick={() => navigate(`/students/${student.id}/projections`)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Administrar Proyecciones
+              </LinkButton>
+            )}
           </CardContent>
         </Card>
 
         {/* Parents Information - Hidden for parent users */}
-        {!isParentView && (
+        {!isParentView && !isStudentView && (
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Información de Padres</CardTitle>

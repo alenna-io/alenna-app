@@ -1,11 +1,32 @@
+import { Navigate } from "react-router-dom"
+import { useUser } from "@/contexts/UserContext"
+import { LoadingState } from "@/components/ui/loading-state"
+
 export function HomePage() {
-  return (
-    <div>
-      <h2 className="text-3xl font-bold tracking-tight">Home</h2>
-      <p className="text-muted-foreground">
-        This is the home page of your application.
-      </p>
-    </div>
-  )
+  const { userInfo, isLoading } = useUser()
+
+  if (isLoading) {
+    return <LoadingState />
+  }
+
+  if (!userInfo) {
+    return <Navigate to="/login" replace />
+  }
+
+  const roleNames = userInfo.roles.map(role => role.name)
+  const hasRole = (role: string) => roleNames.includes(role)
+
+  // Students -> My Profile
+  if (hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')) {
+    return <Navigate to="/my-profile" replace />
+  }
+
+  // Super Admin -> Users
+  if (hasRole('SUPERADMIN')) {
+    return <Navigate to="/users" replace />
+  }
+
+  // Teachers, Parents, School Admin -> Students
+  return <Navigate to="/students" replace />
 }
 

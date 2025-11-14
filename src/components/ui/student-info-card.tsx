@@ -28,13 +28,13 @@ export function StudentInfoCard({
     <Card className={className}>
       <CardContent className="p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
-          <Avatar className="h-16 w-16 md:h-20 md:w-20 shrink-0">
-            <AvatarFallback className="text-xl md:text-2xl font-semibold">
+          <Avatar className="h-12 w-12 shrink-0">
+            <AvatarFallback className="text-sm font-semibold">
               {getInitials(student.name)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl md:text-3xl font-bold mb-2 truncate">{student.name}</h1>
+            <h1 className="text-xl font-bold mb-2 truncate">{student.name}</h1>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm md:text-base text-muted-foreground">
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4 shrink-0" />

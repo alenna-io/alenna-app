@@ -1,10 +1,11 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Space+Grotesk:wght@300..700&display=swap');
 
 @theme {
   /* Light Theme - Primary Colors */
-  --color-background: hsl(0 0% 100%);
+  --color-background: hsl(0 0% 96.1%); /* #f5f5f5 - Light gray background */
   --color-foreground: hsl(222.2 84% 4.9%);
-  --color-card: hsl(0 0% 100%);
+  --color-card: hsl(0 0% 100%); /* Pure white for cards */
   --color-card-foreground: hsl(222.2 84% 4.9%);
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(222.2 84% 4.9%);
@@ -22,14 +23,14 @@
   --color-input: hsl(214.3 31.8% 91.4%);
   --color-ring: hsl(221.2 83.2% 53.3%);
   
-  /* Sidebar Colors */
-  --color-sidebar: hsl(0 0% 98%);
-  --color-sidebar-foreground: hsl(240 5.3% 26.1%);
+  /* Sidebar Colors - Dark slate for better contrast */
+  --color-sidebar: hsl(215 25% 27%); /* Dark slate blue */
+  --color-sidebar-foreground: hsl(0 0% 95%); /* Light text */
   --color-sidebar-primary: hsl(221.2 83.2% 53.3%);
-  --color-sidebar-primary-foreground: hsl(0 0% 98%);
-  --color-sidebar-accent: hsl(240 4.8% 95.9%);
-  --color-sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --color-sidebar-border: hsl(220 13% 91%);
+  --color-sidebar-primary-foreground: hsl(0 0% 100%);
+  --color-sidebar-accent: hsl(215 25% 35%); /* Slightly lighter slate for hover */
+  --color-sidebar-accent-foreground: hsl(0 0% 100%);
+  --color-sidebar-border: hsl(215 25% 20%); /* Darker border */
   --color-sidebar-ring: hsl(221.2 83.2% 53.3%);
 
   /* Border Radius */
@@ -48,18 +49,83 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   body {
     min-height: 100vh;
   }
+  
+  /* Prevent #root from creating stacking context isolation */
+  #root {
+    isolation: auto !important;
+    transform: none !important;
+  }
+  
+  /* Fix Radix Dialog/Sheet blocking pointer events and visibility */
+  body[data-scroll-locked] {
+    pointer-events: auto !important;
+  }
+  
+  body[data-scroll-locked] > *:not(#portal-root) {
+    pointer-events: none !important;
+  }
+  
+  #portal-root {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 9999 !important;
+  }
+  
+  #portal-root * {
+    pointer-events: auto !important;
+  }
+  
+  /* Ensure sheet overlay and content are visible and interactive */
+  [data-slot="sheet-overlay"] {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  [data-slot="sheet-content"] {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+  }
+  
+  [data-slot="sheet-content"] * {
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
 }
 
-/* Fix sidebar positioning - only for desktop */
+/* Fix sidebar positioning and layout */
 @layer components {
-  @media (min-width: 768px) {
-    [data-sidebar="sidebar"] {
-      position: relative !important;
-    }
+  /* Sidebar provider wrapper should flex properly */
+  .group\/sidebar-wrapper {
+    display: flex !important;
+    min-height: 0 !important;
+  }
+  
+  [data-sidebar="sidebar"] {
+    position: relative !important;
+    height: 100vh !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Prevent sidebar inset from taking full width */
+  [data-sidebar="inset"] {
+    left: 0 !important;
+  }
+  
+  /* Slow down sidebar collapse/expand transition */
+  [data-sidebar="sidebar"] {
+    transition-duration: 400ms !important;
+  }
+  
+  [data-sidebar="sidebar"] * {
+    transition-duration: 400ms !important;
   }
 }
