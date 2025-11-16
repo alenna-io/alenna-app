@@ -298,6 +298,39 @@ export const dailyGoalsApi = {
     }),
 };
 
+// Monthly Assignments API
+export const monthlyAssignmentsApi = {
+  get: (studentId: string, projectionId: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments`, token),
+  create: (studentId: string, projectionId: string, data: {
+    name: string;
+    quarter: string;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments`, token, { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+  update: (studentId: string, projectionId: string, assignmentId: string, data: {
+    name: string;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, { 
+      method: 'PUT', 
+      body: JSON.stringify(data) 
+    }),
+  grade: (studentId: string, projectionId: string, assignmentId: string, data: {
+    grade: number;
+    note?: string;
+  }, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}/grade`, token, { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
+    }),
+  delete: (studentId: string, projectionId: string, assignmentId: string, token: string | null) => 
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, { 
+      method: 'DELETE' 
+    }),
+};
+
 // Schools API
 export const schoolsApi = {
   getMy: (token: string | null) => apiFetch('/schools/me', token),
@@ -544,6 +577,36 @@ export function useApi() {
       delete: async (studentId: string, projectionId: string, goalId: string) => {
         const token = await getToken();
         return dailyGoalsApi.delete(studentId, projectionId, goalId, token);
+      },
+    },
+    monthlyAssignments: {
+      get: async (studentId: string, projectionId: string) => {
+        const token = await getToken();
+        return monthlyAssignmentsApi.get(studentId, projectionId, token);
+      },
+      create: async (studentId: string, projectionId: string, data: {
+        name: string;
+        quarter: string;
+      }) => {
+        const token = await getToken();
+        return monthlyAssignmentsApi.create(studentId, projectionId, data, token);
+      },
+      update: async (studentId: string, projectionId: string, assignmentId: string, data: {
+        name: string;
+      }) => {
+        const token = await getToken();
+        return monthlyAssignmentsApi.update(studentId, projectionId, assignmentId, data, token);
+      },
+      grade: async (studentId: string, projectionId: string, assignmentId: string, data: {
+        grade: number;
+        note?: string;
+      }) => {
+        const token = await getToken();
+        return monthlyAssignmentsApi.grade(studentId, projectionId, assignmentId, data, token);
+      },
+      delete: async (studentId: string, projectionId: string, assignmentId: string) => {
+        const token = await getToken();
+        return monthlyAssignmentsApi.delete(studentId, projectionId, assignmentId, token);
       },
     },
     // Users API

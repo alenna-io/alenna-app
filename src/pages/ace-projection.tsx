@@ -5,9 +5,11 @@ import { BackButton } from "@/components/ui/back-button"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
+import { MonthlyAssignmentsSection } from "@/components/monthly-assignments-section"
 import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
+import type { MonthlyAssignment } from "@/types/monthly-assignment"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ErrorDialog } from "@/components/ui/error-dialog"
 import { Navigate } from "react-router-dom"
@@ -54,6 +56,7 @@ export default function ACEProjectionPage() {
     title?: string
     message: string
   }>({ open: false, message: "" })
+  const [monthlyAssignments, setMonthlyAssignments] = React.useState<MonthlyAssignment[]>([])
 
   // Compute existing pace catalog IDs (for preventing re-adding deleted paces)
   const existingPaceCatalogIds = React.useMemo(() => {
@@ -104,6 +107,10 @@ export default function ACEProjectionPage() {
           Q4: convertQuarterData(detail.quarters.Q4),
         }
         setProjectionData(convertedData)
+
+        // Fetch monthly assignments
+        const assignments = await api.monthlyAssignments.get(studentId, projectionId)
+        setMonthlyAssignments(assignments)
       } catch (err) {
         console.error('Error fetching projection detail:', err)
         const errorMessage = err instanceof Error ? err.message : 'Failed to load projection'
@@ -513,6 +520,41 @@ export default function ACEProjectionPage() {
   }
 
 
+  // Monthly Assignments Handlers
+  const refreshMonthlyAssignments = async () => {
+    if (!studentId || !projectionId) return
+    try {
+      const assignments = await api.monthlyAssignments.get(studentId, projectionId)
+      setMonthlyAssignments(assignments)
+    } catch (err) {
+      console.error('Error refreshing monthly assignments:', err)
+    }
+  }
+
+  const handleCreateMonthlyAssignment = async (name: string, quarter: string) => {
+    if (!studentId || !projectionId) return
+    await api.monthlyAssignments.create(studentId, projectionId, { name, quarter })
+    await refreshMonthlyAssignments()
+  }
+
+  const handleUpdateMonthlyAssignment = async (assignmentId: string, name: string) => {
+    if (!studentId || !projectionId) return
+    await api.monthlyAssignments.update(studentId, projectionId, assignmentId, { name })
+    await refreshMonthlyAssignments()
+  }
+
+  const handleGradeMonthlyAssignment = async (assignmentId: string, grade: number, note?: string) => {
+    if (!studentId || !projectionId) return
+    await api.monthlyAssignments.grade(studentId, projectionId, assignmentId, { grade, note })
+    await refreshMonthlyAssignments()
+  }
+
+  const handleDeleteMonthlyAssignment = async (assignmentId: string) => {
+    if (!studentId || !projectionId) return
+    await api.monthlyAssignments.delete(studentId, projectionId, assignmentId)
+    await refreshMonthlyAssignments()
+  }
+
   // Check if user is a parent (read-only mode)
   const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
     !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
@@ -622,6 +664,16 @@ export default function ACEProjectionPage() {
           onDeletePace={isParentOnly ? undefined : handleDeletePace}
           isReadOnly={isParentOnly}
         />
+        <MonthlyAssignmentsSection
+          quarter="Q1"
+          assignments={monthlyAssignments}
+          isReadOnly={isParentOnly}
+          onRefresh={refreshMonthlyAssignments}
+          onCreateAssignment={handleCreateMonthlyAssignment}
+          onUpdateAssignment={handleUpdateMonthlyAssignment}
+          onGradeAssignment={handleGradeMonthlyAssignment}
+          onDeleteAssignment={handleDeleteMonthlyAssignment}
+        />
         <ACEQuarterlyTable
           quarter="Q2"
           quarterName="Bloque 2"
@@ -634,6 +686,16 @@ export default function ACEProjectionPage() {
           onAddPace={isParentOnly ? undefined : handleAddPace}
           onDeletePace={isParentOnly ? undefined : handleDeletePace}
           isReadOnly={isParentOnly}
+        />
+        <MonthlyAssignmentsSection
+          quarter="Q2"
+          assignments={monthlyAssignments}
+          isReadOnly={isParentOnly}
+          onRefresh={refreshMonthlyAssignments}
+          onCreateAssignment={handleCreateMonthlyAssignment}
+          onUpdateAssignment={handleUpdateMonthlyAssignment}
+          onGradeAssignment={handleGradeMonthlyAssignment}
+          onDeleteAssignment={handleDeleteMonthlyAssignment}
         />
         <ACEQuarterlyTable
           quarter="Q3"
@@ -648,6 +710,16 @@ export default function ACEProjectionPage() {
           onDeletePace={isParentOnly ? undefined : handleDeletePace}
           isReadOnly={isParentOnly}
         />
+        <MonthlyAssignmentsSection
+          quarter="Q3"
+          assignments={monthlyAssignments}
+          isReadOnly={isParentOnly}
+          onRefresh={refreshMonthlyAssignments}
+          onCreateAssignment={handleCreateMonthlyAssignment}
+          onUpdateAssignment={handleUpdateMonthlyAssignment}
+          onGradeAssignment={handleGradeMonthlyAssignment}
+          onDeleteAssignment={handleDeleteMonthlyAssignment}
+        />
         <ACEQuarterlyTable
           quarter="Q4"
           quarterName="Bloque 4"
@@ -660,6 +732,16 @@ export default function ACEProjectionPage() {
           onAddPace={isParentOnly ? undefined : handleAddPace}
           onDeletePace={isParentOnly ? undefined : handleDeletePace}
           isReadOnly={isParentOnly}
+        />
+        <MonthlyAssignmentsSection
+          quarter="Q4"
+          assignments={monthlyAssignments}
+          isReadOnly={isParentOnly}
+          onRefresh={refreshMonthlyAssignments}
+          onCreateAssignment={handleCreateMonthlyAssignment}
+          onUpdateAssignment={handleUpdateMonthlyAssignment}
+          onGradeAssignment={handleGradeMonthlyAssignment}
+          onDeleteAssignment={handleDeleteMonthlyAssignment}
         />
       </div>
 
