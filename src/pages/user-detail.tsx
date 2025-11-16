@@ -4,7 +4,6 @@ import { UserProfile } from "@/components/user-profile"
 import { LoadingState } from "@/components/ui/loading-state"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
-import type { UserInfo } from "@/services/api"
 
 export default function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>()

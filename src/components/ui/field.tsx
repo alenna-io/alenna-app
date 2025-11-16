@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -47,7 +46,7 @@ FieldSet.displayName = "FieldSet"
 
 const FieldLegend = React.forwardRef<
   HTMLLegendElement,
-  React.HTMLElementHTMLAttributes<HTMLLegendElement>
+  React.HTMLAttributes<HTMLLegendElement>
 >(({ className, ...props }, ref) => (
   <legend
     ref={ref}

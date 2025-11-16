@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { Users, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Users, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft } from "lucide-react"
 import type { Student } from "@/types/student"
 
 interface StudentsTableProps {
