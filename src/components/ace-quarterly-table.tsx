@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
+import { ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
 interface QuarterlyTableProps {
@@ -63,9 +63,48 @@ export function ACEQuarterlyTable({
   const [overloadRememberUntil, setOverloadRememberUntil] = React.useState<number | null>(null)
   const [optionsMenu, setOptionsMenu] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
+  const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
+  const optionsMenuRef = React.useRef<HTMLDivElement>(null)
   const subjects = Object.keys(data)
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
+
+  // Adjust options menu position to keep it on screen
+  React.useEffect(() => {
+    if (optionsMenu && optionsMenuRef.current) {
+      const menu = optionsMenuRef.current
+      const menuRect = menu.getBoundingClientRect()
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+
+      let { x, y } = optionsMenu
+
+      // Adjust horizontal position if menu goes off right edge
+      if (x + menuRect.width > viewportWidth) {
+        x = viewportWidth - menuRect.width - 10 // 10px padding from edge
+      }
+
+      // Adjust vertical position if menu goes off bottom edge
+      if (y + menuRect.height > viewportHeight) {
+        y = viewportHeight - menuRect.height - 10 // 10px padding from edge
+      }
+
+      // Ensure menu doesn't go off left edge
+      if (x < 10) {
+        x = 10
+      }
+
+      // Ensure menu doesn't go off top edge
+      if (y < 10) {
+        y = 10
+      }
+
+      // Update position if it changed
+      if (x !== optionsMenu.x || y !== optionsMenu.y) {
+        setOptionsMenu({ ...optionsMenu, x, y })
+      }
+    }
+  }, [optionsMenu])
 
   // Close options menu on click outside
   React.useEffect(() => {
@@ -292,6 +331,34 @@ export function ACEQuarterlyTable({
 
   const isQuarterComplete = quarterStats.expected > 0 && quarterStats.completed === quarterStats.expected
   const isQuarterOverloaded = quarterStats.expected > MAX_PACES_PER_QUARTER
+
+  // Collect all failed attempts for the dialog
+  const failedAttempts = React.useMemo(() => {
+    const attempts: Array<{
+      subject: string
+      paceNumber: string
+      weekNumber: number
+      failedGrades: Array<{ grade: number, date: string, note?: string }>
+    }> = []
+
+    subjects.forEach((subject) => {
+      data[subject].forEach((pace, weekIndex) => {
+        if (pace && pace.gradeHistory) {
+          const failedGrades = pace.gradeHistory.filter(h => h.grade < 80)
+          if (failedGrades.length > 0) {
+            attempts.push({
+              subject,
+              paceNumber: pace.number,
+              weekNumber: weekIndex + 1,
+              failedGrades
+            })
+          }
+        }
+      })
+    })
+
+    return attempts
+  }, [data, subjects])
 
   return (
     <>
@@ -631,10 +698,17 @@ export function ACEQuarterlyTable({
                   <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
                   <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
                 </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
+                <button
+                  onClick={() => setFailedAttemptsDialog(true)}
+                  disabled={quarterStats.totalFailed === 0}
+                  className="text-center p-2 md:p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Total Intentos Fallidos</p>
-                </div>
+                  <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
+                    Total Intentos Fallidos
+                    <Info className="h-3 w-3 inline" />
+                  </p>
+                </button>
               </div>
             </div>
           </CardContent>
@@ -644,6 +718,7 @@ export function ACEQuarterlyTable({
       {/* Options Menu Popup */}
       {optionsMenu && (
         <div
+          ref={optionsMenuRef}
           className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
           style={{ left: `${optionsMenu.x}px`, top: `${optionsMenu.y}px` }}
           onClick={(e) => e.stopPropagation()}
@@ -765,6 +840,65 @@ export function ACEQuarterlyTable({
             <Button
               variant="outline"
               onClick={() => setHistoryDialog(null)}
+              className="cursor-pointer"
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Failed Attempts Dialog */}
+      <Dialog open={failedAttemptsDialog} onOpenChange={setFailedAttemptsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              Total Intentos Fallidos - {quarter}
+            </DialogTitle>
+            <DialogDescription>
+              Resumen de todos los intentos fallidos (calificación &lt; 80) en este trimestre
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {failedAttempts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                <p>¡No hay intentos fallidos en este trimestre!</p>
+              </div>
+            ) : (
+              failedAttempts.map((attempt, index) => (
+                <div key={index} className="border rounded-lg p-4 bg-red-50 border-red-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold text-lg">{attempt.subject}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Lección: <span className="font-mono font-semibold">{attempt.paceNumber}</span> • Semana {attempt.weekNumber}
+                      </p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">
+                      {attempt.failedGrades.length} intento{attempt.failedGrades.length > 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    {attempt.failedGrades.map((grade, gradeIndex) => (
+                      <div key={gradeIndex} className="flex items-center justify-between bg-white p-2 rounded border border-red-300">
+                        <span className="text-xl font-bold text-red-600">{grade.grade}%</span>
+                        <span className="text-xs text-gray-500">{new Date(grade.date).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <p className="text-sm text-muted-foreground">
+              Total de intentos fallidos: <span className="font-bold text-red-600">{quarterStats.totalFailed}</span>
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => setFailedAttemptsDialog(false)}
               className="cursor-pointer"
             >
               Cerrar

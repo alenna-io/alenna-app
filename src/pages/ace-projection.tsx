@@ -222,13 +222,13 @@ export default function ACEProjectionPage() {
       }
       setProjectionData(convertedData)
     } catch (err) {
-      console.error('Error moving PACE:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to move PACE'
+      console.error('Error moving Lecture:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to move Lecture'
 
-      toast.error(`Error al mover PACE: ${errorMessage}`)
+      toast.error(`Error al mover lección: ${errorMessage}`)
       setErrorDialog({
         open: true,
-        title: "Error Moving PACE",
+        title: "Error Moving Lecture",
         message: errorMessage
       })
 
@@ -257,7 +257,7 @@ export default function ACEProjectionPage() {
     const pace = quarterData[subject][weekIndex]
 
     if (!pace || !('id' in pace)) {
-      console.error('PACE not found or missing ID')
+      console.error('Lección no encontrada o ID faltante')
       return
     }
 
@@ -302,11 +302,11 @@ export default function ACEProjectionPage() {
           grade,
           note: comment,
         })
-        toast.success("Calificación de PACE guardada")
+        toast.success("Calificación de lección guardada")
       } else {
         // No grade provided = mark as incomplete
         await api.projections.markIncomplete(studentId, projectionId, paceId)
-        toast.success("PACE marcado como incompleto")
+        toast.success("Lección marcada como incompleta")
       }
 
       // Reload projection data to ensure consistency
@@ -321,7 +321,7 @@ export default function ACEProjectionPage() {
       setProjectionData(convertedData)
     } catch (err) {
       console.error('Error actualizando Lección:', err)
-      const message = err instanceof Error ? err.message : 'Error al actualizar PACE'
+      const message = err instanceof Error ? err.message : 'Error al actualizar lección'
 
       toast.error(`Error: ${message}`)
       setErrorDialog({
@@ -369,13 +369,35 @@ export default function ACEProjectionPage() {
     setPacePickerOpen(true)
   }
 
-  // Handle PACE selection from picker - SAVES TO DATABASE
-  const handlePaceSelect = async (paceId: string) => {
+  // Handle PACE selection from picker - SAVES TO DATABASE (with optimistic update)
+  const handlePaceSelect = async (paceId: string, paceCode: string) => {
     if (!studentId || !projectionId || !pacePickerContext) return
 
-    try {
-      const { quarter, weekIndex } = pacePickerContext
+    const { quarter, subject, weekIndex } = pacePickerContext
 
+    // OPTIMISTIC UPDATE: Immediately add the PACE to the UI
+    const optimisticPace = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      number: paceCode,
+      grade: null,
+      isCompleted: false,
+      isFailed: false,
+      gradeHistory: []
+    }
+
+    const updatedProjectionData = { ...projectionData }
+    const quarterData = updatedProjectionData[quarter as keyof typeof projectionData]
+    const updatedQuarterData = { ...quarterData }
+    const updatedWeekPaces = [...quarterData[subject]]
+    updatedWeekPaces[weekIndex] = optimisticPace
+    updatedQuarterData[subject] = updatedWeekPaces
+    updatedProjectionData[quarter as keyof typeof projectionData] = updatedQuarterData
+    setProjectionData(updatedProjectionData)
+
+    // Close picker immediately for snappy UX
+    setPacePickerContext(null)
+
+    try {
       // Add PACE to projection
       await api.projections.addPace(studentId, projectionId, {
         paceCatalogId: paceId,
@@ -383,7 +405,9 @@ export default function ACEProjectionPage() {
         week: weekIndex + 1
       })
 
-      // Reload projection data
+      toast.success("Lección agregada exitosamente")
+
+      // Reload projection data to get the real ID and any server-side changes
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
       setProjectionDetail(detail)
       const convertedData = {
@@ -393,13 +417,26 @@ export default function ACEProjectionPage() {
         Q4: convertQuarterData(detail.quarters.Q4),
       }
       setProjectionData(convertedData)
-
-      toast.success("Lección agregada exitosamente")
-      setPacePickerContext(null)
     } catch (err) {
       console.error('Error agregando Lección:', err)
       const errorMessage = err instanceof Error ? err.message : "Error al agregar la lección"
       toast.error(errorMessage)
+
+      // ROLLBACK: Re-fetch data to remove the optimistic update
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (refetchErr) {
+        console.error('Error re-fetching after failed add:', refetchErr)
+      }
+
       setErrorDialog({
         open: true,
         title: "Error agregando Lección",
