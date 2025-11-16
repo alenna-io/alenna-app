@@ -63,6 +63,7 @@ export default function DailyGoalsPage() {
   const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [canEdit, setCanEdit] = React.useState(false)
 
   // Load daily goals from API
   React.useEffect(() => {
@@ -97,6 +98,20 @@ export default function DailyGoalsPage() {
 
     loadDailyGoals()
   }, [studentId, projectionId, quarter, week])
+
+  React.useEffect(() => {
+    const loadPermissions = async () => {
+      try {
+        const userInfo = await api.auth.getUserInfo()
+        setCanEdit(userInfo.permissions?.includes('projections.update') ?? false)
+      } catch (err) {
+        console.error('Error fetching permissions:', err)
+        setCanEdit(false)
+      }
+    }
+
+    loadPermissions()
+  }, [api])
 
   // Calculate total pages for a specific day
   const calculateDayTotal = React.useMemo(() => {
@@ -283,10 +298,10 @@ export default function DailyGoalsPage() {
           week={parseInt(week || "1")}
           data={goalsData}
           subjects={Object.keys(goalsData)}
-          onGoalUpdate={handleGoalUpdate}
-          onGoalToggle={handleGoalToggle}
-          onNotesUpdate={handleNotesUpdate}
-          onNotesToggle={handleNotesToggle}
+          onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
+          onGoalToggle={canEdit ? handleGoalToggle : undefined}
+          onNotesUpdate={canEdit ? handleNotesUpdate : undefined}
+          onNotesToggle={canEdit ? handleNotesToggle : undefined}
           dayTotals={calculateDayTotal}
         />
       )}

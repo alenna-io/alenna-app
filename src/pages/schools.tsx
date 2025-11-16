@@ -300,7 +300,7 @@ export default function SchoolsPage() {
           {totalPages > 1 && (
             <div className="flex justify-between items-center mt-4">
               <p className="text-sm text-gray-600">
-                Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredSchools.length)} de {filteredSchools.length} escuelas
+                Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredSchools.length)} de {filteredSchools.length} resultados
               </p>
               <div className="flex space-x-2">
                 <Button

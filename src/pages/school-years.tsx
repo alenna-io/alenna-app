@@ -81,7 +81,7 @@ export default function SchoolYearsPage() {
         const modules = await api.modules.getUserModules();
         const allPermissions = new Set<string>();
         modules.forEach((module: ModuleData) => {
-          module.permissions.forEach((perm: string) => allPermissions.add(perm));
+          module.actions.forEach((action: string) => allPermissions.add(action));
         });
 
         // If user only has read permission, set read-only mode

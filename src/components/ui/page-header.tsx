@@ -17,10 +17,10 @@ export function PageHeader({
     <div className={className}>
       <div className="flex items-center gap-2">
         {Icon && <Icon className="h-6 w-6" />}
-        <h1 className="text-3xl font-bold">{title}</h1>
+        <h1 className="text-xl font-bold">{title}</h1>
       </div>
       {description && (
-        <p className="text-muted-foreground mt-1">{description}</p>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
       )}
     </div>
   )

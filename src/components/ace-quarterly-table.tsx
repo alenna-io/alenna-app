@@ -30,9 +30,7 @@ interface QuarterlyTableProps {
 
 // Simplified 2-color system: alternating between blue and gray
 const getSubjectColor = (index: number) => {
-  return index % 2 === 0
-    ? { bg: "bg-blue-100 border-blue-200", text: "text-blue-700" }
-    : { bg: "bg-gray-100 border-gray-200", text: "text-gray-700" }
+  return { bg: "bg-white border-gray-200", text: "text-gray-800" }
 }
 
 export function ACEQuarterlyTable({
@@ -281,12 +279,11 @@ export function ACEQuarterlyTable({
 
   return (
     <>
-      <Card className={isActive ? "border-primary shadow-md" : ""}>
+      <Card className={isActive ? "border-primary" : ""}>
         <CardHeader className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-              <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
-                <BookOpen className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
+              <CardTitle className="flex items-center gap-2 md:gap-3 text-lg">
                 <span className="truncate">{quarterName}</span>
                 <Badge variant="secondary" className="text-xs md:text-sm">
                   {quarter}
@@ -349,7 +346,7 @@ export function ACEQuarterlyTable({
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="text-left py-1.5 px-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 text-sm">
                       Materia
                     </th>
                     {weeks.map((week, weekIdx) => {
@@ -358,23 +355,18 @@ export function ACEQuarterlyTable({
                       return (
                         <th
                           key={week}
-                          className={`text-center p-2 font-semibold min-w-[100px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
+                          className={`text-center py-1.5 px-2 font-semibold min-w-[90px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
                             ? "bg-green-100"
                             : "bg-muted/50"
                             }`}
                           onClick={() => onWeekClick?.(quarter, week)}
                         >
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="text-xs text-muted-foreground">Semana</span>
-                            <span className={`text-lg ${currentWeek === week ? "font-bold text-green-700" : ""}`}>
-                              {week}
+                          <div className="flex flex-col items-center">
+                            <span className={`text-sm font-semibold ${currentWeek === week ? "text-green-700" : ""}`}>
+                              Semana {week}
+                              {currentWeek === week && " ✓"}
                             </span>
-                            {currentWeek === week && (
-                              <Badge className="bg-green-600 text-white text-xs px-2 py-0">
-                                Actual
-                              </Badge>
-                            )}
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] text-muted-foreground mt-0.5">
                               {weekPaceCount} PACEs
                             </span>
                           </div>
@@ -387,18 +379,17 @@ export function ACEQuarterlyTable({
                   {subjects.map((subject, subjectIndex) => (
                     <tr
                       key={subject}
-                      className={`transition-colors hover:bg-muted/30 ${subjectIndex % 2 === 0 ? "bg-muted/10" : ""
-                        }`}
+                      className="transition-colors hover:bg-blue-50 group"
                     >
                       <td
-                        className={`p-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text}`}
+                        className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
                       >
                         {subject}
                       </td>
                       {data[subject].map((pace, weekIndex) => (
                         <td
                           key={weekIndex}
-                          className="p-2 text-center align-middle border border-gray-300"
+                          className="py-1.5 px-2 text-center align-middle border border-gray-300"
                           draggable={!isReadOnly && !!pace}
                           onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
                           onDragOver={(e) => {
@@ -516,7 +507,7 @@ export function ACEQuarterlyTable({
                                       ? "bg-red-100 text-red-800 border-red-500 border-2"
                                       : pace.isCompleted
                                         ? "bg-green-100 text-green-800 border-green-500 border-2"
-                                        : `${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} border-2`
+                                        : "bg-white text-gray-800 border-gray-300 border-2"
                                       }`}
                                   >
                                     {pace.isCompleted && (

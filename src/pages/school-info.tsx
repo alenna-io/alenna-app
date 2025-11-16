@@ -27,7 +27,7 @@ export default function SchoolInfoPage() {
   const [school, setSchool] = React.useState<SchoolInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
-  const [, setUserInfo] = React.useState<UserInfo | null>(null);
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
   const [studentsCount, setStudentsCount] = React.useState<number>(0);
   const [loadingStudentsCount, setLoadingStudentsCount] = React.useState(false);
   const [teachersCount, setTeachersCount] = React.useState<number>(0);
@@ -42,12 +42,10 @@ export default function SchoolInfoPage() {
         const userData = await api.auth.getUserInfo();
         setUserInfo(userData);
 
-        // Check if user has permission to manage students
-        const canManageStudents = userData.permissions.includes('students.read') &&
-          (userData.roles.some((role: { name: string }) => role.name === 'SUPERADMIN') ||
-            userData.schoolName === 'Alenna School');
+        const canViewSchoolInfo = userData.permissions.includes('schoolInfo.read') ||
+          userData.roles.some((role: { name: string }) => role.name === 'SUPERADMIN');
 
-        if (!canManageStudents) {
+        if (!canViewSchoolInfo) {
           setHasPermission(false);
           return;
         }
@@ -58,26 +56,37 @@ export default function SchoolInfoPage() {
           : await api.schools.getMy();
         setSchool(schoolData as SchoolInfo);
 
-        // Load students count
-        setLoadingStudentsCount(true);
-        try {
-          const countData = await api.schools.getStudentsCount(schoolData.id);
-          setStudentsCount(countData.count);
-        } catch (error) {
-          console.error("Error fetching students count:", error);
-        } finally {
-          setLoadingStudentsCount(false);
+        const canViewStudents = userData.permissions.includes('students.read');
+        const canViewTeachers = userData.permissions.includes('users.read');
+
+        if (canViewStudents) {
+          setLoadingStudentsCount(true);
+          try {
+            const countData = await api.schools.getStudentsCount(schoolData.id);
+            setStudentsCount(countData.count);
+          } catch (error) {
+            console.error("Error fetching students count:", error);
+            setStudentsCount(0);
+          } finally {
+            setLoadingStudentsCount(false);
+          }
+        } else {
+          setStudentsCount(0);
         }
 
-        // Load teachers count
-        setLoadingTeachersCount(true);
-        try {
-          const teachersCountData = await api.schools.getTeachersCount(schoolData.id);
-          setTeachersCount(teachersCountData.count);
-        } catch (error) {
-          console.error("Error fetching teachers count:", error);
-        } finally {
-          setLoadingTeachersCount(false);
+        if (canViewTeachers) {
+          setLoadingTeachersCount(true);
+          try {
+            const teachersCountData = await api.schools.getTeachersCount(schoolData.id);
+            setTeachersCount(teachersCountData.count);
+          } catch (error) {
+            console.error("Error fetching teachers count:", error);
+            setTeachersCount(0);
+          } finally {
+            setLoadingTeachersCount(false);
+          }
+        } else {
+          setTeachersCount(0);
         }
 
       } catch (error) {
@@ -102,6 +111,11 @@ export default function SchoolInfoPage() {
   if (loading) {
     return <LoadingSkeleton variant="profile" />;
   }
+
+  const canViewStudents = userInfo?.permissions.includes('students.read') ?? false;
+  const canCreateStudents = userInfo?.permissions.includes('students.create') ?? false;
+  const canViewTeachers = userInfo?.permissions.includes('users.read') ?? false;
+  const canCreateTeachers = userInfo?.permissions.includes('users.create') ?? false;
 
   return (
     <div className="space-y-6">
@@ -183,93 +197,100 @@ export default function SchoolInfoPage() {
               </CardContent>
             </Card>
 
-            {/* Student Management Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Gestión de Estudiantes
-                </CardTitle>
-                <CardDescription>Administra los estudiantes de la escuela</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      Total de Estudiantes
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {loadingStudentsCount ? (
-                        <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
-                      ) : (
-                        <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
+            {canViewStudents && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Gestión de Estudiantes
+                  </CardTitle>
+                  <CardDescription>Administra los estudiantes de la escuela</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        Total de Estudiantes
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {loadingStudentsCount ? (
+                          <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                        ) : (
+                          <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => navigate('/students')}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Lista de Estudiantes
+                      </Button>
+                      {canCreateStudents && (
+                        <Button
+                          onClick={() => navigate('/students')}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Nuevo Estudiante
+                        </Button>
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      onClick={() => navigate(`/schools/${school.id}/students`)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver Lista de Estudiantes
-                    </Button>
-                    <Button
-                      onClick={() => navigate('/students')}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Nuevo Estudiante
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Teachers Management Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5" />
-                  Gestión de Maestros
-                </CardTitle>
-                <CardDescription>Administra los maestros de la escuela</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      Total de Maestros
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {loadingTeachersCount ? (
-                        <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
-                      ) : (
-                        <p className="text-2xl font-bold text-green-600">{teachersCount}</p>
+            {canViewTeachers && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Gestión de Maestros
+                  </CardTitle>
+                  <CardDescription>Administra los maestros de la escuela</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                        Total de Maestros
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {loadingTeachersCount ? (
+                          <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                        ) : (
+                          <p className="text-2xl font-bold text-green-600">{teachersCount}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => navigate('/users')}
+                        className="w-full"
+                        variant="outline"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Lista de Maestros
+                      </Button>
+                      {canCreateTeachers && (
+                        <Button
+                          onClick={() => navigate('/users')}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Nuevo Maestro
+                        </Button>
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      onClick={() => navigate(`/schools/${school.id}/teachers`)}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver Lista de Maestros
-                    </Button>
-                    <Button
-                      onClick={() => navigate('/users')}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar Nuevo Maestro
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
           </div>
 

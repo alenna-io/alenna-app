@@ -16,7 +16,7 @@ import { Search } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
-import type { UserInfo } from "@/services/api"
+import { useUser } from "@/contexts/UserContext"
 
 interface Filters {
   certificationType: string
@@ -31,6 +31,7 @@ export default function StudentsPage() {
   const { studentId, schoolId } = useParams()
   const navigate = useNavigate()
   const api = useApi()
+  const { userInfo } = useUser()
   const [students, setStudents] = React.useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -38,7 +39,6 @@ export default function StudentsPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [studentError, setStudentError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
-  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
     certificationType: "",
@@ -51,25 +51,42 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
 
-  // Fetch user info to check if parent
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+
+  const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+  const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+
+  if (isStudentOnly && !studentId) {
+    return <Navigate to="/my-profile" replace />
+  }
+
   React.useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const info = await api.auth.getUserInfo()
-        setUserInfo(info)
-      } catch (err) {
-        console.error('Error fetching user info:', err)
-      }
+    if (!userInfo || !isStudentOnly) return
+
+    const ownId = userInfo.studentId
+    if (!ownId) {
+      setHasPermission(false)
+      return
     }
 
-    fetchUserInfo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (!studentId) {
+      return
+    }
+
+    if (studentId !== ownId) {
+      navigate('/my-profile', { replace: true })
+    }
+  }, [userInfo, isStudentOnly, studentId, navigate])
 
   // Fetch students list from API (scoped to user's school or specific school) - only when not viewing a specific student
   React.useEffect(() => {
-    // Don't fetch list if we're viewing a specific student profile
     if (studentId) return
+    if (isStudentOnly) {
+      setStudents([])
+      setIsLoading(false)
+      return
+    }
 
     let isMounted = true
 
@@ -134,7 +151,7 @@ export default function StudentsPage() {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, schoolId])
+  }, [studentId, schoolId, isStudentOnly])
 
   // Fetch individual student from API when viewing profile
   React.useEffect(() => {
@@ -285,8 +302,7 @@ export default function StudentsPage() {
   }
 
   // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
-  const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
-    !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+  const parentOnly = isParentOnly
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
@@ -302,9 +318,12 @@ export default function StudentsPage() {
   if (studentError && studentId) {
     return (
       <div className="space-y-6">
-        <BackButton onClick={handleBackToList}>
-          Volver a Estudiantes
-        </BackButton>
+        {/* Mobile back button */}
+        <div className="md:hidden">
+          <BackButton onClick={handleBackToList}>
+            Volver a Estudiantes
+          </BackButton>
+        </div>
         <ErrorAlert
           title="Error al cargar estudiante"
           message={studentError}
@@ -313,9 +332,14 @@ export default function StudentsPage() {
     )
   }
 
+  if (isStudentOnly && selectedStudent) {
+    navigate('/my-profile', { replace: true })
+    return null
+  }
+
   // Show student profile if we have a selected student
   if (selectedStudent) {
-    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={isParentOnly} />
+    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={parentOnly} />
   }
 
   // Show loading state for students list
@@ -324,7 +348,7 @@ export default function StudentsPage() {
   }
 
   // Show parent-specific view
-  if (isParentOnly && !studentId) {
+  if (parentOnly && !studentId) {
     return (
       <div className="space-y-6">
         {error && (
@@ -341,11 +365,13 @@ export default function StudentsPage() {
   // Show admin/teacher students list
   return (
     <div className="space-y-6">
-      {/* Back button for school context */}
+      {/* Mobile back button for school context */}
       {schoolId && (
-        <BackButton onClick={() => navigate('/configuration/school-info')}>
-          Volver a Información de la Escuela
-        </BackButton>
+        <div className="md:hidden">
+          <BackButton onClick={() => navigate('/configuration/school-info')}>
+            Volver a Información de la Escuela
+          </BackButton>
+        </div>
       )}
 
       {/* Error banner */}
