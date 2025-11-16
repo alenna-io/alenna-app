@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { BookOpen, ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
+import { ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
 interface QuarterlyTableProps {
@@ -30,7 +30,10 @@ interface QuarterlyTableProps {
 
 // Simplified 2-color system: alternating between blue and gray
 const getSubjectColor = (index: number) => {
-  return { bg: "bg-white border-gray-200", text: "text-gray-800" }
+  const isEven = index % 2 === 0
+  return isEven
+    ? { bg: "bg-white border-gray-200", text: "text-gray-800" }
+    : { bg: "bg-slate-50 border-slate-200", text: "text-slate-900" }
 }
 
 export function ACEQuarterlyTable({

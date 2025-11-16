@@ -5,20 +5,13 @@ import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { useApi } from "@/services/api"
 import type { DailyGoalData } from "@/types/pace"
+import type { ProjectionDetail } from "@/types/projection-detail"
 
 interface Student {
   id: string
   name: string
   currentGrade: string
   schoolYear: string
-}
-
-// Mock student data (will be replaced with real data later)
-const mockStudent: Student = {
-  id: "1",
-  name: "Ximena García López",
-  currentGrade: "8th Grade",
-  schoolYear: "2024-2025"
 }
 
 // Helper function to calculate pages from input value
@@ -64,6 +57,7 @@ export default function DailyGoalsPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [canEdit, setCanEdit] = React.useState(false)
+  const [student, setStudent] = React.useState<Student | null>(null)
 
   // Load daily goals from API
   React.useEffect(() => {
@@ -112,6 +106,34 @@ export default function DailyGoalsPage() {
 
     loadPermissions()
   }, [api])
+
+  // Load student info from projection detail so the header shows the correct student
+  React.useEffect(() => {
+    const loadStudent = async () => {
+      if (!studentId || !projectionId) return
+
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setStudent({
+          id: detail.studentId,
+          name: detail.student.fullName,
+          currentGrade: detail.student.currentLevel || "N/A",
+          schoolYear: detail.schoolYear,
+        })
+      } catch (err) {
+        console.error("Error loading student for daily goals:", err)
+        // Fallback to a generic placeholder if needed
+        setStudent({
+          id: studentId,
+          name: "Estudiante",
+          currentGrade: "",
+          schoolYear: "",
+        })
+      }
+    }
+
+    loadStudent()
+  }, [api.projections, studentId, projectionId])
 
   // Calculate total pages for a specific day
   const calculateDayTotal = React.useMemo(() => {
@@ -278,7 +300,12 @@ export default function DailyGoalsPage() {
 
       {/* Student Info Card */}
       <StudentInfoCard
-        student={mockStudent}
+        student={student || {
+          id: studentId || "",
+          name: "Cargando estudiante...",
+          currentGrade: "",
+          schoolYear: ""
+        }}
         showBadge={false}
       />
 
