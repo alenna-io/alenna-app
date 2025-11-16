@@ -1,5 +1,4 @@
 {
-  "//": "Vercel configuration for Vite + React SPA",
   "buildCommand": "pnpm install --frozen-lockfile && pnpm build",
   "outputDirectory": "dist",
   "framework": "vite",
