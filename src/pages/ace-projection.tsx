@@ -12,6 +12,7 @@ import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ErrorDialog } from "@/components/ui/error-dialog"
 import { Navigate } from "react-router-dom"
 import type { UserInfo } from "@/services/api"
+import { toast } from "sonner"
 
 
 // Helper to create empty quarter data structure
@@ -53,6 +54,21 @@ export default function ACEProjectionPage() {
     title?: string
     message: string
   }>({ open: false, message: "" })
+
+  // Compute existing pace catalog IDs (for preventing re-adding deleted paces)
+  const existingPaceCatalogIds = React.useMemo(() => {
+    const ids = new Set<string>()
+    if (projectionDetail) {
+      Object.values(projectionDetail.quarters).forEach(quarter => {
+        Object.values(quarter).forEach(weekPaces => {
+          weekPaces.forEach(pace => {
+            if (pace) ids.add(pace.paceCatalogId)
+          })
+        })
+      })
+    }
+    return Array.from(ids)
+  }, [projectionDetail])
 
   // Fetch user info to check if parent
   React.useEffect(() => {
@@ -156,15 +172,27 @@ export default function ACEProjectionPage() {
   const currentQuarter = currentWeekInfo.quarter
   const currentWeekInQuarter = currentWeekInfo.week
 
-  // Handle drag and drop - SAVES TO DATABASE
+  // Handle drag and drop - SAVES TO DATABASE (with optimistic update)
   const handlePaceDrop = async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
     if (!studentId || !projectionId) return
 
-    try {
-      const quarterData = projectionData[quarter as keyof typeof projectionData]
-      const fromPace = quarterData[subject][fromWeek]
-      const toPace = quarterData[subject][toWeek]
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const fromPace = quarterData[subject][fromWeek]
+    const toPace = quarterData[subject][toWeek]
 
+    // OPTIMISTIC UPDATE: Immediately swap the PACEs in the UI
+    const updatedProjectionData = { ...projectionData }
+    updatedProjectionData[quarter as keyof typeof projectionData] = {
+      ...quarterData,
+      [subject]: quarterData[subject].map((pace, idx) => {
+        if (idx === fromWeek) return toPace
+        if (idx === toWeek) return fromPace
+        return pace
+      })
+    }
+    setProjectionData(updatedProjectionData)
+
+    try {
       // Move the dragged PACE to the target position
       if (fromPace && fromPace.id) {
         await api.projections.movePace(studentId, projectionId, fromPace.id, {
@@ -181,7 +209,9 @@ export default function ACEProjectionPage() {
         })
       }
 
-      // Reload projection data to reflect changes
+      toast.success("Lección movida exitosamente")
+
+      // Optionally reload to ensure consistency with backend
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
       setProjectionDetail(detail)
       const convertedData = {
@@ -193,13 +223,16 @@ export default function ACEProjectionPage() {
       setProjectionData(convertedData)
     } catch (err) {
       console.error('Error moving PACE:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to move PACE'
+
+      toast.error(`Error al mover PACE: ${errorMessage}`)
       setErrorDialog({
         open: true,
         title: "Error Moving PACE",
-        message: err instanceof Error ? err.message : 'Failed to move PACE'
+        message: errorMessage
       })
 
-      // Reload data to revert UI on error
+      // ROLLBACK: Reload data to revert UI on error
       try {
         const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
         setProjectionDetail(detail)
@@ -216,33 +249,67 @@ export default function ACEProjectionPage() {
     }
   }
 
-  // Handle pace completion and grade - SAVES TO DATABASE
+  // Handle pace completion and grade - SAVES TO DATABASE (with optimistic update)
   const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
     if (!studentId || !projectionId) return
 
-    try {
-      const quarterData = projectionData[quarter as keyof typeof projectionData]
-      const pace = quarterData[subject][weekIndex]
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const pace = quarterData[subject][weekIndex]
 
-      if (!pace || !('id' in pace)) {
-        console.error('PACE not found or missing ID')
-        return
+    if (!pace || !('id' in pace)) {
+      console.error('PACE not found or missing ID')
+      return
+    }
+
+    const paceId = pace.id!
+
+    // OPTIMISTIC UPDATE: Immediately update the PACE in the UI
+    const updatedProjectionData = { ...projectionData }
+    const updatedQuarterData = { ...quarterData }
+    const updatedWeekPaces = [...quarterData[subject]]
+
+    if (grade !== undefined) {
+      // Update with new grade
+      const isFailing = grade < 80
+      updatedWeekPaces[weekIndex] = {
+        ...pace,
+        grade,
+        isCompleted: true,
+        isFailed: isFailing,
+        gradeHistory: [
+          ...(pace.gradeHistory || []),
+          { grade, date: new Date().toISOString(), note: comment }
+        ]
       }
+    } else {
+      // Mark as incomplete
+      updatedWeekPaces[weekIndex] = {
+        ...pace,
+        isCompleted: false,
+        isFailed: false,
+        grade: null
+      }
+    }
 
-      const paceId = pace.id!
+    updatedQuarterData[subject] = updatedWeekPaces
+    updatedProjectionData[quarter as keyof typeof projectionData] = updatedQuarterData
+    setProjectionData(updatedProjectionData)
 
+    try {
       if (grade !== undefined) {
         // Update grade
         await api.projections.updatePaceGrade(studentId, projectionId, paceId, {
           grade,
           note: comment,
         })
+        toast.success("Calificación de PACE guardada")
       } else {
         // No grade provided = mark as incomplete
         await api.projections.markIncomplete(studentId, projectionId, paceId)
+        toast.success("PACE marcado como incompleto")
       }
 
-      // Reload projection data
+      // Reload projection data to ensure consistency
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
       setProjectionDetail(detail)
       const convertedData = {
@@ -253,18 +320,46 @@ export default function ACEProjectionPage() {
       }
       setProjectionData(convertedData)
     } catch (err) {
-      console.error('Error actualizando PACE:', err)
+      console.error('Error actualizando Lección:', err)
+      const message = err instanceof Error ? err.message : 'Error al actualizar PACE'
+
+      toast.error(`Error: ${message}`)
       setErrorDialog({
         open: true,
-        title: "Error actualizando PACE",
-        message: err instanceof Error ? err.message : 'Error al actualizar PACE'
+        title: "Error actualizando Lección",
+        message
       })
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed toggle:', reloadErr)
+      }
     }
   }
 
   // Handle week click to navigate to daily goals
   const handleWeekClick = (quarter: string, week: number) => {
-    navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
+    // Pass student data via state to avoid re-fetching in daily goals page
+    navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`, {
+      state: {
+        student: projectionDetail ? {
+          id: projectionDetail.studentId,
+          name: projectionDetail.student.fullName,
+          currentGrade: projectionDetail.student.currentLevel || "N/A",
+          schoolYear: projectionDetail.schoolYear,
+        } : null
+      }
+    })
   }
 
   // Handle adding new pace - Opens PACE picker
@@ -299,36 +394,50 @@ export default function ACEProjectionPage() {
       }
       setProjectionData(convertedData)
 
+      toast.success("Lección agregada exitosamente")
       setPacePickerContext(null)
     } catch (err) {
-      console.error('Error agregando PACE:', err)
+      console.error('Error agregando Lección:', err)
+      const errorMessage = err instanceof Error ? err.message : "Error al agregar la lección"
+      toast.error(errorMessage)
       setErrorDialog({
         open: true,
-        title: "Error agregando PACE",
-        message: err instanceof Error ? err.message : 'Error al agregar PACE'
+        title: "Error agregando Lección",
+        message: err instanceof Error ? err.message : 'Error al agregar Lección'
       })
     }
   }
 
-  // Handle deleting a pace - SAVES TO DATABASE
+  // Handle deleting a pace - SAVES TO DATABASE (with optimistic update)
   const handleDeletePace = async (quarter: string, subject: string, weekIndex: number) => {
     if (!studentId || !projectionId) return
 
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const pace = quarterData[subject][weekIndex]
+
+    if (!pace || !('id' in pace)) {
+      console.error('Lección no encontrada o ID faltante')
+      return
+    }
+
+    const paceId = pace.id!
+
+    // OPTIMISTIC UPDATE: Immediately remove the PACE from the UI
+    const updatedProjectionData = { ...projectionData }
+    const updatedQuarterData = { ...quarterData }
+    const updatedWeekPaces = [...quarterData[subject]]
+    updatedWeekPaces[weekIndex] = null
+    updatedQuarterData[subject] = updatedWeekPaces
+    updatedProjectionData[quarter as keyof typeof projectionData] = updatedQuarterData
+    setProjectionData(updatedProjectionData)
+
     try {
-      const quarterData = projectionData[quarter as keyof typeof projectionData]
-      const pace = quarterData[subject][weekIndex]
-
-      if (!pace || !('id' in pace)) {
-        console.error('PACE no encontrado o ID faltante')
-        return
-      }
-
-      const paceId = pace.id!
-
       // Remove PACE from projection
       await api.projections.removePace(studentId, projectionId, paceId)
 
-      // Reload projection data
+      toast.success("Lección eliminada exitosamente")
+
+      // Reload projection data to ensure consistency
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
       setProjectionDetail(detail)
       const convertedData = {
@@ -339,12 +448,30 @@ export default function ACEProjectionPage() {
       }
       setProjectionData(convertedData)
     } catch (err) {
-      console.error('Error eliminando PACE:', err)
+      console.error('Error eliminando Lección:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar Lección'
+
+      toast.error(`Error: ${errorMessage}`)
       setErrorDialog({
         open: true,
-        title: "Error eliminando PACE",
-        message: err instanceof Error ? err.message : 'Error al eliminar PACE'
+        title: "Error eliminando Lección",
+        message: errorMessage
       })
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
+        const convertedData = {
+          Q1: convertQuarterData(detail.quarters.Q1),
+          Q2: convertQuarterData(detail.quarters.Q2),
+          Q3: convertQuarterData(detail.quarters.Q3),
+          Q4: convertQuarterData(detail.quarters.Q4),
+        }
+        setProjectionData(convertedData)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed delete:', reloadErr)
+      }
     }
   }
 
@@ -438,7 +565,8 @@ export default function ACEProjectionPage() {
           onSelect={handlePaceSelect}
           categoryFilter={pacePickerContext.subject}
           levelFilter={projectionDetail?.student.currentLevel}
-          title={`Agregar PACE - ${pacePickerContext.subject} (${pacePickerContext.quarter} Semana ${pacePickerContext.weekIndex + 1})`}
+          title={`Agregar Lección - ${pacePickerContext.subject} (${pacePickerContext.quarter} Semana ${pacePickerContext.weekIndex + 1})`}
+          existingPaceCatalogIds={existingPaceCatalogIds}
         />
       )}
 

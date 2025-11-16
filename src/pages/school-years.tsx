@@ -15,6 +15,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Plus, Edit, Trash2, CheckCircle, Calendar } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { SchoolYear, ModuleData } from "@/services/api";
+import { toast } from "sonner";
 
 // Helper function to format date strings without timezone issues
 function formatDateString(dateString: string): string {
@@ -207,6 +208,7 @@ export default function SchoolYearsPage() {
       setIsCreating(false);
       setEditingYear(null);
       fetchSchoolYears();
+      toast.success(isCreating ? "Año escolar creado correctamente" : "Año escolar actualizado correctamente");
     } catch (error) {
       console.error('Error saving school year:', error);
       setErrorDialog({
@@ -214,6 +216,7 @@ export default function SchoolYearsPage() {
         title: "Error",
         message: error instanceof Error ? error.message : "Error al guardar año escolar",
       });
+      toast.error(error instanceof Error ? error.message : "Error al guardar año escolar");
     }
   };
 
@@ -222,6 +225,7 @@ export default function SchoolYearsPage() {
       await api.schoolYears.setActive(id);
       fetchSchoolYears();
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al activar año escolar");
       setErrorDialog({
         open: true,
         title: "Error",
@@ -234,7 +238,9 @@ export default function SchoolYearsPage() {
     try {
       await api.schoolYears.delete(id);
       fetchSchoolYears();
+      toast.success("Año escolar eliminado correctamente");
     } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al eliminar año escolar");
       setErrorDialog({
         open: true,
         title: "Error",

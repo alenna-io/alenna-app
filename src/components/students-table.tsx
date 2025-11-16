@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { Users, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft } from "lucide-react"
+import { Users, ChevronsUpDown, ChevronLeft } from "lucide-react"
 import type { Student } from "@/types/student"
 
 interface StudentsTableProps {
@@ -26,12 +26,13 @@ interface ColumnConfig {
 }
 
 const COLUMNS: ColumnConfig[] = [
-  { key: 'name', label: 'Nombre', sortable: true },
-  { key: 'age', label: 'Edad' },
-  { key: 'certification', label: 'Certificación' },
-  { key: 'graduation', label: 'Graduación' },
-  { key: 'level', label: 'Nivel' },
-  { key: 'actions', label: 'Acciones' },
+  { key: 'firstName', label: 'Nombre', sortable: true },
+  { key: 'lastName', label: 'Apellidos', sortable: true },
+  { key: 'age', label: 'Edad', sortable: true },
+  { key: 'certification', label: 'Certificación', sortable: true },
+  { key: 'graduation', label: 'Graduación', sortable: true },
+  { key: 'level', label: 'Nivel', sortable: false },
+  { key: 'actions', label: 'Acciones', sortable: false },
 ]
 
 export function StudentsTable({
@@ -47,12 +48,18 @@ export function StudentsTable({
 }: StudentsTableProps) {
 
   const getSortIcon = (field: "firstName" | "lastName") => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="h-4 w-4 ml-1" />
-    }
-    return sortDirection === "asc" ?
-      <ArrowUp className="h-4 w-4 ml-1" /> :
-      <ArrowDown className="h-4 w-4 ml-1" />
+    const isActive = sortField === field
+
+    return (
+      <ChevronsUpDown
+        className={`h-3 w-3 ml-1 transition-transform transition-colors ${isActive
+          ? sortDirection === "asc"
+            ? "text-primary -translate-y-[1px]"
+            : "text-primary translate-y-[1px]"
+          : "text-muted-foreground/70"
+          }`}
+      />
+    )
   }
 
   const startItem = (currentPage - 1) * 10 + 1
@@ -72,31 +79,33 @@ export function StudentsTable({
   const tdClass = "p-4 align-middle first:px-6 first:py-3"
 
   const renderColumnHeader = (column: ColumnConfig) => {
-    if (column.key === 'name') {
+    if (column.key === 'firstName' || column.key === 'lastName') {
+      const field = column.key === 'firstName' ? "firstName" : "lastName"
       return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onSort("firstName")}
-            className={thClass}
-          >
-            Nombre
-            {getSortIcon("firstName")}
-          </Button>
-          <span className="text-muted-foreground">/</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onSort("lastName")}
-            className={thClass}
-          >
-            Apellido
-            {getSortIcon("lastName")}
-          </Button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onSort(field)}
+          className="inline-flex items-center text-sm font-semibold text-foreground hover:text-primary"
+        >
+          {column.label}
+          {getSortIcon(field)}
+        </button>
       )
     }
+
+    if (column.sortable) {
+      // Non-name sortable columns (age, certification, graduation)
+      return (
+        <button
+          type="button"
+          onClick={() => onSort("firstName")}
+          className="inline-flex items-center text-sm font-semibold text-foreground hover:text-primary"
+        >
+          {column.label}
+        </button>
+      )
+    }
+
     return column.label
   }
 
@@ -123,7 +132,7 @@ export function StudentsTable({
               {students.map((student) => {
                 const renderCell = (columnKey: string) => {
                   switch (columnKey) {
-                    case 'name':
+                    case 'firstName':
                       return (
                         <div className="flex items-center gap-4">
                           <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
@@ -133,9 +142,15 @@ export function StudentsTable({
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
-                              {student.name}
+                              {student.firstName}
                             </div>
                           </div>
+                        </div>
+                      )
+                    case 'lastName':
+                      return (
+                        <div className="text-sm text-foreground">
+                          {student.lastName}
                         </div>
                       )
                     case 'age':
