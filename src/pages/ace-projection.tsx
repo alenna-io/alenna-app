@@ -6,6 +6,7 @@ import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import { MonthlyAssignmentsSection } from "@/components/monthly-assignments-section"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import type { QuarterData } from "@/types/pace"
 import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
@@ -649,101 +650,115 @@ export default function ACEProjectionPage() {
         />
       )}
 
-      {/* Quarterly Tables */}
-      <div className="space-y-4 md:space-y-8">
-        <ACEQuarterlyTable
-          quarter="Q1"
-          quarterName="Bloque 1"
-          data={projectionData.Q1}
-          isActive={currentQuarter === "Q1"}
-          currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
-          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
-          onWeekClick={handleWeekClick}
-          onAddPace={isParentOnly ? undefined : handleAddPace}
-          onDeletePace={isParentOnly ? undefined : handleDeletePace}
-          isReadOnly={isParentOnly}
-        />
-        <MonthlyAssignmentsSection
-          quarter="Q1"
-          assignments={monthlyAssignments}
-          isReadOnly={isParentOnly}
-          onRefresh={refreshMonthlyAssignments}
-          onCreateAssignment={handleCreateMonthlyAssignment}
-          onUpdateAssignment={handleUpdateMonthlyAssignment}
-          onGradeAssignment={handleGradeMonthlyAssignment}
-          onDeleteAssignment={handleDeleteMonthlyAssignment}
-        />
-        <ACEQuarterlyTable
-          quarter="Q2"
-          quarterName="Bloque 2"
-          data={projectionData.Q2}
-          isActive={currentQuarter === "Q2"}
-          currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
-          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
-          onWeekClick={handleWeekClick}
-          onAddPace={isParentOnly ? undefined : handleAddPace}
-          onDeletePace={isParentOnly ? undefined : handleDeletePace}
-          isReadOnly={isParentOnly}
-        />
-        <MonthlyAssignmentsSection
-          quarter="Q2"
-          assignments={monthlyAssignments}
-          isReadOnly={isParentOnly}
-          onRefresh={refreshMonthlyAssignments}
-          onCreateAssignment={handleCreateMonthlyAssignment}
-          onUpdateAssignment={handleUpdateMonthlyAssignment}
-          onGradeAssignment={handleGradeMonthlyAssignment}
-          onDeleteAssignment={handleDeleteMonthlyAssignment}
-        />
-        <ACEQuarterlyTable
-          quarter="Q3"
-          quarterName="Bloque 3"
-          data={projectionData.Q3}
-          isActive={currentQuarter === "Q3"}
-          currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
-          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
-          onWeekClick={handleWeekClick}
-          onAddPace={isParentOnly ? undefined : handleAddPace}
-          onDeletePace={isParentOnly ? undefined : handleDeletePace}
-          isReadOnly={isParentOnly}
-        />
-        <MonthlyAssignmentsSection
-          quarter="Q3"
-          assignments={monthlyAssignments}
-          isReadOnly={isParentOnly}
-          onRefresh={refreshMonthlyAssignments}
-          onCreateAssignment={handleCreateMonthlyAssignment}
-          onUpdateAssignment={handleUpdateMonthlyAssignment}
-          onGradeAssignment={handleGradeMonthlyAssignment}
-          onDeleteAssignment={handleDeleteMonthlyAssignment}
-        />
-        <ACEQuarterlyTable
-          quarter="Q4"
-          quarterName="Bloque 4"
-          data={projectionData.Q4}
-          isActive={currentQuarter === "Q4"}
-          currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
-          onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-          onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
-          onWeekClick={handleWeekClick}
-          onAddPace={isParentOnly ? undefined : handleAddPace}
-          onDeletePace={isParentOnly ? undefined : handleDeletePace}
-          isReadOnly={isParentOnly}
-        />
-        <MonthlyAssignmentsSection
-          quarter="Q4"
-          assignments={monthlyAssignments}
-          isReadOnly={isParentOnly}
-          onRefresh={refreshMonthlyAssignments}
-          onCreateAssignment={handleCreateMonthlyAssignment}
-          onUpdateAssignment={handleUpdateMonthlyAssignment}
-          onGradeAssignment={handleGradeMonthlyAssignment}
-          onDeleteAssignment={handleDeleteMonthlyAssignment}
-        />
-      </div>
+      {/* Quarterly Tabs: show one quarter at a time (PACEs + Monthly Assignments) */}
+      <Tabs defaultValue={currentQuarter || "Q1"} className="space-y-4 md:space-y-6">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+          <TabsTrigger value="Q1">Bloque 1</TabsTrigger>
+          <TabsTrigger value="Q2">Bloque 2</TabsTrigger>
+          <TabsTrigger value="Q3">Bloque 3</TabsTrigger>
+          <TabsTrigger value="Q4">Bloque 4</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="Q1" className="space-y-4 md:space-y-6">
+          <ACEQuarterlyTable
+            quarter="Q1"
+            quarterName="Bloque 1"
+            data={projectionData.Q1}
+            isActive={currentQuarter === "Q1"}
+            currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
+            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onWeekClick={handleWeekClick}
+            onAddPace={isParentOnly ? undefined : handleAddPace}
+            onDeletePace={isParentOnly ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly}
+          />
+          <MonthlyAssignmentsSection
+            quarter="Q1"
+            assignments={monthlyAssignments}
+            isReadOnly={isParentOnly}
+            onCreateAssignment={handleCreateMonthlyAssignment}
+            onUpdateAssignment={handleUpdateMonthlyAssignment}
+            onGradeAssignment={handleGradeMonthlyAssignment}
+            onDeleteAssignment={handleDeleteMonthlyAssignment}
+          />
+        </TabsContent>
+
+        <TabsContent value="Q2" className="space-y-4 md:space-y-6">
+          <ACEQuarterlyTable
+            quarter="Q2"
+            quarterName="Bloque 2"
+            data={projectionData.Q2}
+            isActive={currentQuarter === "Q2"}
+            currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
+            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onWeekClick={handleWeekClick}
+            onAddPace={isParentOnly ? undefined : handleAddPace}
+            onDeletePace={isParentOnly ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly}
+          />
+          <MonthlyAssignmentsSection
+            quarter="Q2"
+            assignments={monthlyAssignments}
+            isReadOnly={isParentOnly}
+            onCreateAssignment={handleCreateMonthlyAssignment}
+            onUpdateAssignment={handleUpdateMonthlyAssignment}
+            onGradeAssignment={handleGradeMonthlyAssignment}
+            onDeleteAssignment={handleDeleteMonthlyAssignment}
+          />
+        </TabsContent>
+
+        <TabsContent value="Q3" className="space-y-4 md:space-y-6">
+          <ACEQuarterlyTable
+            quarter="Q3"
+            quarterName="Bloque 3"
+            data={projectionData.Q3}
+            isActive={currentQuarter === "Q3"}
+            currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
+            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onWeekClick={handleWeekClick}
+            onAddPace={isParentOnly ? undefined : handleAddPace}
+            onDeletePace={isParentOnly ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly}
+          />
+          <MonthlyAssignmentsSection
+            quarter="Q3"
+            assignments={monthlyAssignments}
+            isReadOnly={isParentOnly}
+            onCreateAssignment={handleCreateMonthlyAssignment}
+            onUpdateAssignment={handleUpdateMonthlyAssignment}
+            onGradeAssignment={handleGradeMonthlyAssignment}
+            onDeleteAssignment={handleDeleteMonthlyAssignment}
+          />
+        </TabsContent>
+
+        <TabsContent value="Q4" className="space-y-4 md:space-y-6">
+          <ACEQuarterlyTable
+            quarter="Q4"
+            quarterName="Bloque 4"
+            data={projectionData.Q4}
+            isActive={currentQuarter === "Q4"}
+            currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
+            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onWeekClick={handleWeekClick}
+            onAddPace={isParentOnly ? undefined : handleAddPace}
+            onDeletePace={isParentOnly ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly}
+          />
+          <MonthlyAssignmentsSection
+            quarter="Q4"
+            assignments={monthlyAssignments}
+            isReadOnly={isParentOnly}
+            onCreateAssignment={handleCreateMonthlyAssignment}
+            onUpdateAssignment={handleUpdateMonthlyAssignment}
+            onGradeAssignment={handleGradeMonthlyAssignment}
+            onDeleteAssignment={handleDeleteMonthlyAssignment}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Error Dialog */}
       <ErrorDialog

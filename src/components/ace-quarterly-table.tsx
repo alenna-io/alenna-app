@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { ChevronDown, ChevronUp, CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 
 interface QuarterlyTableProps {
@@ -49,7 +49,6 @@ export function ACEQuarterlyTable({
   onAddPace,
   onDeletePace
 }: QuarterlyTableProps) {
-  const [isExpanded, setIsExpanded] = React.useState(isActive)
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
@@ -402,317 +401,297 @@ export function ACEQuarterlyTable({
                   ({completionPercentage}%)
                 </span>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 cursor-pointer text-xs md:text-sm h-8 md:h-9"
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronUp className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Ocultar</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Mostrar</span>
-                  </>
-                )}
-              </Button>
             </div>
           </div>
         </CardHeader>
-        {isExpanded && (
-          <CardContent className="p-3 md:p-6">
-            <div className="overflow-x-auto -mx-3 md:mx-0 border border-gray-300 rounded-md overflow-hidden">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr>
-                    <th className="text-left py-1.5 px-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 text-sm">
-                      Materia
-                    </th>
-                    {weeks.map((week, weekIdx) => {
-                      const weekPaceCount = weekPaceCounts[weekIdx]
+        <CardContent className="p-3 md:p-6">
+          <div className="overflow-x-auto -mx-3 md:mx-0 border border-gray-300 rounded-md overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left py-1.5 px-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 text-sm">
+                    Materia
+                  </th>
+                  {weeks.map((week, weekIdx) => {
+                    const weekPaceCount = weekPaceCounts[weekIdx]
 
-                      return (
-                        <th
-                          key={week}
-                          className={`text-center py-1.5 px-2 font-semibold min-w-[90px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
-                            ? "bg-green-100"
-                            : "bg-muted/50"
-                            }`}
-                          onClick={() => onWeekClick?.(quarter, week)}
-                        >
-                          <div className="flex flex-col items-center">
-                            <span className={`text-sm font-semibold ${currentWeek === week ? "text-green-700" : ""}`}>
-                              Semana {week}
-                              {currentWeek === week && " ✓"}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground mt-0.5">
-                              {weekPaceCount} Lecciones
-                            </span>
-                          </div>
-                        </th>
-                      )
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {subjects.map((subject, subjectIndex) => (
-                    <tr
-                      key={subject}
-                      className="transition-colors hover:bg-blue-50 group"
-                    >
-                      <td
-                        className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
+                    return (
+                      <th
+                        key={week}
+                        className={`text-center py-1.5 px-2 font-semibold min-w-[90px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
+                          ? "bg-green-100"
+                          : "bg-muted/50"
+                          }`}
+                        onClick={() => onWeekClick?.(quarter, week)}
                       >
-                        {subject}
-                      </td>
-                      {data[subject].map((pace, weekIndex) => (
-                        <td
-                          key={weekIndex}
-                          className="py-1.5 px-2 text-center align-middle border border-gray-300"
-                          draggable={!isReadOnly && !!pace}
-                          onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
-                          onDragOver={(e) => {
-                            if (draggedPace && draggedPace.subject === subject) {
-                              e.preventDefault()
-                            }
-                          }}
-                          onDrop={(e) => {
+                        <div className="flex flex-col items-center">
+                          <span className={`text-sm font-semibold ${currentWeek === week ? "text-green-700" : ""}`}>
+                            Semana {week}
+                            {currentWeek === week && " ✓"}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                            {weekPaceCount} Lecciones
+                          </span>
+                        </div>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {subjects.map((subject, subjectIndex) => (
+                  <tr
+                    key={subject}
+                    className="transition-colors hover:bg-blue-50 group"
+                  >
+                    <td
+                      className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
+                    >
+                      {subject}
+                    </td>
+                    {data[subject].map((pace, weekIndex) => (
+                      <td
+                        key={weekIndex}
+                        className="py-1.5 px-2 text-center align-middle border border-gray-300"
+                        draggable={!isReadOnly && !!pace}
+                        onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
+                        onDragOver={(e) => {
+                          if (draggedPace && draggedPace.subject === subject) {
                             e.preventDefault()
-                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
-                              onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
-                            }
-                            setDraggedPace(null)
-                          }}
-                          onDragEnd={() => setDraggedPace(null)}
-                        >
-                          {pace ? (
-                            editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                              <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                                {gradePhase === 'grade' || gradePhase === null ? (
-                                  <>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={gradeInput}
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value)
-                                        if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                          setGradeInput(e.target.value)
-                                        }
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                        if (e.key === 'Escape') handleGradeCancel()
-                                      }}
-                                      placeholder="0-100"
-                                      className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Siguiente"
-                                      >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </svg>
-                                      </button>
-                                      <button
-                                        onClick={() => handleGradeSkipComment(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Guardar sin comentario"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={handleGradeCancel}
-                                        className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Cancelar"
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-xs text-center text-gray-600 mb-1">
-                                      Grado: <span className="font-semibold">{gradeInput}%</span>
-                                    </div>
-                                    <textarea
-                                      value={commentInput}
-                                      onChange={(e) => setCommentInput(e.target.value)}
-                                      placeholder="Comentario (opcional)..."
-                                      className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                                      rows={2}
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Guardar con comentario"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => setGradePhase('grade')}
-                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Volver"
-                                      >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                        </svg>
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="relative flex items-center justify-center w-full group/pace">
-                                <div
-                                  className={`inline-flex flex-col items-center ${!isReadOnly ? 'cursor-pointer' : ''}`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    if (!isReadOnly) {
-                                      handlePaceClick(subject, weekIndex, pace)
-                                    }
-                                  }}
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className={`font-mono text-sm px-3 py-1 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                      ? "bg-red-100 text-red-800 border-red-500 border-2"
-                                      : pace.isCompleted
-                                        ? "bg-green-100 text-green-800 border-green-500 border-2"
-                                        : "bg-white text-gray-800 border-gray-300 border-2"
-                                      }`}
-                                  >
-                                    {(pace.isFailed || pace.isCompleted) && (
-                                      pace.isFailed || isPaceFailing(pace.grade) ? (
-                                        <XCircle className="h-3 w-3 absolute -top-1 -right-1 text-red-600 fill-red-100" />
-                                      ) : (
-                                        <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-600 fill-green-100" />
-                                      )
-                                    )}
-                                    {pace.number}
-                                  </Badge>
-                                  <span className={`text-xs mt-1 ${getGradeColor(pace.grade)}`}>
-                                    {pace.grade !== null ? `${pace.grade}%` : "—"}
-                                  </span>
-                                </div>
-                                {!isReadOnly && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      const rect = e.currentTarget.getBoundingClientRect()
-                                      setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                            onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
+                          }
+                          setDraggedPace(null)
+                        }}
+                        onDragEnd={() => setDraggedPace(null)}
+                      >
+                        {pace ? (
+                          editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
+                            <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                              {gradePhase === 'grade' || gradePhase === null ? (
+                                <>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={gradeInput}
+                                    onChange={(e) => {
+                                      const val = parseInt(e.target.value)
+                                      if (e.target.value === '' || (val >= 0 && val <= 100)) {
+                                        setGradeInput(e.target.value)
+                                      }
                                     }}
-                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-gray-500" />
-                                  </button>
-                                )}
-                              </div>
-                            )
-                          ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
-                            <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={paceNumberInput}
-                                onChange={(e) => {
-                                  const value = e.target.value
-                                  // Only allow numbers and max 4 digits
-                                  if (/^\d{0,4}$/.test(value)) {
-                                    setPaceNumberInput(value)
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
+                                      if (e.key === 'Escape') handleGradeCancel()
+                                    }}
+                                    placeholder="0-100"
+                                    className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                      className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                      title="Siguiente"
+                                    >
+                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => handleGradeSkipComment(subject, weekIndex)}
+                                      className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                      title="Guardar sin comentario"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={handleGradeCancel}
+                                      className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                      title="Cancelar"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="text-xs text-center text-gray-600 mb-1">
+                                    Grado: <span className="font-semibold">{gradeInput}%</span>
+                                  </div>
+                                  <textarea
+                                    value={commentInput}
+                                    onChange={(e) => setCommentInput(e.target.value)}
+                                    placeholder="Comentario (opcional)..."
+                                    className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                                    rows={2}
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                      className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                      title="Guardar con comentario"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => setGradePhase('grade')}
+                                      className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                      title="Volver"
+                                    >
+                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="relative flex items-center justify-center w-full group/pace">
+                              <div
+                                className={`inline-flex flex-col items-center ${!isReadOnly ? 'cursor-pointer' : ''}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  if (!isReadOnly) {
+                                    handlePaceClick(subject, weekIndex, pace)
                                   }
                                 }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
-                                  if (e.key === 'Escape') handleAddPaceCancel()
-                                }}
-                                placeholder="1XXX"
-                                className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                                autoFocus
-                              />
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                  title="Agregar"
+                              >
+                                <Badge
+                                  variant="outline"
+                                  className={`font-mono text-sm px-3 py-1 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                    ? "bg-red-100 text-red-800 border-red-500 border-2"
+                                    : pace.isCompleted
+                                      ? "bg-green-100 text-green-800 border-green-500 border-2"
+                                      : "bg-white text-gray-800 border-gray-300 border-2"
+                                    }`}
                                 >
-                                  <Check className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={handleAddPaceCancel}
-                                  className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                  title="Cancelar"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
+                                  {(pace.isFailed || pace.isCompleted) && (
+                                    pace.isFailed || isPaceFailing(pace.grade) ? (
+                                      <XCircle className="h-3 w-3 absolute -top-1 -right-1 text-red-600 fill-red-100" />
+                                    ) : (
+                                      <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-600 fill-green-100" />
+                                    )
+                                  )}
+                                  {pace.number}
+                                </Badge>
+                                <span className={`text-xs mt-1 ${getGradeColor(pace.grade)}`}>
+                                  {pace.grade !== null ? `${pace.grade}%` : "—"}
+                                </span>
                               </div>
+                              {!isReadOnly && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    const rect = e.currentTarget.getBoundingClientRect()
+                                    setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
+                                  }}
+                                  className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
+                                >
+                                  <MoreVertical className="h-4 w-4 text-gray-500" />
+                                </button>
+                              )}
                             </div>
-                          ) : !isReadOnly ? (
-                            <div
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAddPaceClick(subject, weekIndex)
+                          )
+                        ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
+                          <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={paceNumberInput}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                // Only allow numbers and max 4 digits
+                                if (/^\d{0,4}$/.test(value)) {
+                                  setPaceNumberInput(value)
+                                }
                               }}
-                              className="h-full w-full min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
-                            >
-                              <span className="text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
-                                +
-                              </span>
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
+                                if (e.key === 'Escape') handleAddPaceCancel()
+                              }}
+                              placeholder="1XXX"
+                              className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                              autoFocus
+                            />
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleAddPaceSubmit(subject, weekIndex)}
+                                className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                title="Agregar"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={handleAddPaceCancel}
+                                className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                title="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
                             </div>
-                          ) : null}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        ) : !isReadOnly ? (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAddPaceClick(subject, weekIndex)
+                            }}
+                            className="h-full w-full min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
+                          >
+                            <span className="text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
+                              +
+                            </span>
+                          </div>
+                        ) : null}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {/* Summary */}
-            <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-                <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
-                  <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Programados</p>
-                </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
-                  <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
-                </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
-                  <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
-                </div>
-                <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
-                  <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
-                </div>
-                <button
-                  onClick={() => setFailedAttemptsDialog(true)}
-                  disabled={quarterStats.totalFailed === 0}
-                  className="text-center p-2 md:p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
-                    Total Intentos Fallidos
-                    <Info className="h-3 w-3 inline" />
-                  </p>
-                </button>
+          {/* Summary */}
+          <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
+              <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
+                <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Programados</p>
               </div>
+              <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
+                <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
+              </div>
+              <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
+                <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
+              </div>
+              <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
+                <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
+              </div>
+              <button
+                onClick={() => setFailedAttemptsDialog(true)}
+                disabled={quarterStats.totalFailed === 0}
+                className="text-center p-2 md:p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  Total Intentos Fallidos
+                  <Info className="h-3 w-3 inline" />
+                </p>
+              </button>
             </div>
-          </CardContent>
-        )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Options Menu Popup */}
