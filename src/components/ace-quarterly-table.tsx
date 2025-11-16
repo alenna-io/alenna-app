@@ -69,7 +69,14 @@ export function ACEQuarterlyTable({
 
   // Close options menu on click outside
   React.useEffect(() => {
-    const handleClickOutside = () => setOptionsMenu(null)
+    const handleClickOutside = (e: MouseEvent) => {
+      // Don't close if clicking inside a dialog/modal
+      const target = e.target as HTMLElement
+      if (target.closest('[role="alertdialog"]') || target.closest('[role="dialog"]')) {
+        return
+      }
+      setOptionsMenu(null)
+    }
     if (optionsMenu) {
       document.addEventListener('click', handleClickOutside)
       return () => document.removeEventListener('click', handleClickOutside)
@@ -162,7 +169,7 @@ export function ACEQuarterlyTable({
     if (!newPaceNumber) {
       setAlertDialog({
         title: "Campo Requerido",
-        message: "Por favor ingresa un número de PACE"
+        message: "Por favor ingresa un número de Lección"
       })
       return
     }
@@ -171,7 +178,7 @@ export function ACEQuarterlyTable({
     if (!/^1\d{3}$/.test(newPaceNumber)) {
       setAlertDialog({
         title: "Formato Inválido",
-        message: "El número de PACE debe tener 4 dígitos y comenzar con 1 (ej: 1001, 1234)"
+        message: "El número de Lección debe tener 4 dígitos y comenzar con 1 (ej: 1001, 1234)"
       })
       return
     }
@@ -180,8 +187,8 @@ export function ACEQuarterlyTable({
     const paceExists = data[subject].some(pace => pace && pace.number === newPaceNumber)
     if (paceExists) {
       setAlertDialog({
-        title: "PACE Duplicado",
-        message: `El PACE ${newPaceNumber} ya existe en ${subject}.\n\nNo se pueden duplicar PACEs en la misma materia.`
+        title: "Lección Duplicada",
+        message: `La lección ${newPaceNumber} ya existe en ${subject}.\n\nNo se pueden duplicar lecciones en la misma materia.`
       })
       return
     }
@@ -217,6 +224,7 @@ export function ACEQuarterlyTable({
 
   const handleDeletePace = (subject: string, weekIndex: number, paceNumber: string) => {
     setDeleteDialog({ subject, weekIndex, paceNumber })
+    setOptionsMenu(null) // Ensure options menu closes when delete dialog opens
   }
 
   const confirmDelete = () => {
@@ -255,13 +263,18 @@ export function ACEQuarterlyTable({
       data[subject].forEach(pace => {
         if (pace) {
           expected++
-          if (pace.isCompleted) {
+
+          // Use explicit backend flag when available, otherwise fall back to grade
+          if (pace.isFailed) {
+            failed++
+          } else if (pace.isCompleted) {
             if (isPaceFailing(pace.grade)) {
               failed++
             } else {
               completed++
             }
           }
+
           // Count total failed attempts from history
           if (pace.gradeHistory) {
             totalFailed += pace.gradeHistory.filter(h => h.grade < 80).length
@@ -370,7 +383,7 @@ export function ACEQuarterlyTable({
                               {currentWeek === week && " ✓"}
                             </span>
                             <span className="text-[10px] text-muted-foreground mt-0.5">
-                              {weekPaceCount} PACEs
+                              {weekPaceCount} Lecciones
                             </span>
                           </div>
                         </th>
@@ -506,15 +519,15 @@ export function ACEQuarterlyTable({
                                 >
                                   <Badge
                                     variant="outline"
-                                    className={`font-mono text-sm px-3 py-1 relative cursor-pointer transition-all ${pace.isCompleted && isPaceFailing(pace.grade)
+                                    className={`font-mono text-sm px-3 py-1 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
                                       ? "bg-red-100 text-red-800 border-red-500 border-2"
                                       : pace.isCompleted
                                         ? "bg-green-100 text-green-800 border-green-500 border-2"
                                         : "bg-white text-gray-800 border-gray-300 border-2"
                                       }`}
                                   >
-                                    {pace.isCompleted && (
-                                      isPaceFailing(pace.grade) ? (
+                                    {(pace.isFailed || pace.isCompleted) && (
+                                      pace.isFailed || isPaceFailing(pace.grade) ? (
                                         <XCircle className="h-3 w-3 absolute -top-1 -right-1 text-red-600 fill-red-100" />
                                       ) : (
                                         <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-600 fill-green-100" />
@@ -604,7 +617,7 @@ export function ACEQuarterlyTable({
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
                 <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
                   <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground">PACEs Programados</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground">Programados</p>
                 </div>
                 <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
                   <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
@@ -699,8 +712,8 @@ export function ACEQuarterlyTable({
       <ConfirmationDialog
         open={!!deleteDialog}
         onOpenChange={(open) => !open && setDeleteDialog(null)}
-        title="Eliminar PACE"
-        message={deleteDialog ? `¿Estás seguro de que deseas eliminar el PACE ${deleteDialog.paceNumber} de ${deleteDialog.subject}?\n\nEsta acción no se puede deshacer.` : ""}
+        title="Eliminar Lección"
+        message={deleteDialog ? `¿Estás seguro de que deseas eliminar la lección ${deleteDialog.paceNumber} de ${deleteDialog.subject}?\n\nEsta acción no se puede deshacer.` : ""}
         confirmText="Eliminar"
         cancelText="Cancelar"
         variant="destructive"
@@ -727,7 +740,7 @@ export function ACEQuarterlyTable({
             <DialogDescription>
               {historyDialog && (
                 <>
-                  PACE: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
+                  Lección: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
                   Materia: <span className="font-semibold">{historyDialog.subject}</span>
                 </>
               )}
@@ -765,16 +778,12 @@ export function ACEQuarterlyTable({
         open={!!confirmAddDialog}
         onOpenChange={(open) => !open && setConfirmAddDialog(null)}
         title="Sobrecarga de Bloque"
-        message={confirmAddDialog ? `Este bloque ya tiene ${confirmAddDialog.weekCount} PACEs programados.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} PACEs por trimestre.\n\n¿Deseas agregar este PACE de todas formas?` : ""}
+        message={confirmAddDialog ? `Este bloque ya tiene ${confirmAddDialog.weekCount} lecciones programadas.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} lecciones por trimestre.\n\n¿Deseas agregar esta lección de todas formas?` : ""}
         confirmText="Agregar de Todas Formas"
         cancelText="Cancelar"
         variant="default"
-        onConfirm={() => {
-          const remember = (document.getElementById('remember-overload') as HTMLInputElement)?.checked || false
-          confirmOverloadAdd(remember)
-        }}
+        onConfirm={() => confirmOverloadAdd(false)}
       />
     </>
-  )
+  );
 }
-

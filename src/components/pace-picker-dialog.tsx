@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, BookOpen } from "lucide-react"
+import { Search, BookOpen, Plus } from "lucide-react"
 import { useApi } from "@/services/api"
 
 interface PaceCatalogItem {
@@ -29,6 +29,7 @@ interface PacePickerDialogProps {
   categoryFilter?: string
   levelFilter?: string
   title?: string
+  existingPaceCatalogIds?: string[] // IDs of paces already in the projection
 }
 
 export function PacePickerDialog({
@@ -37,7 +38,8 @@ export function PacePickerDialog({
   onSelect,
   categoryFilter,
   levelFilter,
-  title = "Seleccionar PACE"
+  title = "Seleccionar Lección",
+  existingPaceCatalogIds = []
 }: PacePickerDialogProps) {
   const api = useApi()
   const [paces, setPaces] = React.useState<PaceCatalogItem[]>([])
@@ -61,7 +63,7 @@ export function PacePickerDialog({
       const data = await api.paceCatalog.get(filters)
       setPaces(data)
     } catch (error) {
-      console.error('Error fetching PACEs:', error)
+      console.error('Error fetching Lectures:', error)
       setPaces([])
     } finally {
       setLoading(false)
@@ -79,8 +81,16 @@ export function PacePickerDialog({
   })
 
   const handleSelectPace = (pace: PaceCatalogItem) => {
+    // Don't allow selecting paces that are already in the projection
+    if (existingPaceCatalogIds.includes(pace.id)) {
+      return
+    }
     onSelect(pace.id, pace.code)
     onClose()
+  }
+
+  const isPaceAlreadyAdded = (paceId: string) => {
+    return existingPaceCatalogIds.includes(paceId)
   }
 
   const getDifficultyColor = (difficulty: number) => {
@@ -101,8 +111,8 @@ export function PacePickerDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {categoryFilter && levelFilter
-              ? `PACEs de ${categoryFilter} - ${levelFilter}`
-              : 'Busca y selecciona un PACE del catálogo'}
+              ? `Lecciones de ${categoryFilter} - ${levelFilter}`
+              : 'Busca y selecciona una lección del catálogo'}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,46 +131,68 @@ export function PacePickerDialog({
         <div className="flex-1 overflow-y-auto space-y-2 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <p className="text-muted-foreground">Cargando PACEs...</p>
+              <p className="text-muted-foreground">Cargando Lecciones...</p>
             </div>
           ) : filteredPaces.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
               <BookOpen className="h-12 w-12 mb-2 opacity-50" />
-              <p>No se encontraron PACEs</p>
+              <p>No se encontraron Lecciones</p>
               {searchTerm && <p className="text-sm">Intenta con otro término de búsqueda</p>}
             </div>
           ) : (
-            filteredPaces.map((pace) => (
-              <button
-                key={pace.id}
-                onClick={() => handleSelectPace(pace)}
-                className="w-full p-4 border rounded-lg hover:bg-accent hover:border-primary transition-colors text-left"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="font-mono text-sm">
-                        {pace.code}
-                      </Badge>
-                      <Badge className={getDifficultyColor(pace.difficulty)}>
-                        {getDifficultyLabel(pace.difficulty)}
-                      </Badge>
+            filteredPaces.map((pace) => {
+              const isAlreadyAdded = isPaceAlreadyAdded(pace.id)
+              return (
+                <div
+                  key={pace.id}
+                  className={`w-full p-4 border rounded-lg transition-colors ${isAlreadyAdded
+                    ? 'opacity-50 bg-muted'
+                    : 'hover:bg-accent hover:border-primary'
+                    }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="font-mono text-sm">
+                          {pace.code}
+                        </Badge>
+                        <Badge className={getDifficultyColor(pace.difficulty)}>
+                          {getDifficultyLabel(pace.difficulty)}
+                        </Badge>
+                        {isAlreadyAdded && (
+                          <Badge variant="secondary" className="bg-gray-200 text-gray-700">
+                            Ya agregada
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="font-medium mb-1 truncate">{pace.name}</p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{pace.subSubjectName}</span>
+                        <span>•</span>
+                        <Badge variant="outline" className="text-xs">
+                          {pace.levelId}
+                        </Badge>
+                      </div>
                     </div>
-                    <p className="font-medium mb-1 truncate">{pace.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{pace.subSubjectName}</span>
-                      <span>•</span>
-                      <Badge variant="outline" className="text-xs">
-                        {pace.levelId}
-                      </Badge>
-                    </div>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSelectPace(pace)
+                      }}
+                      size="sm"
+                      disabled={isAlreadyAdded}
+                      className={`cursor-pointer ${isAlreadyAdded
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                    >
+                      <Plus className="h-4 w-4" />
+                      {isAlreadyAdded ? 'Agregada' : 'Agregar'}
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" className="cursor-pointer">
-                    Seleccionar
-                  </Button>
                 </div>
-              </button>
-            ))
+              )
+            })
           )}
         </div>
 

@@ -30,8 +30,16 @@ export function ConfirmationDialog({
   variant = "default",
   onConfirm
 }: ConfirmationDialogProps) {
-  const handleConfirm = () => {
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     onConfirm()
+    onOpenChange(false)
+  }
+
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     onOpenChange(false)
   }
 
@@ -45,7 +53,10 @@ export function ConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => onOpenChange(false)} className="!cursor-pointer">
+          <AlertDialogCancel
+            onClick={handleCancel}
+            className="!cursor-pointer"
+          >
             {cancelText}
           </AlertDialogCancel>
           <AlertDialogAction

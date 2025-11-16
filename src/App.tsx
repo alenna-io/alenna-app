@@ -21,6 +21,7 @@ import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
 import { UserProvider } from '@/contexts/UserContext'
+import { Toaster } from '@/components/ui/sonner'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/404" element={<NotFoundPage isUnauthorized={true} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+      <Toaster richColors position="bottom-right" />
     </BrowserRouter>
   )
 }

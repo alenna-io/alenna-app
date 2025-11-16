@@ -9,6 +9,7 @@ export interface GradeHistory {
 
 export interface PaceDetail {
   id: string
+  paceCatalogId: string // ID from pace catalog to identify which pace this is
   number: string
   subject: string
   quarter: string

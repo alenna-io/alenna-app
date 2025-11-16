@@ -1,17 +1,22 @@
 import * as React from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useLocation } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { useApi } from "@/services/api"
 import type { DailyGoalData } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
+import { toast } from "sonner"
 
 interface Student {
   id: string
   name: string
   currentGrade: string
   schoolYear: string
+}
+
+interface LocationState {
+  student?: Student | null
 }
 
 // Helper function to calculate pages from input value
@@ -52,12 +57,15 @@ const calculatePagesFromValue = (value: string): number => {
 
 export default function DailyGoalsPage() {
   const { studentId, projectionId, quarter, week } = useParams()
+  const location = useLocation()
+  const locationState = location.state as LocationState | null
   const api = useApi()
   const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [canEdit, setCanEdit] = React.useState(false)
-  const [student, setStudent] = React.useState<Student | null>(null)
+  // Initialize student from location state if available (passed from ACE Projection)
+  const [student, setStudent] = React.useState<Student | null>(locationState?.student || null)
 
   // Load daily goals from API
   React.useEffect(() => {
@@ -91,6 +99,7 @@ export default function DailyGoalsPage() {
     }
 
     loadDailyGoals()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, projectionId, quarter, week])
 
   React.useEffect(() => {
@@ -107,9 +116,13 @@ export default function DailyGoalsPage() {
     loadPermissions()
   }, [api])
 
-  // Load student info from projection detail so the header shows the correct student
+  // Load student info from projection detail only if not passed via state
+  // This handles direct URL access or page refresh
   React.useEffect(() => {
     const loadStudent = async () => {
+      // Skip fetch if we already have student data from location state
+      if (student) return
+
       if (!studentId || !projectionId) return
 
       try {
@@ -133,7 +146,8 @@ export default function DailyGoalsPage() {
     }
 
     loadStudent()
-  }, [api.projections, studentId, projectionId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, projectionId])
 
   // Calculate total pages for a specific day
   const calculateDayTotal = React.useMemo(() => {
@@ -151,9 +165,32 @@ export default function DailyGoalsPage() {
   const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    try {
-      const currentGoal = goalsData[subject]?.[dayIndex]
+    const currentGoal = goalsData[subject]?.[dayIndex]
 
+    // OPTIMISTIC UPDATE: Immediately update the goal in the UI
+    const updatedGoalsData = { ...goalsData }
+    if (!updatedGoalsData[subject]) {
+      updatedGoalsData[subject] = Array(5).fill(null).map(() => ({
+        text: '',
+        isCompleted: false,
+        notes: undefined,
+        notesCompleted: false,
+        notesHistory: []
+      }))
+    }
+
+    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
+    updatedGoalsData[subject][dayIndex] = {
+      ...currentGoal,
+      text: value,
+      isCompleted: currentGoal?.isCompleted || false,
+      notes: currentGoal?.notes,
+      notesCompleted: currentGoal?.notesCompleted || false,
+      notesHistory: currentGoal?.notesHistory || []
+    }
+    setGoalsData(updatedGoalsData)
+
+    try {
       if (currentGoal?.id) {
         // Update existing goal
         await api.dailyGoals.update(studentId, projectionId, currentGoal.id, {
@@ -163,6 +200,7 @@ export default function DailyGoalsPage() {
           week: parseInt(week),
           dayOfWeek: dayIndex
         })
+        toast.success("Meta actualizada exitosamente")
       } else if (value.trim()) {
         // Create new goal
         await api.dailyGoals.create(studentId, projectionId, {
@@ -173,25 +211,53 @@ export default function DailyGoalsPage() {
           text: value,
           isCompleted: false
         })
+        toast.success("Meta creada exitosamente")
       }
 
-      // Refresh data
+      // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating goal:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update goal')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal'
+
+      toast.error(`Error: ${errorMessage}`)
+      setError(errorMessage)
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed goal update:', reloadErr)
+      }
     }
   }
 
   const handleGoalToggle = async (subject: string, dayIndex: number) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    try {
-      const currentGoal = goalsData[subject]?.[dayIndex]
-      if (!currentGoal?.id) return
+    const currentGoal = goalsData[subject]?.[dayIndex]
+    if (!currentGoal?.id) return
 
-      const newCompleted = !currentGoal.isCompleted
+    const newCompleted = !currentGoal.isCompleted
+
+    // OPTIMISTIC UPDATE: Immediately toggle completion in the UI
+    const updatedGoalsData = { ...goalsData }
+    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
+    updatedGoalsData[subject][dayIndex] = {
+      ...currentGoal,
+      isCompleted: newCompleted,
+      // If completing and has pending notes, optimistically clear them
+      notes: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? undefined : currentGoal.notes,
+      notesCompleted: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? true : currentGoal.notesCompleted,
+      notesHistory: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted)
+        ? [...(currentGoal.notesHistory || []), { text: currentGoal.notes, completedDate: new Date().toISOString() }]
+        : currentGoal.notesHistory
+    }
+    setGoalsData(updatedGoalsData)
+
+    try {
       await api.dailyGoals.updateCompletion(studentId, projectionId, currentGoal.id, newCompleted)
 
       // If goal is being marked as completed and has pending notes, auto-complete them
@@ -209,43 +275,93 @@ export default function DailyGoalsPage() {
         }
       }
 
-      // Refresh data
+      toast.success(newCompleted ? "Meta completada" : "Meta marcada como incompleta")
+
+      // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error toggling goal completion:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update goal completion')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal completion'
+
+      toast.error(`Error: ${errorMessage}`)
+      setError(errorMessage)
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed goal toggle:', reloadErr)
+      }
     }
   }
 
   const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    try {
-      const currentGoal = goalsData[subject]?.[dayIndex]
-      if (!currentGoal?.id) return
+    const currentGoal = goalsData[subject]?.[dayIndex]
+    if (!currentGoal?.id) return
 
+    // OPTIMISTIC UPDATE: Immediately update notes in the UI
+    const updatedGoalsData = { ...goalsData }
+    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
+    updatedGoalsData[subject][dayIndex] = {
+      ...currentGoal,
+      notes: notes || undefined,
+      notesCompleted: false
+    }
+    setGoalsData(updatedGoalsData)
+
+    try {
       await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
         notes: notes || undefined,
         notesCompleted: false
       })
 
-      // Refresh data
+      toast.success(notes ? "Nota guardada" : "Nota eliminada")
+
+      // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating notes:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update notes')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update notes'
+
+      toast.error(`Error: ${errorMessage}`)
+      setError(errorMessage)
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed notes update:', reloadErr)
+      }
     }
   }
 
   const handleNotesToggle = async (subject: string, dayIndex: number) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    try {
-      const currentGoal = goalsData[subject]?.[dayIndex]
-      if (!currentGoal?.id || !currentGoal.notes) return
+    const currentGoal = goalsData[subject]?.[dayIndex]
+    if (!currentGoal?.id || !currentGoal.notes) return
 
+    // OPTIMISTIC UPDATE: Immediately complete the note in the UI
+    const updatedGoalsData = { ...goalsData }
+    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
+    updatedGoalsData[subject][dayIndex] = {
+      ...currentGoal,
+      notes: undefined,
+      notesCompleted: true,
+      notesHistory: [
+        ...(currentGoal.notesHistory || []),
+        { text: currentGoal.notes, completedDate: new Date().toISOString() }
+      ]
+    }
+    setGoalsData(updatedGoalsData)
+
+    try {
       // Add note to history and clear current note
       await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
       await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
@@ -253,12 +369,25 @@ export default function DailyGoalsPage() {
         notesCompleted: true
       })
 
-      // Refresh data
+      toast.success("Nota completada")
+
+      // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error completing notes:', err)
-      setError(err instanceof Error ? err.message : 'Failed to complete notes')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete notes'
+
+      toast.error(`Error: ${errorMessage}`)
+      setError(errorMessage)
+
+      // ROLLBACK: Reload data to revert UI on error
+      try {
+        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
+        setGoalsData(data)
+      } catch (reloadErr) {
+        console.error('Error reloading after failed notes toggle:', reloadErr)
+      }
     }
   }
 
@@ -276,11 +405,10 @@ export default function DailyGoalsPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+      {/* Mobile-only back button (desktop uses breadcrumb) */}
+      <div className="flex items-center gap-4 md:hidden">
         <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
-          <span className="hidden sm:inline">Volver a Proyección</span>
-          <span className="sm:hidden">Volver</span>
+          Volver
         </BackButton>
       </div>
 
