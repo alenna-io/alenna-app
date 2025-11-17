@@ -45,30 +45,77 @@ export function AppSidebar() {
   const [isLoading, setIsLoading] = React.useState(true)
 
   // Fetch user's modules - wait for userInfo to be loaded first
+  // Use a ref to track if we've already fetched modules for this user to prevent unnecessary re-fetches
+  const lastFetchedUserIdRef = React.useRef<string | null>(null)
+  const modulesFetchedRef = React.useRef<boolean>(false)
+
   React.useEffect(() => {
-    // Don't fetch modules until userInfo is loaded and we have valid user data
-    if (isLoadingUser || !userInfo || !userInfo.id) {
+    // If userInfo is still loading, keep isLoading true but don't fetch yet
+    if (isLoadingUser) {
       return
     }
 
+    // If userInfo failed to load or is missing, stop loading and show empty state
+    if (!userInfo || !userInfo.id) {
+      console.warn('[AppSidebar] No userInfo available, stopping module fetch')
+      setIsLoading(false)
+      setModules([])
+      lastFetchedUserIdRef.current = null
+      modulesFetchedRef.current = false
+      return
+    }
+
+    // Only fetch if this is a different user or we haven't fetched yet
+    if (lastFetchedUserIdRef.current === userInfo.id && modulesFetchedRef.current) {
+      // Already fetched modules for this user, don't re-fetch
+      return
+    }
+
+    // UserInfo is loaded and we haven't fetched modules for this user yet
+    let isMounted = true
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        console.log('[AppSidebar] Fetching modules for user:', userInfo.id, userInfo.roles)
         const userModules = await api.modules.getUserModules()
-        console.log('[AppSidebar] Received modules:', userModules)
-        setModules(userModules)
+        if (isMounted) {
+          setModules(userModules)
+          lastFetchedUserIdRef.current = userInfo.id
+          modulesFetchedRef.current = true
+        }
       } catch (error) {
         console.error('[AppSidebar] Error fetching modules:', error)
-        setModules([])
+        if (isMounted) {
+          setModules([])
+          // Don't set lastFetchedUserIdRef on error so we can retry
+          modulesFetchedRef.current = false
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     fetchData()
+
+    return () => {
+      isMounted = false
+    }
+    // Only depend on isLoadingUser and userInfo.id - not the entire userInfo object
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingUser, userInfo?.id]) // Re-fetch when userInfo loads
+  }, [isLoadingUser, userInfo?.id])
+
+  // Timeout fallback: if loading takes too long (10 seconds), stop loading
+  React.useEffect(() => {
+    if (!isLoading) return
+
+    const timeout = setTimeout(() => {
+      console.warn('[AppSidebar] Module loading timeout, stopping loading state')
+      setIsLoading(false)
+    }, 10000) // 10 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [isLoading])
 
   // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
@@ -232,7 +279,7 @@ export function AppSidebar() {
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
-            ) : (
+            ) : allMenuItems.length > 0 ? (
               <SidebarMenu>
                 {allMenuItems.map((item) => {
                   const isActive = item.url === '/'
@@ -256,6 +303,10 @@ export function AppSidebar() {
                   )
                 })}
               </SidebarMenu>
+            ) : (
+              <div className="flex items-center justify-center py-4 text-sm text-muted-foreground px-4 text-center">
+                No hay módulos disponibles
+              </div>
             )}
           </SidebarGroupContent>
         </SidebarGroup>

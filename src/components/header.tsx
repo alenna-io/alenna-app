@@ -16,7 +16,6 @@ export function Header() {
     const fetchCurrentWeek = async () => {
       try {
         const weekInfo = await api.schoolYears.getCurrentWeek()
-        console.log('Week info loaded in header:', weekInfo)
         setCurrentWeekInfo(weekInfo)
       } catch (err) {
         console.error('Error fetching current week in header:', err)
@@ -71,8 +70,6 @@ export function Header() {
         break
       }
     }
-
-    console.log('Fallback quarter selected:', activeQuarter)
   }
 
   const currentWeekInQuarter = activeQuarter ? activeWeek : 0
