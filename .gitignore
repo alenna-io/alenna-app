@@ -93,7 +93,8 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# Note: Vite uses public/ folder, so don't ignore it
+# public
 
 # Storybook build outputs
 .out

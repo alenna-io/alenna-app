@@ -52,6 +52,8 @@ export function ACEQuarterlyTable({
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const dragImageRef = React.useRef<HTMLDivElement | null>(null)
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
+  const [touchDragPreview, setTouchDragPreview] = React.useState<{ paceNumber: string; isCompleted: boolean; x: number; y: number } | null>(null)
+  const touchDragPreviewRef = React.useRef<HTMLDivElement | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
   const [commentInput, setCommentInput] = React.useState("")
@@ -552,12 +554,56 @@ export function ACEQuarterlyTable({
                           if (!isReadOnly && pace) {
                             const touch = e.touches[0]
                             setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
+                            // Create drag preview for touch devices
+                            setTouchDragPreview({
+                              paceNumber: pace.number,
+                              isCompleted: pace.isCompleted,
+                              x: touch.clientX,
+                              y: touch.clientY
+                            })
+                            // Prevent text selection and default touch behavior
+                            e.preventDefault()
+                            // Disable text selection on the cell
+                            if (e.currentTarget instanceof HTMLElement) {
+                              e.currentTarget.style.userSelect = 'none'
+                              e.currentTarget.style.webkitUserSelect = 'none'
+                            }
                           }
                         }}
                         onTouchMove={(e) => {
-                          if (touchStart && touchStart.subject === subject && touchStart.weekIndex === weekIndex) {
+                          if (touchStart && touchStart.subject === subject && touchStart.weekIndex === weekIndex && pace) {
                             // Prevent scrolling while dragging
                             e.preventDefault()
+                            const touch = e.touches[0]
+                            // Update drag preview position
+                            setTouchDragPreview({
+                              paceNumber: pace.number,
+                              isCompleted: pace.isCompleted,
+                              x: touch.clientX,
+                              y: touch.clientY
+                            })
+                            // Add visual feedback to source cell
+                            e.currentTarget.style.opacity = '0.5'
+                            // Highlight potential drop targets
+                            const element = document.elementFromPoint(touch.clientX, touch.clientY)
+                            const targetCell = element?.closest('td[data-week-index]')
+                            // Remove previous highlights
+                            const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
+                            allCells?.forEach(cell => {
+                              if (cell instanceof HTMLElement && cell !== e.currentTarget) {
+                                cell.style.backgroundColor = ''
+                                cell.style.borderColor = ''
+                              }
+                            })
+                            // Highlight current target if valid
+                            if (targetCell && targetCell instanceof HTMLElement) {
+                              const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
+                              const targetSubject = targetCell.getAttribute('data-subject') || ''
+                              if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
+                                targetCell.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
+                                targetCell.style.borderColor = '#3b82f6'
+                              }
+                            }
                           }
                         }}
                         onTouchEnd={(e) => {
@@ -576,8 +622,21 @@ export function ACEQuarterlyTable({
                                 onPaceDrop?.(quarter, subject, touchStart.weekIndex, targetWeekIndex)
                               }
                             }
+
+                            // Clean up
+                            e.currentTarget.style.opacity = '1'
+                            e.currentTarget.style.userSelect = ''
+                            e.currentTarget.style.webkitUserSelect = ''
+                            const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
+                            allCells?.forEach(cell => {
+                              if (cell instanceof HTMLElement) {
+                                cell.style.backgroundColor = ''
+                                cell.style.borderColor = ''
+                              }
+                            })
                           }
                           setTouchStart(null)
+                          setTouchDragPreview(null)
                         }}
                         data-week-index={weekIndex}
                         data-subject={subject}
@@ -939,6 +998,37 @@ export function ACEQuarterlyTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Touch Drag Preview for iPad/Mobile */}
+      {touchDragPreview && (
+        <div
+          ref={touchDragPreviewRef}
+          style={{
+            position: 'fixed',
+            left: `${touchDragPreview.x}px`,
+            top: `${touchDragPreview.y}px`,
+            transform: 'translate(-50%, -50%) rotate(5deg)',
+            pointerEvents: 'none',
+            zIndex: 10000,
+            padding: '8px 12px',
+            background: touchDragPreview.isCompleted
+              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+              : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
+            border: touchDragPreview.isCompleted
+              ? '2px solid #059669'
+              : '2px solid #9ca3af',
+            borderRadius: '6px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            fontWeight: '600',
+            color: touchDragPreview.isCompleted ? '#ffffff' : '#1f2937',
+            opacity: '0.95',
+          }}
+        >
+          {touchDragPreview.paceNumber}
+        </div>
+      )}
 
       {/* Failed Attempts Dialog */}
       <Dialog open={failedAttemptsDialog} onOpenChange={setFailedAttemptsDialog}>
