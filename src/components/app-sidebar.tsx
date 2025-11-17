@@ -44,14 +44,22 @@ export function AppSidebar() {
   const [modules, setModules] = React.useState<ModuleData[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
-  // Fetch user's modules
+  // Fetch user's modules - wait for userInfo to be loaded first
   React.useEffect(() => {
+    // Don't fetch modules until userInfo is loaded and we have valid user data
+    if (isLoadingUser || !userInfo || !userInfo.id) {
+      return
+    }
+
     const fetchData = async () => {
       try {
+        setIsLoading(true)
+        console.log('[AppSidebar] Fetching modules for user:', userInfo.id, userInfo.roles)
         const userModules = await api.modules.getUserModules()
+        console.log('[AppSidebar] Received modules:', userModules)
         setModules(userModules)
       } catch (error) {
-        console.error('Error fetching modules:', error)
+        console.error('[AppSidebar] Error fetching modules:', error)
         setModules([])
       } finally {
         setIsLoading(false)
@@ -60,12 +68,20 @@ export function AppSidebar() {
 
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only fetch once on mount
+  }, [isLoadingUser, userInfo?.id]) // Re-fetch when userInfo loads
 
   // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
 
-  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const roleNames = React.useMemo(() => {
+    const roles = userInfo?.roles?.map(role => role.name) ?? []
+    // Log roles for debugging on mobile devices
+    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && roles.length > 0) {
+      console.log('[AppSidebar] User roles detected:', roles, 'from userInfo:', userInfo)
+    }
+    return roles
+  }, [userInfo])
+
   const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
 
   const isSuperAdmin = hasRole('SUPERADMIN')
@@ -74,6 +90,22 @@ export function AppSidebar() {
   const isParentOnly = hasRole('PARENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER')
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
   const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
+
+  // Log role checks for debugging on mobile
+  React.useEffect(() => {
+    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && userInfo) {
+      console.log('[AppSidebar] Role checks:', {
+        roleNames,
+        isSuperAdmin,
+        isSchoolAdmin,
+        isTeacherOnly,
+        isTeacherOrAdmin,
+        schoolName: userInfo.schoolName,
+        fullName: userInfo.fullName,
+        email: userInfo.email,
+      })
+    }
+  }, [roleNames, isSuperAdmin, isSchoolAdmin, isTeacherOnly, isTeacherOrAdmin, userInfo])
 
   // Build menu items from modules
   const filteredModules = modules.filter(module => {
