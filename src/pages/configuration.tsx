@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/page-header";
 import { Building2, Calendar, CreditCard, ChevronRight, Lock } from "lucide-react";
 import { useApi } from "@/services/api";
@@ -85,7 +85,7 @@ export default function ConfigurationPage() {
   };
 
   if (loading) {
-    return <LoadingSkeleton variant="list" />;
+    return <Loading variant="list" />;
   }
 
   // Filter modules user has access to

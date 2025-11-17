@@ -8,13 +8,13 @@ import { Navigate } from "react-router-dom"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { EmptyState } from "@/components/ui/empty-state"
 import { StatusBadge } from "@/components/ui/status-badge"
-import { Calendar, ChevronRight } from "lucide-react"
+import { FileText, ChevronRight } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
 
-export default function ProjectionListPage() {
+export default function ReportCardsListPage() {
   const navigate = useNavigate()
   const { studentId } = useParams()
   const api = useApi()
@@ -73,7 +73,6 @@ export default function ProjectionListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId])
 
-
   // Show permission error if user doesn't have access
   if (!hasPermission) {
     return <Navigate to="/404" replace />
@@ -97,8 +96,6 @@ export default function ProjectionListPage() {
   const roles = userInfo?.roles.map((role) => role.name) ?? []
   const hasRole = (role: string) => roles.includes(role)
   const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('SCHOOL_ADMIN') && !hasRole('ADMIN') && !hasRole('SUPERADMIN')
-  const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('SCHOOL_ADMIN') && !hasRole('ADMIN') && !hasRole('SUPERADMIN')
-  const canCreateProjection = userInfo?.permissions.includes('projections.create') ?? false
 
   const backDestination = isStudentOnly ? '/my-profile' : `/students/${studentId}`
 
@@ -113,8 +110,8 @@ export default function ProjectionListPage() {
 
       {/* Page Title */}
       <PageHeader
-        title="Proyecciones Académicas"
-        description="Historial de proyecciones por año escolar"
+        title="Boletas de Calificaciones"
+        description="Historial de boletas por año escolar"
       />
 
       {/* Projections List */}
@@ -124,7 +121,7 @@ export default function ProjectionListPage() {
             <Card
               key={projection.id}
               className="hover:shadow-md transition-all cursor-pointer group"
-              onClick={() => navigate(`/students/${studentId}/projections/${projection.id}`)}
+              onClick={() => navigate(`/students/${studentId}/report-cards/${projection.id}`)}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -157,15 +154,9 @@ export default function ProjectionListPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <EmptyState
-              icon={Calendar}
-              title="No hay proyecciones"
+              icon={FileText}
+              title="No hay boletas"
               description="No se han creado proyecciones para este estudiante"
-              action={canCreateProjection && !isStudentOnly && !isParentOnly ? {
-                label: "Crear Primera Proyección",
-                onClick: () => {
-                  console.log('Create projection')
-                }
-              } : undefined}
             />
           </CardContent>
         </Card>
@@ -173,3 +164,4 @@ export default function ProjectionListPage() {
     </div>
   )
 }
+

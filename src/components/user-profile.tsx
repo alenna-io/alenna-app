@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { getInitials } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import * as React from "react"
+import { Loading } from "@/components/ui/loading"
 
 interface UserProfileProps {
   userId: string
@@ -81,10 +82,7 @@ export function UserProfile({ userId, onBack }: UserProfileProps) {
         <Button variant="outline" onClick={onBack} className="mb-4">
           ← Volver a Usuarios
         </Button>
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Cargando usuario...</p>
-        </div>
+        <Loading variant="spinner" message="Cargando usuario..." />
       </div>
     )
   }

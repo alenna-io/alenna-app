@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useParams, useLocation } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
+import { Loading } from "@/components/ui/loading"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { useApi } from "@/services/api"
@@ -395,12 +396,7 @@ export default function DailyGoalsPage() {
 
       {/* Loading State */}
       {loading ? (
-        <div className="flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-sm text-gray-600">Cargando metas diarias...</p>
-          </div>
-        </div>
+        <Loading variant="spinner" message="Cargando metas diarias..." />
       ) : (
         /* Daily Goals Table */
         <DailyGoalsTable

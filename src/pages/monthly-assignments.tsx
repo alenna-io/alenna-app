@@ -11,7 +11,7 @@ import { Plus, Trash2, Edit } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { SchoolYear } from "@/services/api"
 import { toast } from "sonner"
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
+import { Loading } from "@/components/ui/loading"
 
 interface MonthlyAssignmentTemplate {
   id: string
@@ -224,7 +224,7 @@ export default function MonthlyAssignmentsPage() {
   const selectedSchoolYear = schoolYears.find(y => y.id === selectedSchoolYearId)
 
   if (loading && !selectedSchoolYearId) {
-    return <LoadingSkeleton />
+    return <Loading message="Cargando asignaciones mensuales..." />
   }
 
   return (

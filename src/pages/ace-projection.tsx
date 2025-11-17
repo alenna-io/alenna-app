@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
+import { Loading } from "@/components/ui/loading"
 import { BackButton } from "@/components/ui/back-button"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
@@ -16,6 +17,8 @@ import { ErrorDialog } from "@/components/ui/error-dialog"
 import { Navigate } from "react-router-dom"
 import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { FileText } from "lucide-react"
 
 
 // Helper to create empty quarter data structure
@@ -557,11 +560,7 @@ export default function ACEProjectionPage() {
             Volver
           </BackButton>
         </div>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-muted-foreground">Cargando proyección...</p>
-          </CardContent>
-        </Card>
+        <Loading variant="spinner" message="Cargando proyección..." />
       </div>
     )
   }
@@ -610,11 +609,23 @@ export default function ACEProjectionPage() {
       {/* Student Info Card */}
       <StudentInfoCard student={student} showBadge={false} />
 
-      {/* Title */}
-      <SectionHeader
-        title="Proyección Anual"
-        description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
-      />
+      {/* Title with Ver Boleta button */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <SectionHeader
+          title="Proyección Anual"
+          description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
+        />
+        {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && (
+          <Button
+            variant="default"
+            onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
+            className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Ver Boleta
+          </Button>
+        )}
+      </div>
 
       {/* PACE Picker Dialog */}
       {pacePickerContext && (

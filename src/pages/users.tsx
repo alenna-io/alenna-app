@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
@@ -287,7 +287,7 @@ export default function UsersPage() {
   }
 
   if (isLoading) {
-    return <LoadingState />
+    return <Loading variant="list" />
   }
 
   if (error) {

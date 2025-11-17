@@ -1,12 +1,12 @@
 import { Navigate } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 
 export function HomePage() {
   const { userInfo, isLoading } = useUser()
 
   if (isLoading) {
-    return <LoadingState />
+    return <Loading />
   }
 
   if (!userInfo) {

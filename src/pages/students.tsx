@@ -5,7 +5,7 @@ import { StudentsTable } from "@/components/students-table"
 import { StudentProfile } from "@/components/student-profile"
 import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
@@ -310,7 +310,7 @@ export default function StudentsPage() {
 
   // Show loading state when fetching student profile
   if (isLoadingStudent) {
-    return <LoadingState variant="profile" />
+    return <Loading variant="profile" />
   }
 
   // Show error state for student profile
@@ -343,7 +343,7 @@ export default function StudentsPage() {
 
   // Show loading state for students list
   if (isLoading) {
-    return <LoadingState variant="list" />
+    return <Loading variant="list" />
   }
 
   // Show parent-specific view

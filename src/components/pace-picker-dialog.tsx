@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, BookOpen, Plus } from "lucide-react"
 import { useApi } from "@/services/api"
+import { Loading } from "@/components/ui/loading"
 
 interface PaceCatalogItem {
   id: string
@@ -131,7 +132,7 @@ export function PacePickerDialog({
         <div className="flex-1 overflow-y-auto space-y-2 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <p className="text-muted-foreground">Cargando Lecciones...</p>
+              <Loading variant="spinner" message="Cargando Lecciones..." className="py-0" />
             </div>
           ) : filteredPaces.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">

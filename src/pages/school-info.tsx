@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BackButton } from "@/components/ui/back-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { Building2, Mail, Phone, MapPin, Lock, Users, Plus, Eye, GraduationCap } from "lucide-react";
 import { useApi } from "@/services/api";
@@ -109,7 +109,7 @@ export default function SchoolInfoPage() {
   }
 
   if (loading) {
-    return <LoadingSkeleton variant="profile" />;
+    return <Loading variant="profile" />;
   }
 
   const canViewStudents = userInfo?.permissions.includes('students.read') ?? false;
