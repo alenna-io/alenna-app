@@ -243,12 +243,14 @@ export default function MonthlyAssignmentsPage() {
         <CardContent>
           <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
             <SelectTrigger className="w-full md:w-[300px] [&>span]:!line-clamp-none">
-              <span className="flex items-center gap-2 flex-1 min-w-0">
-                <SelectValue placeholder="Selecciona un año escolar" className="flex-1 min-w-0" />
-                {selectedSchoolYear?.isActive && (
-                  <Badge className="shrink-0">Activo</Badge>
-                )}
-              </span>
+              <SelectValue placeholder="Selecciona un año escolar">
+                {selectedSchoolYear ? (
+                  <span className="flex items-center gap-2">
+                    <span>{selectedSchoolYear.name}</span>
+                    {selectedSchoolYear.isActive && <Badge className="shrink-0">Activo</Badge>}
+                  </span>
+                ) : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {schoolYears.map(year => (
