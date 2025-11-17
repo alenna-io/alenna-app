@@ -3,10 +3,12 @@ import { Outlet } from "react-router-dom"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
+import { MobileDebugPanel } from "@/components/mobile-debug-panel"
 
 export function DashboardLayout() {
   return (
     <SidebarProvider defaultOpen={true}>
+      <MobileDebugPanel />
       <div className="flex h-screen w-screen overflow-hidden relative z-0">
         {/* Sidebar - full height (100vh), fixed on desktop, overlay on mobile */}
         <AppSidebar />
