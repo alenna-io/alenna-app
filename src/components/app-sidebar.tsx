@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon, BookOpen } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon, BookOpen, ClipboardList } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -228,10 +228,16 @@ export function AppSidebar() {
       url: "/projections",
       icon: BookOpen,
     })
+    // Add monthly assignments management for teachers and school admins
+    dynamicMenuItems.push({
+      title: "Asignaciones Mensuales",
+      url: "/monthly-assignments",
+      icon: ClipboardList,
+    })
   }
 
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
-  const { state } = useSidebar()
+  const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 
   return (
@@ -320,11 +326,20 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className={isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}
+                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
                       >
-                        <Link to={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
+                        <Link
+                          to={item.url}
+                          onClick={() => {
+                            // Close sidebar on mobile when clicking a menu item
+                            if (isMobile) {
+                              setOpenMobile(false)
+                            }
+                          }}
+                          className="flex items-start gap-2 min-w-0"
+                        >
+                          <item.icon className="flex-shrink-0 mt-0.5" />
+                          <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

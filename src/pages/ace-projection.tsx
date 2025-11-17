@@ -532,27 +532,9 @@ export default function ACEProjectionPage() {
     }
   }
 
-  const handleCreateMonthlyAssignment = async (name: string, quarter: string) => {
-    if (!studentId || !projectionId) return
-    await api.monthlyAssignments.create(studentId, projectionId, { name, quarter })
-    await refreshMonthlyAssignments()
-  }
-
-  const handleUpdateMonthlyAssignment = async (assignmentId: string, name: string) => {
-    if (!studentId || !projectionId) return
-    await api.monthlyAssignments.update(studentId, projectionId, assignmentId, { name })
-    await refreshMonthlyAssignments()
-  }
-
   const handleGradeMonthlyAssignment = async (assignmentId: string, grade: number, note?: string) => {
     if (!studentId || !projectionId) return
     await api.monthlyAssignments.grade(studentId, projectionId, assignmentId, { grade, note })
-    await refreshMonthlyAssignments()
-  }
-
-  const handleDeleteMonthlyAssignment = async (assignmentId: string) => {
-    if (!studentId || !projectionId) return
-    await api.monthlyAssignments.delete(studentId, projectionId, assignmentId)
     await refreshMonthlyAssignments()
   }
 
@@ -652,12 +634,14 @@ export default function ACEProjectionPage() {
 
       {/* Quarterly Tabs: show one quarter at a time (PACEs + Monthly Assignments) */}
       <Tabs defaultValue={currentQuarter || "Q1"} className="space-y-4 md:space-y-6">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
-          <TabsTrigger value="Q1">Bloque 1</TabsTrigger>
-          <TabsTrigger value="Q2">Bloque 2</TabsTrigger>
-          <TabsTrigger value="Q3">Bloque 3</TabsTrigger>
-          <TabsTrigger value="Q4">Bloque 4</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
+            <TabsTrigger value="Q1" className="flex-shrink-0">Bloque 1</TabsTrigger>
+            <TabsTrigger value="Q2" className="flex-shrink-0">Bloque 2</TabsTrigger>
+            <TabsTrigger value="Q3" className="flex-shrink-0">Bloque 3</TabsTrigger>
+            <TabsTrigger value="Q4" className="flex-shrink-0">Bloque 4</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="Q1" className="space-y-4 md:space-y-6">
           <ACEQuarterlyTable
@@ -677,10 +661,7 @@ export default function ACEProjectionPage() {
             quarter="Q1"
             assignments={monthlyAssignments}
             isReadOnly={isParentOnly}
-            onCreateAssignment={handleCreateMonthlyAssignment}
-            onUpdateAssignment={handleUpdateMonthlyAssignment}
             onGradeAssignment={handleGradeMonthlyAssignment}
-            onDeleteAssignment={handleDeleteMonthlyAssignment}
           />
         </TabsContent>
 
@@ -702,10 +683,7 @@ export default function ACEProjectionPage() {
             quarter="Q2"
             assignments={monthlyAssignments}
             isReadOnly={isParentOnly}
-            onCreateAssignment={handleCreateMonthlyAssignment}
-            onUpdateAssignment={handleUpdateMonthlyAssignment}
             onGradeAssignment={handleGradeMonthlyAssignment}
-            onDeleteAssignment={handleDeleteMonthlyAssignment}
           />
         </TabsContent>
 
@@ -727,10 +705,7 @@ export default function ACEProjectionPage() {
             quarter="Q3"
             assignments={monthlyAssignments}
             isReadOnly={isParentOnly}
-            onCreateAssignment={handleCreateMonthlyAssignment}
-            onUpdateAssignment={handleUpdateMonthlyAssignment}
             onGradeAssignment={handleGradeMonthlyAssignment}
-            onDeleteAssignment={handleDeleteMonthlyAssignment}
           />
         </TabsContent>
 
@@ -752,10 +727,7 @@ export default function ACEProjectionPage() {
             quarter="Q4"
             assignments={monthlyAssignments}
             isReadOnly={isParentOnly}
-            onCreateAssignment={handleCreateMonthlyAssignment}
-            onUpdateAssignment={handleUpdateMonthlyAssignment}
             onGradeAssignment={handleGradeMonthlyAssignment}
-            onDeleteAssignment={handleDeleteMonthlyAssignment}
           />
         </TabsContent>
       </Tabs>

@@ -333,6 +333,33 @@ export const monthlyAssignmentsApi = {
     }),
 };
 
+// School Monthly Assignments API
+export const schoolMonthlyAssignmentsApi = {
+  getTemplates: (schoolYearId: string, token: string | null) =>
+    apiFetch(`/school-monthly-assignments/${schoolYearId}/templates`, token),
+  createTemplate: (data: { name: string; quarter: string; schoolYearId: string }, token: string | null) =>
+    apiFetch('/school-monthly-assignments/templates', token, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateTemplate: (templateId: string, data: { name: string }, token: string | null) =>
+    apiFetch(`/school-monthly-assignments/templates/${templateId}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteTemplate: (templateId: string, token: string | null) =>
+    apiFetch(`/school-monthly-assignments/templates/${templateId}`, token, {
+      method: 'DELETE',
+    }),
+  getGradePercentages: (schoolYearId: string, token: string | null) =>
+    apiFetch(`/school-monthly-assignments/${schoolYearId}/grade-percentages`, token),
+  updateGradePercentage: (data: { schoolYearId: string; quarter: string; percentage: number }, token: string | null) =>
+    apiFetch('/school-monthly-assignments/grade-percentages', token, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+};
+
 // Schools API
 export const schoolsApi = {
   getMy: (token: string | null) => apiFetch('/schools/me', token),
@@ -528,6 +555,32 @@ export function useApi() {
       setActive: async (id: string) => {
         const token = await getToken();
         return schoolYearsApi.setActive(id, token);
+      },
+    },
+    schoolMonthlyAssignments: {
+      getTemplates: async (schoolYearId: string) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.getTemplates(schoolYearId, token);
+      },
+      createTemplate: async (data: { name: string; quarter: string; schoolYearId: string }) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.createTemplate(data, token);
+      },
+      updateTemplate: async (templateId: string, data: { name: string }) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.updateTemplate(templateId, data, token);
+      },
+      deleteTemplate: async (templateId: string) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.deleteTemplate(templateId, token);
+      },
+      getGradePercentages: async (schoolYearId: string) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.getGradePercentages(schoolYearId, token);
+      },
+      updateGradePercentage: async (data: { schoolYearId: string; quarter: string; percentage: number }) => {
+        const token = await getToken();
+        return schoolMonthlyAssignmentsApi.updateGradePercentage(data, token);
       },
     },
     dailyGoals: {
