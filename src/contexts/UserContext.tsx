@@ -64,29 +64,99 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
       setError(null)
 
-      const token = await getToken()
+      // Enhanced logging for mobile
+      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+
+      if (isMobile) {
+        console.log('[UserContext] Starting fetch on mobile, API_BASE_URL:', API_BASE_URL)
+      }
+
+      let token: string | null = null
+      try {
+        token = await getToken()
+        if (isMobile) {
+          console.log('[UserContext] Token obtained:', token ? 'Yes (length: ' + token.length + ')' : 'No')
+        }
+      } catch (tokenError) {
+        const tokenErrorMsg = tokenError instanceof Error ? tokenError.message : String(tokenError)
+        console.error('[UserContext] Failed to get token:', {
+          error: tokenErrorMsg,
+          errorType: tokenError?.constructor?.name,
+          errorString: String(tokenError),
+        })
+        throw new Error(`Failed to get authentication token: ${tokenErrorMsg}`)
+      }
+
       if (!token) {
-        throw new Error('No authentication token')
+        throw new Error('No authentication token received from Clerk')
       }
 
       // Add cache-busting timestamp to prevent caching
       const timestamp = new Date().getTime()
-      const response = await fetch(`${API_BASE_URL}/auth/info?t=${timestamp}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        },
-        cache: 'no-store',
-      })
+      const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch user info: ${response.statusText}`)
+      if (isMobile) {
+        console.log('[UserContext] Fetching from URL:', url)
       }
 
-      const info = await response.json()
+      let response: Response
+      try {
+        response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+          cache: 'no-store',
+        })
+      } catch (fetchError) {
+        // Network error - fetch failed completely
+        const fetchErrorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError)
+        const networkError = {
+          type: 'NetworkError',
+          message: fetchErrorMsg,
+          name: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+          toString: String(fetchError),
+        }
+        console.error('[UserContext] Network error fetching user info:', networkError)
+        throw new Error(`Network error: ${fetchErrorMsg}. Check your internet connection and API URL.`)
+      }
+
+      if (isMobile) {
+        console.log('[UserContext] Response status:', response.status, response.statusText)
+      }
+
+      if (!response.ok) {
+        let errorBody = ''
+        try {
+          errorBody = await response.text()
+        } catch {
+          // Ignore error reading body
+        }
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          body: errorBody,
+        }
+        console.error('[UserContext] HTTP error response:', errorDetails)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ' - ' + errorBody : ''}`)
+      }
+
+      let info: UserInfo
+      try {
+        info = await response.json()
+      } catch (parseError) {
+        const parseErrorMsg = parseError instanceof Error ? parseError.message : String(parseError)
+        console.error('[UserContext] Failed to parse JSON response:', {
+          error: parseErrorMsg,
+          responseText: await response.text().catch(() => 'Could not read response'),
+        })
+        throw new Error(`Failed to parse response: ${parseErrorMsg}`)
+      }
 
       // Validate that we have the required fields
       if (!info || !info.id || !info.email) {
@@ -115,8 +185,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
       }
     } catch (err) {
+      // Enhanced error logging with full details
+      const errorDetails = {
+        message: err instanceof Error ? err.message : String(err),
+        name: err instanceof Error ? err.name : 'Unknown',
+        stack: err instanceof Error ? err.stack : undefined,
+        toString: String(err),
+        type: err?.constructor?.name,
+        // Try to get more info
+        ...(err instanceof TypeError && { typeError: true }),
+      }
+
+      console.error('[UserContext] Error loading user info - Full details:', errorDetails)
+
+      // Also log to mobile debug panel with more context
+      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      if (isMobile) {
+        console.error('[UserContext] Mobile error details:', {
+          errorMessage: errorDetails.message,
+          errorName: errorDetails.name,
+          errorType: errorDetails.type,
+          API_BASE_URL,
+          hasToken: !!getToken,
+          userAgent: navigator.userAgent,
+        })
+      }
+
       const message = err instanceof Error ? err.message : 'Failed to load user info'
-      console.error('[UserContext] Error loading user info:', err)
       setError(message)
       // Don't clear userInfo on error to avoid flickering - only clear if it's a critical error
       // Keep existing userInfo if available
