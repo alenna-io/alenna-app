@@ -76,11 +76,12 @@ export function DailyGoalsTable({
         setEditValue("")
         return
       }
-      // Only submit if the value is valid (1-1000 or Self Test)
+      // Only submit if the value is valid (1-1000, ST, or T)
       const trimmedValue = editValue.trim()
       const isValid =
         trimmedValue === "" ||
-        /^self\s*test$/i.test(trimmedValue) ||
+        /^st$/i.test(trimmedValue) ||
+        /^t$/i.test(trimmedValue) ||
         /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
         /^[1-9]\d{0,3}$/.test(trimmedValue)
 
@@ -219,7 +220,8 @@ export function DailyGoalsTable({
                               const trimmedValue = editValue.trim()
                               const isValid =
                                 trimmedValue === "" ||
-                                /^self\s*test$/i.test(trimmedValue) ||
+                                /^st$/i.test(trimmedValue) ||
+                                /^t$/i.test(trimmedValue) ||
                                 /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
                                 /^[1-9]\d{0,3}$/.test(trimmedValue)
 
@@ -230,7 +232,7 @@ export function DailyGoalsTable({
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="e.g., 1-10 or Self Test"
+                                    placeholder="e.g., 1-10, ST, or T"
                                     className={`w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 ${editValue && !isValid
                                       ? 'border-red-500 focus:ring-red-500 bg-red-50'
                                       : 'focus:ring-primary'
@@ -240,8 +242,8 @@ export function DailyGoalsTable({
                                   <div className={`text-xs mt-1 text-center ${editValue && !isValid ? 'text-red-500' : 'text-gray-500'
                                     }`}>
                                     {editValue && !isValid
-                                      ? 'Invalid format. Use: start-end (1-1000) or "Self Test"'
-                                      : 'Format: start-end (1-1000) or "Self Test"'
+                                      ? 'Invalid format. Use: start-end (1-1000), ST, or T'
+                                      : 'Format: start-end (1-1000), ST, or T'
                                     }
                                   </div>
                                 </>
@@ -375,17 +377,6 @@ export function DailyGoalsTable({
                           </div>
                           {data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted && (
                             <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
-                              {canToggleNotes && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    onNotesToggle?.(subject, dayIndex)
-                                  }}
-                                  className="shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer bg-white border-red-500 hover:bg-red-50 hover:border-red-600"
-                                  title="Marcar completo"
-                                >
-                                </button>
-                              )}
                               <div className="flex-1">
                                 <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">Pendiente</p>
                                 <p className="text-sm font-medium leading-tight">

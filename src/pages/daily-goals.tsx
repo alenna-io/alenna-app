@@ -25,9 +25,14 @@ const calculatePagesFromValue = (value: string): number => {
 
   const trimmedValue = value.trim()
 
-  // Check for "Self Test" (case insensitive)
-  if (/^self\s*test$/i.test(trimmedValue)) {
+  // Check for "ST" (Self Test) - case insensitive
+  if (/^st$/i.test(trimmedValue)) {
     return 3
+  }
+
+  // Check for "T" (Test) - case insensitive
+  if (/^t$/i.test(trimmedValue)) {
+    return 1
   }
 
   // Check for range format (e.g., "45-46", "1-10") - must be valid numbers 1-1000
