@@ -17,7 +17,7 @@ import type { Student } from "@/types/student"
 import { useUser } from "@/contexts/UserContext"
 import { SearchBar } from "@/components/ui/search-bar"
 
-interface Filters {
+interface Filters extends Record<string, string> {
   certificationType: string
   graduationYear: string
   isLeveled: string

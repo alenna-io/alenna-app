@@ -1,7 +1,7 @@
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
 
-interface Filters {
+interface Filters extends Record<string, string> {
   role: string
   schoolId: string
 }

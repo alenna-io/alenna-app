@@ -1,7 +1,7 @@
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
 
-interface Filters {
+interface Filters extends Record<string, string> {
   certificationType: string
   graduationYear: string
   isLeveled: string
@@ -75,12 +75,12 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
 
   return (
     <GenericFilters<Filters>
-      filters={filters as Record<string, string>}
-      onFiltersChange={onFiltersChange as (filters: Record<string, string>) => void}
+      filters={filters}
+      onFiltersChange={onFiltersChange}
       totalItems={totalStudents}
       filteredCount={filteredCount}
       fields={filterFields}
-      getActiveFilterLabels={getActiveFilterLabels as (filters: Record<string, string>) => string[]}
+      getActiveFilterLabels={getActiveFilterLabels}
     />
   )
 }
