@@ -1,5 +1,5 @@
-import * as React from "react"
-import { GenericFilters, FilterField } from "@/components/ui/generic-filters"
+import { GenericFilters } from "@/components/ui/generic-filters"
+import type { FilterField } from "@/components/ui/generic-filters"
 
 interface Filters {
   certificationType: string
@@ -74,13 +74,13 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
   }
 
   return (
-    <GenericFilters
-      filters={filters}
-      onFiltersChange={onFiltersChange}
+    <GenericFilters<Filters>
+      filters={filters as Record<string, string>}
+      onFiltersChange={onFiltersChange as (filters: Record<string, string>) => void}
       totalItems={totalStudents}
       filteredCount={filteredCount}
       fields={filterFields}
-      getActiveFilterLabels={getActiveFilterLabels}
+      getActiveFilterLabels={getActiveFilterLabels as (filters: Record<string, string>) => string[]}
     />
   )
 }

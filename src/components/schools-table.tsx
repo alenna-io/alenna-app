@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/ui/link-button"
-import { Building, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Edit, Trash2 } from "lucide-react"
+import { Building, ChevronLeft, MoreVertical, Eye, Edit, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,

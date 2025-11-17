@@ -1,4 +1,3 @@
-import * as React from "react"
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
 
