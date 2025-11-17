@@ -41,18 +41,6 @@
       "destination": "/favicon.svg"
     },
     {
-      "source": "/assets/:path*",
-      "destination": "/assets/:path*"
-    },
-    {
-      "source": "/fonts/:path*",
-      "destination": "/fonts/:path*"
-    },
-    {
-      "source": "/(.*\\.(svg|ico|png|jpg|jpeg|gif|webp|woff|woff2|ttf|otf|eot|css|js))",
-      "destination": "/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
