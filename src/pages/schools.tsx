@@ -2,21 +2,18 @@ import * as React from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Search, Plus, Edit, Trash2, Building, MoreVertical, Eye } from "lucide-react"
+import { Plus, Building } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
+import { SchoolsTable } from "@/components/schools-table"
+import { includesIgnoreAccents } from "@/lib/string-utils"
+import { SearchBar } from "@/components/ui/search-bar"
 
 interface School {
   id: string
@@ -124,17 +121,23 @@ export default function SchoolsPage() {
   }
 
   const filteredSchools = schools.filter(school => {
-    const name = school.name.toLowerCase()
-    const address = school.address.toLowerCase()
-    const email = school.email?.toLowerCase() || ""
-    const search = searchTerm.toLowerCase()
-
-    return name.includes(search) || address.includes(search) || email.includes(search)
+    // Search filter (accent-insensitive)
+    return !searchTerm ||
+      includesIgnoreAccents(school.name, searchTerm) ||
+      includesIgnoreAccents(school.address, searchTerm) ||
+      includesIgnoreAccents(school.email || "", searchTerm)
   })
 
   const totalPages = Math.ceil(filteredSchools.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedSchools = filteredSchools.slice(startIndex, startIndex + itemsPerPage)
+  const paginatedSchools = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredSchools.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredSchools, currentPage, itemsPerPage])
+
+  // Reset to page 1 when search changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   const handleCreateSchool = async () => {
     try {
@@ -211,119 +214,43 @@ export default function SchoolsPage() {
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Escuelas</CardTitle>
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Escuela
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar escuelas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+      {/* Search */}
+      <SearchBar
+        placeholder="Buscar escuelas por nombre, dirección o email..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
 
-          {filteredSchools.length === 0 ? (
-            <div className="text-center py-8">
-              <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p>No se encontraron escuelas</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Nombre</th>
-                    <th className="text-left py-3 px-4">Dirección</th>
-                    <th className="text-left py-3 px-4">Email</th>
-                    <th className="text-left py-3 px-4">Teléfono</th>
-                    <th className="text-left py-3 px-4 w-16">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedSchools.map((school) => (
-                    <tr key={school.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-medium">{school.name}</div>
-                      </td>
-                      <td className="py-3 px-4">{school.address}</td>
-                      <td className="py-3 px-4">{school.email || '-'}</td>
-                      <td className="py-3 px-4">{school.phone || '-'}</td>
-                      <td className="py-3 px-4 w-16">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/schools/${school.id}`)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalles
-                            </DropdownMenuItem>
-                            {userInfo?.permissions.includes('schools.update') && (
-                              <DropdownMenuItem onClick={() => openEditDialog(school)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            {userInfo?.permissions.includes('schools.delete') && (
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteSchool(school)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Create Button */}
+      <div className="flex justify-end">
+        <Button onClick={openCreateDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          Crear Escuela
+        </Button>
+      </div>
 
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-4">
-              <p className="text-sm text-gray-600">
-                Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredSchools.length)} de {filteredSchools.length} resultados
-              </p>
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Schools Table */}
+      {filteredSchools.length > 0 ? (
+        <SchoolsTable
+          schools={paginatedSchools}
+          onSchoolSelect={(school) => navigate(`/schools/${school.id}`)}
+          onEdit={userInfo?.permissions.includes('schools.update') ? openEditDialog : undefined}
+          onDelete={userInfo?.permissions.includes('schools.delete') ? handleDeleteSchool : undefined}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredSchools.length}
+          onPageChange={setCurrentPage}
+          canEdit={userInfo?.permissions.includes('schools.update') ?? false}
+          canDelete={userInfo?.permissions.includes('schools.delete') ?? false}
+        />
+      ) : (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">No se encontraron escuelas</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

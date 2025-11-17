@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon, BookOpen } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -14,6 +14,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { useApi } from "@/services/api"
 import type { ModuleData } from "@/services/api"
@@ -70,6 +72,7 @@ export function AppSidebar() {
   const isTeacherOnly = hasRole('TEACHER') && !isSuperAdmin && !isSchoolAdmin
   const isParentOnly = hasRole('PARENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER')
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
+  const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
 
   // Build menu items from modules
   const filteredModules = modules.filter(module => {
@@ -110,39 +113,80 @@ export function AppSidebar() {
     })
   }
 
+  // Add projections menu item for teachers and school admins
+  if (isTeacherOrAdmin) {
+    dynamicMenuItems.push({
+      title: "Proyecciones",
+      url: "/projections",
+      icon: BookOpen,
+    })
+  }
+
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
+  const { state } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   return (
-    <Sidebar collapsible="offcanvas" className="w-[200px]">
+    <Sidebar collapsible="icon" className="w-[200px]">
       <SidebarHeader>
-        <div className="flex items-center justify-between">
-          <SidebarMenu className="flex-1">
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link to="/">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <span className="text-lg font-bold">
-                      {isLoadingUser ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        schoolName.charAt(0).toUpperCase()
-                      )}
-                    </span>
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                    <span className="font-semibold break-words leading-tight">
-                      {isLoadingUser ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        schoolName
-                      )}
-                    </span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </div>
+        {isCollapsed ? (
+          // Collapsed state: centered toggle button below logo
+          <div className="flex flex-col gap-2 items-center">
+            <SidebarMenu className="w-full">
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" asChild>
+                  <Link to="/">
+                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <span className="text-lg font-bold">
+                        {isLoadingUser ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          schoolName.charAt(0).toUpperCase()
+                        )}
+                      </span>
+                    </div>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {/* Desktop sidebar toggle - centered when collapsed */}
+            <div className="hidden md:flex w-full justify-center">
+              <SidebarTrigger />
+            </div>
+          </div>
+        ) : (
+          // Expanded state: toggle button to the right of school name
+          <div className="flex items-center justify-between gap-2">
+            <SidebarMenu className="flex-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg" asChild>
+                  <Link to="/">
+                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <span className="text-lg font-bold">
+                        {isLoadingUser ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          schoolName.charAt(0).toUpperCase()
+                        )}
+                      </span>
+                    </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                      <span className="font-semibold break-words leading-tight">
+                        {isLoadingUser ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          schoolName
+                        )}
+                      </span>
+                    </div>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+            {/* Desktop sidebar toggle - to the right when expanded */}
+            <SidebarTrigger className="hidden md:inline-flex" />
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>

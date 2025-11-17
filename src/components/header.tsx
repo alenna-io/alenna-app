@@ -83,8 +83,8 @@ export function Header() {
 
   return (
     <>
-      {/* Mobile menu trigger - always render */}
-      <SidebarTrigger className="md:hidden" />
+      {/* Mobile menu trigger - only on small screens */}
+      <SidebarTrigger className="md:hidden mr-2" />
 
       {/* Breadcrumbs on the left (desktop only) */}
       <BreadcrumbNav />

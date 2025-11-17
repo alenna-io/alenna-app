@@ -5,20 +5,19 @@ import { StudentsTable } from "@/components/students-table"
 import { StudentProfile } from "@/components/student-profile"
 import { StudentsFilters } from "@/components/students-filters"
 import { ViewToggle } from "@/components/view-toggle"
-import { Input } from "@/components/ui/input"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Navigate } from "react-router-dom"
 import { ParentChildrenView } from "@/components/parent-children-view"
-import { Search } from "lucide-react"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
 import { useUser } from "@/contexts/UserContext"
+import { SearchBar } from "@/components/ui/search-bar"
 
-interface Filters {
+interface Filters extends Record<string, string> {
   certificationType: string
   graduationYear: string
   isLeveled: string
@@ -387,15 +386,11 @@ export default function StudentsPage() {
       />
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar estudiantes por nombre, certificación, teléfono o dirección..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      <SearchBar
+        placeholder="Buscar estudiantes por nombre, certificación, teléfono o dirección..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
 
       {/* Filters and View Toggle */}
       <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-start">

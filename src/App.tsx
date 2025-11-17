@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/dashboard'
 import { HomePage } from '@/pages/home'
 import StudentsPage from '@/pages/students'
 import ProjectionListPage from '@/pages/projection-list'
+import ProjectionsPage from '@/pages/projections'
 import ACEProjectionPage from '@/pages/ace-projection'
 import DailyGoalsPage from '@/pages/daily-goals'
 import ConfigurationPage from '@/pages/configuration'
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="students" element={<StudentsPage />} />
           <Route path="students/:studentId" element={<StudentsPage />} />
+          <Route path="projections" element={<ProjectionsPage />} />
           <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
           <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
           <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
