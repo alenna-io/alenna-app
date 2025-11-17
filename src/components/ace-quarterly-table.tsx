@@ -50,6 +50,7 @@ export function ACEQuarterlyTable({
   onDeletePace
 }: QuarterlyTableProps) {
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
+  const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
   const [commentInput, setCommentInput] = React.useState("")
@@ -468,6 +469,40 @@ export function ACEQuarterlyTable({
                           setDraggedPace(null)
                         }}
                         onDragEnd={() => setDraggedPace(null)}
+                        // Touch handlers for mobile/iPad
+                        onTouchStart={(e) => {
+                          if (!isReadOnly && pace) {
+                            const touch = e.touches[0]
+                            setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
+                          }
+                        }}
+                        onTouchMove={(e) => {
+                          if (touchStart && touchStart.subject === subject && touchStart.weekIndex === weekIndex) {
+                            // Prevent scrolling while dragging
+                            e.preventDefault()
+                          }
+                        }}
+                        onTouchEnd={(e) => {
+                          if (touchStart && touchStart.subject === subject) {
+                            const touch = e.changedTouches[0]
+                            // Try to find the target cell at touch end position
+                            const element = document.elementFromPoint(touch.clientX, touch.clientY)
+                            const targetCell = element?.closest('td[data-week-index]')
+
+                            if (targetCell) {
+                              const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
+                              const targetSubject = targetCell.getAttribute('data-subject') || ''
+
+                              // Only drop if it's the same subject and different week
+                              if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
+                                onPaceDrop?.(quarter, subject, touchStart.weekIndex, targetWeekIndex)
+                              }
+                            }
+                          }
+                          setTouchStart(null)
+                        }}
+                        data-week-index={weekIndex}
+                        data-subject={subject}
                       >
                         {pace ? (
                           editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
