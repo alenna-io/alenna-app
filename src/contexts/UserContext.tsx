@@ -13,9 +13,24 @@ const UserContext = React.createContext<UserContextValue | null>(null)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 
+const USER_INFO_STORAGE_KEY = 'alenna_user_info'
+const USER_INFO_TIMESTAMP_KEY = 'alenna_user_info_timestamp'
+
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth()
-  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+  // Try to load from sessionStorage first
+  const [userInfo, setUserInfo] = React.useState<UserInfo | null>(() => {
+    try {
+      const stored = sessionStorage.getItem(USER_INFO_STORAGE_KEY)
+      if (stored) {
+        return JSON.parse(stored)
+      }
+    } catch (e) {
+      console.warn('[UserContext] Failed to load user info from sessionStorage:', e)
+    }
+    return null
+  })
+  // Always start with loading true - we'll fetch to verify/update the cached data
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -66,6 +81,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       setUserInfo(info)
+
+      // Persist to sessionStorage
+      try {
+        sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(info))
+        sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, Date.now().toString())
+      } catch (e) {
+        console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load user info'
       console.error('[UserContext] Error loading user info:', err)
@@ -77,43 +100,31 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, [getToken])
 
+  // Track if we've already fetched user info in this session to prevent re-fetching
+  const hasFetchedRef = React.useRef<boolean>(false)
+
+  // Always fetch once on mount to verify/update cached data
   React.useEffect(() => {
-    fetchUserInfo()
+    // Only fetch once on initial mount
+    if (hasFetchedRef.current) {
+      return
+    }
+
+    hasFetchedRef.current = true
+    let isMounted = true
+
+    fetchUserInfo().then(() => {
+      // Fetch completed
+      if (!isMounted) {
+        // Component unmounted, ignore
+      }
+    })
+
+    return () => {
+      isMounted = false
+    }
   }, [fetchUserInfo])
 
-  // Refresh user info when the page becomes visible again (fixes iPad caching issues)
-  // But only if we already have userInfo loaded to avoid interfering with initial load
-  React.useEffect(() => {
-    let lastVisibilityChange = Date.now()
-    const VISIBILITY_DEBOUNCE_MS = 1000 // Wait 1 second between refreshes
-
-    const handleVisibilityChange = () => {
-      const now = Date.now()
-      // Only refresh if we have existing userInfo and enough time has passed since last refresh
-      if (document.visibilityState === 'visible' && userInfo && !isLoading && (now - lastVisibilityChange) > VISIBILITY_DEBOUNCE_MS) {
-        lastVisibilityChange = now
-        console.log('[UserContext] Visibility change detected, refreshing user info')
-        // Refresh user info when user comes back to the app
-        fetchUserInfo()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [fetchUserInfo, isLoading, userInfo])
-
-  // Periodic refresh every 5 minutes to keep data fresh
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      if (!isLoading) {
-        fetchUserInfo()
-      }
-    }, 5 * 60 * 1000) // 5 minutes
-
-    return () => clearInterval(interval)
-  }, [fetchUserInfo, isLoading])
 
   const value = React.useMemo(
     () => ({
