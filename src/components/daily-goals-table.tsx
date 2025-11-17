@@ -14,7 +14,6 @@ interface DailyGoalsTableProps {
   onGoalUpdate?: (subject: string, dayIndex: number, value: string) => void
   onGoalToggle?: (subject: string, dayIndex: number) => void
   onNotesUpdate?: (subject: string, dayIndex: number, notes: string) => void
-  onNotesToggle?: (subject: string, dayIndex: number) => void
   dayTotals?: number[]
 }
 
@@ -35,7 +34,6 @@ export function DailyGoalsTable({
   onGoalUpdate,
   onGoalToggle,
   onNotesUpdate,
-  onNotesToggle,
   dayTotals
 }: DailyGoalsTableProps) {
   const [editingCell, setEditingCell] = React.useState<{ subject: string, dayIndex: number } | null>(null)
@@ -47,7 +45,6 @@ export function DailyGoalsTable({
   const isEditable = Boolean(onGoalUpdate)
   const canToggleGoal = Boolean(onGoalToggle)
   const canEditNotes = Boolean(onNotesUpdate)
-  const canToggleNotes = Boolean(onNotesToggle)
 
   // Prevent body scroll when modal is open
   React.useEffect(() => {
