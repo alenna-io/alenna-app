@@ -57,7 +57,18 @@ export function AppSidebar() {
 
     // If userInfo failed to load or is missing, stop loading and show empty state
     if (!userInfo || !userInfo.id) {
-      console.warn('[AppSidebar] No userInfo available, stopping module fetch')
+      // Log detailed info on mobile to help debug
+      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        console.warn('[AppSidebar] No userInfo available on mobile:', {
+          hasUserInfo: !!userInfo,
+          userInfoId: userInfo?.id,
+          userInfoEmail: userInfo?.email,
+          isLoadingUser,
+          userInfoKeys: userInfo ? Object.keys(userInfo) : [],
+        })
+      } else {
+        console.warn('[AppSidebar] No userInfo available, stopping module fetch')
+      }
       setIsLoading(false)
       setModules([])
       lastFetchedUserIdRef.current = null
@@ -78,12 +89,29 @@ export function AppSidebar() {
         setIsLoading(true)
         const userModules = await api.modules.getUserModules()
         if (isMounted) {
-          setModules(userModules)
+          // Log on mobile to help debug
+          if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            console.log('[AppSidebar] Modules fetched on mobile:', {
+              count: userModules?.length || 0,
+              modules: userModules?.map((m: ModuleData) => ({ key: m.key, name: m.name, actions: m.actions?.length || 0 })),
+            })
+          }
+          setModules(userModules || [])
           lastFetchedUserIdRef.current = userInfo.id
           modulesFetchedRef.current = true
         }
       } catch (error) {
-        console.error('[AppSidebar] Error fetching modules:', error)
+        // Enhanced error logging on mobile
+        if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          console.error('[AppSidebar] Error fetching modules on mobile:', {
+            error,
+            userId: userInfo.id,
+            userEmail: userInfo.email,
+            errorMessage: error instanceof Error ? error.message : String(error),
+          })
+        } else {
+          console.error('[AppSidebar] Error fetching modules:', error)
+        }
         if (isMounted) {
           setModules([])
           // Don't set lastFetchedUserIdRef on error so we can retry
