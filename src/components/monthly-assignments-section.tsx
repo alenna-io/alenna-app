@@ -26,8 +26,14 @@ export function MonthlyAssignmentsSection({
   const [gradeInput, setGradeInput] = React.useState("")
   const [noteInput, setNoteInput] = React.useState("")
   const [historyDialog, setHistoryDialog] = React.useState<MonthlyAssignment | null>(null)
+  const [assignmentsState, setAssignmentsState] = React.useState(assignments)
 
-  const quarterAssignments = assignments.filter(a => a.quarter === quarter)
+  const quarterAssignments = assignmentsState.filter(a => a.quarter === quarter)
+
+  // Update local state when assignments prop changes
+  React.useEffect(() => {
+    setAssignmentsState(assignments)
+  }, [assignments])
 
   const handleGradeAssignment = async () => {
     if (!gradingAssignment) return
@@ -38,15 +44,40 @@ export function MonthlyAssignmentsSection({
       return
     }
 
+    // OPTIMISTIC UPDATE: Immediately update the UI
+    const assignmentIndex = assignmentsState.findIndex(a => a.id === gradingAssignment)
+    if (assignmentIndex !== -1) {
+      const updatedAssignments = [...assignmentsState]
+      const updatedAssignment = {
+        ...updatedAssignments[assignmentIndex],
+        grade,
+        gradeHistory: [
+          ...(updatedAssignments[assignmentIndex].gradeHistory || []),
+          {
+            grade,
+            date: new Date().toISOString(),
+            note: noteInput || undefined
+          }
+        ]
+      }
+      updatedAssignments[assignmentIndex] = updatedAssignment
+      setAssignmentsState(updatedAssignments)
+    }
+
+    // Close dialog immediately
+    setGradingAssignment(null)
+    const savedNoteInput = noteInput
+    setGradeInput("")
+    setNoteInput("")
+
     try {
-      await onGradeAssignment(gradingAssignment, grade, noteInput || undefined)
-      setGradingAssignment(null)
-      setGradeInput("")
-      setNoteInput("")
+      await onGradeAssignment(gradingAssignment, grade, savedNoteInput || undefined)
       toast.success("Calificación guardada exitosamente")
     } catch (err) {
       console.error('Error grading assignment:', err)
       toast.error(err instanceof Error ? err.message : "Error al calificar asignación")
+      // ROLLBACK: Revert to original state on error
+      setAssignmentsState(assignments)
     }
   }
 
