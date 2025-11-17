@@ -23,20 +23,45 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = sessionStorage.getItem(USER_INFO_STORAGE_KEY)
       if (stored) {
-        return JSON.parse(stored)
+        const parsed = JSON.parse(stored)
+        // Validate that cached data has required fields
+        if (parsed && parsed.id && parsed.email) {
+          return parsed
+        } else {
+          // Clear corrupted/incomplete cached data
+          console.warn('[UserContext] Cached user info is incomplete, clearing it')
+          sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
+          sessionStorage.removeItem(USER_INFO_TIMESTAMP_KEY)
+        }
       }
     } catch (e) {
       console.warn('[UserContext] Failed to load user info from sessionStorage:', e)
+      // Clear corrupted cached data
+      try {
+        sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
+        sessionStorage.removeItem(USER_INFO_TIMESTAMP_KEY)
+      } catch {
+        // Ignore errors when clearing
+      }
     }
     return null
   })
-  // Always start with loading true - we'll fetch to verify/update the cached data
-  const [isLoading, setIsLoading] = React.useState(true)
+  // If we have cached data, start with loading false so UI can render immediately
+  // Otherwise start with loading true
+  const [isLoading, setIsLoading] = React.useState(() => {
+    try {
+      return !sessionStorage.getItem(USER_INFO_STORAGE_KEY)
+    } catch {
+      return true
+    }
+  })
   const [error, setError] = React.useState<string | null>(null)
 
-  const fetchUserInfo = React.useCallback(async () => {
+  const fetchUserInfo = React.useCallback(async (showLoading: boolean = true) => {
     try {
-      setIsLoading(true)
+      if (showLoading) {
+        setIsLoading(true)
+      }
       setError(null)
 
       const token = await getToken()
@@ -96,7 +121,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       // Don't clear userInfo on error to avoid flickering - only clear if it's a critical error
       // Keep existing userInfo if available
     } finally {
-      setIsLoading(false)
+      if (showLoading) {
+        setIsLoading(false)
+      }
     }
   }, [getToken])
 
@@ -104,6 +131,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const hasFetchedRef = React.useRef<boolean>(false)
 
   // Always fetch once on mount to verify/update cached data
+  // But don't block the UI if we have cached data
   React.useEffect(() => {
     // Only fetch once on initial mount
     if (hasFetchedRef.current) {
@@ -113,17 +141,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     hasFetchedRef.current = true
     let isMounted = true
 
-    fetchUserInfo().then(() => {
-      // Fetch completed
-      if (!isMounted) {
-        // Component unmounted, ignore
+    // Fetch in the background - don't set loading to true if we have cached data
+    // This allows the UI to render immediately with cached data on mobile
+    const shouldShowLoading = !userInfo
+
+    fetchUserInfo(shouldShowLoading).catch((err) => {
+      // If fetch fails and we have cached data, keep using it
+      console.error('[UserContext] Failed to fetch user info, using cached data if available:', err)
+      if (isMounted && !userInfo) {
+        // Only set error if we don't have cached data
+        setError(err instanceof Error ? err.message : 'Failed to load user info')
+      }
+    }).finally(() => {
+      if (isMounted) {
+        setIsLoading(false)
       }
     })
 
     return () => {
       isMounted = false
     }
-  }, [fetchUserInfo])
+  }, [fetchUserInfo, userInfo])
 
 
   const value = React.useMemo(
