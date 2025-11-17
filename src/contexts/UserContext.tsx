@@ -29,10 +29,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No authentication token')
       }
 
-      const response = await fetch(`${API_BASE_URL}/auth/info`, {
+      // Add cache-busting timestamp to prevent caching
+      const timestamp = new Date().getTime()
+      const response = await fetch(`${API_BASE_URL}/auth/info?t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
         },
         cache: 'no-store',
       })
@@ -42,11 +47,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       const info = await response.json()
+
+      // Validate that we have the required fields
+      if (!info || !info.id || !info.email) {
+        throw new Error('Invalid user info received from server')
+      }
+
       setUserInfo(info)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load user info'
       console.error('[UserContext] Error loading user info:', err)
       setError(message)
+      // Don't clear userInfo on error to avoid flickering - only clear if it's a critical error
+      // Keep existing userInfo if available
     } finally {
       setIsLoading(false)
     }
@@ -55,6 +68,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     fetchUserInfo()
   }, [fetchUserInfo])
+
+  // Refresh user info when the page becomes visible again (fixes iPad caching issues)
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isLoading) {
+        // Refresh user info when user comes back to the app
+        fetchUserInfo()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchUserInfo, isLoading])
+
+  // Periodic refresh every 5 minutes to keep data fresh
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isLoading) {
+        fetchUserInfo()
+      }
+    }, 5 * 60 * 1000) // 5 minutes
+
+    return () => clearInterval(interval)
+  }, [fetchUserInfo, isLoading])
 
   const value = React.useMemo(
     () => ({

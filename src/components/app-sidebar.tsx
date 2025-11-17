@@ -62,7 +62,8 @@ export function AppSidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only fetch once on mount
 
-  const schoolName = userInfo?.schoolName ?? "Alenna"
+  // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
+  const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
   const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
@@ -174,8 +175,10 @@ export function AppSidebar() {
                       <span className="font-semibold break-words leading-tight">
                         {isLoadingUser ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
+                        ) : schoolName ? (
                           schoolName
+                        ) : (
+                          'Cargando...'
                         )}
                       </span>
                     </div>
@@ -236,12 +239,22 @@ export function AppSidebar() {
                   <span className="truncate font-semibold">
                     {isLoadingUser ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : userInfo?.fullName ? (
+                      userInfo.fullName
+                    ) : userInfo?.email ? (
+                      userInfo.email
                     ) : (
-                      userInfo?.fullName || 'Usuario'
+                      'Usuario'
                     )}
                   </span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
-                    {isLoadingUser ? '...' : userInfo?.email || 'Administrar'}
+                    {isLoadingUser ? (
+                      '...'
+                    ) : userInfo?.email ? (
+                      userInfo.email
+                    ) : (
+                      'Cargando...'
+                    )}
                   </span>
                 </div>
               </div>
