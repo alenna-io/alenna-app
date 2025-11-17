@@ -50,7 +50,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       // Validate that we have the required fields
       if (!info || !info.id || !info.email) {
+        console.error('[UserContext] Invalid user info received:', info)
         throw new Error('Invalid user info received from server')
+      }
+
+      // Log user info for debugging (only on mobile/devices)
+      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        console.log('[UserContext] User info loaded on mobile:', {
+          id: info.id,
+          email: info.email,
+          fullName: info.fullName,
+          schoolName: info.schoolName,
+          roles: info.roles?.map((r: { name: string }) => r.name),
+        })
       }
 
       setUserInfo(info)
@@ -70,9 +82,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [fetchUserInfo])
 
   // Refresh user info when the page becomes visible again (fixes iPad caching issues)
+  // But only if we already have userInfo loaded to avoid interfering with initial load
   React.useEffect(() => {
+    let lastVisibilityChange = Date.now()
+    const VISIBILITY_DEBOUNCE_MS = 1000 // Wait 1 second between refreshes
+
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !isLoading) {
+      const now = Date.now()
+      // Only refresh if we have existing userInfo and enough time has passed since last refresh
+      if (document.visibilityState === 'visible' && userInfo && !isLoading && (now - lastVisibilityChange) > VISIBILITY_DEBOUNCE_MS) {
+        lastVisibilityChange = now
+        console.log('[UserContext] Visibility change detected, refreshing user info')
         // Refresh user info when user comes back to the app
         fetchUserInfo()
       }
@@ -82,7 +102,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [fetchUserInfo, isLoading])
+  }, [fetchUserInfo, isLoading, userInfo])
 
   // Periodic refresh every 5 minutes to keep data fresh
   React.useEffect(() => {
