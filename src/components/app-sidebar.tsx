@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon, BookOpen } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -72,6 +72,7 @@ export function AppSidebar() {
   const isTeacherOnly = hasRole('TEACHER') && !isSuperAdmin && !isSchoolAdmin
   const isParentOnly = hasRole('PARENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER')
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
+  const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
 
   // Build menu items from modules
   const filteredModules = modules.filter(module => {
@@ -109,6 +110,15 @@ export function AppSidebar() {
       title: "Mi Perfil",
       url: "/my-profile",
       icon: UserIcon,
+    })
+  }
+
+  // Add projections menu item for teachers and school admins
+  if (isTeacherOrAdmin) {
+    dynamicMenuItems.push({
+      title: "Proyecciones",
+      url: "/projections",
+      icon: BookOpen,
     })
   }
 

@@ -129,9 +129,6 @@ export default function ProjectionListPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <BookOpen className="h-6 w-6 text-primary" />
-                    </div>
                     <div>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
                         Año Escolar {projection.schoolYear}

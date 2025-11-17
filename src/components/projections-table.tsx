@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye } from "lucide-react"
-import type { Student } from "@/types/student"
+import { BookOpen, ChevronsUpDown, ChevronLeft, MoreVertical, Eye } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +12,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-interface StudentsTableProps {
-  students: Student[]
-  onStudentSelect: (student: Student) => void
+interface ProjectionWithStudent {
+  id: string
+  studentId: string
+  schoolYear: string
+  startDate: string
+  endDate: string
+  isActive: boolean
+  notes?: string
+  createdAt: string
+  updatedAt: string
+  student: {
+    id: string
+    firstName: string
+    lastName: string
+    name: string
+  }
+}
+
+interface ProjectionsTableProps {
+  projections: ProjectionWithStudent[]
+  onProjectionSelect: (projection: ProjectionWithStudent) => void
   sortField: "firstName" | "lastName" | null
   sortDirection: "asc" | "desc"
   onSort: (field: "firstName" | "lastName") => void
@@ -34,16 +51,13 @@ interface ColumnConfig {
 const COLUMNS: ColumnConfig[] = [
   { key: 'firstName', label: 'Nombre', sortable: true },
   { key: 'lastName', label: 'Apellidos', sortable: true },
-  { key: 'age', label: 'Edad', sortable: true },
-  { key: 'certification', label: 'Certificación', sortable: true },
-  { key: 'graduation', label: 'Graduación', sortable: true },
-  { key: 'level', label: 'Nivel', sortable: false },
+  { key: 'status', label: 'Estado', sortable: false },
   { key: 'actions', label: '', sortable: false },
 ]
 
-export function StudentsTable({
-  students,
-  onStudentSelect,
+export function ProjectionsTable({
+  projections,
+  onProjectionSelect,
   sortField,
   sortDirection,
   onSort,
@@ -51,7 +65,7 @@ export function StudentsTable({
   totalPages,
   totalItems,
   onPageChange
-}: StudentsTableProps) {
+}: ProjectionsTableProps) {
 
   const getSortIcon = (field: "firstName" | "lastName") => {
     const isActive = sortField === field
@@ -71,16 +85,6 @@ export function StudentsTable({
   const startItem = (currentPage - 1) * 10 + 1
   const endItem = Math.min(currentPage * 10, totalItems)
 
-  const getCertificationBadgeVariant = (type: string) => {
-    switch (type) {
-      case "INEA": return "default"
-      case "Grace Christian": return "secondary"
-      case "Home Life": return "outline"
-      case "Lighthouse": return "secondary"
-      default: return "outline"
-    }
-  }
-
   const thClass = "h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm [&:last-child]:w-16"
   const tdClass = "p-4 align-middle first:px-6 first:py-3 [&:last-child]:w-16"
 
@@ -99,19 +103,6 @@ export function StudentsTable({
       )
     }
 
-    if (column.sortable) {
-      // Non-name sortable columns (age, certification, graduation)
-      return (
-        <button
-          type="button"
-          onClick={() => onSort("firstName")}
-          className="inline-flex items-center text-sm font-semibold text-foreground hover:text-primary"
-        >
-          {column.label}
-        </button>
-      )
-    }
-
     return column.label
   }
 
@@ -119,7 +110,7 @@ export function StudentsTable({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          Estudiantes
+          Proyecciones
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -135,7 +126,7 @@ export function StudentsTable({
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => {
+              {projections.map((projection) => {
                 const renderCell = (columnKey: string) => {
                   switch (columnKey) {
                     case 'firstName':
@@ -143,12 +134,12 @@ export function StudentsTable({
                         <div className="flex items-center gap-4">
                           <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
                             <AvatarFallback className="text-sm font-semibold">
-                              {getInitials(student.name)}
+                              {getInitials(projection.student.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
-                              {student.firstName}
+                              {projection.student.firstName}
                             </div>
                           </div>
                         </div>
@@ -156,35 +147,17 @@ export function StudentsTable({
                     case 'lastName':
                       return (
                         <div className="text-sm text-foreground">
-                          {student.lastName}
+                          {projection.student.lastName}
                         </div>
                       )
-                    case 'age':
-                      return <div className="text-sm font-medium">{student.age} años</div>
-                    case 'certification':
+                    case 'status':
                       return (
                         <Badge
-                          variant={getCertificationBadgeVariant(student.certificationType)}
+                          variant={projection.isActive ? "default" : "secondary"}
                           className="font-medium"
                         >
-                          {student.certificationType}
+                          {projection.isActive ? "Activa" : "Inactiva"}
                         </Badge>
-                      )
-                    case 'graduation':
-                      return (
-                        <div className="text-sm font-medium">
-                          {new Date(student.graduationDate).getFullYear()}
-                        </div>
-                      )
-                    case 'level':
-                      return (
-                        <div className="flex items-center gap-2">
-                          {student.isLeveled && student.expectedLevel && (
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {student.expectedLevel}
-                            </span>
-                          )}
-                        </div>
                       )
                     case 'actions':
                       return (
@@ -205,7 +178,7 @@ export function StudentsTable({
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
-                                onStudentSelect(student)
+                                onProjectionSelect(projection)
                               }}
                             >
                               <Eye className="h-4 w-4 mr-2" />
@@ -221,9 +194,9 @@ export function StudentsTable({
 
                 return (
                   <tr
-                    key={student.id}
+                    key={projection.id}
                     className="border-b transition-all duration-200 hover:bg-muted/30 cursor-pointer group"
-                    onClick={() => onStudentSelect(student)}
+                    onClick={() => onProjectionSelect(projection)}
                   >
                     {COLUMNS.map((column) => (
                       <td key={column.key} className={tdClass}>
@@ -237,10 +210,10 @@ export function StudentsTable({
           </table>
         </div>
 
-        {students.length === 0 && (
+        {projections.length === 0 && (
           <div className="text-center py-12">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay estudiantes para mostrar</p>
+            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No hay proyecciones para mostrar</p>
           </div>
         )}
       </CardContent>
@@ -298,3 +271,4 @@ export function StudentsTable({
     </Card>
   )
 }
+

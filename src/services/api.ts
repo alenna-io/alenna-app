@@ -61,6 +61,8 @@ export const studentsApi = {
 
 // Projections API
 export const projectionsApi = {
+  getAll: (token: string | null, year?: string) => 
+    apiFetch(`/projections${year ? `?year=${year}` : ''}`, token),
   getByStudentId: (studentId: string, token: string | null) => 
     apiFetch(`/students/${studentId}/projections`, token),
   getById: (studentId: string, id: string, token: string | null) => 
@@ -377,6 +379,10 @@ export function useApi() {
       },
     },
     projections: {
+      getAll: async (year?: string) => {
+        const token = await getToken();
+        return projectionsApi.getAll(token, year);
+      },
       getByStudentId: async (studentId: string) => {
         const token = await getToken();
         return projectionsApi.getByStudentId(studentId, token);

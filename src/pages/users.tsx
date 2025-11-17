@@ -2,8 +2,7 @@ import * as React from "react"
 import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { LoadingState } from "@/components/ui/loading-state"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
@@ -11,15 +10,13 @@ import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Search, Plus, Edit, Trash2, User, MoreVertical } from "lucide-react"
+import { Plus, User as UserIcon } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
+import { UsersTable } from "@/components/users-table"
+import { UsersFilters } from "@/components/users-filters"
+import { includesIgnoreAccents } from "@/lib/string-utils"
+import { SearchBar } from "@/components/ui/search-bar"
 
 interface User {
   id: string
@@ -59,6 +56,10 @@ export default function UsersPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [filters, setFilters] = React.useState<{ role: string; schoolId: string }>({
+    role: "",
+    schoolId: ""
+  })
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null)
@@ -251,13 +252,23 @@ export default function UsersPage() {
     setIsEditDialogOpen(true)
   }
 
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase()
-    const email = user.email.toLowerCase()
-    const search = searchTerm.toLowerCase()
+  const filteredUsers = React.useMemo(() => {
+    return users.filter(user => {
+      // Search filter (accent-insensitive)
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`
+      const matchesSearch = !searchTerm ||
+        includesIgnoreAccents(fullName, searchTerm) ||
+        includesIgnoreAccents(user.email, searchTerm)
 
-    return fullName.includes(search) || email.includes(search)
-  })
+      // Role filter
+      const matchesRole = !filters.role || user.roles.some(role => role.id === filters.role)
+
+      // School filter
+      const matchesSchool = !filters.schoolId || user.schoolId === filters.schoolId
+
+      return matchesSearch && matchesRole && matchesSchool
+    })
+  }, [users, searchTerm, filters])
 
   // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -266,10 +277,10 @@ export default function UsersPage() {
     return filteredUsers.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredUsers, currentPage, itemsPerPage])
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or filters change
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm])
+  }, [searchTerm, filters])
 
   if (!hasPermission) {
     return <Navigate to="/404" replace />
@@ -308,169 +319,64 @@ export default function UsersPage() {
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Usuarios</CardTitle>
-            {userInfo?.permissions.includes('users.create') && (
-              <Button onClick={openCreateDialog}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crear Usuario
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar usuarios..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>No se encontraron usuarios</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Usuario</th>
-                    <th className="text-left py-3 px-4">Email</th>
-                    <th className="text-left py-3 px-4">Escuela</th>
-                    <th className="text-left py-3 px-4">Roles</th>
-                    <th className="text-left py-3 px-4 w-16">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedUsers.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4">
-                        <div className="font-medium">
-                          {user.firstName && user.lastName
-                            ? `${user.firstName} ${user.lastName}`
-                            : user.email
-                          }
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">{user.email}</td>
-                      <td className="py-3 px-4">
-                        {(() => {
-                          const school = schools.find(s => s.id === user.schoolId);
-                          return school ? school.name : 'Sin asignar';
-                        })()}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {user.roles.map((role) => (
-                            <Badge key={role.id} variant="secondary">
-                              {role.displayName}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 w-16">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/users/${user.id}`)}>
-                              <User className="h-4 w-4 mr-2" />
-                              Ver Detalles
-                            </DropdownMenuItem>
-                            {userInfo?.permissions.includes('users.update') && (
-                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                            )}
-                            {userInfo?.permissions.includes('users.delete') && (
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteUser(
-                                  user.id,
-                                  user.firstName && user.lastName
-                                    ? `${user.firstName} ${user.lastName}`
-                                    : user.email,
-                                  user.email
-                                )}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
-            <div className="text-sm text-gray-500">
-              Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredUsers.length)} - {Math.min(currentPage * itemsPerPage, filteredUsers.length)} de {filteredUsers.length} resultados
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                  // Show first page, last page, current page, and pages around current
-                  if (
-                    page === 1 ||
-                    page === totalPages ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className="min-w-[2.5rem]"
-                      >
-                        {page}
-                      </Button>
-                    )
-                  } else if (page === currentPage - 2 || page === currentPage + 2) {
-                    return <span key={page} className="px-2">...</span>
-                  }
-                  return null
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+      {/* Search */}
+      <SearchBar
+        placeholder="Buscar usuarios por nombre o email..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
+      {/* Filters - Only show for super admin */}
+      {userInfo?.roles.some(role => role.name === 'SUPERADMIN') && !schoolId && (
+        <UsersFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          totalUsers={users.length}
+          filteredCount={filteredUsers.length}
+          schools={schools}
+          roles={roles}
+        />
+      )}
+
+      {/* Create Button */}
+      {userInfo?.permissions.includes('users.create') && (
+        <div className="flex justify-end">
+          <Button onClick={openCreateDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Crear Usuario
+          </Button>
+        </div>
+      )}
+
+      {/* Users Table */}
+      {filteredUsers.length > 0 ? (
+        <UsersTable
+          users={paginatedUsers}
+          schools={schools}
+          onUserSelect={(user) => navigate(`/users/${user.id}`)}
+          onEdit={userInfo?.permissions.includes('users.update') ? openEditDialog : undefined}
+          onDelete={userInfo?.permissions.includes('users.delete') ? (user) => handleDeleteUser(
+            user.id,
+            user.firstName && user.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : user.email,
+            user.email
+          ) : undefined}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredUsers.length}
+          onPageChange={setCurrentPage}
+          canEdit={userInfo?.permissions.includes('users.update') ?? false}
+          canDelete={userInfo?.permissions.includes('users.delete') ?? false}
+        />
+      ) : (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <UserIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">No se encontraron usuarios</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
