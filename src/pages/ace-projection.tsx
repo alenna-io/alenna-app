@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
+import { Loading } from "@/components/ui/loading"
 import { BackButton } from "@/components/ui/back-button"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { SectionHeader } from "@/components/ui/section-header"
@@ -557,11 +558,7 @@ export default function ACEProjectionPage() {
             Volver
           </BackButton>
         </div>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-muted-foreground">Cargando proyección...</p>
-          </CardContent>
-        </Card>
+        <Loading variant="spinner" message="Cargando proyección..." />
       </div>
     )
   }

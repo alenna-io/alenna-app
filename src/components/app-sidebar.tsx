@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Loader2, Building, User as UserIcon, BookOpen, ClipboardList } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -20,6 +20,7 @@ import {
 import { useApi } from "@/services/api"
 import type { ModuleData } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
+import { LoadingSpinner } from "@/components/ui/loading"
 
 type MenuIcon = typeof GraduationCap
 
@@ -253,7 +254,7 @@ export function AppSidebar() {
                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                       <span className="text-lg font-bold">
                         {isLoadingUser ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                         ) : (
                           schoolName.charAt(0).toUpperCase()
                         )}
@@ -278,7 +279,7 @@ export function AppSidebar() {
                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                       <span className="text-lg font-bold">
                         {isLoadingUser ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                         ) : (
                           schoolName.charAt(0).toUpperCase()
                         )}
@@ -287,7 +288,7 @@ export function AppSidebar() {
                     <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                       <span className="font-semibold break-words leading-tight">
                         {isLoadingUser ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                         ) : schoolName ? (
                           schoolName
                         ) : (
@@ -311,7 +312,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             {(isLoading || isLoadingUser) ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <LoadingSpinner size="md" className="text-muted-foreground" />
               </div>
             ) : allMenuItems.length > 0 ? (
               <SidebarMenu>
@@ -364,7 +365,7 @@ export function AppSidebar() {
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">
                     {isLoadingUser ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <LoadingSpinner size="sm" />
                     ) : userInfo?.fullName ? (
                       userInfo.fullName
                     ) : userInfo?.email ? (

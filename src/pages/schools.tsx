@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -197,7 +197,7 @@ export default function SchoolsPage() {
   }
 
   if (isLoading) {
-    return <LoadingState />
+    return <Loading variant="list" />
   }
 
   return (

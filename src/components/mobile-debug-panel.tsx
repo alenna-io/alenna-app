@@ -1,8 +1,9 @@
 import * as React from "react"
 import { useUser } from "@/contexts/UserContext"
-import { X, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
+import { X, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { LoadingSpinner } from "@/components/ui/loading"
 
 // Store logs in localStorage for mobile debugging
 const DEBUG_LOG_KEY = 'alenna_debug_logs'
@@ -169,7 +170,7 @@ export function MobileDebugPanel() {
                 <div className="bg-muted p-3 rounded text-xs space-y-1">
                   <div>
                     <strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}
-                    {isLoading && <Loader2 className="h-3 w-3 inline ml-1 animate-spin" />}
+                    {isLoading && <LoadingSpinner size="sm" className="inline ml-1" />}
                   </div>
                   <div>
                     <strong>Error:</strong> {error || 'None'}

@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -204,7 +204,7 @@ export default function ProjectionsPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <LoadingState variant="list" />
+    return <Loading variant="list" />
   }
 
   if (!isTeacherOrAdmin) {

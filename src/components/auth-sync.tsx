@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useApi } from '@/services/api';
-import { LoadingState } from '@/components/ui/loading-state';
+import { Loading } from '@/components/ui/loading';
 import { ErrorAlert } from '@/components/ui/error-alert';
 
 interface AuthSyncProps {
@@ -40,7 +40,7 @@ export function AuthSync({ children }: AuthSyncProps) {
   if (syncStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <LoadingState variant="default" />
+        <Loading />
       </div>
     );
   }

@@ -2,7 +2,7 @@ import * as React from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BackButton } from "@/components/ui/back-button"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { Navigate } from "react-router-dom"
 import { ErrorAlert } from "@/components/ui/error-alert"
@@ -80,7 +80,7 @@ export default function ProjectionListPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <LoadingState variant="list" />
+    return <Loading variant="list" />
   }
 
   if (error || !student) {

@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -78,7 +78,7 @@ export default function MyProfilePage() {
   }, [userInfo])
 
   if (isLoadingUser || status === 'loading') {
-    return <LoadingState variant="profile" />
+    return <Loading variant="profile" />
   }
 
   if (status === 'error') {

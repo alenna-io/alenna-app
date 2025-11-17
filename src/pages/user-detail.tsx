@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useParams, useNavigate, Navigate } from "react-router-dom"
 import { UserProfile } from "@/components/user-profile"
-import { LoadingState } from "@/components/ui/loading-state"
+import { Loading } from "@/components/ui/loading"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
 
@@ -40,7 +40,7 @@ export default function UserDetailPage() {
 
   // Show loading state
   if (loading) {
-    return <LoadingState />
+    return <Loading variant="profile" />
   }
 
   // Show permission error if user doesn't have access
