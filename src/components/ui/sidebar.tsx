@@ -1,5 +1,4 @@
-"use client"
-
+/* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { type VariantProps, cva } from "class-variance-authority"
@@ -135,13 +134,15 @@ const SidebarProvider = React.forwardRef<
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
     )
 
+    const activeSidebarWidth = state === "expanded" ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_COLLAPSED
+
     return (
       <SidebarContext.Provider value={contextValue}>
         <TooltipProvider delayDuration={0}>
           <div
             style={
               {
-                "--sidebar-width": SIDEBAR_WIDTH,
+                "--sidebar-width": activeSidebarWidth,
                 "--sidebar-width-icon": SIDEBAR_WIDTH_COLLAPSED,
                 ...style,
               } as React.CSSProperties
@@ -187,9 +188,13 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-screen w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground border-r shrink-0 hidden md:flex",
+            "hidden md:flex h-screen flex-col bg-sidebar text-sidebar-foreground border-r shrink-0",
             className
           )}
+          style={{
+            width: SIDEBAR_WIDTH,
+            ...props.style,
+          } as React.CSSProperties}
           ref={ref}
           {...props}
         >
@@ -222,6 +227,23 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    // Calculate sidebar width based on state and collapsible mode
+    const sidebarWidth = state === "collapsed" && collapsible === "icon"
+      ? SIDEBAR_WIDTH_COLLAPSED
+      : SIDEBAR_WIDTH
+
+    const gapWidth = state === "collapsed" && collapsible === "icon"
+      ? (variant === "floating" || variant === "inset"
+        ? "calc(3rem + 1rem)" // 1rem = theme(spacing.4)
+        : SIDEBAR_WIDTH_COLLAPSED)
+      : SIDEBAR_WIDTH
+
+    const actualSidebarWidth = variant === "floating" || variant === "inset"
+      ? state === "collapsed" && collapsible === "icon"
+        ? "calc(3rem + 1rem + 2px)" // 1rem = theme(spacing.4)
+        : sidebarWidth
+      : sidebarWidth
+
     return (
       <div
         ref={ref}
@@ -234,25 +256,29 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap on desktop - always show for offcanvas on desktop */}
         <div
           className={cn(
-            "relative w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+            "relative bg-transparent transition-[width] duration-200 ease-linear",
+            "group-data-[side=right]:rotate-180"
           )}
+          style={{
+            width: gapWidth,
+          } as React.CSSProperties}
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
             side === "left"
               ? "left-0"
               : "right-0",
             // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "p-2"
+              : "group-data-[side=left]:border-r group-data-[side=right]:border-l",
             className
           )}
+          style={{
+            width: actualSidebarWidth,
+            ...props.style,
+          } as React.CSSProperties}
           {...props}
         >
           <div
@@ -327,24 +353,11 @@ const SidebarInset = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
-  const { state, isMobile } = useSidebar()
-
-  // Calculate the padding based on sidebar state and device type
-  // On mobile: always use 0 padding (mobile sidebar is overlay)
-  // On desktop: use sidebar width when expanded, 0 when collapsed
-  const paddingLeft = isMobile
-    ? "0rem"
-    : state === "expanded" ? SIDEBAR_WIDTH : "0rem"
-
   return (
     <main
       ref={ref}
-      style={{
-        paddingLeft: paddingLeft,
-        ...props.style,
-      } as React.CSSProperties}
       className={cn(
-        "relative flex w-full flex-1 flex-col bg-background",
+        "relative flex flex-1 flex-col bg-background",
         "md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
