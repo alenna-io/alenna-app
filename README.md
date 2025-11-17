@@ -148,18 +148,20 @@ A comprehensive daily goal tracking system integrated with the PACE projections:
 ### 🎯 Goal Planning
 - **Daily Structure** - Track goals for Monday through Friday
 - **Subject Coverage** - All 6 subjects (Math, English, Science, Social Studies, Word Building, Spanish)
-- **Flexible Input** - Support for page ranges (1-1000) or "Self Test"
+- **Flexible Input** - Support for page ranges (1-1000), ST, or T
 - **Auto-calculation** - Automatic daily page totals
 - **One Table Per Week** - Organized by student, quarter, and week
 
 ### ✍️ Input Formats
 - **Page Ranges** - Enter any range from 1-1000 (e.g., "1-10", "45-67", "999-1000")
-- **Self Test** - Special option that counts as 3 pages
+- **ST** - Self Test option that counts as 3 pages
+- **T** - Test option that counts as 1 page
 - **Single Pages** - Enter individual page numbers (e.g., "500")
 - **Smart Validation** - Real-time input validation with visual feedback:
   - ✅ "1-10" → 10 pages
   - ✅ "45-67" → 23 pages
-  - ✅ "Self Test" → 3 pages
+  - ✅ "ST" → 3 pages
+  - ✅ "T" → 1 page
   - ✅ "500" → 1 page
   - ❌ "0-5" (0 not allowed)
   - ❌ "01-10" (no leading zeros)
@@ -176,7 +178,7 @@ A comprehensive daily goal tracking system integrated with the PACE projections:
   - Red pencil icon for active notes
   - Enhanced red note box with "PENDIENTE" label
   - Add notes for partially completed goals
-  - Notes persist until marked complete
+  - Notes automatically complete when goal is marked complete
   
 - **Notes History**:
   - Orange history icon when only archived notes exist
@@ -188,7 +190,8 @@ A comprehensive daily goal tracking system integrated with the PACE projections:
 - **Automatic Totals** - Daily page totals calculated in real-time
 - **Smart Parsing**:
   - Page ranges: "45-46" → 2 pages (46 - 45 + 1)
-  - Self Test: "Self Test" → 3 pages (fixed)
+  - ST: "ST" → 3 pages (fixed)
+  - T: "T" → 1 page (fixed)
   - Single pages: "5" → 1 page
   - Empty: "" → 0 pages
 - **Non-editable Total** - Total column is read-only and auto-calculated
@@ -367,7 +370,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ```typescript
 // Navigate to Daily Goals page
 // Click on any cell to set a goal
-// Enter a page range (e.g., "1-10") or "Self Test"
+// Enter a page range (e.g., "1-10"), ST, or T
 // Click green check to save
 ```
 
@@ -383,7 +386,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 // Click pencil icon on a goal
 // Enter note for partially completed work
 // Note appears in red "PENDIENTE" box
-// Click checkbox on note to mark complete
+// Note automatically completes when goal is marked complete
 ```
 
 #### Viewing Notes History
@@ -415,9 +418,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   - Format: `start-end` where both are 1-1000
   - Start must be ≤ end
   - Example: "1-10", "45-67", "999-1000"
-- **Self Test**: 
-  - Case insensitive ("Self Test", "self test", "SELF TEST")
+- **ST (Self Test)**: 
+  - Case insensitive ("ST", "st", "St")
   - Fixed value of 3 pages
+- **T (Test)**: 
+  - Case insensitive ("T", "t")
+  - Fixed value of 1 page
 - **Single Pages**:
   - Format: Single number 1-1000
   - Example: "5", "100", "500"

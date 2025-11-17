@@ -50,6 +50,7 @@ export function ACEQuarterlyTable({
   onDeletePace
 }: QuarterlyTableProps) {
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
+  const dragImageRef = React.useRef<HTMLDivElement | null>(null)
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
@@ -455,20 +456,97 @@ export function ACEQuarterlyTable({
                         key={weekIndex}
                         className="py-1.5 px-2 text-center align-middle border border-gray-300"
                         draggable={!isReadOnly && !!pace}
-                        onDragStart={() => !isReadOnly && setDraggedPace({ subject, weekIndex })}
+                        onDragStart={(e) => {
+                          if (!isReadOnly && pace) {
+                            setDraggedPace({ subject, weekIndex })
+
+                            // Create a custom drag image
+                            const dragPreview = document.createElement('div')
+                            dragPreview.style.position = 'absolute'
+                            dragPreview.style.top = '-1000px'
+                            dragPreview.style.left = '-1000px'
+                            dragPreview.style.padding = '8px 12px'
+                            dragPreview.style.background = pace.isCompleted
+                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                              : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)'
+                            dragPreview.style.border = pace.isCompleted
+                              ? '2px solid #059669'
+                              : '2px solid #9ca3af'
+                            dragPreview.style.borderRadius = '6px'
+                            dragPreview.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)'
+                            dragPreview.style.fontFamily = 'monospace'
+                            dragPreview.style.fontSize = '14px'
+                            dragPreview.style.fontWeight = '600'
+                            dragPreview.style.color = pace.isCompleted ? '#ffffff' : '#1f2937'
+                            dragPreview.style.opacity = '0.95'
+                            dragPreview.style.transform = 'rotate(5deg)'
+                            dragPreview.style.zIndex = '10000'
+                            dragPreview.textContent = pace.number
+
+                            document.body.appendChild(dragPreview)
+                            dragImageRef.current = dragPreview
+
+                            // Set custom drag image
+                            e.dataTransfer.effectAllowed = 'move'
+                            e.dataTransfer.setDragImage(dragPreview, dragPreview.offsetWidth / 2, dragPreview.offsetHeight / 2)
+
+                            // Add visual feedback to the source cell
+                            e.currentTarget.style.opacity = '0.5'
+                            e.currentTarget.style.cursor = 'grabbing'
+                          }
+                        }}
                         onDragOver={(e) => {
                           if (draggedPace && draggedPace.subject === subject) {
                             e.preventDefault()
+                            e.dataTransfer.dropEffect = 'move'
+                            // Add visual feedback to drop target
+                            if (draggedPace.weekIndex !== weekIndex) {
+                              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
+                              e.currentTarget.style.borderColor = '#3b82f6'
+                            }
                           }
+                        }}
+                        onDragLeave={(e) => {
+                          // Remove visual feedback when leaving drop target
+                          e.currentTarget.style.backgroundColor = ''
+                          e.currentTarget.style.borderColor = ''
                         }}
                         onDrop={(e) => {
                           e.preventDefault()
+                          // Remove visual feedback
+                          e.currentTarget.style.backgroundColor = ''
+                          e.currentTarget.style.borderColor = ''
+
+                          // Clean up drag image
+                          if (dragImageRef.current && dragImageRef.current.parentNode) {
+                            document.body.removeChild(dragImageRef.current)
+                            dragImageRef.current = null
+                          }
+
                           if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
                             onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                           }
                           setDraggedPace(null)
                         }}
-                        onDragEnd={() => setDraggedPace(null)}
+                        onDragEnd={(e) => {
+                          setDraggedPace(null)
+                          // Restore source cell appearance
+                          e.currentTarget.style.opacity = '1'
+                          e.currentTarget.style.cursor = ''
+                          // Clean up drag image
+                          if (dragImageRef.current && dragImageRef.current.parentNode) {
+                            document.body.removeChild(dragImageRef.current)
+                            dragImageRef.current = null
+                          }
+                          // Also clean up any drop target highlighting
+                          const allCells = e.currentTarget.closest('table')?.querySelectorAll('td')
+                          allCells?.forEach(cell => {
+                            if (cell instanceof HTMLElement) {
+                              cell.style.backgroundColor = ''
+                              cell.style.borderColor = ''
+                            }
+                          })
+                        }}
                         // Touch handlers for mobile/iPad
                         onTouchStart={(e) => {
                           if (!isReadOnly && pace) {

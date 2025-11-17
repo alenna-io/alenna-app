@@ -25,9 +25,14 @@ const calculatePagesFromValue = (value: string): number => {
 
   const trimmedValue = value.trim()
 
-  // Check for "Self Test" (case insensitive)
-  if (/^self\s*test$/i.test(trimmedValue)) {
+  // Check for "ST" (Self Test) - case insensitive
+  if (/^st$/i.test(trimmedValue)) {
     return 3
+  }
+
+  // Check for "T" (Test) - case insensitive
+  if (/^t$/i.test(trimmedValue)) {
+    return 1
   }
 
   // Check for range format (e.g., "45-46", "1-10") - must be valid numbers 1-1000
@@ -341,55 +346,6 @@ export default function DailyGoalsPage() {
     }
   }
 
-  const handleNotesToggle = async (subject: string, dayIndex: number) => {
-    if (!studentId || !projectionId || !quarter || !week) return
-
-    const currentGoal = goalsData[subject]?.[dayIndex]
-    if (!currentGoal?.id || !currentGoal.notes) return
-
-    // OPTIMISTIC UPDATE: Immediately complete the note in the UI
-    const updatedGoalsData = { ...goalsData }
-    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
-    updatedGoalsData[subject][dayIndex] = {
-      ...currentGoal,
-      notes: undefined,
-      notesCompleted: true,
-      notesHistory: [
-        ...(currentGoal.notesHistory || []),
-        { text: currentGoal.notes, completedDate: new Date().toISOString() }
-      ]
-    }
-    setGoalsData(updatedGoalsData)
-
-    try {
-      // Add note to history and clear current note
-      await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
-      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
-        notes: undefined,
-        notesCompleted: true
-      })
-
-      toast.success("Nota completada")
-
-      // Refresh data to ensure consistency
-      const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
-      setGoalsData(data)
-    } catch (err) {
-      console.error('Error completing notes:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to complete notes'
-
-      toast.error(`Error: ${errorMessage}`)
-      setError(errorMessage)
-
-      // ROLLBACK: Reload data to revert UI on error
-      try {
-        const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
-        setGoalsData(data)
-      } catch (reloadErr) {
-        console.error('Error reloading after failed notes toggle:', reloadErr)
-      }
-    }
-  }
 
 
 
@@ -456,7 +412,6 @@ export default function DailyGoalsPage() {
           onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
           onGoalToggle={canEdit ? handleGoalToggle : undefined}
           onNotesUpdate={canEdit ? handleNotesUpdate : undefined}
-          onNotesToggle={canEdit ? handleNotesToggle : undefined}
           dayTotals={calculateDayTotal}
         />
       )}

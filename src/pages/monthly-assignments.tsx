@@ -107,27 +107,44 @@ export default function MonthlyAssignmentsPage() {
       return
     }
 
+    const assignmentName = newAssignmentName.trim()
+    const quarter = selectedQuarter
+
+    // OPTIMISTIC UPDATE: Immediately add the new assignment to the UI
+    const optimisticTemplate: MonthlyAssignmentTemplate = {
+      id: `temp-${Date.now()}`, // Temporary ID
+      name: assignmentName,
+      quarter: quarter,
+      schoolYearId: selectedSchoolYearId,
+      hasGrades: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    setTemplates(prev => [...prev, optimisticTemplate])
+
+    // Close dialog and reset form immediately
+    setAddDialogOpen(false)
+    setNewAssignmentName("")
+    setSelectedQuarter("")
+
     try {
       setSaving(true)
       const result = await api.schoolMonthlyAssignments.createTemplate({
-        name: newAssignmentName.trim(),
-        quarter: selectedQuarter,
+        name: assignmentName,
+        quarter: quarter,
         schoolYearId: selectedSchoolYearId,
       })
 
       toast.success(`Asignación creada exitosamente. Aplicada a ${result.studentsAffected} estudiantes.`)
 
-      // Reload templates
+      // Reload templates to get the real data from server
       const updatedTemplates = await api.schoolMonthlyAssignments.getTemplates(selectedSchoolYearId)
       setTemplates(updatedTemplates)
-
-      // Reset form
-      setAddDialogOpen(false)
-      setNewAssignmentName("")
-      setSelectedQuarter("")
     } catch (error) {
       console.error('Error creating assignment:', error)
       toast.error(error instanceof Error ? error.message : 'Error al crear asignación')
+      // ROLLBACK: Remove the optimistic template on error
+      setTemplates(prev => prev.filter(t => t.id !== optimisticTemplate.id))
     } finally {
       setSaving(false)
     }
@@ -225,8 +242,13 @@ export default function MonthlyAssignmentsPage() {
         </CardHeader>
         <CardContent>
           <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
-            <SelectTrigger className="w-full md:w-[300px]">
-              <SelectValue placeholder="Selecciona un año escolar" />
+            <SelectTrigger className="w-full md:w-[300px] [&>span]:!line-clamp-none">
+              <span className="flex items-center gap-2 flex-1 min-w-0">
+                <SelectValue placeholder="Selecciona un año escolar" className="flex-1 min-w-0" />
+                {selectedSchoolYear?.isActive && (
+                  <Badge className="shrink-0">Activo</Badge>
+                )}
+              </span>
             </SelectTrigger>
             <SelectContent>
               {schoolYears.map(year => (
