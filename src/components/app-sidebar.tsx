@@ -237,6 +237,21 @@ export function AppSidebar() {
     })
   }
 
+  // Add report cards menu item for users with permission
+  // For teachers/admins, they can access report cards from the projections page
+  // For parents/students, they can access from their profile/students list
+  // We'll add a general "Boletas" menu item that links to a list page
+  if (userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn'))) {
+    // For now, we'll add it for teachers/admins - parents/students can access via their profile
+    if (isTeacherOrAdmin) {
+      dynamicMenuItems.push({
+        title: "Boletas",
+        url: "/report-cards",
+        icon: FileText,
+      })
+    }
+  }
+
   const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
   const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"

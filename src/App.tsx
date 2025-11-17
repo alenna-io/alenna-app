@@ -19,6 +19,9 @@ import UserDetailPage from '@/pages/user-detail'
 import SchoolsPage from '@/pages/schools'
 import MyProfilePage from '@/pages/my-profile'
 import MonthlyAssignmentsPage from '@/pages/monthly-assignments'
+import ReportCardsListPage from '@/pages/report-cards-list'
+import ReportCardDetailPage from '@/pages/report-card-detail'
+import ReportCardsPage from '@/pages/report-cards'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
@@ -82,6 +85,9 @@ export default function App() {
           <Route path="schools/:schoolId/students" element={<StudentsPage />} />
           <Route path="schools/:schoolId/teachers" element={<UsersPage />} />
           <Route path="monthly-assignments" element={<MonthlyAssignmentsPage />} />
+          <Route path="report-cards" element={<ReportCardsPage />} />
+          <Route path="students/:studentId/report-cards" element={<ReportCardsListPage />} />
+          <Route path="students/:studentId/report-cards/:projectionId" element={<ReportCardDetailPage />} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>

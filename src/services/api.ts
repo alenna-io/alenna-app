@@ -333,6 +333,12 @@ export const monthlyAssignmentsApi = {
     }),
 };
 
+// Report Cards API
+export const reportCardsApi = {
+  get: (studentId: string, projectionId: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/report-card`, token),
+};
+
 // School Monthly Assignments API
 export const schoolMonthlyAssignmentsApi = {
   getTemplates: (schoolYearId: string, token: string | null) =>
@@ -666,6 +672,12 @@ export function useApi() {
       delete: async (studentId: string, projectionId: string, assignmentId: string) => {
         const token = await getToken();
         return monthlyAssignmentsApi.delete(studentId, projectionId, assignmentId, token);
+      },
+    },
+    reportCards: {
+      get: async (studentId: string, projectionId: string) => {
+        const token = await getToken();
+        return reportCardsApi.get(studentId, projectionId, token);
       },
     },
     // Users API
