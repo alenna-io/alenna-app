@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Navigate } from "react-router-dom"
-import { Download, Printer } from "lucide-react"
+import { Download } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { ReportCardTable } from "@/components/report-card-table"
@@ -118,10 +118,6 @@ export default function ReportCardDetailPage() {
     return userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')
   }, [userInfo])
 
-  const handlePrint = () => {
-    window.print()
-  }
-
   const handleExport = async () => {
     if (!reportCard) return
 
@@ -201,7 +197,7 @@ export default function ReportCardDetailPage() {
   const backDestination = isStudentOnly ? '/my-profile' : `/students/${studentId}/report-cards`
 
   return (
-    <div className="space-y-4 md:space-y-6 print:space-y-2">
+    <div className="space-y-4 md:space-y-6 print:space-y-2 bg-blue-50 min-h-screen">
       {/* Mobile back button */}
       <div className="md:hidden print:hidden">
         <BackButton to={backDestination}>
@@ -218,14 +214,10 @@ export default function ReportCardDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimir
-          </Button>
           <Button
-            variant="outline"
             onClick={handleExport}
             disabled={isExporting}
+            className="bg-blue-500 hover:bg-blue-600 text-white"
           >
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? "Exportando..." : "Exportar"}

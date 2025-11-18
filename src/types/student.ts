@@ -16,6 +16,7 @@ export interface Student {
   contactPhone: string
   isLeveled: boolean
   expectedLevel?: string
+  currentLevel?: string
   address: string
 }
 

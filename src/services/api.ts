@@ -98,6 +98,23 @@ export const paceCatalogApi = {
   },
 };
 
+// SubSubjects API
+export const subSubjectsApi = {
+  getAll: (token: string | null) => apiFetch('/sub-subjects', token),
+};
+
+// Projection Templates API
+export const projectionTemplatesApi = {
+  getAll: (token: string | null, level?: string) => {
+    const query = level ? `?level=${level}` : '';
+    return apiFetch(`/projection-templates${query}`, token);
+  },
+  getByLevel: (level: string, token: string | null) =>
+    apiFetch(`/projection-templates/level/${level}`, token),
+  getById: (id: string, token: string | null) =>
+    apiFetch(`/projection-templates/${id}`, token),
+};
+
 // Modules API
 export interface ModuleData {
   id: string;
@@ -460,11 +477,66 @@ export function useApi() {
         const token = await getToken();
         return projectionsApi.removePace(studentId, projectionId, paceId, token);
       },
+      generate: async (data: {
+        studentId: string;
+        schoolYear: string;
+        subjects: Array<{
+          subSubjectId: string;
+          subSubjectName: string;
+          startPace: number;
+          endPace: number;
+          skipPaces: number[];
+          notPairWith: string[];
+          groupedWith?: string[];
+        }>;
+      }) => {
+        const token = await getToken();
+        return apiFetch('/projections/generate', token, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+      generateFromDefaultTemplate: async (data: {
+        studentId: string;
+        schoolYear: string;
+        templateId: string;
+      }) => {
+        const token = await getToken();
+        return apiFetch('/projections/generate-from-default-template', token, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
     },
     paceCatalog: {
-      get: async (filters: { category?: string, level?: string } = {}) => {
+      get: async (filters: { category?: string, level?: string, subSubjectId?: string } = {}) => {
         const token = await getToken();
-        return paceCatalogApi.get(filters, token);
+        const params = new URLSearchParams();
+        if (filters.category) params.append('category', filters.category);
+        if (filters.level) params.append('level', filters.level);
+        if (filters.subSubjectId) params.append('subSubjectId', filters.subSubjectId);
+        const query = params.toString();
+        return apiFetch(`/pace-catalog${query ? '?' + query : ''}`, token);
+      },
+    },
+    subjects: {
+      getAll: async () => {
+        const token = await getToken();
+        return subSubjectsApi.getAll(token);
+      },
+    },
+    projectionTemplates: {
+      getAll: async (level?: string) => {
+        const token = await getToken();
+        return projectionTemplatesApi.getAll(token, level);
+      },
+      getByLevel: async (level: string) => {
+        const token = await getToken();
+        return projectionTemplatesApi.getByLevel(level, token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return projectionTemplatesApi.getById(id, token);
       },
     },
     modules: {
