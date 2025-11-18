@@ -26,7 +26,7 @@ export function CreateProjectionDialog({
 }: CreateProjectionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Crear Proyección</DialogTitle>
           <DialogDescription>

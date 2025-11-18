@@ -488,6 +488,7 @@ export function useApi() {
           skipPaces: number[];
           notPairWith: string[];
           groupedWith?: string[];
+          difficulty?: number;
         }>;
       }) => {
         const token = await getToken();
