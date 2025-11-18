@@ -77,6 +77,22 @@ export default function ACEProjectionPage() {
     return Array.from(ids)
   }, [projectionDetail])
 
+  // Build subject to category mapping
+  const subjectToCategory = React.useMemo(() => {
+    const mapping = new Map<string, string>()
+    if (projectionDetail) {
+      Object.values(projectionDetail.quarters).forEach(quarter => {
+        Object.entries(quarter).forEach(([subject, weekPaces]) => {
+          const firstPace = weekPaces.find(p => p !== null)
+          if (firstPace && firstPace.category) {
+            mapping.set(subject, firstPace.category)
+          }
+        })
+      })
+    }
+    return mapping
+  }, [projectionDetail])
+
   // Fetch user info to check if parent
   React.useEffect(() => {
     const fetchUserInfo = async () => {
@@ -627,6 +643,32 @@ export default function ACEProjectionPage() {
         )}
       </div>
 
+      {/* Total Paces Summary */}
+      {projectionDetail && (() => {
+        // Calculate total paces across all quarters
+        let totalPaces = 0
+        Object.values(projectionDetail.quarters).forEach(quarter => {
+          Object.values(quarter).forEach(weekPaces => {
+            weekPaces.forEach(pace => {
+              if (pace !== null) {
+                totalPaces++
+              }
+            })
+          })
+        })
+
+        return (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm font-medium text-blue-900">Total de Lecciones del Año Escolar:</span>
+                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
+
       {/* PACE Picker Dialog */}
       {pacePickerContext && (
         <PacePickerDialog
@@ -647,10 +689,10 @@ export default function ACEProjectionPage() {
       <Tabs defaultValue={currentQuarter || "Q1"} className="space-y-4 md:space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
-            <TabsTrigger value="Q1" className="flex-shrink-0">Bloque 1</TabsTrigger>
-            <TabsTrigger value="Q2" className="flex-shrink-0">Bloque 2</TabsTrigger>
-            <TabsTrigger value="Q3" className="flex-shrink-0">Bloque 3</TabsTrigger>
-            <TabsTrigger value="Q4" className="flex-shrink-0">Bloque 4</TabsTrigger>
+            <TabsTrigger value="Q1" className="shrink-0">Bloque 1</TabsTrigger>
+            <TabsTrigger value="Q2" className="shrink-0">Bloque 2</TabsTrigger>
+            <TabsTrigger value="Q3" className="shrink-0">Bloque 3</TabsTrigger>
+            <TabsTrigger value="Q4" className="shrink-0">Bloque 4</TabsTrigger>
           </TabsList>
         </div>
 
@@ -661,6 +703,7 @@ export default function ACEProjectionPage() {
             data={projectionData.Q1}
             isActive={currentQuarter === "Q1"}
             currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
+            subjectToCategory={subjectToCategory}
             onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
             onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
@@ -683,6 +726,7 @@ export default function ACEProjectionPage() {
             data={projectionData.Q2}
             isActive={currentQuarter === "Q2"}
             currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
+            subjectToCategory={subjectToCategory}
             onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
             onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
@@ -705,6 +749,7 @@ export default function ACEProjectionPage() {
             data={projectionData.Q3}
             isActive={currentQuarter === "Q3"}
             currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
+            subjectToCategory={subjectToCategory}
             onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
             onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
@@ -727,6 +772,7 @@ export default function ACEProjectionPage() {
             data={projectionData.Q4}
             isActive={currentQuarter === "Q4"}
             currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
+            subjectToCategory={subjectToCategory}
             onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
             onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}

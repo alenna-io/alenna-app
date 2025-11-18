@@ -21,6 +21,7 @@ interface QuarterlyTableProps {
   currentWeek?: number // 1-9 for the current week in this quarter, undefined if not current
   isActive?: boolean // Whether this quarter contains the current week
   isReadOnly?: boolean // Read-only mode for parents
+  subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -43,6 +44,7 @@ export function ACEQuarterlyTable({
   currentWeek,
   isActive = false,
   isReadOnly = false,
+  subjectToCategory,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -451,7 +453,16 @@ export function ACEQuarterlyTable({
                     <td
                       className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
                     >
-                      {subject}
+                      <div className="flex flex-col">
+                        <span className="text-base font-bold">
+                          {subjectToCategory?.get(subject) || subject}
+                        </span>
+                        {subjectToCategory?.get(subject) && (
+                          <span className="text-xs font-normal opacity-75">
+                            {subject}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     {data[subject].map((pace, weekIndex) => (
                       <td

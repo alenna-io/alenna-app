@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, X, Eye, AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Check, ChevronsUpDown, ChevronDown, ChevronUp } from "lucide-react"
+import { Plus, Trash2, Eye, AlertCircle, ChevronLeft, ChevronRight, CheckCircle2, Check, ChevronsUpDown, ChevronDown, ChevronUp } from "lucide-react"
 import { useApi } from "@/services/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
@@ -398,8 +398,28 @@ export default function GenerateProjectionWizardPage() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (validateStep(currentStep)) {
+      // If moving from step 1 to step 2, check for existing projection
+      if (currentStep === 1 && formData.studentId && activeSchoolYear) {
+        try {
+          const existingProjections = await api.projections.getByStudentId(formData.studentId)
+          const hasActiveProjection = (existingProjections as Array<{ schoolYear: string; isActive: boolean }>).some(
+            p => p.schoolYear === activeSchoolYear.name && p.isActive
+          )
+
+          if (hasActiveProjection) {
+            const errorMsg = `El estudiante ya tiene una proyección activa para el año escolar ${activeSchoolYear.name}. Debe desactivar o eliminar la proyección existente antes de crear una nueva.`
+            setError(errorMsg)
+            toast.error(errorMsg)
+            return
+          }
+        } catch (err) {
+          console.error("Error checking existing projections:", err)
+          // Continue anyway - the backend will catch it if there's actually a conflict
+        }
+      }
+
       if (currentStep < 4) {
         setCurrentStep((prev) => (prev + 1) as WizardStep)
       }
@@ -1114,33 +1134,32 @@ export default function GenerateProjectionWizardPage() {
                             {formData.subjects.length > 1 && (
                               <div className="space-y-2">
                                 <Label>No Emparejar Con</Label>
-                                <div className="flex flex-wrap gap-2 mt-2">
+                                <div className="space-y-2 mt-2">
                                   {formData.subjects.map((otherSubject, otherIndex) => {
                                     if (otherIndex === index || !otherSubject.subSubjectId) return null
                                     const isChecked = subject.notPairWith.includes(
                                       otherSubject.subSubjectId
                                     )
                                     return (
-                                      <Button
-                                        key={otherIndex}
-                                        type="button"
-                                        variant={isChecked ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() =>
-                                          handleNotPairWithChange(
-                                            index,
-                                            otherSubject.subSubjectId,
-                                            !isChecked
-                                          )
-                                        }
-                                        className={isChecked
-                                          ? "bg-yellow-200 hover:bg-yellow-300 text-yellow-900 border-yellow-400"
-                                          : "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-400"
-                                        }
-                                      >
-                                        {otherSubject.subSubjectName || `Materia ${otherIndex + 1}`}
-                                        {isChecked && <X className="h-3 w-3 ml-1" />}
-                                      </Button>
+                                      <div key={otherIndex} className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id={`not-pair-${index}-${otherIndex}`}
+                                          checked={isChecked}
+                                          onCheckedChange={(checked) =>
+                                            handleNotPairWithChange(
+                                              index,
+                                              otherSubject.subSubjectId,
+                                              checked === true
+                                            )
+                                          }
+                                        />
+                                        <Label
+                                          htmlFor={`not-pair-${index}-${otherIndex}`}
+                                          className="text-sm font-normal cursor-pointer"
+                                        >
+                                          {otherSubject.subSubjectName || `Materia ${otherIndex + 1}`}
+                                        </Label>
+                                      </div>
                                     )
                                   })}
                                 </div>

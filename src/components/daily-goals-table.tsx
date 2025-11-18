@@ -11,6 +11,7 @@ interface DailyGoalsTableProps {
   week: number
   data: DailyGoalData
   subjects: string[]
+  subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   onGoalUpdate?: (subject: string, dayIndex: number, value: string) => void
   onGoalToggle?: (subject: string, dayIndex: number) => void
   onNotesUpdate?: (subject: string, dayIndex: number, notes: string) => void
@@ -31,6 +32,7 @@ export function DailyGoalsTable({
   week,
   data,
   subjects,
+  subjectToCategory,
   onGoalUpdate,
   onGoalToggle,
   onNotesUpdate,
@@ -184,7 +186,16 @@ export function DailyGoalsTable({
                     key={subject}
                     className="text-center p-2 font-semibold min-w-[100px] border border-gray-300"
                   >
-                    {subject}
+                    <div className="flex flex-col">
+                      <span className="text-base font-bold">
+                        {subjectToCategory?.get(subject) || subject}
+                      </span>
+                      {subjectToCategory?.get(subject) && (
+                        <span className="text-xs font-normal opacity-75">
+                          {subject}
+                        </span>
+                      )}
+                    </div>
                   </th>
                 ))}
                 <th className="text-center p-2 font-semibold w-20 border border-gray-300 bg-blue-100">

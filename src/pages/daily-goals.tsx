@@ -70,6 +70,7 @@ export default function DailyGoalsPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [canEdit, setCanEdit] = React.useState(false)
+  const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
   // Initialize student from location state if available (passed from ACE Projection)
   const [student, setStudent] = React.useState<Student | null>(locationState?.student || null)
 
@@ -133,6 +134,7 @@ export default function DailyGoalsPage() {
 
       try {
         const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+        setProjectionDetail(detail)
         setStudent({
           id: detail.studentId,
           name: detail.student.fullName,
@@ -167,6 +169,22 @@ export default function DailyGoalsPage() {
     })
     return dayTotals
   }, [goalsData])
+
+  // Build subject to category mapping
+  const subjectToCategory = React.useMemo(() => {
+    const mapping = new Map<string, string>()
+    if (projectionDetail) {
+      Object.values(projectionDetail.quarters).forEach(quarter => {
+        Object.entries(quarter).forEach(([subject, weekPaces]) => {
+          const firstPace = weekPaces.find(p => p !== null)
+          if (firstPace && firstPace.category) {
+            mapping.set(subject, firstPace.category)
+          }
+        })
+      })
+    }
+    return mapping
+  }, [projectionDetail])
 
   const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
@@ -405,6 +423,7 @@ export default function DailyGoalsPage() {
           week={parseInt(week || "1")}
           data={goalsData}
           subjects={Object.keys(goalsData)}
+          subjectToCategory={subjectToCategory}
           onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
           onGoalToggle={canEdit ? handleGoalToggle : undefined}
           onNotesUpdate={canEdit ? handleNotesUpdate : undefined}
