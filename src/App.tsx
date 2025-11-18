@@ -22,6 +22,7 @@ import MonthlyAssignmentsPage from '@/pages/monthly-assignments'
 import ReportCardsListPage from '@/pages/report-cards-list'
 import ReportCardDetailPage from '@/pages/report-card-detail'
 import ReportCardsPage from '@/pages/report-cards'
+import GenerateProjectionWizardPage from '@/pages/generate-projection-wizard'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="students" element={<StudentsPage />} />
           <Route path="students/:studentId" element={<StudentsPage />} />
           <Route path="projections" element={<ProjectionsPage />} />
+          <Route path="projections/generate" element={<GenerateProjectionWizardPage />} />
           <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
           <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
           <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />

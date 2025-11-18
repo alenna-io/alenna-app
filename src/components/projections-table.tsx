@@ -1,16 +1,18 @@
+import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { BookOpen, ChevronsUpDown, ChevronLeft, MoreVertical, Eye } from "lucide-react"
+import { BookOpen, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 interface ProjectionWithStudent {
   id: string
@@ -33,6 +35,7 @@ interface ProjectionWithStudent {
 interface ProjectionsTableProps {
   projections: ProjectionWithStudent[]
   onProjectionSelect: (projection: ProjectionWithStudent) => void
+  onProjectionDelete?: (projection: ProjectionWithStudent) => Promise<void>
   sortField: "firstName" | "lastName" | null
   sortDirection: "asc" | "desc"
   onSort: (field: "firstName" | "lastName") => void
@@ -58,6 +61,7 @@ const COLUMNS: ColumnConfig[] = [
 export function ProjectionsTable({
   projections,
   onProjectionSelect,
+  onProjectionDelete,
   sortField,
   sortDirection,
   onSort,
@@ -66,6 +70,8 @@ export function ProjectionsTable({
   totalItems,
   onPageChange
 }: ProjectionsTableProps) {
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [projectionToDelete, setProjectionToDelete] = React.useState<ProjectionWithStudent | null>(null)
 
   const getSortIcon = (field: "firstName" | "lastName") => {
     const isActive = sortField === field
@@ -169,7 +175,7 @@ export function ProjectionsTable({
                               onClick={(e) => {
                                 e.stopPropagation()
                               }}
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 cursor-pointer"
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -180,10 +186,24 @@ export function ProjectionsTable({
                                 e.stopPropagation()
                                 onProjectionSelect(projection)
                               }}
+                              className="cursor-pointer"
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Detalles
                             </DropdownMenuItem>
+                            {onProjectionDelete && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setProjectionToDelete(projection)
+                                  setDeleteConfirmOpen(true)
+                                }}
+                                className="text-red-600 focus:text-red-600 bg-red-50 hover:bg-red-100 cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )
@@ -268,6 +288,23 @@ export function ProjectionsTable({
           </LinkButton>
         </div>
       </CardFooter>
+
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Eliminar Proyección"
+        message={`¿Estás seguro de que deseas eliminar la proyección de ${projectionToDelete?.student.name}? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        onConfirm={async () => {
+          if (projectionToDelete && onProjectionDelete) {
+            await onProjectionDelete(projectionToDelete)
+            setDeleteConfirmOpen(false)
+            setProjectionToDelete(null)
+          }
+        }}
+        variant="destructive"
+      />
     </Card>
   )
 }

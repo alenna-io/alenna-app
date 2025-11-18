@@ -37,7 +37,8 @@ const COLUMNS: ColumnConfig[] = [
   { key: 'age', label: 'Edad', sortable: true },
   { key: 'certification', label: 'Certificación', sortable: true },
   { key: 'graduation', label: 'Graduación', sortable: true },
-  { key: 'level', label: 'Nivel', sortable: false },
+  { key: 'nivel', label: 'Nivel', sortable: false },
+  { key: 'gradoEscolar', label: 'Grado Escolar', sortable: false },
   { key: 'actions', label: '', sortable: false },
 ]
 
@@ -176,13 +177,28 @@ export function StudentsTable({
                           {new Date(student.graduationDate).getFullYear()}
                         </div>
                       )
-                    case 'level':
+                    case 'nivel':
                       return (
                         <div className="flex items-center gap-2">
-                          {student.isLeveled && student.expectedLevel && (
+                          {student.currentLevel && (
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                              {student.currentLevel}
+                            </span>
+                          )}
+                          {!student.currentLevel && (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </div>
+                      )
+                    case 'gradoEscolar':
+                      return (
+                        <div className="flex items-center gap-2">
+                          {student.expectedLevel ? (
                             <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                               {student.expectedLevel}
                             </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
                       )
