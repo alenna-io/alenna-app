@@ -423,10 +423,19 @@ export default function GenerateProjectionWizardPage() {
 
     setIsGenerating(true)
     try {
+      // Include difficulty for each subject
+      const subjectsWithDifficulty = formData.subjects.map(subject => {
+        const subjectData = subjects.find(s => s.id === subject.subSubjectId)
+        return {
+          ...subject,
+          difficulty: subjectData?.difficulty || 3, // Default to 3 if not found
+        }
+      })
+
       await api.projections.generate({
         studentId: formData.studentId,
         schoolYear: formData.schoolYear,
-        subjects: formData.subjects,
+        subjects: subjectsWithDifficulty,
       })
       navigate("/projections")
     } catch (error) {
