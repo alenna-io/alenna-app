@@ -10,6 +10,8 @@ import { Download, Printer } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { ReportCardTable } from "@/components/report-card-table"
+import { pdf } from "@react-pdf/renderer"
+import { ReportCardPDF } from "@/components/report-card-pdf"
 
 interface ReportCardSubjectData {
   subject: string
@@ -66,6 +68,9 @@ export default function ReportCardDetailPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
+  const [activeQuarter, setActiveQuarter] = React.useState<string>("Q1")
+  const reportCardRef = React.useRef<HTMLDivElement>(null)
+  const [isExporting, setIsExporting] = React.useState(false)
 
   // Fetch report card data
   React.useEffect(() => {
@@ -117,49 +122,44 @@ export default function ReportCardDetailPage() {
     window.print()
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!reportCard) return
 
-    // Export all quarters - for now export Q1 as example
-    const content = generatePDFContent(reportCard, reportCard.quarters.Q1)
+    setIsExporting(true)
 
-    // Create a blob and download
-    const blob = new Blob([content], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `Boleta_${reportCard.studentName}_${reportCard.schoolYear}.html`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
+    try {
+      // Generate PDF using @react-pdf/renderer
+      const pdfDoc = (
+        <ReportCardPDF
+          studentName={reportCard.studentName}
+          schoolYear={reportCard.schoolYear}
+          quarters={reportCard.quarters}
+        />
+      )
 
-  const generatePDFContent = (data: ReportCardData, quarter: ReportCardQuarterData): string => {
-    // This is a simple HTML export - you could enhance this with a proper PDF library
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Boleta de Calificaciones - ${data.studentName}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h1 { text-align: center; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #4CAF50; color: white; }
-            .header-row { background-color: #FF9800; color: white; }
-          </style>
-        </head>
-        <body>
-          <h1>Boleta de Calificaciones</h1>
-          <p><strong>Estudiante:</strong> ${data.studentName}</p>
-          <p><strong>Año Escolar:</strong> ${data.schoolYear}</p>
-          <p><strong>Trimestre:</strong> ${quarter.quarter}</p>
-          <!-- Add table content here -->
-        </body>
-      </html>
-    `
+      // Generate PDF blob
+      const blob = await pdf(pdfDoc).toBlob()
+
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `Boleta_${reportCard.studentName.replace(
+        /\s+/g,
+        "_"
+      )}_${reportCard.schoolYear}_Completa.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      console.log("[PDF Export] PDF saved successfully with all 4 quarters")
+    } catch (error) {
+      console.error("Error in export process:", error)
+      setError("Error al exportar el PDF. Por favor, inténtalo de nuevo.")
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   if (!hasPermission || !canViewReportCard) {
@@ -222,37 +222,62 @@ export default function ReportCardDetailPage() {
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
             <Download className="h-4 w-4 mr-2" />
-            Exportar
+            {isExporting ? "Exportando..." : "Exportar"}
           </Button>
         </div>
       </div>
 
       {/* Quarterly Tabs */}
-      <Tabs defaultValue="Q1" className="space-y-4 md:space-y-6">
-        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 print:hidden">
-          <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
-            <TabsTrigger value="Q1" className="flex-shrink-0">Bloque 1</TabsTrigger>
-            <TabsTrigger value="Q2" className="flex-shrink-0">Bloque 2</TabsTrigger>
-            <TabsTrigger value="Q3" className="flex-shrink-0">Bloque 3</TabsTrigger>
-            <TabsTrigger value="Q4" className="flex-shrink-0">Bloque 4</TabsTrigger>
-          </TabsList>
-        </div>
+      <div ref={reportCardRef}>
+        <Tabs
+          defaultValue="Q1"
+          value={activeQuarter}
+          onValueChange={setActiveQuarter}
+          className="space-y-4 md:space-y-6"
+        >
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 print:hidden">
+            <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
+              <TabsTrigger value="Q1" className="shrink-0">
+                Bloque 1
+              </TabsTrigger>
+              <TabsTrigger value="Q2" className="shrink-0">
+                Bloque 2
+              </TabsTrigger>
+              <TabsTrigger value="Q3" className="shrink-0">
+                Bloque 3
+              </TabsTrigger>
+              <TabsTrigger value="Q4" className="shrink-0">
+                Bloque 4
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {(['Q1', 'Q2', 'Q3', 'Q4'] as const).map((quarter) => {
-          const quarterData = reportCard.quarters[quarter]
-          return (
-            <TabsContent key={quarter} value={quarter} className="space-y-4 md:space-y-6">
-              <ReportCardTable
-                studentName={reportCard.studentName}
-                schoolYear={reportCard.schoolYear}
-                quarter={quarterData}
-              />
-            </TabsContent>
-          )
-        })}
-      </Tabs>
+          {(["Q1", "Q2", "Q3", "Q4"] as const).map((quarter) => {
+            const quarterData = reportCard.quarters[quarter]
+            return (
+              <TabsContent
+                key={quarter}
+                value={quarter}
+                className="space-y-4 md:space-y-6"
+              >
+                <div data-quarter={quarter}>
+                  <ReportCardTable
+                    studentName={reportCard.studentName}
+                    schoolYear={reportCard.schoolYear}
+                    quarter={quarterData}
+                  />
+                </div>
+              </TabsContent>
+            )
+          })}
+        </Tabs>
+      </div>
     </div>
   )
 }
