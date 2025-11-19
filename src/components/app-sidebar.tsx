@@ -188,6 +188,11 @@ export function AppSidebar() {
     const hasActions = (module.actions?.length ?? 0) > 0
     if (!hasActions) return false
 
+    // SUPERADMIN can only see: users, schools, and configuration
+    if (isSuperAdmin) {
+      return module.key === 'users' || module.key === 'schools' || module.key === 'configuration'
+    }
+
     // Usuarios module only for Super Admins
     if (module.key === 'users' && !isSuperAdmin) {
       return false
@@ -265,6 +270,16 @@ export function AppSidebar() {
 
   // Configuration menu items
   const configurationMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = []
+
+  // Add teachers menu item to configuration section for school admins only (before Configuración)
+  if (isSchoolAdmin && !isSuperAdmin) {
+    configurationMenuItems.push({
+      title: "Maestros",
+      url: userInfo?.schoolId ? `/schools/${userInfo.schoolId}/teachers` : "/configuration/school-info",
+      icon: Users,
+    })
+  }
+
   if (configurationModule) {
     const config = moduleConfig[configurationModule.key] || {
       title: configurationModule.name,
@@ -366,6 +381,9 @@ export function AppSidebar() {
                   } else if (item.url === '/students') {
                     // Don't activate "Estudiantes" if we're on a report card page
                     isActive = !isReportCardPath && location.pathname.startsWith(item.url)
+                  } else if (item.url.includes('/teachers')) {
+                    // Activate "Maestros" if we're on any teachers page
+                    isActive = location.pathname.includes('/teachers')
                   } else {
                     isActive = item.url === '/'
                       ? location.pathname === '/'

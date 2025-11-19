@@ -10,6 +10,7 @@ import { Loading } from "@/components/ui/loading"
 interface UserProfileProps {
   userId: string
   onBack: () => void
+  user?: any // Optional pre-loaded user data
 }
 
 interface UserDetail {
@@ -29,16 +30,56 @@ interface UserDetail {
   updatedAt: string
 }
 
-export function UserProfile({ userId, onBack }: UserProfileProps) {
+export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfileProps) {
   const api = useApi()
-  const [user, setUser] = React.useState<UserDetail | null>(null)
-  const [loading, setLoading] = React.useState(true)
+  const [user, setUser] = React.useState<UserDetail | null>(preloadedUser ? {
+    id: preloadedUser.id,
+    clerkId: preloadedUser.clerkId,
+    email: preloadedUser.email,
+    firstName: preloadedUser.firstName,
+    lastName: preloadedUser.lastName,
+    schoolId: preloadedUser.schoolId,
+    schoolName: undefined,
+    roles: preloadedUser.roles || [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  } : null)
+  const [loading, setLoading] = React.useState(!preloadedUser)
   const [error, setError] = React.useState<string | null>(null)
 
   const loadUser = React.useCallback(async () => {
     try {
-      // For now, we'll need to get user details from the users list
-      // In the future, we can create a specific API endpoint for user details
+      // If user was preloaded, use it
+      if (preloadedUser) {
+        // Get school name if schoolId exists
+        let schoolName = undefined
+        if (preloadedUser.schoolId) {
+          try {
+            const schools = await api.schools.getAll()
+            const school = schools.find((s: any) => s.id === preloadedUser.schoolId)
+            schoolName = school?.name
+          } catch (err) {
+            console.error('Error loading school:', err)
+          }
+        }
+
+        setUser({
+          id: preloadedUser.id,
+          clerkId: preloadedUser.clerkId,
+          email: preloadedUser.email,
+          firstName: preloadedUser.firstName,
+          lastName: preloadedUser.lastName,
+          schoolId: preloadedUser.schoolId,
+          schoolName,
+          roles: preloadedUser.roles || [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        setLoading(false)
+        return
+      }
+
+      // Otherwise, fetch from API
       const users = await api.getUsers()
       const userDetail = users.find((u: any) => u.id === userId)
 
@@ -70,11 +111,13 @@ export function UserProfile({ userId, onBack }: UserProfileProps) {
     } finally {
       setLoading(false)
     }
-  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, preloadedUser]) // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
-    loadUser()
-  }, [loadUser])
+    if (!preloadedUser) {
+      loadUser()
+    }
+  }, [loadUser, preloadedUser])
 
   if (loading) {
     return (

@@ -7,13 +7,14 @@ import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Plus, Building } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
 import { SchoolsTable } from "@/components/schools-table"
+import { SchoolFormDialog } from "@/components/school-form-dialog"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
+import { ErrorDialog } from "@/components/ui/error-dialog"
 
 interface School {
   id: string
@@ -21,6 +22,8 @@ interface School {
   address: string
   phone?: string
   email?: string
+  teacherLimit?: number
+  userLimit?: number
 }
 
 export default function SchoolsPage() {
@@ -32,9 +35,13 @@ export default function SchoolsPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
-  const [selectedSchool, setSelectedSchool] = React.useState<School | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [editingSchool, setEditingSchool] = React.useState<School | null>(null)
+  const [errorDialog, setErrorDialog] = React.useState<{
+    open: boolean
+    title?: string
+    message: string
+  }>({ open: false, message: "" })
   const [deleteConfirmation, setDeleteConfirmation] = React.useState<{
     open: boolean
     schoolId: string
@@ -43,14 +50,6 @@ export default function SchoolsPage() {
   const [deleteNameInput, setDeleteNameInput] = React.useState('')
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
-
-  // Form state for create/edit
-  const [formData, setFormData] = React.useState({
-    name: "",
-    address: "",
-    phone: "",
-    email: "",
-  })
 
   const loadUserInfo = React.useCallback(async () => {
     try {
@@ -95,29 +94,14 @@ export default function SchoolsPage() {
     }
   }, [userInfo, hasPermission]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      address: "",
-      phone: "",
-      email: "",
-    })
+  const handleCreate = () => {
+    setEditingSchool(null)
+    setIsDialogOpen(true)
   }
 
-  const openCreateDialog = () => {
-    resetForm()
-    setIsCreateDialogOpen(true)
-  }
-
-  const openEditDialog = (school: School) => {
-    setSelectedSchool(school)
-    setFormData({
-      name: school.name,
-      address: school.address,
-      phone: school.phone || "",
-      email: school.email || "",
-    })
-    setIsEditDialogOpen(true)
+  const handleEdit = (school: School) => {
+    setEditingSchool(school)
+    setIsDialogOpen(true)
   }
 
   const filteredSchools = schools.filter(school => {
@@ -139,30 +123,33 @@ export default function SchoolsPage() {
     setCurrentPage(1)
   }, [searchTerm])
 
-  const handleCreateSchool = async () => {
+  const handleSave = async (data: {
+    name: string
+    address: string
+    phone?: string
+    email?: string
+    teacherLimit?: number
+    userLimit?: number
+  }) => {
     try {
-      await api.schools.create(formData)
-      setIsCreateDialogOpen(false)
-      resetForm()
+      if (editingSchool) {
+        await api.schools.updateById(editingSchool.id, data)
+      } else {
+        await api.schools.create(data)
+      }
+      setIsDialogOpen(false)
+      setEditingSchool(null)
+      setError(null)
       loadSchools()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al crear escuela"
-      setError(errorMessage)
-    }
-  }
-
-  const handleUpdateSchool = async () => {
-    if (!selectedSchool) return
-
-    try {
-      await api.schools.updateById(selectedSchool.id, formData)
-      setIsEditDialogOpen(false)
-      setSelectedSchool(null)
-      resetForm()
-      loadSchools()
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al actualizar escuela"
-      setError(errorMessage)
+      const errorMessage = err instanceof Error ? err.message :
+        editingSchool ? "Error al actualizar escuela" : "Error al crear escuela"
+      setErrorDialog({
+        open: true,
+        title: "Error",
+        message: errorMessage,
+      })
+      throw err // Re-throw so dialog stays open
     }
   }
 
@@ -223,7 +210,7 @@ export default function SchoolsPage() {
 
       {/* Create Button */}
       <div className="flex justify-end">
-        <Button onClick={openCreateDialog}>
+        <Button onClick={handleCreate} className="cursor-pointer">
           <Plus className="h-4 w-4 mr-2" />
           Crear Escuela
         </Button>
@@ -234,7 +221,7 @@ export default function SchoolsPage() {
         <SchoolsTable
           schools={paginatedSchools}
           onSchoolSelect={(school) => navigate(`/schools/${school.id}`)}
-          onEdit={userInfo?.permissions.includes('schools.update') ? openEditDialog : undefined}
+          onEdit={userInfo?.permissions.includes('schools.update') ? handleEdit : undefined}
           onDelete={userInfo?.permissions.includes('schools.delete') ? handleDeleteSchool : undefined}
           currentPage={currentPage}
           totalPages={totalPages}
@@ -252,113 +239,27 @@ export default function SchoolsPage() {
         </Card>
       )}
 
-      {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear Nueva Escuela</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="create-name">Nombre de la Escuela</Label>
-              <Input
-                id="create-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nombre de la escuela"
-              />
-            </div>
-            <div>
-              <Label htmlFor="create-address">Dirección</Label>
-              <Input
-                id="create-address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Dirección completa"
-              />
-            </div>
-            <div>
-              <Label htmlFor="create-email">Email</Label>
-              <Input
-                id="create-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@escuela.edu"
-              />
-            </div>
-            <div>
-              <Label htmlFor="create-phone">Teléfono</Label>
-              <Input
-                id="create-phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreateSchool}>
-                Crear Escuela
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* School Form Dialog */}
+      <SchoolFormDialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          setIsDialogOpen(open)
+          if (!open) {
+            setEditingSchool(null)
+          }
+        }}
+        school={editingSchool}
+        onSave={handleSave}
+      />
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Escuela</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Nombre de la Escuela</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-address">Dirección</Label>
-              <Input
-                id="edit-address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-phone">Teléfono</Label>
-              <Input
-                id="edit-phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleUpdateSchool}>
-                Actualizar Escuela
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title || "Error"}
+        message={errorDialog.message}
+        confirmText="Aceptar"
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmation.open} onOpenChange={(open) =>

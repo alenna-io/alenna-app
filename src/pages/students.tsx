@@ -16,6 +16,10 @@ import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
 import { useUser } from "@/contexts/UserContext"
 import { SearchBar } from "@/components/ui/search-bar"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { StudentFormDialog } from "@/components/student-form-dialog"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -48,6 +52,9 @@ export default function StudentsPage() {
   const [sortField, setSortField] = React.useState<SortField>(null)
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
   const [currentPage, setCurrentPage] = React.useState(1)
+  const [isStudentDialogOpen, setIsStudentDialogOpen] = React.useState(false)
+  const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
+  const [studentsCount, setStudentsCount] = React.useState<number>(0)
   const itemsPerPage = 10
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
@@ -55,10 +62,30 @@ export default function StudentsPage() {
 
   const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
   const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+  const isSchoolAdmin = hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
 
-  if (isStudentOnly && !studentId) {
-    return <Navigate to="/my-profile" replace />
-  }
+  // Fetch school info and students count for school admins
+  React.useEffect(() => {
+    if (!isSchoolAdmin || studentId) return
+
+    const fetchSchoolInfo = async () => {
+      try {
+        const targetSchoolId = schoolId || userInfo?.schoolId
+        if (!targetSchoolId) return
+
+        const schoolData = await api.schools.getById(targetSchoolId)
+        setSchool(schoolData)
+
+        const countData = await api.schools.getStudentsCount(targetSchoolId)
+        setStudentsCount(countData.count)
+      } catch (err) {
+        console.error('Error fetching school info:', err)
+      }
+    }
+
+    fetchSchoolInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSchoolAdmin, studentId, schoolId, userInfo?.schoolId])
 
   React.useEffect(() => {
     if (!userInfo || !isStudentOnly) return
@@ -300,8 +327,63 @@ export default function StudentsPage() {
     }
   }
 
+  const handleCreateStudent = async (data: {
+    firstName: string
+    lastName: string
+    birthDate: string
+    certificationTypeId: string
+    graduationDate: string
+    contactPhone?: string
+    isLeveled?: boolean
+    expectedLevel?: string
+    currentLevel?: string
+    address?: string
+    parents: Array<{
+      firstName: string
+      lastName: string
+      email: string
+      relationship: string
+    }>
+  }) => {
+    const targetSchoolId = schoolId || userInfo?.schoolId
+    if (!targetSchoolId) {
+      throw new Error("No se pudo determinar la escuela")
+    }
+    await api.students.create({ ...data, schoolId: targetSchoolId })
+    // Reload students and count
+    const studentsData = schoolId
+      ? await api.schools.getStudents(targetSchoolId)
+      : await api.students.getAll()
+    const transformedStudents: Student[] = studentsData.map((student: unknown) => {
+      const s = student as Record<string, unknown>
+      return {
+        id: s.id as string,
+        firstName: s.firstName as string,
+        lastName: s.lastName as string,
+        name: s.name as string,
+        age: s.age as number,
+        birthDate: s.birthDate as string,
+        certificationType: s.certificationType as string,
+        graduationDate: s.graduationDate as string,
+        parents: (s.parents || []) as Student['parents'],
+        contactPhone: (s.contactPhone || '') as string,
+        isLeveled: s.isLeveled as boolean,
+        expectedLevel: s.expectedLevel as string | undefined,
+        address: (s.address || '') as string,
+      }
+    })
+    setStudents(transformedStudents)
+    const countData = await api.schools.getStudentsCount(targetSchoolId)
+    setStudentsCount(countData.count)
+  }
+
   // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
   const parentOnly = isParentOnly
+
+  // Early returns after all hooks
+  if (isStudentOnly && !studentId) {
+    return <Navigate to="/my-profile" replace />
+  }
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {
@@ -380,10 +462,41 @@ export default function StudentsPage() {
           message={error}
         />
       )}
-      <PageHeader
-        title={schoolId ? "Estudiantes de la Escuela" : "Estudiantes"}
-        description={schoolId ? "Gestiona los estudiantes de esta escuela específica" : "Gestiona la información de todos los estudiantes"}
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title={schoolId ? "Estudiantes de la Escuela" : "Estudiantes"}
+          description={schoolId ? "Gestiona los estudiantes de esta escuela específica" : "Gestiona la información de todos los estudiantes"}
+        />
+        {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
+          <Button onClick={() => setIsStudentDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar Estudiante
+          </Button>
+        )}
+      </div>
+
+      {/* Count and Limit Display for School Admins */}
+      {isSchoolAdmin && school && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Estudiantes registrados</p>
+                <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
+              </div>
+              {school.userLimit && (
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Límite de usuarios</p>
+                  <p className="text-2xl font-bold">{school.userLimit}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {Math.max(0, school.userLimit - studentsCount)} disponibles
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search */}
       <SearchBar
@@ -440,6 +553,18 @@ export default function StudentsPage() {
         </>
       )
       }
+
+      {/* Student Form Dialog */}
+      {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
+        <StudentFormDialog
+          open={isStudentDialogOpen}
+          onOpenChange={(open) => {
+            setIsStudentDialogOpen(open)
+          }}
+          schoolId={schoolId || userInfo?.schoolId || ''}
+          onSave={handleCreateStudent}
+        />
+      )}
     </div >
   )
 }

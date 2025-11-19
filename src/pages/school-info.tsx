@@ -9,6 +9,9 @@ import { Building2, Mail, Phone, MapPin, Lock, Users, Plus, Eye, GraduationCap }
 import { useApi } from "@/services/api";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import type { UserInfo } from "@/services/api";
+import { StudentFormDialog } from "@/components/student-form-dialog";
+import { TeacherFormDialog } from "@/components/teacher-form-dialog";
+import { ErrorDialog } from "@/components/ui/error-dialog";
 
 interface SchoolInfo {
   id: string;
@@ -32,6 +35,13 @@ export default function SchoolInfoPage() {
   const [loadingStudentsCount, setLoadingStudentsCount] = React.useState(false);
   const [teachersCount, setTeachersCount] = React.useState<number>(0);
   const [loadingTeachersCount, setLoadingTeachersCount] = React.useState(false);
+  const [isStudentDialogOpen, setIsStudentDialogOpen] = React.useState(false);
+  const [isTeacherDialogOpen, setIsTeacherDialogOpen] = React.useState(false);
+  const [errorDialog, setErrorDialog] = React.useState<{
+    open: boolean
+    title?: string
+    message: string
+  }>({ open: false, message: "" });
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -56,10 +66,13 @@ export default function SchoolInfoPage() {
           : await api.schools.getMy();
         setSchool(schoolData as SchoolInfo);
 
+        const isSuperAdmin = userData.roles.some((role: { name: string }) => role.name === 'SUPERADMIN');
         const canViewStudents = userData.permissions.includes('students.read');
         const canViewTeachers = userData.permissions.includes('users.read');
 
-        if (canViewStudents) {
+        // SUPERADMIN can see counts even if they can't manage students/teachers
+        // Regular users need permissions to see counts
+        if (isSuperAdmin || canViewStudents) {
           setLoadingStudentsCount(true);
           try {
             const countData = await api.schools.getStudentsCount(schoolData.id);
@@ -74,7 +87,7 @@ export default function SchoolInfoPage() {
           setStudentsCount(0);
         }
 
-        if (canViewTeachers) {
+        if (isSuperAdmin || canViewTeachers) {
           setLoadingTeachersCount(true);
           try {
             const teachersCountData = await api.schools.getTeachersCount(schoolData.id);
@@ -112,10 +125,15 @@ export default function SchoolInfoPage() {
     return <Loading variant="profile" />;
   }
 
-  const canViewStudents = userInfo?.permissions.includes('students.read') ?? false;
-  const canCreateStudents = userInfo?.permissions.includes('students.create') ?? false;
-  const canViewTeachers = userInfo?.permissions.includes('users.read') ?? false;
-  const canCreateTeachers = userInfo?.permissions.includes('users.create') ?? false;
+  // Only SCHOOL_ADMIN can view/manage students and teachers for their school
+  // SUPERADMIN cannot manage students/teachers - only schools
+  const isSuperAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN') ?? false;
+  const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') ?? false;
+
+  const canViewStudents = !isSuperAdmin && (userInfo?.permissions.includes('students.read') ?? false);
+  const canCreateStudents = !isSuperAdmin && isSchoolAdmin && (userInfo?.permissions.includes('students.create') ?? false);
+  const canViewTeachers = !isSuperAdmin && (userInfo?.permissions.includes('users.read') ?? false);
+  const canCreateTeachers = !isSuperAdmin && isSchoolAdmin && (userInfo?.permissions.includes('users.create') ?? false);
 
   return (
     <div className="space-y-6">
@@ -200,17 +218,21 @@ export default function SchoolInfoPage() {
               </CardContent>
             </Card>
 
-            {canViewStudents && (
+            {(canViewStudents || isSuperAdmin) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Gestión de Estudiantes
+                    {isSuperAdmin ? "Estudiantes" : "Gestión de Estudiantes"}
                   </CardTitle>
-                  <CardDescription>Administra los estudiantes de la escuela</CardDescription>
+                  <CardDescription>
+                    {isSuperAdmin
+                      ? "Información de estudiantes de la escuela"
+                      : "Administra los estudiantes de la escuela"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground mb-1 block">
                         Total de Estudiantes
@@ -223,42 +245,48 @@ export default function SchoolInfoPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={() => navigate('/students')}
-                        className="w-full"
-                        variant="outline"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Lista de Estudiantes
-                      </Button>
-                      {canCreateStudents && (
+                    {!isSuperAdmin && (
+                      <div className="flex flex-col gap-2">
                         <Button
                           onClick={() => navigate('/students')}
                           className="w-full"
+                          variant="outline"
                         >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Agregar Nuevo Estudiante
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Lista de Estudiantes
                         </Button>
-                      )}
-                    </div>
+                        {canCreateStudents && (
+                          <Button
+                            onClick={() => setIsStudentDialogOpen(true)}
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Agregar Nuevo Estudiante
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {/* Teachers Management Section */}
-            {canViewTeachers && (
+            {(canViewTeachers || isSuperAdmin) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <GraduationCap className="h-5 w-5" />
-                    Gestión de Maestros
+                    {isSuperAdmin ? "Maestros" : "Gestión de Maestros"}
                   </CardTitle>
-                  <CardDescription>Administra los maestros de la escuela</CardDescription>
+                  <CardDescription>
+                    {isSuperAdmin
+                      ? "Información de maestros de la escuela"
+                      : "Administra los maestros de la escuela"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground mb-1 block">
                         Total de Maestros
@@ -271,25 +299,27 @@ export default function SchoolInfoPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        onClick={() => navigate('/users')}
-                        className="w-full"
-                        variant="outline"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Lista de Maestros
-                      </Button>
-                      {canCreateTeachers && (
+                    {!isSuperAdmin && (
+                      <div className="flex flex-col gap-2">
                         <Button
-                          onClick={() => navigate('/users')}
+                          onClick={() => navigate(schoolId ? `/schools/${schoolId}/teachers` : '/configuration/school-info')}
                           className="w-full"
+                          variant="outline"
                         >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Agregar Nuevo Maestro
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Lista de Maestros
                         </Button>
-                      )}
-                    </div>
+                        {canCreateTeachers && (
+                          <Button
+                            onClick={() => setIsTeacherDialogOpen(true)}
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Agregar Nuevo Maestro
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -316,6 +346,89 @@ export default function SchoolInfoPage() {
           </Card>
         </>
       )}
+
+      {/* Student Form Dialog */}
+      {school && (
+        <StudentFormDialog
+          open={isStudentDialogOpen}
+          onOpenChange={(open) => {
+            setIsStudentDialogOpen(open)
+          }}
+          schoolId={school.id}
+          onSave={async (data) => {
+            try {
+              await api.students.create(data)
+              setIsStudentDialogOpen(false)
+              // Reload students count
+              if (canViewStudents) {
+                setLoadingStudentsCount(true)
+                try {
+                  const countData = await api.schools.getStudentsCount(school.id)
+                  setStudentsCount(countData.count)
+                } catch (error) {
+                  console.error("Error fetching students count:", error)
+                } finally {
+                  setLoadingStudentsCount(false)
+                }
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : "Error al crear estudiante"
+              setErrorDialog({
+                open: true,
+                title: "Error",
+                message: errorMessage,
+              })
+              throw error
+            }
+          }}
+        />
+      )}
+
+      {/* Teacher Form Dialog */}
+      {school && (
+        <TeacherFormDialog
+          open={isTeacherDialogOpen}
+          onOpenChange={(open) => {
+            setIsTeacherDialogOpen(open)
+          }}
+          schoolId={school.id}
+          onSave={async (data) => {
+            try {
+              await api.createUser({ ...data, schoolId: school.id })
+              setIsTeacherDialogOpen(false)
+              // Reload teachers count
+              if (canViewTeachers) {
+                setLoadingTeachersCount(true)
+                try {
+                  const teachersCountData = await api.schools.getTeachersCount(school.id)
+                  setTeachersCount(teachersCountData.count)
+                } catch (error) {
+                  console.error("Error fetching teachers count:", error)
+                } finally {
+                  setLoadingTeachersCount(false)
+                }
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : "Error al crear maestro"
+              setErrorDialog({
+                open: true,
+                title: "Error",
+                message: errorMessage,
+              })
+              throw error
+            }
+          }}
+        />
+      )}
+
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
+        title={errorDialog.title || "Error"}
+        message={errorDialog.message}
+        confirmText="Aceptar"
+      />
     </div>
   );
 }
