@@ -14,7 +14,6 @@ import { Plus, User as UserIcon } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
 import { UsersTable } from "@/components/users-table"
-import { UsersFilters } from "@/components/users-filters"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
 
@@ -56,10 +55,6 @@ export default function UsersPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [filters, setFilters] = React.useState<{ role: string; schoolId: string }>({
-    role: "",
-    schoolId: ""
-  })
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null)
@@ -88,12 +83,18 @@ export default function UsersPage() {
       const info = await api.auth.getUserInfo()
       setUserInfo(info)
 
-      // Check if user has permission to manage users
-      const canManageUsers = info.permissions.includes('users.read')
+      // Only SCHOOL_ADMIN can manage users for their school
+      // SUPERADMIN cannot manage users - only schools
+      const isSuperAdmin = info.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
+      const canManageUsers = !isSuperAdmin && info.permissions.includes('users.read')
       setHasPermission(canManageUsers)
 
       if (!canManageUsers) {
-        setError("No tienes permisos para acceder a esta página.")
+        if (isSuperAdmin) {
+          setError("Los super administradores no pueden gestionar usuarios. Esta funcionalidad está disponible solo para administradores de escuela.")
+        } else {
+          setError("No tienes permisos para acceder a esta página.")
+        }
         return
       }
     } catch (err: unknown) {
@@ -153,7 +154,14 @@ export default function UsersPage() {
 
   const handleCreateUser = async () => {
     try {
-      await api.createUser(formData)
+      // SCHOOL_ADMIN can only create users for their own school
+      // The schoolId is automatically set by the backend based on the user's school
+      const createData = {
+        ...formData,
+        // Remove schoolId - it will be set automatically from the authenticated user's school
+        schoolId: undefined,
+      }
+      await api.createUser(createData)
       setIsCreateDialogOpen(false)
       resetForm()
       loadUsers()
@@ -167,22 +175,16 @@ export default function UsersPage() {
     if (!selectedUser) return
 
     try {
+      // SCHOOL_ADMIN can only update users in their own school
+      // Cannot change email or school
       const updateData: {
         firstName: string
         lastName: string
         roleIds: string[]
-        email?: string
-        schoolId?: string
       } = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         roleIds: formData.roleIds
-      }
-
-      // Only superadmins can update email and school
-      if (userInfo?.roles.some(role => role.name === 'SUPERADMIN')) {
-        updateData.email = formData.email
-        updateData.schoolId = formData.schoolId
       }
 
       await api.updateUser(selectedUser.id, updateData)
@@ -229,7 +231,7 @@ export default function UsersPage() {
       email: "",
       firstName: "",
       lastName: "",
-      schoolId: userInfo?.schoolId || "",
+      schoolId: "", // Removed - SCHOOL_ADMIN can only create users for their own school
       roleIds: []
     })
   }
@@ -246,7 +248,7 @@ export default function UsersPage() {
       email: user.email,
       firstName: user.firstName || "",
       lastName: user.lastName || "",
-      schoolId: user.schoolId || "",
+      schoolId: "", // Removed - SCHOOL_ADMIN can only edit users in their own school
       roleIds: user.roles.map(r => r.id)
     })
     setIsEditDialogOpen(true)
@@ -260,15 +262,10 @@ export default function UsersPage() {
         includesIgnoreAccents(fullName, searchTerm) ||
         includesIgnoreAccents(user.email, searchTerm)
 
-      // Role filter
-      const matchesRole = !filters.role || user.roles.some(role => role.id === filters.role)
-
-      // School filter
-      const matchesSchool = !filters.schoolId || user.schoolId === filters.schoolId
-
-      return matchesSearch && matchesRole && matchesSchool
+      // SCHOOL_ADMIN only sees users from their own school (already filtered by backend)
+      return matchesSearch
     })
-  }, [users, searchTerm, filters])
+  }, [users, searchTerm])
 
   // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -277,10 +274,10 @@ export default function UsersPage() {
     return filteredUsers.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredUsers, currentPage, itemsPerPage])
 
-  // Reset to page 1 when search or filters change
+  // Reset to page 1 when search changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filters])
+  }, [searchTerm])
 
   if (!hasPermission) {
     return <Navigate to="/404" replace />
@@ -326,22 +323,12 @@ export default function UsersPage() {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Filters - Only show for super admin */}
-      {userInfo?.roles.some(role => role.name === 'SUPERADMIN') && !schoolId && (
-        <UsersFilters
-          filters={filters}
-          onFiltersChange={setFilters}
-          totalUsers={users.length}
-          filteredCount={filteredUsers.length}
-          schools={schools}
-          roles={roles}
-        />
-      )}
+      {/* Filters - Removed for SCHOOL_ADMIN (only see their own school's users) */}
 
-      {/* Create Button */}
-      {userInfo?.permissions.includes('users.create') && (
+      {/* Create Button - Only for SCHOOL_ADMIN, not SUPERADMIN */}
+      {userInfo && !userInfo.roles.some(role => role.name === 'SUPERADMIN') && userInfo?.permissions.includes('users.create') && (
         <div className="flex justify-end">
-          <Button onClick={openCreateDialog}>
+          <Button onClick={openCreateDialog} className="cursor-pointer">
             <Plus className="h-4 w-4 mr-2" />
             Crear Usuario
           </Button>
@@ -422,26 +409,7 @@ export default function UsersPage() {
                 placeholder="Pérez"
               />
             </div>
-            {userInfo?.roles.some(role => role.name === 'SUPERADMIN') && (
-              <div>
-                <Label>Escuela</Label>
-                <Select
-                  value={formData.schoolId}
-                  onValueChange={(value: string) => setFormData({ ...formData, schoolId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar escuela" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* School selection removed - SCHOOL_ADMIN can only update users in their own school */}
             <div>
               <Label>Roles</Label>
               <Select
@@ -504,26 +472,7 @@ export default function UsersPage() {
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               />
             </div>
-            {userInfo?.roles.some(role => role.name === 'SUPERADMIN') && (
-              <div>
-                <Label>Escuela</Label>
-                <Select
-                  value={formData.schoolId}
-                  onValueChange={(value: string) => setFormData({ ...formData, schoolId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar escuela" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* School selection removed - SCHOOL_ADMIN can only update users in their own school */}
             <div>
               <Label>Roles</Label>
               <Select

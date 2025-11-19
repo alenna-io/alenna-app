@@ -399,6 +399,7 @@ export const schoolsApi = {
   getStudents: (id: string, token: string | null) => apiFetch(`/schools/${id}/students`, token),
   getTeachersCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers/count`, token),
   getTeachers: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers`, token),
+  getCertificationTypes: (id: string, token: string | null) => apiFetch(`/schools/${id}/certification-types`, token),
 };
 
 // Custom hook for authenticated API calls
@@ -604,6 +605,10 @@ export function useApi() {
       getTeachers: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getTeachers(id, token);
+      },
+      getCertificationTypes: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getCertificationTypes(id, token);
       },
     },
     schoolYears: {

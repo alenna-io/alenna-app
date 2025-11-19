@@ -18,7 +18,7 @@ interface DailyGoalsTableProps {
   dayTotals?: number[]
 }
 
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 
 // Color system for subjects (matching projections)
 const getSubjectColor = (index: number) => {
@@ -156,9 +156,9 @@ export function DailyGoalsTable({
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
               <Calendar className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
-              <span className="truncate">Daily Goals</span>
+              <span className="truncate">Metas Diarias</span>
               <Badge variant="secondary" className="text-xs md:text-sm">
-                {quarterName} - Week {week}
+                {quarterName} - Semana {week}
               </Badge>
             </CardTitle>
           </div>
@@ -166,7 +166,7 @@ export function DailyGoalsTable({
             <div className="flex items-center gap-2 text-xs md:text-sm">
               <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
               <span className="font-medium">
-                {subjects.length} subjects
+                {subjects.length} {subjects.length === 1 ? 'materia' : 'materias'}
               </span>
             </div>
           </div>
@@ -179,7 +179,7 @@ export function DailyGoalsTable({
             <thead>
               <tr>
                 <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300">
-                  Day
+                  Día
                 </th>
                 {subjects.map((subject) => (
                   <th
@@ -240,7 +240,7 @@ export function DailyGoalsTable({
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="e.g., 1-10, ST, or T"
+                                    placeholder="ej: 1-10, ST, o T"
                                     className={`w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 ${editValue && !isValid
                                       ? 'border-red-500 focus:ring-red-500 bg-red-50'
                                       : 'focus:ring-primary'
@@ -250,8 +250,8 @@ export function DailyGoalsTable({
                                   <div className={`text-xs mt-1 text-center ${editValue && !isValid ? 'text-red-500' : 'text-gray-500'
                                     }`}>
                                     {editValue && !isValid
-                                      ? 'Invalid format. Use: start-end (1-1000), ST, or T'
-                                      : 'Format: start-end (1-1000), ST, or T'
+                                      ? 'Formato inválido. Use: inicio-fin (1-1000), ST, o T'
+                                      : 'Formato: inicio-fin (1-1000), ST, o T'
                                     }
                                   </div>
                                 </>
@@ -415,19 +415,19 @@ export function DailyGoalsTable({
               <p className="text-lg md:text-2xl font-bold text-green-600">
                 {completedGoals}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Completed Goals</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Metas Completadas</p>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
               <p className="text-lg md:text-2xl font-bold text-blue-600">
                 {subjects.length * 5}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Total Goals</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Total de Metas</p>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
               <p className="text-lg md:text-2xl font-bold text-purple-600">
                 {subjects.length}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Subjects</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Materias</p>
             </div>
           </div>
         </div>
@@ -444,8 +444,7 @@ export function DailyGoalsTable({
             <DialogDescription>
               {notesHistory && (
                 <>
-                  Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span> •
-                  Materia: <span className="font-semibold">{notesHistory.subject}</span>
+                  Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span> • Materia: <span className="font-semibold">{notesHistory.subject}</span>
                 </>
               )}
             </DialogDescription>

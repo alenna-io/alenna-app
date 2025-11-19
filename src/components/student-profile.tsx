@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -7,6 +8,7 @@ import { LinkButton } from "@/components/ui/link-button"
 import { Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import type { Student } from "@/types/student"
+import { ParentProfileDialog } from "@/components/parent-profile-dialog"
 
 interface StudentProfileProps {
   student: Student
@@ -17,6 +19,8 @@ interface StudentProfileProps {
 
 export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
+  const [selectedParent, setSelectedParent] = React.useState<Student['parents'][0] | null>(null)
+  const [isParentDialogOpen, setIsParentDialogOpen] = React.useState(false)
 
 
   return (
@@ -200,7 +204,15 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                           Padre/Madre
                         </p>
                       </div>
-                      <Button variant="outline" size="sm" className="ml-auto" style={{ cursor: 'pointer' }}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="ml-auto cursor-pointer"
+                        onClick={() => {
+                          setSelectedParent(parent)
+                          setIsParentDialogOpen(true)
+                        }}
+                      >
                         Ver Perfil
                       </Button>
                     </div>
@@ -213,6 +225,20 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Parent Profile Dialog */}
+        {selectedParent && (
+          <ParentProfileDialog
+            open={isParentDialogOpen}
+            onOpenChange={(open) => {
+              setIsParentDialogOpen(open)
+              if (!open) {
+                setSelectedParent(null)
+              }
+            }}
+            parent={selectedParent}
+          />
         )}
       </div>
     </div>

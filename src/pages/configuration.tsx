@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Building2, Calendar, CreditCard, ChevronRight, Lock } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { ModuleData } from "@/services/api";
+import { useUser } from "@/contexts/UserContext";
 
 interface ConfigModule {
   id: string;
@@ -52,8 +53,14 @@ const configModules: ConfigModule[] = [
 export default function ConfigurationPage() {
   const navigate = useNavigate();
   const api = useApi();
+  const { userInfo } = useUser();
   const [userPermissions, setUserPermissions] = React.useState<Set<string>>(new Set());
   const [loading, setLoading] = React.useState(true);
+
+  // Check if user is SUPERADMIN
+  const isSuperAdmin = React.useMemo(() => {
+    return userInfo?.roles?.some((role) => role.name === 'SUPERADMIN') ?? false;
+  }, [userInfo]);
 
   React.useEffect(() => {
     const fetchUserInfo = async () => {
@@ -89,7 +96,19 @@ export default function ConfigurationPage() {
   }
 
   // Filter modules user has access to
-  const accessibleModules = configModules.filter(module => hasPermission(module.readPermission));
+  // SUPERADMIN should only see "Información de la Escuela", not "Años Escolares"
+  const accessibleModules = configModules.filter(module => {
+    if (!hasPermission(module.readPermission)) {
+      return false;
+    }
+
+    // Hide "Años Escolares" for SUPERADMIN
+    if (isSuperAdmin && module.id === 'school-year') {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <div className="space-y-6">

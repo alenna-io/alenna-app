@@ -6,6 +6,7 @@ import { SignUpPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
 import { HomePage } from '@/pages/home'
 import StudentsPage from '@/pages/students'
+import TeachersPage from '@/pages/teachers'
 import ProjectionListPage from '@/pages/projection-list'
 import ProjectionsPage from '@/pages/projections'
 import ACEProjectionPage from '@/pages/ace-projection'
@@ -85,7 +86,7 @@ export default function App() {
           <Route path="schools" element={<SchoolsPage />} />
           <Route path="schools/:schoolId" element={<SchoolInfoPage />} />
           <Route path="schools/:schoolId/students" element={<StudentsPage />} />
-          <Route path="schools/:schoolId/teachers" element={<UsersPage />} />
+          <Route path="schools/:schoolId/teachers" element={<TeachersPage />} />
           <Route path="monthly-assignments" element={<MonthlyAssignmentsPage />} />
           <Route path="report-cards" element={<ReportCardsPage />} />
           <Route path="students/:studentId/report-cards" element={<ReportCardsListPage />} />

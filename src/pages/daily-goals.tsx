@@ -86,7 +86,7 @@ export default function DailyGoalsPage() {
         setGoalsData(data)
       } catch (err) {
         console.error('Error loading daily goals:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load daily goals')
+        setError(err instanceof Error ? err.message : 'Error al cargar las metas diarias')
         // Fallback to empty data structure
         const subjects = ['Math', 'English', 'Science', 'Social Studies', 'Word Building', 'Spanish']
         const emptyData: DailyGoalData = {}
@@ -243,7 +243,7 @@ export default function DailyGoalsPage() {
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating goal:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal'
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar la meta'
 
       toast.error(`Error: ${errorMessage}`)
       setError(errorMessage)
@@ -306,7 +306,7 @@ export default function DailyGoalsPage() {
       setGoalsData(data)
     } catch (err) {
       console.error('Error toggling goal completion:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal completion'
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el estado de la meta'
 
       toast.error(`Error: ${errorMessage}`)
       setError(errorMessage)
@@ -350,7 +350,7 @@ export default function DailyGoalsPage() {
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating notes:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update notes'
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar la nota'
 
       toast.error(`Error: ${errorMessage}`)
       setError(errorMessage)
