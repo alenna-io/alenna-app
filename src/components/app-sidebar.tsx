@@ -188,6 +188,11 @@ export function AppSidebar() {
     const hasActions = (module.actions?.length ?? 0) > 0
     if (!hasActions) return false
 
+    // Usuarios module only for Super Admins
+    if (module.key === 'users' && !isSuperAdmin) {
+      return false
+    }
+
     if (module.key === 'configuration' && (isTeacherOnly || isParentOnly || isStudentOnly)) {
       return false
     }
@@ -199,7 +204,11 @@ export function AppSidebar() {
     return true
   })
 
-  const dynamicMenuItems = filteredModules
+  // Separate configuration module from other modules
+  const configurationModule = filteredModules.find(module => module.key === 'configuration')
+  const otherModules = filteredModules.filter(module => module.key !== 'configuration')
+
+  const navigationMenuItems = otherModules
     .map(module => {
       const config = moduleConfig[module.key] || {
         title: module.name,
@@ -215,7 +224,7 @@ export function AppSidebar() {
     })
 
   if (isStudentOnly) {
-    dynamicMenuItems.push({
+    navigationMenuItems.push({
       title: "Mi Perfil",
       url: "/my-profile",
       icon: UserIcon,
@@ -224,13 +233,13 @@ export function AppSidebar() {
 
   // Add projections menu item for teachers and school admins
   if (isTeacherOrAdmin) {
-    dynamicMenuItems.push({
+    navigationMenuItems.push({
       title: "Proyecciones",
       url: "/projections",
       icon: BookOpen,
     })
     // Add monthly assignments management for teachers and school admins
-    dynamicMenuItems.push({
+    navigationMenuItems.push({
       title: "Asignaciones Mensuales",
       url: "/monthly-assignments",
       icon: ClipboardList,
@@ -244,7 +253,7 @@ export function AppSidebar() {
   if (userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn'))) {
     // For now, we'll add it for teachers/admins - parents/students can access via their profile
     if (isTeacherOrAdmin) {
-      dynamicMenuItems.push({
+      navigationMenuItems.push({
         title: "Boletas",
         url: "/report-cards",
         icon: FileText,
@@ -252,7 +261,23 @@ export function AppSidebar() {
     }
   }
 
-  const allMenuItems = [...staticMenuItems, ...dynamicMenuItems]
+  const allNavigationItems = [...staticMenuItems, ...navigationMenuItems]
+
+  // Configuration menu items
+  const configurationMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = []
+  if (configurationModule) {
+    const config = moduleConfig[configurationModule.key] || {
+      title: configurationModule.name,
+      url: `/${configurationModule.key}`,
+      icon: FileText,
+    }
+
+    configurationMenuItems.push({
+      title: config.title,
+      url: config.url,
+      icon: config.icon,
+    })
+  }
   const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 
@@ -329,9 +354,64 @@ export function AppSidebar() {
               <div className="flex items-center justify-center py-4">
                 <LoadingSpinner size="md" className="text-muted-foreground" />
               </div>
-            ) : allMenuItems.length > 0 ? (
+            ) : allNavigationItems.length > 0 ? (
               <SidebarMenu>
-                {allMenuItems.map((item) => {
+                {allNavigationItems.map((item) => {
+                  // Special handling for report cards: activate "Boletas" if path contains /report-cards
+                  const isReportCardPath = location.pathname.includes('/report-cards')
+                  let isActive: boolean
+
+                  if (item.url === '/report-cards') {
+                    isActive = isReportCardPath
+                  } else if (item.url === '/students') {
+                    // Don't activate "Estudiantes" if we're on a report card page
+                    isActive = !isReportCardPath && location.pathname.startsWith(item.url)
+                  } else {
+                    isActive = item.url === '/'
+                      ? location.pathname === '/'
+                      : location.pathname.startsWith(item.url)
+                  }
+
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={item.title}
+                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
+                      >
+                        <Link
+                          to={item.url}
+                          onClick={() => {
+                            // Close sidebar on mobile when clicking a menu item
+                            if (isMobile) {
+                              setOpenMobile(false)
+                            }
+                          }}
+                          className="flex items-center gap-2 min-w-0"
+                        >
+                          <item.icon className="flex-shrink-0" />
+                          <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            ) : (
+              <div className="flex items-center justify-center py-4 text-sm text-muted-foreground px-4 text-center">
+                No hay módulos disponibles
+              </div>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {configurationMenuItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Configuración</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {configurationMenuItems.map((item) => {
                   const isActive = item.url === '/'
                     ? location.pathname === '/'
                     : location.pathname.startsWith(item.url)
@@ -352,9 +432,9 @@ export function AppSidebar() {
                               setOpenMobile(false)
                             }
                           }}
-                          className="flex items-start gap-2 min-w-0"
+                          className="flex items-center gap-2 min-w-0"
                         >
-                          <item.icon className="flex-shrink-0 mt-0.5" />
+                          <item.icon className="flex-shrink-0" />
                           <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -362,13 +442,9 @@ export function AppSidebar() {
                   )
                 })}
               </SidebarMenu>
-            ) : (
-              <div className="flex items-center justify-center py-4 text-sm text-muted-foreground px-4 text-center">
-                No hay módulos disponibles
-              </div>
-            )}
-          </SidebarGroupContent>
-        </SidebarGroup>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

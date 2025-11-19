@@ -26,21 +26,30 @@ export function BreadcrumbNav() {
       'projections': 'Proyecciones',
       'my-profile': 'Mi Perfil',
       'school-years': 'Años Escolares',
+      'school-info': 'Información de la Escuela',
       'daily-goals': 'Metas Diarias',
+      'report-cards': 'Boletas',
     }
 
     let currentPath = ''
 
     for (let i = 0; i < pathSegments.length; i++) {
       const segment = pathSegments[i]
+      const prevSegment = i > 0 ? pathSegments[i - 1] : null
+      const nextSegment = i < pathSegments.length - 1 ? pathSegments[i + 1] : null
       currentPath += `/${segment}`
 
       // Skip UUIDs and numeric IDs in breadcrumbs display
       if (segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ||
         segment.match(/^\d+$/)) {
-        // Check what comes before this ID to determine the label
-        const prevSegment = pathSegments[i - 1]
-        if (prevSegment === 'students') {
+        // Check what comes before and after this ID to determine the label
+        if (prevSegment === 'students' && nextSegment === 'report-cards') {
+          // Skip student ID when it's followed by report-cards
+          continue
+        } else if (prevSegment === 'report-cards') {
+          // Show "Boleta" for projection ID after report-cards
+          items.push({ label: 'Boleta', path: currentPath })
+        } else if (prevSegment === 'students') {
           items.push({ label: 'Detalle', path: currentPath })
         } else if (prevSegment === 'users') {
           items.push({ label: 'Detalle', path: currentPath })

@@ -119,9 +119,12 @@ export default function SchoolInfoPage() {
 
   return (
     <div className="space-y-6">
-      <BackButton to={schoolId ? "/schools" : "/configuration"}>
-        {schoolId ? "Volver a Escuelas" : "Volver a Configuración"}
-      </BackButton>
+      {/* Mobile back button */}
+      <div className="md:hidden">
+        <BackButton to={schoolId ? "/schools" : "/configuration"}>
+          {schoolId ? "Volver a Escuelas" : "Volver a Configuración"}
+        </BackButton>
+      </div>
 
       <PageHeader
         title="Información de la Escuela"

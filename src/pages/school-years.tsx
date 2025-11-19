@@ -289,13 +289,16 @@ export default function SchoolYearsPage() {
 
   return (
     <div className="space-y-6">
-      <Button
-        variant="outline"
-        onClick={() => navigate("/configuration")}
-        className="mb-4"
-      >
-        ← Volver a Configuración
-      </Button>
+      {/* Mobile back button */}
+      <div className="md:hidden">
+        <Button
+          variant="outline"
+          onClick={() => navigate("/configuration")}
+          className="mb-4"
+        >
+          ← Volver a Configuración
+        </Button>
+      </div>
 
       <div className="flex justify-between items-center">
         <PageHeader
