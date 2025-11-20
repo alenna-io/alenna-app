@@ -12,6 +12,7 @@ import type { UserInfo } from "@/services/api";
 import { StudentFormDialog } from "@/components/student-form-dialog";
 import { TeacherFormDialog } from "@/components/teacher-form-dialog";
 import { ErrorDialog } from "@/components/ui/error-dialog";
+import { useTranslation } from "react-i18next";
 
 interface SchoolInfo {
   id: string;
@@ -27,6 +28,7 @@ export default function SchoolInfoPage() {
   const { schoolId } = useParams();
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [school, setSchool] = React.useState<SchoolInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
@@ -139,14 +141,14 @@ export default function SchoolInfoPage() {
     <div className="space-y-6">
       {/* Mobile back button */}
       <div className="md:hidden">
-        <BackButton to={schoolId ? "/schools" : "/configuration"}>
-          {schoolId ? "Volver a Escuelas" : "Volver a Configuración"}
+        <BackButton to={schoolId ? "/schools" : "/school-settings"}>
+          {schoolId ? t("schools.backToSchools") : t("schoolSettings.title")}
         </BackButton>
       </div>
 
       <PageHeader
-        title="Información de la Escuela"
-        description="Esta información es gestionada por Alenna. Para cambios, contacta a soporte."
+        title={t("schoolInfo.title")}
+        description={t("schoolInfo.description")}
       />
 
       <Separator />
@@ -158,21 +160,21 @@ export default function SchoolInfoPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Información General
+                  {t("schoolInfo.generalInfo")}
                 </CardTitle>
-                <CardDescription>Datos principales de la institución</CardDescription>
+                <CardDescription>{t("schoolInfo.generalInfo")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      Nombre de la Escuela
+                      {t("schoolInfo.schoolName")}
                     </label>
                     <p className="text-lg font-semibold">{school.name}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                      ID de la Escuela
+                      {t("schoolInfo.schoolId")}
                     </label>
                     <p className="text-sm font-mono bg-muted px-3 py-2 rounded">{school.id}</p>
                   </div>
@@ -190,7 +192,7 @@ export default function SchoolInfoPage() {
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t("schoolInfo.email")}</label>
                       <p className="text-base">{school.email}</p>
                     </div>
                   </div>
@@ -200,7 +202,7 @@ export default function SchoolInfoPage() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t("schoolInfo.phone")}</label>
                       <p className="text-base">{school.phone}</p>
                     </div>
                   </div>
@@ -210,7 +212,7 @@ export default function SchoolInfoPage() {
                   <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Dirección</label>
+                      <label className="text-sm font-medium text-muted-foreground">{t("schoolInfo.address")}</label>
                       <p className="text-base">{school.address}</p>
                     </div>
                   </div>
@@ -223,19 +225,19 @@ export default function SchoolInfoPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    {isSuperAdmin ? "Estudiantes" : "Gestión de Estudiantes"}
+                    {isSuperAdmin ? t("schoolInfo.studentsManagementSuperAdmin") : t("schoolInfo.studentsManagement")}
                   </CardTitle>
                   <CardDescription>
                     {isSuperAdmin
-                      ? "Información de estudiantes de la escuela"
-                      : "Administra los estudiantes de la escuela"}
+                      ? t("schoolInfo.studentsDescriptionSuperAdmin")
+                      : t("schoolInfo.studentsDescription")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                        Total de Estudiantes
+                        {t("schoolInfo.totalStudents")}
                       </label>
                       <div className="flex items-center gap-2">
                         {loadingStudentsCount ? (
@@ -253,7 +255,7 @@ export default function SchoolInfoPage() {
                           variant="outline"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Ver Lista de Estudiantes
+                          {t("schoolInfo.viewStudentsList")}
                         </Button>
                         {canCreateStudents && (
                           <Button
@@ -261,7 +263,7 @@ export default function SchoolInfoPage() {
                             className="w-full"
                           >
                             <Plus className="h-4 w-4 mr-2" />
-                            Agregar Nuevo Estudiante
+                            {t("schoolInfo.addNewStudent")}
                           </Button>
                         )}
                       </div>
@@ -289,7 +291,7 @@ export default function SchoolInfoPage() {
                   <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                        Total de Maestros
+                        {t("schoolInfo.totalTeachers")}
                       </label>
                       <div className="flex items-center gap-2">
                         {loadingTeachersCount ? (
@@ -302,12 +304,12 @@ export default function SchoolInfoPage() {
                     {!isSuperAdmin && (
                       <div className="flex flex-col gap-2">
                         <Button
-                          onClick={() => navigate(schoolId ? `/schools/${schoolId}/teachers` : '/configuration/school-info')}
+                          onClick={() => navigate(schoolId ? `/schools/${schoolId}/teachers` : '/school-settings/school-info')}
                           className="w-full"
                           variant="outline"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Ver Lista de Maestros
+                          {t("schoolInfo.viewTeachersList")}
                         </Button>
                         {canCreateTeachers && (
                           <Button
@@ -315,7 +317,7 @@ export default function SchoolInfoPage() {
                             className="w-full"
                           >
                             <Plus className="h-4 w-4 mr-2" />
-                            Agregar Nuevo Maestro
+                            {t("schoolInfo.addNewTeacher")}
                           </Button>
                         )}
                       </div>

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Search, BookOpen, Plus } from "lucide-react"
 import { useApi } from "@/services/api"
 import { Loading } from "@/components/ui/loading"
+import { useTranslation } from "react-i18next"
 
 interface PaceCatalogItem {
   id: string
@@ -43,6 +44,7 @@ export function PacePickerDialog({
   existingPaceCatalogIds = []
 }: PacePickerDialogProps) {
   const api = useApi()
+  const { t } = useTranslation()
   const [paces, setPaces] = React.useState<PaceCatalogItem[]>([])
   const [loading, setLoading] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -132,7 +134,7 @@ export function PacePickerDialog({
         <div className="flex-1 overflow-y-auto space-y-2 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <Loading variant="spinner" message="Cargando Lecciones..." className="py-0" />
+              <Loading variant="spinner" message={t("projections.loadingLessons")} className="py-0" />
             </div>
           ) : filteredPaces.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">

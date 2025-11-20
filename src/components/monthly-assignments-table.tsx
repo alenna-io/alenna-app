@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useTranslation } from "react-i18next"
 
 export interface MonthlyAssignmentTemplate {
   id: string
@@ -33,20 +34,6 @@ interface ColumnConfig {
   label: string | React.ReactNode
 }
 
-const QUARTER_LABELS: Record<string, string> = {
-  Q1: "Bloque 1",
-  Q2: "Bloque 2",
-  Q3: "Bloque 3",
-  Q4: "Bloque 4",
-}
-
-const COLUMNS: ColumnConfig[] = [
-  { key: 'name', label: 'Nombre de la Asignación' },
-  { key: 'quarter', label: 'Trimestre' },
-  { key: 'status', label: 'Estado' },
-  { key: 'actions', label: '' },
-]
-
 export function MonthlyAssignmentsTable({
   assignments,
   onEdit,
@@ -54,15 +41,30 @@ export function MonthlyAssignmentsTable({
   canEdit = false,
   canDelete = false,
 }: MonthlyAssignmentsTableProps) {
+  const { t } = useTranslation()
   const thClass = "h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm [&:last-child]:w-16"
   const tdClass = "p-4 align-middle first:px-6 first:py-3 [&:last-child]:w-16"
+
+  const QUARTER_LABELS: Record<string, string> = {
+    Q1: t("monthlyAssignments.quarterLabelQ1"),
+    Q2: t("monthlyAssignments.quarterLabelQ2"),
+    Q3: t("monthlyAssignments.quarterLabelQ3"),
+    Q4: t("monthlyAssignments.quarterLabelQ4"),
+  }
+
+  const COLUMNS: ColumnConfig[] = [
+    { key: 'name', label: t("monthlyAssignments.assignmentName") },
+    { key: 'quarter', label: t("monthlyAssignments.quarter") },
+    { key: 'status', label: t("monthlyAssignments.status") },
+    { key: 'actions', label: '' },
+  ]
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <FileText className="h-5 w-5" />
-          Asignaciones Mensuales
+          {t("monthlyAssignments.tableTitle")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -95,11 +97,11 @@ export function MonthlyAssignmentsTable({
                       return (
                         assignment.hasGrades ? (
                           <Badge variant="secondary" className="text-xs">
-                            Con calificaciones
+                            {t("monthlyAssignments.withGrades")}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-xs">
-                            Sin calificaciones
+                            {t("monthlyAssignments.withoutGrades")}
                           </Badge>
                         )
                       )
@@ -128,7 +130,7 @@ export function MonthlyAssignmentsTable({
                                 className="cursor-pointer"
                               >
                                 <Edit className="h-4 w-4 mr-2" />
-                                Editar
+                                {t("monthlyAssignments.edit")}
                               </DropdownMenuItem>
                             )}
                             {canDelete && onDelete && !assignment.hasGrades && (
@@ -140,7 +142,7 @@ export function MonthlyAssignmentsTable({
                                 className="text-red-600 focus:text-red-600 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
+                                {t("monthlyAssignments.delete")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -171,8 +173,8 @@ export function MonthlyAssignmentsTable({
       {assignments.length === 0 && (
         <CardContent className="py-12 text-center">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No hay asignaciones mensuales</h3>
-          <p className="text-muted-foreground">Crea la primera asignación mensual para comenzar</p>
+          <h3 className="text-lg font-semibold mb-2">{t("monthlyAssignments.noAssignments")}</h3>
+          <p className="text-muted-foreground">{t("monthlyAssignments.createFirst")}</p>
         </CardContent>
       )}
     </Card>

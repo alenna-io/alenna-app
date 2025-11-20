@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -21,17 +21,11 @@ import { useApi } from "@/services/api"
 import type { ModuleData } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { LoadingSpinner } from "@/components/ui/loading"
+import { useTranslation } from "react-i18next"
 
 type MenuIcon = typeof GraduationCap
 
-// Module to route/icon mapping keyed by module key
-const moduleConfig: Record<string, { title: string; url: string; icon: MenuIcon }> = {
-  students: { title: "Estudiantes", url: "/students", icon: GraduationCap },
-  users: { title: "Usuarios", url: "/users", icon: Users },
-  schools: { title: "Escuelas", url: "/schools", icon: Building },
-  configuration: { title: "Configuración", url: "/configuration", icon: Settings },
-  // Add more as modules are created
-}
+// Module to route/icon mapping - will be created inside component to use translations
 
 // Always visible items (no module required)
 const staticMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
@@ -42,8 +36,18 @@ export function AppSidebar() {
   const location = useLocation()
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { t } = useTranslation()
   const [modules, setModules] = React.useState<ModuleData[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+
+  // Module to route/icon mapping with translations
+  const moduleConfig: Record<string, { title: string; url: string; icon: MenuIcon }> = React.useMemo(() => ({
+    students: { title: t("sidebar.students"), url: "/students", icon: GraduationCap },
+    users: { title: t("sidebar.users"), url: "/users", icon: Users },
+    schools: { title: t("sidebar.schools"), url: "/schools", icon: Building },
+    configuration: { title: t("sidebar.configuration"), url: "/configuration", icon: Settings },
+    schoolSettings: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
+  }), [t])
 
   // Fetch user's modules - wait for userInfo to be loaded first
   // Use a ref to track if we've already fetched modules for this user to prevent unnecessary re-fetches
@@ -163,7 +167,6 @@ export function AppSidebar() {
   const isSuperAdmin = hasRole('SUPERADMIN')
   const isSchoolAdmin = hasRole('SCHOOL_ADMIN')
   const isTeacherOnly = hasRole('TEACHER') && !isSuperAdmin && !isSchoolAdmin
-  const isParentOnly = hasRole('PARENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER')
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
   const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
 
@@ -198,9 +201,8 @@ export function AppSidebar() {
       return false
     }
 
-    if (module.key === 'configuration' && (isTeacherOnly || isParentOnly || isStudentOnly)) {
-      return false
-    }
+    // Configuration is now available to all users (for language, profile, etc.)
+    // We don't filter it out anymore
 
     if (module.key === 'students' && isStudentOnly) {
       return false
@@ -209,14 +211,13 @@ export function AppSidebar() {
     return true
   })
 
-  // Separate configuration module from other modules
-  const configurationModule = filteredModules.find(module => module.key === 'configuration')
+  // Filter out configuration module (we'll add it manually to configuration section)
   const otherModules = filteredModules.filter(module => module.key !== 'configuration')
 
   const navigationMenuItems = otherModules
     .map(module => {
       const config = moduleConfig[module.key] || {
-        title: module.name,
+        title: t(`modules.${module.key}`) || module.name,
         url: `/${module.key}`,
         icon: FileText,
       }
@@ -230,7 +231,7 @@ export function AppSidebar() {
 
   if (isStudentOnly) {
     navigationMenuItems.push({
-      title: "Mi Perfil",
+      title: t("sidebar.myProfile"),
       url: "/my-profile",
       icon: UserIcon,
     })
@@ -239,13 +240,13 @@ export function AppSidebar() {
   // Add projections menu item for teachers and school admins
   if (isTeacherOrAdmin) {
     navigationMenuItems.push({
-      title: "Proyecciones",
+      title: t("sidebar.projections"),
       url: "/projections",
       icon: BookOpen,
     })
     // Add monthly assignments management for teachers and school admins
     navigationMenuItems.push({
-      title: "Asignaciones Mensuales",
+      title: t("sidebar.monthlyAssignments"),
       url: "/monthly-assignments",
       icon: ClipboardList,
     })
@@ -259,7 +260,7 @@ export function AppSidebar() {
     // For now, we'll add it for teachers/admins - parents/students can access via their profile
     if (isTeacherOrAdmin) {
       navigationMenuItems.push({
-        title: "Boletas",
+        title: t("sidebar.reportCards"),
         url: "/report-cards",
         icon: FileText,
       })
@@ -271,28 +272,31 @@ export function AppSidebar() {
   // Configuration menu items
   const configurationMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = []
 
-  // Add teachers menu item to configuration section for school admins only (before Configuración)
+  // Add School Settings for school admins only (not SUPERADMIN)
   if (isSchoolAdmin && !isSuperAdmin) {
     configurationMenuItems.push({
-      title: "Maestros",
-      url: userInfo?.schoolId ? `/schools/${userInfo.schoolId}/teachers` : "/configuration/school-info",
+      title: t("sidebar.schoolSettings"),
+      url: "/school-settings",
+      icon: Sliders,
+    })
+  }
+
+  // Add teachers menu item to configuration section for school admins only
+  if (isSchoolAdmin && !isSuperAdmin) {
+    configurationMenuItems.push({
+      title: t("sidebar.teachers"),
+      url: userInfo?.schoolId ? `/schools/${userInfo.schoolId}/teachers` : "/school-settings/school-info",
       icon: Users,
     })
   }
 
-  if (configurationModule) {
-    const config = moduleConfig[configurationModule.key] || {
-      title: configurationModule.name,
-      url: `/${configurationModule.key}`,
-      icon: FileText,
-    }
-
-    configurationMenuItems.push({
-      title: config.title,
-      url: config.url,
-      icon: config.icon,
-    })
-  }
+  // Configuration is available to all users (for language, profile, etc.)
+  // Add it even if configurationModule is not present
+  configurationMenuItems.push({
+    title: t("sidebar.configuration"),
+    url: "/configuration",
+    icon: Settings,
+  })
   const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 
@@ -426,7 +430,7 @@ export function AppSidebar() {
 
         {configurationMenuItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Configuración</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("sidebar.configurationSection")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {configurationMenuItems.map((item) => {

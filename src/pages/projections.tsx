@@ -18,6 +18,7 @@ import { CreateProjectionDialog } from "@/components/create-projection-dialog"
 import { CreateEmptyProjectionDialog } from "@/components/create-empty-projection-dialog"
 import { CreateFromTemplateDialog } from "@/components/create-from-template-dialog"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { useTranslation } from "react-i18next"
 
 interface ProjectionWithStudent {
   id: string
@@ -41,6 +42,7 @@ export default function ProjectionsPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { t } = useTranslation()
 
   const [projections, setProjections] = React.useState<ProjectionWithStudent[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -265,8 +267,8 @@ export default function ProjectionsPage() {
     return (
       <div className="space-y-6">
         <ErrorAlert
-          title="Acceso denegado"
-          message="No tienes permiso para ver esta página"
+          title={t("common.accessDenied")}
+          message={t("common.accessDeniedMessage")}
         />
       </div>
     )
@@ -275,12 +277,12 @@ export default function ProjectionsPage() {
   const filterFields: FilterField[] = [
     {
       key: "schoolYear",
-      label: "Año Escolar",
+      label: t("projections.schoolYear"),
       type: "select",
       color: "bg-blue-500",
-      placeholder: "Todos los años",
+      placeholder: t("filters.allYears"),
       options: [
-        { value: "", label: "Todos los años" },
+        { value: "", label: t("filters.allYears") },
         ...schoolYears.map(sy => ({ value: sy.name, label: sy.name }))
       ]
     }
@@ -299,21 +301,21 @@ export default function ProjectionsPage() {
       {/* Page Title */}
       <div className="flex items-center justify-between">
         <PageHeader
-          title="Proyecciones"
-          description="Gestiona las proyecciones académicas de los estudiantes"
+          title={t("projections.title")}
+          description={t("projections.description")}
         />
         <Button
           onClick={() => setShowCreateDialog(true)}
           className="bg-blue-500 hover:bg-blue-600 text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Crear Proyección
+          {t("projections.createProjection")}
         </Button>
       </div>
 
       {/* Search */}
       <SearchBar
-        placeholder="Buscar proyecciones por nombre del estudiante..."
+        placeholder={t("projections.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -357,11 +359,11 @@ export default function ProjectionsPage() {
             <CardContent className="p-12 text-center">
               <EmptyState
                 icon={Calendar}
-                title="No hay proyecciones"
+                title={t("projections.noProjections")}
                 description={
                   filters.schoolYear
-                    ? `No se encontraron proyecciones para el año escolar ${filters.schoolYear}`
-                    : "No se encontraron proyecciones"
+                    ? t("projections.noProjectionsForYear", { year: filters.schoolYear })
+                    : t("projections.noProjectionsFound")
                 }
               />
             </CardContent>
@@ -410,9 +412,9 @@ export default function ProjectionsPage() {
         <ConfirmationDialog
           open={deleteErrorDialogOpen}
           onOpenChange={setDeleteErrorDialogOpen}
-          title="Error al Eliminar Proyección"
+          title={t("projections.deleteError")}
           message={deleteErrorMessage}
-          confirmText="Aceptar"
+          confirmText={t("common.accept")}
           cancelText=""
           onConfirm={() => {
             setDeleteErrorDialogOpen(false)

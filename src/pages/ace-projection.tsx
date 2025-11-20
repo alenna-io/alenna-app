@@ -19,6 +19,7 @@ import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { FileText } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 
 // Helper to create empty quarter data structure
@@ -43,6 +44,7 @@ export default function ACEProjectionPage() {
   const navigate = useNavigate()
   const { studentId, projectionId } = useParams()
   const api = useApi()
+  const { t } = useTranslation()
   const [projectionData, setProjectionData] = React.useState(initialProjectionData)
   const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -236,7 +238,7 @@ export default function ACEProjectionPage() {
         })
       }
 
-      toast.success("Lección movida exitosamente")
+      toast.success(t("projections.lessonMoved"))
 
       // Optionally reload to ensure consistency with backend
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
@@ -252,10 +254,10 @@ export default function ACEProjectionPage() {
       console.error('Error moving Lecture:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to move Lecture'
 
-      toast.error(`Error al mover lección: ${errorMessage}`)
+      toast.error(t("projections.errorMovingLesson") + ": " + errorMessage)
       setErrorDialog({
         open: true,
-        title: "Error Moving Lecture",
+        title: t("projections.errorMovingLessonTitle"),
         message: errorMessage
       })
 
@@ -329,11 +331,11 @@ export default function ACEProjectionPage() {
           grade,
           note: comment,
         })
-        toast.success("Calificación de lección guardada")
+        toast.success(t("projections.lessonGradeSaved"))
       } else {
         // No grade provided = mark as incomplete
         await api.projections.markIncomplete(studentId, projectionId, paceId)
-        toast.success("Lección marcada como incompleta")
+        toast.success(t("projections.lessonMarkedIncomplete"))
       }
 
       // Reload projection data to ensure consistency
@@ -350,10 +352,10 @@ export default function ACEProjectionPage() {
       console.error('Error actualizando Lección:', err)
       const message = err instanceof Error ? err.message : 'Error al actualizar lección'
 
-      toast.error(`Error: ${message}`)
+      toast.error(t("projections.errorPrefix") + ": " + message)
       setErrorDialog({
         open: true,
-        title: "Error actualizando Lección",
+        title: t("projections.errorUpdatingLessonTitle"),
         message
       })
 
@@ -432,7 +434,7 @@ export default function ACEProjectionPage() {
         week: weekIndex + 1
       })
 
-      toast.success("Lección agregada exitosamente")
+      toast.success(t("projections.lessonAdded"))
 
       // Reload projection data to get the real ID and any server-side changes
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
@@ -446,7 +448,7 @@ export default function ACEProjectionPage() {
       setProjectionData(convertedData)
     } catch (err) {
       console.error('Error agregando Lección:', err)
-      const errorMessage = err instanceof Error ? err.message : "Error al agregar la lección"
+      const errorMessage = err instanceof Error ? err.message : t("projections.errorAddingLesson")
       toast.error(errorMessage)
 
       // ROLLBACK: Re-fetch data to remove the optimistic update
@@ -466,8 +468,8 @@ export default function ACEProjectionPage() {
 
       setErrorDialog({
         open: true,
-        title: "Error agregando Lección",
-        message: err instanceof Error ? err.message : 'Error al agregar Lección'
+        title: t("projections.errorAddingLessonTitle"),
+        message: err instanceof Error ? err.message : t("projections.errorAddingLesson")
       })
     }
   }
@@ -499,7 +501,7 @@ export default function ACEProjectionPage() {
       // Remove PACE from projection
       await api.projections.removePace(studentId, projectionId, paceId)
 
-      toast.success("Lección eliminada exitosamente")
+      toast.success(t("projections.lessonDeleted"))
 
       // Reload projection data to ensure consistency
       const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
@@ -513,12 +515,12 @@ export default function ACEProjectionPage() {
       setProjectionData(convertedData)
     } catch (err) {
       console.error('Error eliminando Lección:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar Lección'
+      const errorMessage = err instanceof Error ? err.message : t("projections.errorDeletingLesson")
 
-      toast.error(`Error: ${errorMessage}`)
+      toast.error(t("projections.errorPrefix") + ": " + errorMessage)
       setErrorDialog({
         open: true,
-        title: "Error eliminando Lección",
+        title: t("projections.errorDeletingLessonTitle"),
         message: errorMessage
       })
 
@@ -573,10 +575,10 @@ export default function ACEProjectionPage() {
         {/* Mobile back button */}
         <div className="md:hidden">
           <BackButton to={`/students/${studentId}/projections`}>
-            Volver
+            {t("common.back")}
           </BackButton>
         </div>
-        <Loading variant="spinner" message="Cargando proyección..." />
+        <Loading variant="spinner" message={t("projections.loadingProjection")} />
       </div>
     )
   }
@@ -588,7 +590,7 @@ export default function ACEProjectionPage() {
         {/* Mobile back button */}
         <div className="md:hidden">
           <BackButton to={`/students/${studentId}/projections`}>
-            Volver
+            {t("common.back")}
           </BackButton>
         </div>
         <Card>
@@ -608,7 +610,7 @@ export default function ACEProjectionPage() {
     schoolYear: projectionDetail.schoolYear,
   } : {
     id: '',
-    name: 'Cargando...',
+    name: t("common.loading"),
     currentGrade: '',
     schoolYear: ''
   }
@@ -618,7 +620,7 @@ export default function ACEProjectionPage() {
       {/* Mobile back button */}
       <div className="md:hidden">
         <BackButton to={`/students/${studentId}/projections`}>
-          Volver
+          {t("common.back")}
         </BackButton>
       </div>
 
@@ -628,8 +630,8 @@ export default function ACEProjectionPage() {
       {/* Title with Ver Boleta button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <SectionHeader
-          title="Proyección Anual"
-          description={`Planificación semanal por bloque para el año escolar ${student.schoolYear}`}
+          title={t("projections.annualProjection")}
+          description={t("projections.weeklyPlanningDescription", { year: student.schoolYear })}
         />
         {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && (
           <Button
@@ -638,7 +640,7 @@ export default function ACEProjectionPage() {
             className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Ver Boleta
+            {t("projections.viewReportCard")}
           </Button>
         )}
       </div>
@@ -661,7 +663,7 @@ export default function ACEProjectionPage() {
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="p-4">
               <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-medium text-blue-900">Total de Lecciones del Año Escolar:</span>
+                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
                 <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
               </div>
             </CardContent>
@@ -680,7 +682,7 @@ export default function ACEProjectionPage() {
           onSelect={handlePaceSelect}
           categoryFilter={pacePickerContext.subject}
           levelFilter={projectionDetail?.student.currentLevel}
-          title={`Agregar Lección - ${pacePickerContext.subject} (${pacePickerContext.quarter} Semana ${pacePickerContext.weekIndex + 1})`}
+          title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 })}
           existingPaceCatalogIds={existingPaceCatalogIds}
         />
       )}
@@ -689,17 +691,17 @@ export default function ACEProjectionPage() {
       <Tabs defaultValue={currentQuarter || "Q1"} className="space-y-4 md:space-y-6">
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
           <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
-            <TabsTrigger value="Q1" className="shrink-0">Bloque 1</TabsTrigger>
-            <TabsTrigger value="Q2" className="shrink-0">Bloque 2</TabsTrigger>
-            <TabsTrigger value="Q3" className="shrink-0">Bloque 3</TabsTrigger>
-            <TabsTrigger value="Q4" className="shrink-0">Bloque 4</TabsTrigger>
+            <TabsTrigger value="Q1" className="shrink-0">{t("monthlyAssignments.quarterLabelQ1")}</TabsTrigger>
+            <TabsTrigger value="Q2" className="shrink-0">{t("monthlyAssignments.quarterLabelQ2")}</TabsTrigger>
+            <TabsTrigger value="Q3" className="shrink-0">{t("monthlyAssignments.quarterLabelQ3")}</TabsTrigger>
+            <TabsTrigger value="Q4" className="shrink-0">{t("monthlyAssignments.quarterLabelQ4")}</TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="Q1" className="space-y-4 md:space-y-6">
           <ACEQuarterlyTable
             quarter="Q1"
-            quarterName="Bloque 1"
+            quarterName={t("monthlyAssignments.quarterLabelQ1")}
             data={projectionData.Q1}
             isActive={currentQuarter === "Q1"}
             currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
@@ -722,7 +724,7 @@ export default function ACEProjectionPage() {
         <TabsContent value="Q2" className="space-y-4 md:space-y-6">
           <ACEQuarterlyTable
             quarter="Q2"
-            quarterName="Bloque 2"
+            quarterName={t("monthlyAssignments.quarterLabelQ2")}
             data={projectionData.Q2}
             isActive={currentQuarter === "Q2"}
             currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
@@ -745,7 +747,7 @@ export default function ACEProjectionPage() {
         <TabsContent value="Q3" className="space-y-4 md:space-y-6">
           <ACEQuarterlyTable
             quarter="Q3"
-            quarterName="Bloque 3"
+            quarterName={t("monthlyAssignments.quarterLabelQ3")}
             data={projectionData.Q3}
             isActive={currentQuarter === "Q3"}
             currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
@@ -768,7 +770,7 @@ export default function ACEProjectionPage() {
         <TabsContent value="Q4" className="space-y-4 md:space-y-6">
           <ACEQuarterlyTable
             quarter="Q4"
-            quarterName="Bloque 4"
+            quarterName={t("monthlyAssignments.quarterLabelQ4")}
             data={projectionData.Q4}
             isActive={currentQuarter === "Q4"}
             currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}

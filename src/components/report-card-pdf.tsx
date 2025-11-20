@@ -155,6 +155,31 @@ interface ReportCardPDFProps {
     Q3: ReportCardQuarterData
     Q4: ReportCardQuarterData
   }
+  translations: {
+    detailTitle: string
+    schoolYearLabel: string
+    quarterQ1: string
+    quarterQ2: string
+    quarterQ3: string
+    quarterQ4: string
+    lessons: string
+    subject: string
+    lesson: string
+    average: string
+    academicProjectionCompleted: string
+    yes: string
+    no: string
+    monthlyAssignments: string
+    assignment: string
+    grade: string
+    averageLabel: string
+    lessonsAverage: string
+    monthlyAssignmentsAverage: string
+    passedLessons: string
+    finalGrade: string
+    noLessonsAssigned: string
+    noMonthlyAssignments: string
+  }
 }
 
 const formatGrade = (grade: number | null): string => {
@@ -170,12 +195,13 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
   studentName,
   schoolYear,
   quarters,
+  translations,
 }) => {
   const quarterNames: Record<string, string> = {
-    Q1: "Bloque 1",
-    Q2: "Bloque 2",
-    Q3: "Bloque 3",
-    Q4: "Bloque 4",
+    Q1: translations.quarterQ1,
+    Q2: translations.quarterQ2,
+    Q3: translations.quarterQ3,
+    Q4: translations.quarterQ4,
   }
 
   return (
@@ -191,9 +217,9 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
           <Page key={quarterKey} size="A4" style={styles.page}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Boleta de Calificaciones</Text>
+              <Text style={styles.title}>{translations.detailTitle}</Text>
               <Text style={styles.subtitle}>
-                {studentName} - Año Escolar {schoolYear}
+                {studentName} - {translations.schoolYearLabel} {schoolYear}
               </Text>
               <Text style={styles.quarterTitle}>
                 {quarterNames[quarterKey]}
@@ -203,13 +229,13 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
             {/* PACEs Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                Lecciones ({formatPercentage(quarter.pacePercentage)})
+                {translations.lessons} ({formatPercentage(quarter.pacePercentage)})
               </Text>
               <View style={styles.table}>
                 {/* Header */}
                 <View style={[styles.tableRow, styles.tableHeader]}>
                   <View style={[styles.tableCell, { width: "25%" }]}>
-                    <Text>Materia</Text>
+                    <Text>{translations.subject}</Text>
                   </View>
                   {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
                     <View
@@ -219,11 +245,11 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                         { width: `${60 / maxPacesPerSubject}%` },
                       ]}
                     >
-                      <Text style={styles.textCenter}>Lección</Text>
+                      <Text style={styles.textCenter}>{translations.lesson}</Text>
                     </View>
                   ))}
                   <View style={[styles.tableCellLast, { width: "15%" }]}>
-                    <Text style={styles.textCenter}>PROM.</Text>
+                    <Text style={styles.textCenter}>{translations.average}</Text>
                   </View>
                 </View>
 
@@ -298,7 +324,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                             styles.textRight,
                           ]}
                         >
-                          <Text style={{ fontSize: 8 }}>Lección</Text>
+                          <Text style={{ fontSize: 8 }}>{translations.lesson}</Text>
                         </View>
                         {Array.from({ length: maxPacesPerSubject }).map(
                           (_, i) => (
@@ -342,7 +368,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                       ]}
                     >
                       <Text>
-                        No hay lecciones asignadas para este bloque
+                        {translations.noLessonsAssigned}
                       </Text>
                     </View>
                   </View>
@@ -362,7 +388,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                   ]}
                 >
                   <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>Proyección Académica Completada</Text>
+                    <Text>{translations.academicProjectionCompleted}</Text>
                   </View>
                   <View
                     style={[
@@ -372,7 +398,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                     ]}
                   >
                     <Text>
-                      {quarter.academicProjectionCompleted ? "SÍ" : "NO"}
+                      {quarter.academicProjectionCompleted ? translations.yes : translations.no}
                     </Text>
                   </View>
                 </View>
@@ -382,14 +408,14 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
             {/* Monthly Assignments Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                Asignaciones Mensuales (
+                {translations.monthlyAssignments} (
                 {formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
               </Text>
               <View style={styles.table}>
                 {/* Header */}
                 <View style={[styles.tableRow, styles.tableHeader]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>Asignación</Text>
+                    <Text>{translations.assignment}</Text>
                   </View>
                   <View
                     style={[
@@ -398,7 +424,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                       styles.textCenter,
                     ]}
                   >
-                    <Text>Calificación</Text>
+                    <Text>{translations.grade}</Text>
                   </View>
                 </View>
 
@@ -428,7 +454,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                     {/* Average row */}
                     <View style={[styles.tableRow, styles.tableHeader]}>
                       <View style={[styles.tableCell, { width: "75%" }]}>
-                        <Text>Promedio</Text>
+                        <Text>{translations.averageLabel}</Text>
                       </View>
                       <View
                         style={[
@@ -455,7 +481,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                       ]}
                     >
                       <Text>
-                        No hay asignaciones mensuales para este bloque
+                        {translations.noMonthlyAssignments}
                       </Text>
                     </View>
                   </View>
@@ -469,7 +495,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                 <View style={[styles.tableRow, styles.summaryRow]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
                     <Text>
-                      Promedio Lecciones (
+                      {translations.lessonsAverage} (
                       {formatPercentage(quarter.pacePercentage)})
                     </Text>
                   </View>
@@ -490,7 +516,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                 <View style={[styles.tableRow, styles.summaryRow]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
                     <Text>
-                      Promedio Asignaciones Mensuales (
+                      {translations.monthlyAssignmentsAverage} (
                       {formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
                     </Text>
                   </View>
@@ -510,7 +536,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                 </View>
                 <View style={[styles.tableRow, styles.summaryRow]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>Lecciones Aprobadas</Text>
+                    <Text>{translations.passedLessons}</Text>
                   </View>
                   <View
                     style={[
@@ -524,7 +550,7 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                 </View>
                 <View style={[styles.tableRow, styles.finalRow]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>Calificación Final</Text>
+                    <Text>{translations.finalGrade}</Text>
                   </View>
                   <View
                     style={[

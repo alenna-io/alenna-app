@@ -13,6 +13,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, AlertTriangle } from "lucide-react"
 import type { MonthlyAssignmentTemplate } from "./monthly-assignments-table"
+import { useTranslation } from "react-i18next"
 
 interface MonthlyAssignmentFormDialogProps {
   open: boolean
@@ -25,13 +26,6 @@ interface MonthlyAssignmentFormDialogProps {
   }) => Promise<void>
 }
 
-const QUARTERS = [
-  { value: 'Q1', label: 'Bloque 1 (Q1)' },
-  { value: 'Q2', label: 'Bloque 2 (Q2)' },
-  { value: 'Q3', label: 'Bloque 3 (Q3)' },
-  { value: 'Q4', label: 'Bloque 4 (Q4)' },
-]
-
 export function MonthlyAssignmentFormDialog({
   open,
   onOpenChange,
@@ -39,6 +33,29 @@ export function MonthlyAssignmentFormDialog({
   schoolYearName,
   onSave,
 }: MonthlyAssignmentFormDialogProps) {
+  const { t } = useTranslation()
+
+  const getQuarterLabel = React.useCallback((quarter: string) => {
+    switch (quarter) {
+      case 'Q1':
+        return t("monthlyAssignments.quarterQ1")
+      case 'Q2':
+        return t("monthlyAssignments.quarterQ2")
+      case 'Q3':
+        return t("monthlyAssignments.quarterQ3")
+      case 'Q4':
+        return t("monthlyAssignments.quarterQ4")
+      default:
+        return quarter
+    }
+  }, [t])
+
+  const QUARTERS = React.useMemo(() => [
+    { value: 'Q1', label: getQuarterLabel('Q1') },
+    { value: 'Q2', label: getQuarterLabel('Q2') },
+    { value: 'Q3', label: getQuarterLabel('Q3') },
+    { value: 'Q4', label: getQuarterLabel('Q4') },
+  ], [getQuarterLabel])
   const [isSaving, setIsSaving] = React.useState(false)
   const [formData, setFormData] = React.useState<{
     name: string
@@ -94,12 +111,12 @@ export function MonthlyAssignmentFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            {assignment ? "Editar Asignación Mensual" : "Crear Nueva Asignación Mensual"}
+            {assignment ? t("monthlyAssignments.editAssignment") : t("monthlyAssignments.createAssignment")}
           </DialogTitle>
           <DialogDescription>
             {assignment
-              ? "Modifica el nombre de la asignación. Esto actualizará el nombre para todos los estudiantes."
-              : `Esta asignación se aplicará a todos los estudiantes del año escolar "${schoolYearName || ''}" para el trimestre seleccionado.`}
+              ? t("forms.editAssignment")
+              : t("forms.createAssignment", { schoolYear: schoolYearName || '' })}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,10 +127,10 @@ export function MonthlyAssignmentFormDialog({
                 <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-yellow-800 mb-1">
-                    Importante
+                    {t("common.important")}
                   </p>
                   <p className="text-sm text-yellow-700">
-                    Esta asignación se creará automáticamente para todos los estudiantes activos del año escolar.
+                    {t("forms.assignmentAutoCreate")}
                   </p>
                 </div>
               </div>
@@ -123,10 +140,10 @@ export function MonthlyAssignmentFormDialog({
           <FieldGroup>
             {!assignment && (
               <Field>
-                <FieldLabel htmlFor="quarter">Trimestre</FieldLabel>
+                <FieldLabel htmlFor="quarter">{t("monthlyAssignments.quarter")}</FieldLabel>
                 <Select value={formData.quarter} onValueChange={(value) => setFormData({ ...formData, quarter: value })}>
                   <SelectTrigger id="quarter">
-                    <SelectValue placeholder="Selecciona un trimestre" />
+                    <SelectValue placeholder={t("monthlyAssignments.selectQuarter")} />
                   </SelectTrigger>
                   <SelectContent>
                     {QUARTERS.map(q => (
@@ -140,22 +157,22 @@ export function MonthlyAssignmentFormDialog({
             )}
             {assignment && (
               <Field>
-                <FieldLabel>Trimestre</FieldLabel>
+                <FieldLabel>{t("monthlyAssignments.quarter")}</FieldLabel>
                 <div className="text-sm text-muted-foreground">
-                  {QUARTERS.find(q => q.value === formData.quarter)?.label || formData.quarter}
+                  {getQuarterLabel(formData.quarter)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  El trimestre no puede ser modificado después de crear la asignación.
+                  {t("forms.quarterCannotBeModified")}
                 </p>
               </Field>
             )}
             <Field>
-              <FieldLabel htmlFor="assignment-name">Nombre de la Asignación</FieldLabel>
+              <FieldLabel htmlFor="assignment-name">{t("monthlyAssignments.assignmentName")}</FieldLabel>
               <Input
                 id="assignment-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ej: Reporte Oral, Verso Bíblico..."
+                placeholder={t("monthlyAssignments.namePlaceholder")}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !isSaving) {
                     handleSave()
@@ -172,14 +189,14 @@ export function MonthlyAssignmentFormDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving || !formData.name.trim() || (!assignment && !formData.quarter)}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isSaving ? "Guardando..." : assignment ? "Guardar Cambios" : "Crear Asignación"}
+            {isSaving ? t("common.saving") : assignment ? t("common.save") : t("monthlyAssignments.newAssignment")}
           </Button>
         </DialogFooter>
       </DialogContent>

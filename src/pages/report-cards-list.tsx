@@ -13,11 +13,13 @@ import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
+import { useTranslation } from "react-i18next"
 
 export default function ReportCardsListPage() {
   const navigate = useNavigate()
   const { studentId } = useParams()
   const api = useApi()
+  const { t } = useTranslation()
 
   const [student, setStudent] = React.useState<Student | null>(null)
   const [projections, setProjections] = React.useState<Projection[]>([])
@@ -104,14 +106,14 @@ export default function ReportCardsListPage() {
       {/* Mobile back button */}
       <div className="md:hidden">
         <BackButton to={backDestination}>
-          Volver
+          {t("common.back")}
         </BackButton>
       </div>
 
       {/* Page Title */}
       <PageHeader
-        title="Boletas de Calificaciones"
-        description="Historial de boletas por año escolar"
+        title={t("reportCards.listTitle")}
+        description={t("reportCards.listDescription")}
       />
 
       {/* Projections List */}
@@ -128,10 +130,10 @@ export default function ReportCardsListPage() {
                   <div className="flex items-center gap-3">
                     <div>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        Año Escolar {projection.schoolYear}
+                        {t("projections.schoolYear")} {projection.schoolYear}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(projection.startDate).toLocaleDateString("es-MX")} - {new Date(projection.endDate).toLocaleDateString("es-MX")}
+                        {new Date(projection.startDate).toLocaleDateString()} - {new Date(projection.endDate).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -155,8 +157,8 @@ export default function ReportCardsListPage() {
           <CardContent className="p-12 text-center">
             <EmptyState
               icon={FileText}
-              title="No hay boletas"
-              description="No se han creado proyecciones para este estudiante"
+              title={t("reportCards.noReportCards")}
+              description={t("reportCards.noProjectionsYet")}
             />
           </CardContent>
         </Card>

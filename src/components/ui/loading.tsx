@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 /**
  * Unified Loading Component
@@ -67,12 +68,14 @@ interface LoadingProps {
 
 export function Loading({
   variant = "spinner",
-  message = "Cargando...",
+  message,
   size = "md",
   inline = false,
   className,
   children
 }: LoadingProps) {
+  const { t } = useTranslation()
+  const displayMessage = message || t("common.loading")
   // SPINNER VARIANT (default)
   if (variant === "spinner") {
     const sizeClasses = {
@@ -95,8 +98,8 @@ export function Loading({
           <div className="flex items-center justify-center">
             <Loader2 className={cn("animate-spin text-primary", sizeClasses[size])} />
           </div>
-          {message && (
-            <p className="text-sm text-muted-foreground">{message}</p>
+          {displayMessage && (
+            <p className="text-sm text-muted-foreground">{displayMessage}</p>
           )}
         </div>
       </div>

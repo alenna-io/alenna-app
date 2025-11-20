@@ -16,6 +16,7 @@ import type { UserInfo } from "@/services/api"
 import { UsersTable } from "@/components/users-table"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
+import { useTranslation } from "react-i18next"
 
 interface User {
   id: string
@@ -47,6 +48,7 @@ export default function UsersPage() {
   const { schoolId } = useParams()
   const api = useApi()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [users, setUsers] = React.useState<User[]>([])
   const [roles, setRoles] = React.useState<Role[]>([])
   const [schools, setSchools] = React.useState<Array<{ id: string, name: string }>>([])
@@ -91,14 +93,14 @@ export default function UsersPage() {
 
       if (!canManageUsers) {
         if (isSuperAdmin) {
-          setError("Los super administradores no pueden gestionar usuarios. Esta funcionalidad está disponible solo para administradores de escuela.")
+          setError(t("users.superAdminError"))
         } else {
-          setError("No tienes permisos para acceder a esta página.")
+          setError(t("common.error"))
         }
         return
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cargar información del usuario"
+      const errorMessage = err instanceof Error ? err.message : t("users.loadError")
       setError(errorMessage)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -115,7 +117,7 @@ export default function UsersPage() {
 
       setUsers(usersData)
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cargar usuarios"
+      const errorMessage = err instanceof Error ? err.message : t("users.loadUsersError")
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -300,13 +302,13 @@ export default function UsersPage() {
       {/* Back button for school context */}
       {schoolId && (
         <BackButton onClick={() => navigate(`/schools/${schoolId}`)}>
-          Volver a Información de la Escuela
+          {t("users.backToSchoolInfo")}
         </BackButton>
       )}
 
       <PageHeader
-        title={schoolId ? "Maestros de la Escuela" : "Gestión de Usuarios"}
-        description={schoolId ? "Administra los maestros de esta escuela específica" : "Administra los usuarios del sistema"}
+        title={schoolId ? t("users.titleForSchool") : t("users.title")}
+        description={schoolId ? t("users.descriptionForSchool") : t("users.description")}
       />
 
       {error && (
@@ -318,7 +320,7 @@ export default function UsersPage() {
 
       {/* Search */}
       <SearchBar
-        placeholder="Buscar usuarios por nombre o email..."
+        placeholder={t("users.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -360,7 +362,7 @@ export default function UsersPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <UserIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No se encontraron usuarios</p>
+            <p className="text-muted-foreground">{t("users.noUsers")}</p>
           </CardContent>
         </Card>
       )}

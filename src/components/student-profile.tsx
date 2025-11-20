@@ -7,6 +7,7 @@ import { LinkButton } from "@/components/ui/link-button"
 // BackButton replaced with shadcn Button
 import { Calendar } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import type { Student } from "@/types/student"
 import { ParentProfileDialog } from "@/components/parent-profile-dialog"
 
@@ -19,6 +20,7 @@ interface StudentProfileProps {
 
 export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [selectedParent, setSelectedParent] = React.useState<Student['parents'][0] | null>(null)
   const [isParentDialogOpen, setIsParentDialogOpen] = React.useState(false)
 
@@ -33,12 +35,12 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
             onClick={onBack}
             className="mb-4"
           >
-            ← Volver a Estudiantes
+            {t("students.backToStudents")}
           </Button>
         </div>
       )}
 
-      <h1 className="text-xl font-bold">Perfil del Estudiante</h1>
+      <h1 className="text-xl font-bold">{t("students.title")}</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Header */}
@@ -63,7 +65,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         {/* Personal Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Información Personal</CardTitle>
+            <CardTitle>{t("students.personalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -104,7 +106,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         {/* Academic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Información Académica</CardTitle>
+            <CardTitle>{t("students.academicInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -145,13 +147,13 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                Proyecciones Académicas
+                {t("projections.academicProjections")}
               </CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Planificación semanal de PACEs por año escolar
+              {t("projections.weeklyPlanning")}
             </p>
             {(isParentView || isStudentView) ? (
               <LinkButton
@@ -162,7 +164,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                 onClick={() => navigate(`/students/${student.id}/projections`)}
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Ver Proyecciones
+                {t("projections.viewProjections")}
               </LinkButton>
             ) : (
               <LinkButton
@@ -173,7 +175,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                 onClick={() => navigate(`/students/${student.id}/projections`)}
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                Administrar Proyecciones
+                {t("projections.manageProjections")}
               </LinkButton>
             )}
           </CardContent>
@@ -183,7 +185,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         {!isParentView && !isStudentView && (
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Información de Padres</CardTitle>
+              <CardTitle>{t("students.parentsInfo")}</CardTitle>
             </CardHeader>
             <CardContent>
               {student.parents.length > 0 ? (
@@ -220,7 +222,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                 </div>
               ) : (
                 <p className="text-muted-foreground">
-                  No se ha registrado información de padres
+                  {t("students.noParents")}
                 </p>
               )}
             </CardContent>

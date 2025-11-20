@@ -13,6 +13,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Calendar } from "lucide-react"
 import type { SchoolYear } from "@/services/api"
+import { useTranslation } from "react-i18next"
 
 interface SchoolYearFormDialogProps {
   open: boolean
@@ -42,6 +43,7 @@ export function SchoolYearFormDialog({
   existingSchoolYears = [],
   onSave,
 }: SchoolYearFormDialogProps) {
+  const { t } = useTranslation()
   const [isSaving, setIsSaving] = React.useState(false)
   const [errors, setErrors] = React.useState<{
     quarters?: Array<{ startDate?: string; endDate?: string }>
@@ -65,10 +67,10 @@ export function SchoolYearFormDialog({
     startDate: "",
     endDate: "",
     quarters: [
-      { name: "Q1", displayName: "Bloque 1", startDate: "", endDate: "", order: 1, weeksCount: 9 },
-      { name: "Q2", displayName: "Bloque 2", startDate: "", endDate: "", order: 2, weeksCount: 9 },
-      { name: "Q3", displayName: "Bloque 3", startDate: "", endDate: "", order: 3, weeksCount: 9 },
-      { name: "Q4", displayName: "Bloque 4", startDate: "", endDate: "", order: 4, weeksCount: 9 },
+      { name: "Q1", displayName: t("monthlyAssignments.quarterLabelQ1"), startDate: "", endDate: "", order: 1, weeksCount: 9 },
+      { name: "Q2", displayName: t("monthlyAssignments.quarterLabelQ2"), startDate: "", endDate: "", order: 2, weeksCount: 9 },
+      { name: "Q3", displayName: t("monthlyAssignments.quarterLabelQ3"), startDate: "", endDate: "", order: 3, weeksCount: 9 },
+      { name: "Q4", displayName: t("monthlyAssignments.quarterLabelQ4"), startDate: "", endDate: "", order: 4, weeksCount: 9 },
     ],
   })
 
@@ -103,15 +105,23 @@ export function SchoolYearFormDialog({
           name: schoolYear.name,
           startDate: schoolYear.startDate.split("T")[0],
           endDate: schoolYear.endDate.split("T")[0],
-          quarters: schoolYear.quarters?.map(q => ({
-            id: q.id,
-            name: q.name,
-            displayName: q.displayName,
-            startDate: q.startDate.split("T")[0],
-            endDate: q.endDate.split("T")[0],
-            order: q.order,
-            weeksCount: q.weeksCount,
-          })) || [],
+          quarters: schoolYear.quarters?.map((q, idx) => {
+            const quarterLabels = [
+              t("monthlyAssignments.quarterLabelQ1"),
+              t("monthlyAssignments.quarterLabelQ2"),
+              t("monthlyAssignments.quarterLabelQ3"),
+              t("monthlyAssignments.quarterLabelQ4"),
+            ]
+            return {
+              id: q.id,
+              name: q.name,
+              displayName: quarterLabels[idx] || q.displayName,
+              startDate: q.startDate.split("T")[0],
+              endDate: q.endDate.split("T")[0],
+              order: q.order,
+              weeksCount: q.weeksCount,
+            }
+          }) || [],
         })
       } else {
         // Creating new school year - suggest next year
@@ -122,11 +132,17 @@ export function SchoolYearFormDialog({
         let suggestedName = ""
         let suggestedStartDate = ""
         let suggestedEndDate = ""
+        const quarterLabels = [
+          t("monthlyAssignments.quarterLabelQ1"),
+          t("monthlyAssignments.quarterLabelQ2"),
+          t("monthlyAssignments.quarterLabelQ3"),
+          t("monthlyAssignments.quarterLabelQ4"),
+        ]
         let suggestedQuarters = [
-          { name: "Q1", displayName: "Bloque 1", startDate: "", endDate: "", order: 1, weeksCount: 9 },
-          { name: "Q2", displayName: "Bloque 2", startDate: "", endDate: "", order: 2, weeksCount: 9 },
-          { name: "Q3", displayName: "Bloque 3", startDate: "", endDate: "", order: 3, weeksCount: 9 },
-          { name: "Q4", displayName: "Bloque 4", startDate: "", endDate: "", order: 4, weeksCount: 9 },
+          { name: "Q1", displayName: quarterLabels[0], startDate: "", endDate: "", order: 1, weeksCount: 9 },
+          { name: "Q2", displayName: quarterLabels[1], startDate: "", endDate: "", order: 2, weeksCount: 9 },
+          { name: "Q3", displayName: quarterLabels[2], startDate: "", endDate: "", order: 3, weeksCount: 9 },
+          { name: "Q4", displayName: quarterLabels[3], startDate: "", endDate: "", order: 4, weeksCount: 9 },
         ]
 
         if (latestYear) {
@@ -139,12 +155,12 @@ export function SchoolYearFormDialog({
           suggestedEndDate = new Date(prevEndDate.setFullYear(prevEndDate.getFullYear() + 1)).toISOString().split('T')[0]
 
           if (latestYear.quarters) {
-            suggestedQuarters = latestYear.quarters.map(q => {
+            suggestedQuarters = latestYear.quarters.map((q, idx) => {
               const qStart = new Date(q.startDate)
               const qEnd = new Date(q.endDate)
               return {
                 name: q.name,
-                displayName: q.displayName,
+                displayName: quarterLabels[idx] || q.displayName,
                 startDate: new Date(qStart.setFullYear(qStart.getFullYear() + 1)).toISOString().split('T')[0],
                 endDate: new Date(qEnd.setFullYear(qEnd.getFullYear() + 1)).toISOString().split('T')[0],
                 order: q.order,
@@ -162,7 +178,7 @@ export function SchoolYearFormDialog({
         })
       }
     }
-  }, [open, schoolYear, existingSchoolYears])
+  }, [open, schoolYear, existingSchoolYears, t])
 
   const validateForm = (): boolean => {
     const newErrors: {
@@ -216,7 +232,24 @@ export function SchoolYearFormDialog({
 
     try {
       setIsSaving(true)
-      await onSave(formData)
+      // Auto-generate displayName based on current language
+      const quartersWithDisplayName = formData.quarters.map((quarter, index) => {
+        const quarterLabels = [
+          t("monthlyAssignments.quarterLabelQ1"),
+          t("monthlyAssignments.quarterLabelQ2"),
+          t("monthlyAssignments.quarterLabelQ3"),
+          t("monthlyAssignments.quarterLabelQ4"),
+        ]
+        return {
+          ...quarter,
+          displayName: quarterLabels[index] || quarter.displayName
+        }
+      })
+
+      await onSave({
+        ...formData,
+        quarters: quartersWithDisplayName
+      })
       onOpenChange(false)
     } catch (error) {
       console.error('Error saving school year:', error)
@@ -237,7 +270,7 @@ export function SchoolYearFormDialog({
           <DialogDescription>
             {schoolYear
               ? "Modifica la configuración del año académico"
-              : "Configura un nuevo año académico para tu escuela"}
+              : t("forms.configureNewSchoolYear")}
           </DialogDescription>
         </DialogHeader>
 
@@ -246,7 +279,7 @@ export function SchoolYearFormDialog({
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              Información Básica
+              {t("forms.basicInfo")}
             </h3>
             <FieldGroup>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -303,7 +336,7 @@ export function SchoolYearFormDialog({
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Configuración de Trimestres
+              {t("forms.quartersConfig")}
             </h3>
             <div className="space-y-4">
               {formData.quarters.map((quarter, index) => (
@@ -312,23 +345,17 @@ export function SchoolYearFormDialog({
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
                       <span className="text-xs font-bold text-green-700">{quarter.order}</span>
                     </div>
-                    <h4 className="font-medium text-gray-900">{quarter.displayName}</h4>
+                    <h4 className="font-medium text-gray-900">
+                      {[
+                        t("monthlyAssignments.quarterLabelQ1"),
+                        t("monthlyAssignments.quarterLabelQ2"),
+                        t("monthlyAssignments.quarterLabelQ3"),
+                        t("monthlyAssignments.quarterLabelQ4"),
+                      ][index]}
+                    </h4>
                   </div>
                   <FieldGroup>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <Field>
-                        <FieldLabel htmlFor={`quarter-${index}-name`}>Nombre del Trimestre</FieldLabel>
-                        <Input
-                          id={`quarter-${index}-name`}
-                          value={quarter.displayName}
-                          onChange={(e) => {
-                            const newQuarters = [...formData.quarters]
-                            newQuarters[index].displayName = e.target.value
-                            setFormData({ ...formData, quarters: newQuarters })
-                          }}
-                          placeholder="Ej: Primer Trimestre"
-                        />
-                      </Field>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <Field>
                         <FieldLabel htmlFor={`quarter-${index}-start`}>Fecha de Inicio</FieldLabel>
                         <DatePicker
@@ -415,7 +442,7 @@ export function SchoolYearFormDialog({
             disabled={isSaving}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isSaving ? "Guardando..." : schoolYear ? "Guardar Cambios" : "Crear Año Escolar"}
+            {isSaving ? t("common.saving") : schoolYear ? t("common.save") : t("schoolYears.createSchoolYear")}
           </Button>
         </DialogFooter>
       </DialogContent>

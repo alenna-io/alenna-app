@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useTranslation } from "react-i18next"
 
 interface TeachersTableProps {
   teachers: Teacher[]
@@ -31,14 +32,6 @@ interface ColumnConfig {
   sortable?: boolean
 }
 
-const COLUMNS: ColumnConfig[] = [
-  { key: 'firstName', label: 'Nombre', sortable: true },
-  { key: 'lastName', label: 'Apellidos', sortable: true },
-  { key: 'email', label: 'Email', sortable: false },
-  { key: 'roles', label: 'Roles', sortable: false },
-  { key: 'actions', label: '', sortable: false },
-]
-
 export function TeachersTable({
   teachers,
   onTeacherSelect,
@@ -50,6 +43,15 @@ export function TeachersTable({
   totalItems,
   onPageChange
 }: TeachersTableProps) {
+  const { t } = useTranslation()
+
+  const COLUMNS: ColumnConfig[] = [
+    { key: 'firstName', label: t("common.name"), sortable: true },
+    { key: 'lastName', label: t("common.lastName"), sortable: true },
+    { key: 'email', label: t("common.email"), sortable: false },
+    { key: 'roles', label: t("teachers.roles"), sortable: false },
+    { key: 'actions', label: '', sortable: false },
+  ]
 
   const getSortIcon = (field: "firstName" | "lastName") => {
     const isActive = sortField === field
@@ -91,7 +93,7 @@ export function TeachersTable({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          Maestros
+          {t("teachers.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -174,7 +176,7 @@ export function TeachersTable({
                               }}
                             >
                               <Eye className="h-4 w-4 mr-2" />
-                              Detalles
+                              {t("common.view")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -205,7 +207,7 @@ export function TeachersTable({
         {teachers.length === 0 && (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay maestros para mostrar</p>
+            <p className="text-muted-foreground">{t("teachers.noTeachersToShow")}</p>
           </div>
         )}
       </CardContent>

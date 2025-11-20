@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
+import { useTranslation } from "react-i18next"
 
 interface DailyGoalsTableProps {
   quarter: string
@@ -18,7 +19,7 @@ interface DailyGoalsTableProps {
   dayTotals?: number[]
 }
 
-const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
+// Days will be translated dynamically
 
 // Color system for subjects (matching projections)
 const getSubjectColor = (index: number) => {
@@ -38,6 +39,14 @@ export function DailyGoalsTable({
   onNotesUpdate,
   dayTotals
 }: DailyGoalsTableProps) {
+  const { t } = useTranslation()
+  const days = [
+    t("dailyGoals.monday"),
+    t("dailyGoals.tuesday"),
+    t("dailyGoals.wednesday"),
+    t("dailyGoals.thursday"),
+    t("dailyGoals.friday")
+  ]
   const [editingCell, setEditingCell] = React.useState<{ subject: string, dayIndex: number } | null>(null)
   const [editValue, setEditValue] = React.useState("")
   const [editingNotes, setEditingNotes] = React.useState<{ subject: string, dayIndex: number } | null>(null)
@@ -156,9 +165,9 @@ export function DailyGoalsTable({
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
               <Calendar className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
-              <span className="truncate">Metas Diarias</span>
+              <span className="truncate">{t("dailyGoals.title")}</span>
               <Badge variant="secondary" className="text-xs md:text-sm">
-                {quarterName} - Semana {week}
+                {quarterName} - {t("common.week")} {week}
               </Badge>
             </CardTitle>
           </div>
@@ -166,7 +175,7 @@ export function DailyGoalsTable({
             <div className="flex items-center gap-2 text-xs md:text-sm">
               <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
               <span className="font-medium">
-                {subjects.length} {subjects.length === 1 ? 'materia' : 'materias'}
+                {subjects.length} {subjects.length === 1 ? t("dailyGoals.subjectSingular") : t("dailyGoals.subjectPlural")}
               </span>
             </div>
           </div>
@@ -179,7 +188,7 @@ export function DailyGoalsTable({
             <thead>
               <tr>
                 <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300">
-                  Día
+                  {t("dailyGoals.day")}
                 </th>
                 {subjects.map((subject) => (
                   <th
@@ -240,7 +249,7 @@ export function DailyGoalsTable({
                                     value={editValue}
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="ej: 1-10, ST, o T"
+                                    placeholder={t("dailyGoals.inputPlaceholder")}
                                     className={`w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 ${editValue && !isValid
                                       ? 'border-red-500 focus:ring-red-500 bg-red-50'
                                       : 'focus:ring-primary'
@@ -250,8 +259,8 @@ export function DailyGoalsTable({
                                   <div className={`text-xs mt-1 text-center ${editValue && !isValid ? 'text-red-500' : 'text-gray-500'
                                     }`}>
                                     {editValue && !isValid
-                                      ? 'Formato inválido. Use: inicio-fin (1-1000), ST, o T'
-                                      : 'Formato: inicio-fin (1-1000), ST, o T'
+                                      ? t("dailyGoals.invalidFormat")
+                                      : t("dailyGoals.formatHint")
                                     }
                                   </div>
                                 </>
@@ -262,14 +271,14 @@ export function DailyGoalsTable({
                             <button
                               onClick={handleGoalSubmit}
                               className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                              title="Guardar"
+                              title={t("common.save")}
                             >
                               <Check className="h-4 w-4" />
                             </button>
                             <button
                               onClick={handleGoalCancel}
                               className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                              title="Cancelar"
+                              title={t("common.cancel")}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -281,7 +290,7 @@ export function DailyGoalsTable({
                             value={notesValue}
                             onChange={(e) => setNotesValue(e.target.value)}
                             onKeyDown={handleNotesKeyDown}
-                            placeholder="Nota pendiente..."
+                            placeholder={t("dailyGoals.notePendingPlaceholder")}
                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400 resize-none"
                             rows={2}
                             autoFocus
@@ -290,14 +299,14 @@ export function DailyGoalsTable({
                             <button
                               onClick={handleNotesSubmit}
                               className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors cursor-pointer"
-                              title="Guardar"
+                              title={t("common.save")}
                             >
                               <Check className="h-4 w-4" />
                             </button>
                             <button
                               onClick={handleNotesCancel}
                               className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors cursor-pointer"
-                              title="Cancelar"
+                              title={t("common.cancel")}
                             >
                               <X className="h-4 w-4" />
                             </button>
@@ -339,7 +348,7 @@ export function DailyGoalsTable({
                                 }`}>
                                 {data[subject]?.[dayIndex]?.text || (
                                   <span className="text-muted-foreground/50 text-xs">
-                                    {isEditable ? 'Agregar' : '—'}
+                                    {isEditable ? t("dailyGoals.add") : '—'}
                                   </span>
                                 )}
                               </span>
@@ -369,10 +378,10 @@ export function DailyGoalsTable({
                                   }`}
                                 title={
                                   data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted
-                                    ? "Editar nota"
+                                    ? t("dailyGoals.editNote")
                                     : (data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0)
-                                      ? "Ver historial de notas"
-                                      : "Agregar nota"
+                                      ? t("dailyGoals.viewNotesHistory")
+                                      : t("dailyGoals.addNote")
                                 }
                               >
                                 {data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0 && !data[subject]?.[dayIndex]?.notes ? (
@@ -386,7 +395,7 @@ export function DailyGoalsTable({
                           {data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted && (
                             <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
                               <div className="flex-1">
-                                <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">Pendiente</p>
+                                <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">{t("dailyGoals.pending")}</p>
                                 <p className="text-sm font-medium leading-tight">
                                   {data[subject]?.[dayIndex]?.notes}
                                 </p>
@@ -415,19 +424,19 @@ export function DailyGoalsTable({
               <p className="text-lg md:text-2xl font-bold text-green-600">
                 {completedGoals}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Metas Completadas</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.completedGoals")}</p>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
               <p className="text-lg md:text-2xl font-bold text-blue-600">
                 {subjects.length * 5}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Total de Metas</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.totalGoals")}</p>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
               <p className="text-lg md:text-2xl font-bold text-purple-600">
                 {subjects.length}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">Materias</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.subjects")}</p>
             </div>
           </div>
         </div>
@@ -439,12 +448,12 @@ export function DailyGoalsTable({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Historial de Notas
+              {t("dailyGoals.notesHistory")}
             </DialogTitle>
             <DialogDescription>
               {notesHistory && (
                 <>
-                  Día: <span className="font-semibold">{days[notesHistory.dayIndex]}</span> • Materia: <span className="font-semibold">{notesHistory.subject}</span>
+                  {t("dailyGoals.day")}: <span className="font-semibold">{days[notesHistory.dayIndex]}</span> • {t("dailyGoals.subject")}: <span className="font-semibold">{notesHistory.subject}</span>
                 </>
               )}
             </DialogDescription>

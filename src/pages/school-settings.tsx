@@ -3,12 +3,13 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/page-header";
-import { ChevronRight, Languages } from "lucide-react";
+import { Building2, Calendar, ChevronRight, Lock } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { ModuleData } from "@/services/api";
+import { useUser } from "@/contexts/UserContext";
 import { useTranslation } from "react-i18next";
 
-interface ConfigModule {
+interface SchoolSettingsModule {
   id: string;
   title: string;
   description: string;
@@ -19,27 +20,44 @@ interface ConfigModule {
   readOnly?: boolean;
 }
 
-// Note: configModules will be defined inside the component to use translations
-
-export default function ConfigurationPage() {
+export default function SchoolSettingsPage() {
   const navigate = useNavigate();
   const api = useApi();
+  const { userInfo } = useUser();
   const { t } = useTranslation();
   const [userPermissions, setUserPermissions] = React.useState<Set<string>>(new Set());
   const [loading, setLoading] = React.useState(true);
 
+  // Check if user is SUPERADMIN
+  const isSuperAdmin = React.useMemo(() => {
+    return userInfo?.roles?.some((role) => role.name === 'SUPERADMIN') ?? false;
+  }, [userInfo]);
 
-  // Define config modules with translations
-  // Configuration is for user preferences (language, profile, passwords, etc.)
-  const configModules: ConfigModule[] = React.useMemo(() => [
+  // Check if user is SCHOOL_ADMIN
+  const isSchoolAdmin = React.useMemo(() => {
+    return userInfo?.roles?.some((role) => role.name === 'SCHOOL_ADMIN') ?? false;
+  }, [userInfo]);
+
+  // Define school settings modules with translations
+  const schoolSettingsModules: SchoolSettingsModule[] = React.useMemo(() => [
     {
-      id: "language",
-      title: t("configuration.language.title"),
-      description: t("configuration.language.description"),
-      icon: Languages,
-      path: "/configuration/language",
-      readPermission: "users.read", // Everyone can read their own language preference
-      writePermission: "users.update", // Everyone can update their own language preference
+      id: "school-info",
+      title: t("schoolSettings.schoolInfo.title"),
+      description: t("schoolSettings.schoolInfo.description"),
+      icon: Building2,
+      path: "/school-settings/school-info",
+      readPermission: "schoolInfo.read",
+      writePermission: "schoolInfo.update",
+      readOnly: true, // Managed by Alenna
+    },
+    {
+      id: "school-year",
+      title: t("schoolSettings.schoolYear.title"),
+      description: t("schoolSettings.schoolYear.description"),
+      icon: Calendar,
+      path: "/school-settings/school-years",
+      readPermission: "schoolYear.read",
+      writePermission: "schoolYear.update",
     },
   ], [t]);
 
@@ -68,12 +86,21 @@ export default function ConfigurationPage() {
     return userPermissions.has(permission);
   };
 
+  const canWrite = (module: SchoolSettingsModule) => {
+    return module.writePermission && hasPermission(module.writePermission);
+  };
+
   if (loading) {
     return <Loading variant="list" />;
   }
 
+  // Only school admins can access school settings (not SUPERADMIN or others)
+  if (!isSchoolAdmin || isSuperAdmin) {
+    return <Navigate to="/404" replace />;
+  }
+
   // Filter modules user has access to
-  const accessibleModules = configModules.filter(module => {
+  const accessibleModules = schoolSettingsModules.filter(module => {
     if (!hasPermission(module.readPermission)) {
       return false;
     }
@@ -83,13 +110,14 @@ export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t("configuration.title")}
-        description={t("configuration.description")}
+        title={t("schoolSettings.title")}
+        description={t("schoolSettings.description")}
       />
 
       <div className="space-y-3">
         {accessibleModules.map((module) => {
           const Icon = module.icon;
+          const isReadOnly = module.readOnly || !canWrite(module);
 
           return (
             <Card
@@ -104,8 +132,11 @@ export default function ConfigurationPage() {
                       <Icon className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
                         {module.title}
+                        {isReadOnly && (
+                          <Lock className="h-4 w-4 text-muted-foreground" />
+                        )}
                       </h3>
                       <p className="text-sm text-muted-foreground">{module.description}</p>
                     </div>
@@ -124,5 +155,3 @@ export default function ConfigurationPage() {
     </div>
   );
 }
-
-
