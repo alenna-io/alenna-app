@@ -270,11 +270,18 @@ export function AppSidebar() {
   const allNavigationItems = [...staticMenuItems, ...navigationMenuItems]
 
   // Configuration menu items
-  const configurationMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = []
+  // Always include Configuration for all users (for language, profile, etc.)
+  const configurationMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
+    {
+      title: t("sidebar.configuration"),
+      url: "/configuration",
+      icon: Settings,
+    }
+  ]
 
   // Add School Settings for school admins only (not SUPERADMIN)
   if (isSchoolAdmin && !isSuperAdmin) {
-    configurationMenuItems.push({
+    configurationMenuItems.unshift({
       title: t("sidebar.schoolSettings"),
       url: "/school-settings",
       icon: Sliders,
@@ -289,14 +296,6 @@ export function AppSidebar() {
       icon: Users,
     })
   }
-
-  // Configuration is available to all users (for language, profile, etc.)
-  // Add it even if configurationModule is not present
-  configurationMenuItems.push({
-    title: t("sidebar.configuration"),
-    url: "/configuration",
-    icon: Settings,
-  })
   const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 
