@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Building, AlertTriangle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface School {
   id: string
@@ -42,6 +43,7 @@ export function SchoolFormDialog({
   school,
   onSave,
 }: SchoolFormDialogProps) {
+  const { t } = useTranslation()
   const [isSaving, setIsSaving] = React.useState(false)
   const [errors, setErrors] = React.useState<{
     name?: string
@@ -162,12 +164,12 @@ export function SchoolFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building className="h-5 w-5" />
-            {school ? "Editar Escuela" : "Crear Nueva Escuela"}
+            {school ? t("schools.editSchool") : t("schools.createSchool")}
           </DialogTitle>
           <DialogDescription>
             {school
-              ? "Modifica la información de la escuela"
-              : "Crea una nueva escuela en el sistema"}
+              ? t("forms.editSchool")
+              : t("forms.createSchoolDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -234,7 +236,7 @@ export function SchoolFormDialog({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="teacherLimit">Límite de Maestros</FieldLabel>
+                <FieldLabel htmlFor="teacherLimit">{t("forms.teacherLimit")}</FieldLabel>
                 <Input
                   id="teacherLimit"
                   type="number"
@@ -251,12 +253,12 @@ export function SchoolFormDialog({
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Número máximo de maestros permitidos en esta escuela
+                  {t("forms.teacherLimitDescription")}
                 </p>
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="userLimit">Límite de Usuarios</FieldLabel>
+                <FieldLabel htmlFor="userLimit">{t("forms.userLimit")}</FieldLabel>
                 <Input
                   id="userLimit"
                   type="number"
@@ -273,7 +275,7 @@ export function SchoolFormDialog({
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Número máximo de usuarios totales permitidos en esta escuela
+                  {t("forms.userLimitDescription")}
                 </p>
               </Field>
             </div>
@@ -289,7 +291,7 @@ export function SchoolFormDialog({
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Guardando..." : school ? "Actualizar Escuela" : "Crear Escuela"}
+            {isSaving ? t("common.saving") : school ? t("schools.updateSchool") : t("schools.createSchool")}
           </Button>
         </DialogFooter>
       </DialogContent>

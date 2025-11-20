@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { useTranslation } from "react-i18next"
 
 interface ProjectionWithStudent {
   id: string
@@ -51,13 +52,6 @@ interface ColumnConfig {
   sortable?: boolean
 }
 
-const COLUMNS: ColumnConfig[] = [
-  { key: 'firstName', label: 'Nombre', sortable: true },
-  { key: 'lastName', label: 'Apellidos', sortable: true },
-  { key: 'status', label: 'Estado', sortable: false },
-  { key: 'actions', label: '', sortable: false },
-]
-
 export function ProjectionsTable({
   projections,
   onProjectionSelect,
@@ -70,6 +64,14 @@ export function ProjectionsTable({
   totalItems,
   onPageChange
 }: ProjectionsTableProps) {
+  const { t } = useTranslation()
+
+  const COLUMNS: ColumnConfig[] = [
+    { key: 'firstName', label: t("common.name"), sortable: true },
+    { key: 'lastName', label: t("common.lastName"), sortable: true },
+    { key: 'status', label: t("projections.status"), sortable: false },
+    { key: 'actions', label: '', sortable: false },
+  ]
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [projectionToDelete, setProjectionToDelete] = React.useState<ProjectionWithStudent | null>(null)
 
@@ -116,7 +118,7 @@ export function ProjectionsTable({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          Proyecciones
+          {t("projections.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -162,7 +164,7 @@ export function ProjectionsTable({
                           variant={projection.isActive ? "default" : "secondary"}
                           className="font-medium"
                         >
-                          {projection.isActive ? "Activa" : "Inactiva"}
+                          {projection.isActive ? t("projections.active") : t("projections.inactive")}
                         </Badge>
                       )
                     case 'actions':
@@ -189,7 +191,7 @@ export function ProjectionsTable({
                               className="cursor-pointer"
                             >
                               <Eye className="h-4 w-4 mr-2" />
-                              Detalles
+                              {t("common.view")}
                             </DropdownMenuItem>
                             {onProjectionDelete && (
                               <DropdownMenuItem
@@ -201,7 +203,7 @@ export function ProjectionsTable({
                                 className="text-red-600 focus:text-red-600 bg-red-50 hover:bg-red-100 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
+                                {t("common.delete")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -233,7 +235,7 @@ export function ProjectionsTable({
         {projections.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay proyecciones para mostrar</p>
+            <p className="text-muted-foreground">{t("projections.noProjectionsFound")}</p>
           </div>
         )}
       </CardContent>
@@ -292,10 +294,10 @@ export function ProjectionsTable({
       <ConfirmationDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="Eliminar Proyección"
-        message={`¿Estás seguro de que deseas eliminar la proyección de ${projectionToDelete?.student.name}? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
+        title={t("projections.deleteProjection")}
+        message={projectionToDelete ? t("projections.deleteConfirm", { name: projectionToDelete.student.name }) : ""}
+        confirmText={t("common.deleteAction")}
+        cancelText={t("common.cancel")}
         onConfirm={async () => {
           if (projectionToDelete && onProjectionDelete) {
             await onProjectionDelete(projectionToDelete)

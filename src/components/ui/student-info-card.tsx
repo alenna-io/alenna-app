@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { GraduationCap, Calendar } from "lucide-react"
 import { getInitials } from "@/lib/string-utils"
+import { useTranslation } from "react-i18next"
 
 interface Student {
   id: string
@@ -24,6 +25,8 @@ export function StudentInfoCard({
   badgeText = "A.C.E. System",
   className
 }: StudentInfoCardProps) {
+  const { t } = useTranslation()
+
   return (
     <Card className={className}>
       <CardContent className="p-4 md:p-6">
@@ -42,7 +45,7 @@ export function StudentInfoCard({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 shrink-0" />
-                <span className="truncate">Año Escolar: {student.schoolYear}</span>
+                <span className="truncate">{t("projections.schoolYear")}: {student.schoolYear}</span>
               </div>
             </div>
           </div>

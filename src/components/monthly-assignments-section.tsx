@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { History, Check } from "lucide-react"
 import type { MonthlyAssignment } from "@/types/monthly-assignment"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 interface MonthlyAssignmentsSectionProps {
   quarter: string
@@ -22,6 +23,7 @@ export function MonthlyAssignmentsSection({
   isReadOnly = false,
   onGradeAssignment,
 }: MonthlyAssignmentsSectionProps) {
+  const { t } = useTranslation()
   const [gradingAssignment, setGradingAssignment] = React.useState<string | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
   const [noteInput, setNoteInput] = React.useState("")
@@ -40,7 +42,7 @@ export function MonthlyAssignmentsSection({
 
     const grade = parseInt(gradeInput)
     if (isNaN(grade) || grade < 0 || grade > 100) {
-      toast.error("La calificación debe estar entre 0 y 100")
+      toast.error(t("monthlyAssignments.gradeRangeError"))
       return
     }
 
@@ -72,10 +74,10 @@ export function MonthlyAssignmentsSection({
 
     try {
       await onGradeAssignment(gradingAssignment, grade, savedNoteInput || undefined)
-      toast.success("Calificación guardada exitosamente")
+      toast.success(t("monthlyAssignments.saveSuccess"))
     } catch (err) {
       console.error('Error grading assignment:', err)
-      toast.error(err instanceof Error ? err.message : "Error al calificar asignación")
+      toast.error(err instanceof Error ? err.message : t("monthlyAssignments.gradeError"))
       // ROLLBACK: Revert to original state on error
       setAssignmentsState(assignments)
     }
@@ -85,12 +87,12 @@ export function MonthlyAssignmentsSection({
     <>
       <Card>
         <CardHeader className="p-4 md:p-6">
-          <CardTitle className="text-base md:text-lg">Asignaciones Mensuales - {quarter}</CardTitle>
+          <CardTitle className="text-base md:text-lg">{t("monthlyAssignments.sectionTitle", { quarter })}</CardTitle>
         </CardHeader>
         <CardContent className="p-4 md:p-6 pt-0">
           {quarterAssignments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No hay asignaciones mensuales para este trimestre
+              {t("monthlyAssignments.noAssignmentsForQuarter")}
             </p>
           ) : (
             <div className="space-y-2">
@@ -121,7 +123,7 @@ export function MonthlyAssignmentsSection({
                         }}
                         className="cursor-pointer"
                       >
-                        Calificar
+                        {t("monthlyAssignments.gradeAssignment")}
                       </Button>
                     )}
                     {assignment.gradeHistory.length > 0 && (
@@ -146,14 +148,14 @@ export function MonthlyAssignmentsSection({
       <Dialog open={!!gradingAssignment} onOpenChange={(open) => !open && setGradingAssignment(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Calificar Asignación</DialogTitle>
+            <DialogTitle>{t("monthlyAssignments.gradeAssignment")}</DialogTitle>
             <DialogDescription>
-              Ingresa la calificación (0-100) y una nota opcional
+              {t("monthlyAssignments.gradeAssignmentDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Calificación</label>
+              <label className="text-sm font-medium">{t("monthlyAssignments.grade")}</label>
               <Input
                 type="number"
                 min="0"
@@ -164,11 +166,11 @@ export function MonthlyAssignmentsSection({
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Nota (Opcional)</label>
+              <label className="text-sm font-medium">{t("monthlyAssignments.note")}</label>
               <Input
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
-                placeholder="Comentarios adicionales..."
+                placeholder={t("monthlyAssignments.notePlaceholder")}
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -181,11 +183,11 @@ export function MonthlyAssignmentsSection({
                 }}
                 className="cursor-pointer"
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button onClick={handleGradeAssignment} className="cursor-pointer">
                 <Check className="h-4 w-4 mr-2" />
-                Guardar
+                {t("monthlyAssignments.save")}
               </Button>
             </div>
           </div>
@@ -198,12 +200,12 @@ export function MonthlyAssignmentsSection({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Historial de Calificaciones
+              {t("monthlyAssignments.gradeHistory")}
             </DialogTitle>
             <DialogDescription>
               {historyDialog && (
                 <>
-                  Asignación: <span className="font-semibold">{historyDialog.name}</span>
+                  {t("monthlyAssignments.assignmentLabel")} <span className="font-semibold">{historyDialog.name}</span>
                 </>
               )}
             </DialogDescription>
@@ -229,7 +231,7 @@ export function MonthlyAssignmentsSection({
               onClick={() => setHistoryDialog(null)}
               className="cursor-pointer"
             >
-              Cerrar
+              {t("monthlyAssignments.close")}
             </Button>
           </div>
         </DialogContent>

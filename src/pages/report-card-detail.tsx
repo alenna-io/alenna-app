@@ -12,6 +12,7 @@ import { useUser } from "@/contexts/UserContext"
 import { ReportCardTable } from "@/components/report-card-table"
 import { pdf } from "@react-pdf/renderer"
 import { ReportCardPDF } from "@/components/report-card-pdf"
+import { useTranslation } from "react-i18next"
 
 interface ReportCardSubjectData {
   subject: string
@@ -63,6 +64,7 @@ export default function ReportCardDetailPage() {
   const { studentId, projectionId } = useParams()
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { t } = useTranslation()
 
   const [reportCard, setReportCard] = React.useState<ReportCardData | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -94,7 +96,7 @@ export default function ReportCardDetailPage() {
           if (error.message?.includes('permiso') || error.message?.includes('not found') || error.message?.includes('no encontrada') || error.message?.includes('no encontrado')) {
             setHasPermission(false)
           } else {
-            setError(error.message || 'Error al cargar la boleta')
+            setError(error.message || t("reportCards.errorMessage"))
           }
         }
       } finally {
@@ -130,6 +132,31 @@ export default function ReportCardDetailPage() {
           studentName={reportCard.studentName}
           schoolYear={reportCard.schoolYear}
           quarters={reportCard.quarters}
+          translations={{
+            detailTitle: t("reportCards.detailTitle"),
+            schoolYearLabel: t("reportCards.schoolYearLabel"),
+            quarterQ1: t("monthlyAssignments.quarterLabelQ1"),
+            quarterQ2: t("monthlyAssignments.quarterLabelQ2"),
+            quarterQ3: t("monthlyAssignments.quarterLabelQ3"),
+            quarterQ4: t("monthlyAssignments.quarterLabelQ4"),
+            lessons: t("reportCards.lessons"),
+            subject: t("reportCards.subject"),
+            lesson: t("reportCards.lesson"),
+            average: t("reportCards.average"),
+            academicProjectionCompleted: t("reportCards.academicProjectionCompleted"),
+            yes: t("reportCards.yes"),
+            no: t("reportCards.no"),
+            monthlyAssignments: t("reportCards.monthlyAssignments"),
+            assignment: t("reportCards.assignment"),
+            grade: t("reportCards.grade"),
+            averageLabel: t("reportCards.averageLabel"),
+            lessonsAverage: t("reportCards.lessonsAverage"),
+            monthlyAssignmentsAverage: t("reportCards.monthlyAssignmentsAverage"),
+            passedLessons: t("reportCards.passedLessons"),
+            finalGrade: t("reportCards.finalGrade"),
+            noLessonsAssigned: t("reportCards.noLessonsAssigned"),
+            noMonthlyAssignments: t("reportCards.noMonthlyAssignments"),
+          }}
         />
       )
 
@@ -140,10 +167,10 @@ export default function ReportCardDetailPage() {
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = `Boleta_${reportCard.studentName.replace(
+      link.download = `${t("reportCards.detailTitle")}_${reportCard.studentName.replace(
         /\s+/g,
         "_"
-      )}_${reportCard.schoolYear}_Completa.pdf`
+      )}_${reportCard.schoolYear}_${t("common.complete")}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -152,7 +179,7 @@ export default function ReportCardDetailPage() {
       console.log("[PDF Export] PDF saved successfully with all 4 quarters")
     } catch (error) {
       console.error("Error in export process:", error)
-      setError("Error al exportar el PDF. Por favor, inténtalo de nuevo.")
+      setError(t("reportCards.exportError") || "Error exporting PDF. Please try again.")
     } finally {
       setIsExporting(false)
     }
@@ -167,10 +194,10 @@ export default function ReportCardDetailPage() {
       <div className="space-y-4 md:space-y-6">
         <div className="md:hidden">
           <BackButton to={`/students/${studentId}/report-cards`}>
-            Volver
+            {t("common.back")}
           </BackButton>
         </div>
-        <Loading variant="spinner" message="Cargando boleta..." />
+        <Loading variant="spinner" message={t("reportCards.loadingReportCard")} />
       </div>
     )
   }
@@ -180,12 +207,12 @@ export default function ReportCardDetailPage() {
       <div className="space-y-4 md:space-y-6">
         <div className="md:hidden">
           <BackButton to={`/students/${studentId}/report-cards`}>
-            Volver
+            {t("common.back")}
           </BackButton>
         </div>
         <ErrorAlert
-          title="Error al cargar la boleta"
-          message={error || 'No se pudo cargar la boleta de calificaciones'}
+          title={t("reportCards.errorLoadingReportCard")}
+          message={error || t("reportCards.errorMessage")}
         />
       </div>
     )
@@ -201,16 +228,16 @@ export default function ReportCardDetailPage() {
       {/* Mobile back button */}
       <div className="md:hidden print:hidden">
         <BackButton to={backDestination}>
-          Volver
+          {t("common.back")}
         </BackButton>
       </div>
 
       {/* Header with actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold">Boleta de Calificaciones</h1>
+          <h1 className="text-2xl font-bold">{t("reportCards.detailTitle")}</h1>
           <p className="text-muted-foreground">
-            {reportCard.studentName} - Año Escolar {reportCard.schoolYear}
+            {reportCard.studentName} - {t("reportCards.schoolYearLabel")} {reportCard.schoolYear}
           </p>
         </div>
         <div className="flex gap-2">
@@ -220,7 +247,7 @@ export default function ReportCardDetailPage() {
             className="bg-blue-500 hover:bg-blue-600 text-white"
           >
             <Download className="h-4 w-4 mr-2" />
-            {isExporting ? "Exportando..." : "Exportar"}
+            {isExporting ? t("reportCards.exporting") : t("reportCards.export")}
           </Button>
         </div>
       </div>
@@ -236,16 +263,16 @@ export default function ReportCardDetailPage() {
           <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 print:hidden">
             <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
               <TabsTrigger value="Q1" className="shrink-0">
-                Bloque 1
+                {t("monthlyAssignments.quarterLabelQ1")}
               </TabsTrigger>
               <TabsTrigger value="Q2" className="shrink-0">
-                Bloque 2
+                {t("monthlyAssignments.quarterLabelQ2")}
               </TabsTrigger>
               <TabsTrigger value="Q3" className="shrink-0">
-                Bloque 3
+                {t("monthlyAssignments.quarterLabelQ3")}
               </TabsTrigger>
               <TabsTrigger value="Q4" className="shrink-0">
-                Bloque 4
+                {t("monthlyAssignments.quarterLabelQ4")}
               </TabsTrigger>
             </TabsList>
           </div>

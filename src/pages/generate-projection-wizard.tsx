@@ -22,6 +22,7 @@ import { useUser } from "@/contexts/UserContext"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "react-i18next"
 
 interface Subject {
   id: string
@@ -70,6 +71,7 @@ type WizardStep = 1 | 2 | 3 | 4
 export default function GenerateProjectionWizardPage() {
   const navigate = useNavigate()
   const api = useApi()
+  const { t } = useTranslation()
   const { isLoading: isLoadingUser } = useUser()
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1)
   const [students, setStudents] = React.useState<Student[]>([])
@@ -361,13 +363,13 @@ export default function GenerateProjectionWizardPage() {
     switch (step) {
       case 1:
         if (!formData.studentId) {
-          const errorMsg = "Por favor selecciona un estudiante"
+          const errorMsg = t("wizard.selectStudentError")
           setError(errorMsg)
           toast.error(errorMsg)
           return false
         }
         if (!formData.schoolYear || !activeSchoolYear) {
-          const errorMsg = "No hay un año escolar activo"
+          const errorMsg = t("projections.noActiveSchoolYear")
           setError(errorMsg)
           toast.error(errorMsg)
           return false
@@ -375,7 +377,7 @@ export default function GenerateProjectionWizardPage() {
         return true
       case 2: {
         if (formData.subjects.length === 0) {
-          const errorMsg = "Debes agregar al menos una materia"
+          const errorMsg = t("wizard.addSubjectError")
           setError(errorMsg)
           toast.error(errorMsg)
           return false
@@ -384,7 +386,7 @@ export default function GenerateProjectionWizardPage() {
           (s) => !s.subSubjectId || !s.startPace || !s.endPace || s.startPace > s.endPace || s.startPace === 0 || s.endPace === 0
         )
         if (invalidSubjects) {
-          const errorMsg = "Por favor completa todos los campos requeridos para cada materia (materia, inicial y final)"
+          const errorMsg = t("wizard.completeFieldsError")
           setError(errorMsg)
           toast.error(errorMsg)
           return false
@@ -409,7 +411,7 @@ export default function GenerateProjectionWizardPage() {
           )
 
           if (hasActiveProjection) {
-            const errorMsg = `El estudiante ya tiene una proyección activa para el año escolar ${activeSchoolYear.name}. Debe desactivar o eliminar la proyección existente antes de crear una nueva.`
+            const errorMsg = t("wizard.existingProjectionError", { year: activeSchoolYear.name })
             setError(errorMsg)
             toast.error(errorMsg)
             return
@@ -554,20 +556,20 @@ export default function GenerateProjectionWizardPage() {
   }
 
   const steps = [
-    { number: 1, title: "Estudiante", description: "Selecciona el estudiante" },
-    { number: 2, title: "Materias", description: "Configura las materias" },
-    { number: 3, title: "Vista Previa", description: "Revisa la configuración" },
-    { number: 4, title: "Confirmar", description: "Genera la proyección" },
+    { number: 1, title: t("wizard.step1Title"), description: t("wizard.step1Description") },
+    { number: 2, title: t("wizard.step2Title"), description: t("wizard.step2Description") },
+    { number: 3, title: t("wizard.step3Title"), description: t("wizard.step3Description") },
+    { number: 4, title: t("wizard.step4Title"), description: t("wizard.step4Description") },
   ]
 
   return (
     <div className="min-h-screen">
       <div className="w-full p-3 space-y-6">
-        <BackButton to="/projections">Volver a Proyecciones</BackButton>
+        <BackButton to="/projections">{t("wizard.backToProjections")}</BackButton>
 
         <PageHeader
-          title="Generar Proyección"
-          description="Crea una proyección académica automática paso a paso"
+          title={t("wizard.title")}
+          description={t("wizard.description")}
         />
 
         {/* Progress Steps */}
@@ -622,10 +624,10 @@ export default function GenerateProjectionWizardPage() {
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Información del Estudiante</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("wizard.studentInfo")}</h3>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="student">Estudiante *</Label>
+                      <Label htmlFor="student">{t("projections.student")} *</Label>
                       <Popover open={openStudentPopover} onOpenChange={setOpenStudentPopover}>
                         <PopoverTrigger asChild>
                           <Button
@@ -638,21 +640,21 @@ export default function GenerateProjectionWizardPage() {
                           >
                             {formData.studentId
                               ? students.find((s) => s.id === formData.studentId)?.name
-                              : "Selecciona un estudiante..."}
+                              : t("projections.selectStudentPlaceholder")}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                           <Command shouldFilter={false}>
                             <CommandInput
-                              placeholder="Buscar estudiante..."
+                              placeholder={t("projections.searchStudent")}
                               value={studentSearchTerm}
                               onValueChange={(value) => {
                                 setStudentSearchTerm(value)
                               }}
                             />
                             <CommandList>
-                              <CommandEmpty>No se encontraron estudiantes.</CommandEmpty>
+                              <CommandEmpty>{t("projections.noStudentsFound")}</CommandEmpty>
                               <CommandGroup>
                                 {students
                                   .filter((s) => {
@@ -691,15 +693,15 @@ export default function GenerateProjectionWizardPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="schoolYear">Año Escolar *</Label>
+                      <Label htmlFor="schoolYear">{t("projections.schoolYear")} *</Label>
                       {activeSchoolYear ? (
                         <div className="p-3 rounded-md border bg-blue-50 border-blue-200">
                           <div className="text-sm font-medium text-blue-900">{activeSchoolYear.name}</div>
-                          <div className="text-xs text-blue-700 mt-1">Año escolar activo</div>
+                          <div className="text-xs text-blue-700 mt-1">{t("projections.activeSchoolYear")}</div>
                         </div>
                       ) : (
                         <div className="p-3 rounded-md border bg-yellow-50 border-yellow-200">
-                          <div className="text-sm text-yellow-800">No hay un año escolar activo</div>
+                          <div className="text-sm text-yellow-800">{t("projections.noActiveSchoolYear")}</div>
                         </div>
                       )}
                     </div>
@@ -711,12 +713,12 @@ export default function GenerateProjectionWizardPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Configuración de Materias</h3>
+                  <h3 className="text-lg font-semibold mb-4">{t("wizard.subjectsConfig")}</h3>
 
                   {/* Template Selector */}
                   {templates.length > 0 && (
                     <div className="mb-6 p-4 border rounded-lg bg-blue-50">
-                      <Label className="text-sm font-medium mb-2 block">Usar Plantilla para Prellenar (Opcional)</Label>
+                      <Label className="text-sm font-medium mb-2 block">{t("wizard.useTemplateToPrefill")}</Label>
                       <div className="space-y-3">
                         <Select
                           value={selectedTemplateId}
@@ -730,7 +732,7 @@ export default function GenerateProjectionWizardPage() {
                                   const selectedStudent = students.find(s => s.id === formData.studentId)
                                   const studentLevel = selectedStudent?.expectedLevel || selectedStudent?.currentLevel
                                   if (studentLevel && template.level !== studentLevel) {
-                                    toast.warning(`⚠️ Advertencia: La plantilla seleccionada (${template.level}) no corresponde al nivel del estudiante (${studentLevel}). Puedes continuar y personalizar.`)
+                                    toast.warning(t("projections.levelMismatchWarning", { templateLevel: template.level, studentLevel }))
                                   }
 
                                   // Load template subjects into form
@@ -760,7 +762,7 @@ export default function GenerateProjectionWizardPage() {
                                 }
                               } catch (error) {
                                 console.error("Error loading template:", error)
-                                toast.error("Error al cargar la plantilla")
+                                toast.error(t("wizard.errorLoadingTemplate"))
                               }
                             } else {
                               // Reset to default empty subject
@@ -781,10 +783,10 @@ export default function GenerateProjectionWizardPage() {
                           }}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecciona una plantilla para prellenar materias..." />
+                            <SelectValue placeholder={t("wizard.selectTemplateToPrefill")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Sin plantilla (configuración manual)</SelectItem>
+                            <SelectItem value="none">{t("wizard.noTemplate")}</SelectItem>
                             {Object.entries(
                               templates.reduce((acc, template) => {
                                 if (!acc[template.level]) acc[template.level] = []
@@ -796,7 +798,7 @@ export default function GenerateProjectionWizardPage() {
                               .map(([level, levelTemplates]) => (
                                 <React.Fragment key={level}>
                                   <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                    Nivel {level}
+                                    {t("projections.levelHeading", { level })}
                                   </div>
                                   {levelTemplates.map((template) => (
                                     <SelectItem key={template.id} value={template.id}>
@@ -812,23 +814,23 @@ export default function GenerateProjectionWizardPage() {
                           const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
                           const levelMismatch = selectedTemplate && studentLevel && selectedTemplate.level !== studentLevel
                           return levelMismatch ? (
-                            <Alert className="bg-yellow-50 text-yellow-900 border-yellow-200">
+                            <Alert className="bg-yellow-50 text-yellow-900 border-yellow-600">
                               <AlertCircle className="h-4 w-4 text-yellow-600" />
-                              <AlertDescription className="text-yellow-800 text-xs">
-                                ⚠️ La plantilla seleccionada ({selectedTemplate?.level}) no corresponde al nivel del estudiante ({studentLevel}). Puedes continuar y personalizar.
+                              <AlertDescription className="text-yellow-800 text-xs pt-0.5">
+                                {t("projections.levelMismatchWarning", { templateLevel: selectedTemplate?.level || "", studentLevel: studentLevel || "" })}
                               </AlertDescription>
                             </Alert>
                           ) : null
                         })()}
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Selecciona una plantilla para prellenar automáticamente las materias y paces. Puedes modificar todo después.
+                        {t("wizard.templateDescription")}
                       </p>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between mb-4">
-                    <Label>Materias (máximo 6)</Label>
+                    <Label>{t("wizard.subjectsMax")}</Label>
                     <Button
                       type="button"
                       size="sm"
@@ -837,7 +839,7 @@ export default function GenerateProjectionWizardPage() {
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Agregar Materia
+                      {t("wizard.addSubject")}
                     </Button>
                   </div>
 
@@ -857,7 +859,7 @@ export default function GenerateProjectionWizardPage() {
                                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
                               )}
                               <CardTitle className="text-base">
-                                {subject.subSubjectName || `Materia ${index + 1}`}
+                                {subject.subSubjectName || `${t("wizard.subject")} ${index + 1}`}
                               </CardTitle>
                             </div>
                             <Button
@@ -877,7 +879,7 @@ export default function GenerateProjectionWizardPage() {
                         {isExpanded && (
                           <CardContent className="space-y-4">
                             <div className="space-y-2">
-                              <Label>Materia *</Label>
+                              <Label>{t("wizard.subject")} *</Label>
                               <Popover
                                 open={openSubjectPopovers[index] || false}
                                 onOpenChange={(open) => {
@@ -909,21 +911,21 @@ export default function GenerateProjectionWizardPage() {
                                   >
                                     {subject.subSubjectId
                                       ? subjects.find((s) => s.id === subject.subSubjectId)?.name
-                                      : "Selecciona una materia..."}
+                                      : t("wizard.selectSubject")}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                                   <Command shouldFilter={false}>
                                     <CommandInput
-                                      placeholder="Buscar materia..."
+                                      placeholder={t("wizard.searchSubject")}
                                       value={subjectSearchTerms[index] || ""}
                                       onValueChange={(value) => {
                                         setSubjectSearchTerms((prev) => ({ ...prev, [index]: value }))
                                       }}
                                     />
                                     <CommandList>
-                                      <CommandEmpty>No se encontraron materias.</CommandEmpty>
+                                      <CommandEmpty>{t("wizard.noSubjectsFound")}</CommandEmpty>
                                       {Object.entries(getFilteredSubjectsForIndex(index)).map(([categoryName, categorySubjects]) => (
                                         <CommandGroup key={categoryName} heading={categoryName}>
                                           {categorySubjects.map((s) => {
@@ -992,17 +994,17 @@ export default function GenerateProjectionWizardPage() {
                                       className="rounded border-gray-300"
                                     />
                                     <Label htmlFor={`extend-${index}`} className="text-sm font-normal cursor-pointer">
-                                      Extender a niveles siguientes (máx. 2 niveles)
+                                      {t("wizard.extendToNext")}
                                     </Label>
                                   </div>
                                   {subject.extendToNextLevel && (
                                     <p className="text-xs text-muted-foreground">
-                                      Permite seleccionar paces de los siguientes 2 niveles contiguos en la misma categoría
+                                      {t("wizard.extendToNextDescription")}
                                     </p>
                                   )}
                                 </div>
                                 {loadingPaces[subject.subSubjectId] ? (
-                                  <div className="text-sm text-muted-foreground">Cargando paces...</div>
+                                  <div className="text-sm text-muted-foreground">{t("wizard.loadingPaces")}</div>
                                 ) : (() => {
                                   const cacheKey = `${subject.subSubjectId}-${subject.extendToNextLevel || false}`
                                   const availablePaces = paceCatalogs[cacheKey] || []
@@ -1026,13 +1028,13 @@ export default function GenerateProjectionWizardPage() {
                                             }}
                                             className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300 font-medium"
                                           >
-                                            Llenar nivel completo
+                                            {t("wizard.fillCompleteLevel")}
                                           </Button>
                                         </div>
                                       )}
                                       <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                          <Label>Inicio *</Label>
+                                          <Label>{t("wizard.start")} *</Label>
                                           <Select
                                             value={subject.startPace ? String(subject.startPace) : ""}
                                             onValueChange={(value) => {
@@ -1056,7 +1058,7 @@ export default function GenerateProjectionWizardPage() {
                                           </Select>
                                         </div>
                                         <div className="space-y-2">
-                                          <Label>Fin *</Label>
+                                          <Label>{t("wizard.end")} *</Label>
                                           <Select
                                             value={subject.endPace ? String(subject.endPace) : ""}
                                             onValueChange={(value) => {
@@ -1066,7 +1068,7 @@ export default function GenerateProjectionWizardPage() {
                                             }}
                                           >
                                             <SelectTrigger>
-                                              <SelectValue placeholder="Selecciona fin" />
+                                              <SelectValue placeholder={t("wizard.selectEnd")} />
                                             </SelectTrigger>
                                             <SelectContent>
                                               {paceOptions
@@ -1082,7 +1084,7 @@ export default function GenerateProjectionWizardPage() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="text-sm text-yellow-600">No se encontraron paces para esta materia</div>
+                                    <div className="text-sm text-yellow-600">{t("wizard.noPacesFound")}</div>
                                   )
                                 })()}
                               </>
@@ -1099,7 +1101,7 @@ export default function GenerateProjectionWizardPage() {
 
                               return selectedPaceRange.length > 0 ? (
                                 <div className="space-y-2">
-                                  <Label>Seleccionar Lecciones a omitir:</Label>
+                                  <Label>{t("wizard.selectLessonsToSkip")}:</Label>
                                   <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
                                     <div className="grid grid-cols-4 gap-2">
                                       {selectedPaceRange.map((paceNum) => {
@@ -1133,7 +1135,7 @@ export default function GenerateProjectionWizardPage() {
 
                             {formData.subjects.length > 1 && (
                               <div className="space-y-2">
-                                <Label>No Emparejar Con</Label>
+                                <Label>{t("wizard.dontPairWith")}</Label>
                                 <div className="space-y-2 mt-2">
                                   {formData.subjects.map((otherSubject, otherIndex) => {
                                     if (otherIndex === index || !otherSubject.subSubjectId) return null
@@ -1173,7 +1175,7 @@ export default function GenerateProjectionWizardPage() {
 
                   {formData.subjects.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Haz clic en "Agregar Materia" para comenzar
+                      {t("wizard.clickToAddSubject")}
                     </div>
                   )}
 
@@ -1186,7 +1188,7 @@ export default function GenerateProjectionWizardPage() {
                         className="bg-blue-500 hover:bg-blue-600 text-white"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Agregar Materia
+                        {t("wizard.addSubject")}
                       </Button>
                     </div>
                   )}
@@ -1198,21 +1200,21 @@ export default function GenerateProjectionWizardPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  Vista Previa de la Proyección
+                  {t("wizard.previewTitle")}
                 </h3>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div>
-                    <Label className="text-muted-foreground">Estudiante</Label>
-                    <p className="font-medium">{selectedStudent?.name || "No seleccionado"}</p>
+                    <Label className="text-muted-foreground">{t("projections.student")}</Label>
+                    <p className="font-medium">{selectedStudent?.name || t("common.noSelection")}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Año Escolar</Label>
-                    <p className="font-medium">{formData.schoolYear || "No seleccionado"}</p>
+                    <Label className="text-muted-foreground">{t("projections.schoolYear")}</Label>
+                    <p className="font-medium">{formData.schoolYear || t("common.noSelection")}</p>
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-muted-foreground mb-2 block">Materias Configuradas</Label>
+                  <Label className="text-muted-foreground mb-2 block">{t("wizard.configuredSubjects")}</Label>
                   <div className="space-y-2">
                     {formData.subjects.map((subject, index) => {
                       const paces = subject.endPace - subject.startPace + 1 - subject.skipPaces.length
@@ -1255,23 +1257,23 @@ export default function GenerateProjectionWizardPage() {
 
                       const displayName = subjectNames.length > 1
                         ? `${subjectNames.join(" - ")}`
-                        : (subjectNames[0] || subject.subSubjectName || `Materia ${index + 1}`)
+                        : (subjectNames[0] || subject.subSubjectName || `${t("wizard.subject")} ${index + 1}`)
 
                       return (
                         <div key={index} className="p-3 border rounded-md">
                           <div className="font-medium">{displayName}</div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Paces: {subject.startPace} - {subject.endPace}
+                            {t("wizard.paces")}: {subject.startPace} - {subject.endPace}
                             {subject.skipPaces.length > 0 && (
-                              <span className="ml-2">(Omitir: {subject.skipPaces.join(", ")})</span>
+                              <span className="ml-2">({t("wizard.skip")}: {subject.skipPaces.join(", ")})</span>
                             )}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Total de paces: {Math.max(0, paces)}
+                            {t("wizard.totalPaces")}: {Math.max(0, paces)}
                           </div>
                           {subject.notPairWith.length > 0 && (
                             <div className="text-sm text-muted-foreground mt-1">
-                              No emparejar con: {subject.notPairWith.map(id => {
+                              {t("wizard.dontPairWith")}: {subject.notPairWith.map(id => {
                                 const other = formData.subjects.find(s => s.subSubjectId === id)
                                 return other?.subSubjectName || id
                               }).join(", ")}
@@ -1285,11 +1287,11 @@ export default function GenerateProjectionWizardPage() {
 
                 <div className="pt-4 border-t mt-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Label className="text-muted-foreground">Total de Materias</Label>
+                    <Label className="text-muted-foreground">{t("wizard.totalSubjects")}</Label>
                     <p className="font-semibold">{formData.subjects.length}</p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label className="text-muted-foreground">Total de Paces Estimados</Label>
+                    <Label className="text-muted-foreground">{t("wizard.totalEstimatedPaces")}</Label>
                     <p className="font-semibold">{totalPaces}</p>
                   </div>
                 </div>
@@ -1299,9 +1301,13 @@ export default function GenerateProjectionWizardPage() {
             {currentStep === 4 && (
               <div className="space-y-4 text-center py-8">
                 <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold">¿Estás listo para generar la proyección?</h3>
+                <h3 className="text-xl font-semibold">{t("wizard.readyToGenerate")}</h3>
                 <p className="text-muted-foreground">
-                  Se creará una proyección para <strong>{selectedStudent?.name}</strong> con {formData.subjects.length} materia(s) y aproximadamente {totalPaces} paces.
+                  {t("wizard.confirmationMessage", {
+                    studentName: selectedStudent?.name || "",
+                    subjectCount: formData.subjects.length,
+                    totalPaces: totalPaces
+                  })}
                 </p>
               </div>
             )}
@@ -1316,7 +1322,7 @@ export default function GenerateProjectionWizardPage() {
             disabled={isGenerating}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
-            {currentStep === 1 ? "Cancelar" : "Atrás"}
+            {currentStep === 1 ? t("common.cancel") : t("wizard.back")}
           </Button>
 
           <div className="flex gap-2">
@@ -1326,7 +1332,7 @@ export default function GenerateProjectionWizardPage() {
                 disabled={isGenerating}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
-                Siguiente
+                {t("wizard.next")}
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
@@ -1335,7 +1341,7 @@ export default function GenerateProjectionWizardPage() {
                 disabled={isGenerating || !formData.studentId || formData.subjects.length === 0 || !activeSchoolYear}
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
-                {isGenerating ? "Generando..." : "Generar Proyección"}
+                {isGenerating ? t("wizard.generating") : t("wizard.generateProjection")}
               </Button>
             )}
           </div>

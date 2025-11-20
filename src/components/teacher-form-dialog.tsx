@@ -13,6 +13,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GraduationCap, AlertTriangle } from "lucide-react"
 import { useApi } from "@/services/api"
+import { useTranslation } from "react-i18next"
 
 interface Role {
   id: string
@@ -39,6 +40,7 @@ export function TeacherFormDialog({
   schoolId, // Used implicitly - backend sets schoolId from authenticated user
   onSave,
 }: TeacherFormDialogProps) {
+  const { t } = useTranslation()
   // schoolId is passed to onSave callback implicitly through the API call context
   // The backend will automatically set the schoolId from the authenticated user's school
   React.useEffect(() => {
@@ -183,7 +185,7 @@ export function TeacherFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
-            Crear Nuevo Maestro
+            {t("teachers.addTeacher")}
           </DialogTitle>
           <DialogDescription>
             Agrega un nuevo maestro a la escuela
@@ -284,7 +286,7 @@ export function TeacherFormDialog({
                 disabled={loadingRoles}
               >
                 <SelectTrigger className={errors.roleIds ? "border-destructive" : ""}>
-                  <SelectValue placeholder={loadingRoles ? "Cargando..." : "Seleccionar rol"} />
+                  <SelectValue placeholder={loadingRoles ? t("common.loading") : "Seleccionar rol"} />
                 </SelectTrigger>
                 <SelectContent>
                   {roles
@@ -318,7 +320,7 @@ export function TeacherFormDialog({
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Guardando..." : "Crear Maestro"}
+            {isSaving ? t("common.saving") : t("teachers.addTeacher")}
           </Button>
         </DialogFooter>
       </DialogContent>

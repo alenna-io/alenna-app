@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Filter, ChevronDown, ChevronUp } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 export interface FilterField {
   key: string
@@ -30,6 +31,7 @@ export function GenericFilters<T extends Record<string, string>>({
   fields,
   getActiveFilterLabels
 }: GenericFiltersProps<T>) {
+  const { t } = useTranslation()
   const [showFilters, setShowFilters] = React.useState(false)
 
   const handleFilterChange = (key: keyof T, value: string) => {
@@ -42,7 +44,7 @@ export function GenericFilters<T extends Record<string, string>>({
   const clearFilters = () => {
     const cleared = {} as T
     fields.forEach(field => {
-      (cleared as any)[field.key] = ""
+      (cleared as Record<string, string>)[field.key] = ""
     })
     onFiltersChange(cleared)
   }
@@ -72,16 +74,16 @@ export function GenericFilters<T extends Record<string, string>>({
         <div className="flex items-center justify-start gap-3 mb-2">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Filtros</CardTitle>
+            <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
             <Badge variant="secondary" className="ml-2">
-              {filteredCount} de {totalItems}
+              {filteredCount} {t("filters.of")} {totalItems}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
               <Button variant="outline" size="sm" onClick={clearFilters} className="cursor-pointer">
                 <X className="h-4 w-4 mr-1" />
-                Limpiar
+                {t("filters.clear")}
               </Button>
             )}
             <Button
@@ -93,12 +95,12 @@ export function GenericFilters<T extends Record<string, string>>({
               {showFilters ? (
                 <>
                   <ChevronUp className="h-4 w-4" />
-                  Ocultar
+                  {t("filters.hide")}
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4" />
-                  Mostrar
+                  {t("filters.show")}
                 </>
               )}
             </Button>
@@ -108,7 +110,7 @@ export function GenericFilters<T extends Record<string, string>>({
         {/* Active Filters Display */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 mt-3">
-            <span className="text-sm text-muted-foreground">Filtros activos:</span>
+            <span className="text-sm text-muted-foreground">{t("filters.activeFilters")}</span>
             {getLabels().map((label, index) => (
               <Badge key={index} variant="outline" className="text-xs">
                 {label}
@@ -133,7 +135,7 @@ export function GenericFilters<T extends Record<string, string>>({
                     onChange={(e) => handleFilterChange(field.key as keyof T, e.target.value)}
                     className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
                   >
-                    <option value="">{field.placeholder || `Todos`}</option>
+                    <option value="">{field.placeholder || t("filters.all")}</option>
                     {field.options?.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

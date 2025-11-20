@@ -14,16 +14,34 @@ import { toast } from "sonner"
 import { Loading } from "@/components/ui/loading"
 import { MonthlyAssignmentsTable, type MonthlyAssignmentTemplate } from "@/components/monthly-assignments-table"
 import { MonthlyAssignmentFormDialog } from "@/components/monthly-assignment-form-dialog"
+import { useTranslation } from "react-i18next"
+
 
 const QUARTERS = [
-  { value: 'Q1', label: 'Bloque 1 (Q1)' },
-  { value: 'Q2', label: 'Bloque 2 (Q2)' },
-  { value: 'Q3', label: 'Bloque 3 (Q3)' },
-  { value: 'Q4', label: 'Bloque 4 (Q4)' },
+  { value: 'Q1' },
+  { value: 'Q2' },
+  { value: 'Q3' },
+  { value: 'Q4' },
 ]
 
 export default function MonthlyAssignmentsPage() {
   const api = useApi()
+  const { t } = useTranslation()
+
+  const getQuarterLabel = (quarter: string) => {
+    switch (quarter) {
+      case 'Q1':
+        return t("monthlyAssignments.quarterQ1")
+      case 'Q2':
+        return t("monthlyAssignments.quarterQ2")
+      case 'Q3':
+        return t("monthlyAssignments.quarterQ3")
+      case 'Q4':
+        return t("monthlyAssignments.quarterQ4")
+      default:
+        return quarter
+    }
+  }
   const [schoolYears, setSchoolYears] = React.useState<SchoolYear[]>([])
   const [selectedSchoolYearId, setSelectedSchoolYearId] = React.useState<string>("")
   const [templates, setTemplates] = React.useState<MonthlyAssignmentTemplate[]>([])
@@ -55,7 +73,7 @@ export default function MonthlyAssignmentsPage() {
         }
       } catch (error) {
         console.error('Error loading school years:', error)
-        toast.error('Error al cargar años escolares')
+        toast.error(t("schoolYears.errorLoading"))
       } finally {
         setLoading(false)
       }
@@ -79,7 +97,7 @@ export default function MonthlyAssignmentsPage() {
         setGradePercentages(percentagesData)
       } catch (error) {
         console.error('Error loading data:', error)
-        toast.error('Error al cargar asignaciones mensuales')
+        toast.error(t("monthlyAssignments.errorLoading"))
       } finally {
         setLoading(false)
       }
@@ -101,7 +119,7 @@ export default function MonthlyAssignmentsPage() {
 
   const handleSave = async (formData: { name: string; quarter: string }) => {
     if (!selectedSchoolYearId) {
-      toast.error('Por favor selecciona un año escolar')
+      toast.error(t("monthlyAssignments.selectSchoolYearError"))
       return
     }
 
@@ -109,7 +127,7 @@ export default function MonthlyAssignmentsPage() {
       if (editingAssignment) {
         // Update existing assignment
         await api.schoolMonthlyAssignments.updateTemplate(editingAssignment.id, { name: formData.name.trim() })
-        toast.success('Asignación actualizada exitosamente')
+        toast.success(t("monthlyAssignments.updatedSuccess"))
       } else {
         // Create new assignment
         const result = await api.schoolMonthlyAssignments.createTemplate({
@@ -117,7 +135,7 @@ export default function MonthlyAssignmentsPage() {
           quarter: formData.quarter,
           schoolYearId: selectedSchoolYearId,
         })
-        toast.success(`Asignación creada exitosamente. Aplicada a ${result.studentsAffected} estudiantes.`)
+        toast.success(t("monthlyAssignments.createdSuccess", { count: result.studentsAffected }))
       }
 
       // Reload templates
@@ -125,7 +143,7 @@ export default function MonthlyAssignmentsPage() {
       setTemplates(updatedTemplates)
     } catch (error) {
       console.error('Error saving assignment:', error)
-      toast.error(error instanceof Error ? error.message : 'Error al guardar asignación')
+      toast.error(error instanceof Error ? error.message : t("monthlyAssignments.errorSaving"))
       throw error
     }
   }
@@ -135,7 +153,7 @@ export default function MonthlyAssignmentsPage() {
 
     try {
       await api.schoolMonthlyAssignments.deleteTemplate(deleteDialog.id)
-      toast.success('Asignación eliminada exitosamente')
+      toast.success(t("monthlyAssignments.deletedSuccess"))
 
       // Reload templates
       const updatedTemplates = await api.schoolMonthlyAssignments.getTemplates(selectedSchoolYearId)
@@ -144,7 +162,7 @@ export default function MonthlyAssignmentsPage() {
       setDeleteDialog(null)
     } catch (error) {
       console.error('Error deleting assignment:', error)
-      toast.error(error instanceof Error ? error.message : 'Error al eliminar asignación')
+      toast.error(error instanceof Error ? error.message : t("monthlyAssignments.errorDeleting"))
     }
   }
 
@@ -159,40 +177,40 @@ export default function MonthlyAssignmentsPage() {
       })
 
       setGradePercentages(prev => ({ ...prev, [quarter]: percentage }))
-      toast.success(`Porcentaje de ${quarter} actualizado a ${percentage}%`)
+      toast.success(t("monthlyAssignments.percentageUpdated", { quarter, percentage }))
     } catch (error) {
       console.error('Error updating percentage:', error)
-      toast.error(error instanceof Error ? error.message : 'Error al actualizar porcentaje')
+      toast.error(error instanceof Error ? error.message : t("monthlyAssignments.errorUpdatingPercentage"))
     }
   }
 
   const selectedSchoolYear = schoolYears.find(y => y.id === selectedSchoolYearId)
 
   if (loading && !selectedSchoolYearId) {
-    return <Loading message="Cargando asignaciones mensuales..." />
+    return <Loading message={t("monthlyAssignments.loading")} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Asignaciones Mensuales"
-        description="Gestiona las asignaciones mensuales que se aplican a todos los estudiantes por trimestre"
+        title={t("monthlyAssignments.title")}
+        description={t("monthlyAssignments.description")}
       />
 
       {/* School Year Selector */}
       <Card>
         <CardHeader>
-          <CardTitle>Año Escolar</CardTitle>
-          <CardDescription>Selecciona el año escolar para gestionar asignaciones</CardDescription>
+          <CardTitle>{t("projections.schoolYear")}</CardTitle>
+          <CardDescription>{t("projections.selectSchoolYearForAssignments")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
             <SelectTrigger className="w-full md:w-[300px] [&>span]:!line-clamp-none">
-              <SelectValue placeholder="Selecciona un año escolar">
+              <SelectValue placeholder={t("projections.selectSchoolYear")}>
                 {selectedSchoolYear ? (
                   <span className="flex items-center gap-2">
                     <span>{selectedSchoolYear.name}</span>
-                    {selectedSchoolYear.isActive && <Badge className="shrink-0">Activo</Badge>}
+                    {selectedSchoolYear.isActive && <Badge className="shrink-0">{t("projections.active")}</Badge>}
                   </span>
                 ) : null}
               </SelectValue>
@@ -200,7 +218,7 @@ export default function MonthlyAssignmentsPage() {
             <SelectContent>
               {schoolYears.map(year => (
                 <SelectItem key={year.id} value={year.id}>
-                  {year.name} {year.isActive && <Badge className="ml-2">Activo</Badge>}
+                  {year.name} {year.isActive && <Badge className="ml-2">{t("projections.active")}</Badge>}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -215,10 +233,10 @@ export default function MonthlyAssignmentsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Percent className="h-5 w-5" />
-                Porcentaje de Calificación por Trimestre
+                {t("monthlyAssignments.gradePercentageTitle")}
               </CardTitle>
               <CardDescription>
-                Define qué porcentaje de la calificación total representa las asignaciones mensuales en cada trimestre
+                {t("monthlyAssignments.gradePercentageDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -226,7 +244,7 @@ export default function MonthlyAssignmentsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {QUARTERS.map(quarter => (
                     <Field key={quarter.value}>
-                      <FieldLabel>{quarter.label}</FieldLabel>
+                      <FieldLabel>{getQuarterLabel(quarter.value)}</FieldLabel>
                       <div className="flex gap-2">
                         <Input
                           type="number"
@@ -255,14 +273,14 @@ export default function MonthlyAssignmentsPage() {
           {/* Assignments Table */}
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-semibold">Asignaciones Mensuales</h2>
+              <h2 className="text-xl font-semibold">{t("monthlyAssignments.title")}</h2>
               <p className="text-sm text-muted-foreground">
-                Gestiona las asignaciones mensuales para el año escolar "{selectedSchoolYear?.name}"
+                {t("monthlyAssignments.manageForYear", { year: selectedSchoolYear?.name })}
               </p>
             </div>
             <Button onClick={handleCreate} className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
-              Nueva Asignación
+              {t("monthlyAssignments.newAssignment")}
             </Button>
           </div>
 
@@ -296,10 +314,10 @@ export default function MonthlyAssignmentsPage() {
       <ConfirmationDialog
         open={!!deleteDialog}
         onOpenChange={(open) => !open && setDeleteDialog(null)}
-        title="Eliminar Asignación"
-        message={deleteDialog ? `¿Estás seguro de que deseas eliminar "${deleteDialog.name}"?\n\nEsta acción eliminará la asignación para todos los estudiantes y no se puede deshacer.` : ""}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
+        title={t("monthlyAssignments.deleteTitle")}
+        message={deleteDialog ? t("monthlyAssignments.deleteConfirm", { name: deleteDialog.name }) : ""}
+        confirmText={t("common.deleteAction")}
+        cancelText={t("common.cancel")}
         variant="destructive"
         onConfirm={handleDeleteAssignment}
       />

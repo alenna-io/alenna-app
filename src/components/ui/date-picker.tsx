@@ -13,7 +13,7 @@ interface DatePickerProps {
 export function DatePicker({
   value,
   onChange,
-  placeholder = "Selecciona una fecha",
+  placeholder,
   disabled = false,
   min = "2020-01-01",
   max = "2050-12-31",
@@ -29,7 +29,7 @@ export function DatePicker({
       type="date"
       value={value || ""}
       onChange={handleChange}
-      placeholder={placeholder}
+      placeholder={placeholder || undefined}
       disabled={disabled}
       min={min}
       max={max}

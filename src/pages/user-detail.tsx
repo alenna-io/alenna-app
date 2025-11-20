@@ -71,7 +71,7 @@ export default function UserDetailPage() {
       if (schoolId) {
         navigate(`/schools/${schoolId}/teachers`)
       } else {
-        navigate('/configuration/school-info')
+        navigate('/school-settings/school-info')
       }
     } else {
       navigate('/users')

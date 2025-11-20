@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
+import { useTranslation } from "react-i18next"
 
 interface QuarterlyTableProps {
   quarter: string
@@ -51,6 +52,7 @@ export function ACEQuarterlyTable({
   onAddPace,
   onDeletePace
 }: QuarterlyTableProps) {
+  const { t } = useTranslation()
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const dragImageRef = React.useRef<HTMLDivElement | null>(null)
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
@@ -231,8 +233,8 @@ export function ACEQuarterlyTable({
     const paceExists = data[subject].some(pace => pace && pace.number === newPaceNumber)
     if (paceExists) {
       setAlertDialog({
-        title: "Lección Duplicada",
-        message: `La lección ${newPaceNumber} ya existe en ${subject}.\n\nNo se pueden duplicar lecciones en la misma materia.`
+        title: t("projections.duplicateLesson"),
+        message: t("projections.duplicateLessonMessage", { paceNumber: newPaceNumber, subject })
       })
       return
     }
@@ -378,20 +380,20 @@ export function ACEQuarterlyTable({
                 </Badge>
                 {isActive && (
                   <Badge className="bg-green-100 text-green-800 border-green-200 text-xs md:text-sm">
-                    Actual
+                    {t("projections.current")}
                   </Badge>
                 )}
               </CardTitle>
               {isQuarterOverloaded && (
                 <Badge className="bg-red-100 text-red-800 border-red-500 text-xs md:text-sm">
-                  Sobrecarga ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
+                  {t("projections.quarterOverload")} ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
               {currentWeek && (
                 <Badge variant="outline" className="text-xs md:text-sm">
-                  Semana {currentWeek}
+                  {t("projections.week")} {currentWeek}
                 </Badge>
               )}
               <div className="flex items-center gap-2 text-xs md:text-sm">
@@ -416,7 +418,7 @@ export function ACEQuarterlyTable({
               <thead>
                 <tr>
                   <th className="text-left py-1.5 px-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 text-sm">
-                    Materia
+                    {t("projections.subject")}
                   </th>
                   {weeks.map((week, weekIdx) => {
                     const weekPaceCount = weekPaceCounts[weekIdx]
@@ -432,11 +434,11 @@ export function ACEQuarterlyTable({
                       >
                         <div className="flex flex-col items-center">
                           <span className={`text-sm font-semibold ${currentWeek === week ? "text-green-700" : ""}`}>
-                            Semana {week}
+                            {t("projections.week")} {week}
                             {currentWeek === week && " ✓"}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5">
-                            {weekPaceCount} Lecciones
+                            {weekPaceCount} {t("projections.lessons")}
                           </span>
                         </div>
                       </th>
@@ -808,7 +810,7 @@ export function ACEQuarterlyTable({
                               <button
                                 onClick={() => handleAddPaceSubmit(subject, weekIndex)}
                                 className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                title="Agregar"
+                                title={t("projections.add")}
                               >
                                 <Check className="h-4 w-4" />
                               </button>
@@ -847,19 +849,19 @@ export function ACEQuarterlyTable({
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
               <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
                 <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Programados</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.scheduled")}</p>
               </div>
               <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
                 <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Completados</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.completed")}</p>
               </div>
               <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
                 <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Pendientes</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.pending")}</p>
               </div>
               <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
                 <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">Reprobados</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.failed")}</p>
               </div>
               <button
                 onClick={() => setFailedAttemptsDialog(true)}
@@ -868,7 +870,7 @@ export function ACEQuarterlyTable({
               >
                 <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
                 <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
-                  Total Intentos Fallidos
+                  {t("projections.totalFailedAttemptsLabel")}
                   <Info className="h-3 w-3 inline" />
                 </p>
               </button>
@@ -972,13 +974,13 @@ export function ACEQuarterlyTable({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Historial de Calificaciones
+              {t("projections.gradeHistory")}
             </DialogTitle>
             <DialogDescription>
               {historyDialog && (
                 <>
-                  Lección: <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
-                  Materia: <span className="font-semibold">{historyDialog.subject}</span>
+                  {t("projections.lessonLabel")} <span className="font-mono font-semibold">{historyDialog.paceNumber}</span><br />
+                  {t("projections.subjectLabel")} <span className="font-semibold">{historyDialog.subject}</span>
                 </>
               )}
             </DialogDescription>
@@ -1004,7 +1006,7 @@ export function ACEQuarterlyTable({
               onClick={() => setHistoryDialog(null)}
               className="cursor-pointer"
             >
-              Cerrar
+              {t("common.close")}
             </Button>
           </div>
         </DialogContent>
@@ -1047,17 +1049,17 @@ export function ACEQuarterlyTable({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-red-600" />
-              Total Intentos Fallidos - {quarter}
+              {t("projections.failedAttempts")} - {quarter}
             </DialogTitle>
             <DialogDescription>
-              Resumen de todos los intentos fallidos (calificación &lt; 80) en este trimestre
+              {t("projections.attemptsSummary")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             {failedAttempts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                <p>¡No hay intentos fallidos en este trimestre!</p>
+                <p>{t("projections.noFailedAttempts")}</p>
               </div>
             ) : (
               failedAttempts.map((attempt, index) => (
@@ -1066,11 +1068,11 @@ export function ACEQuarterlyTable({
                     <div>
                       <h4 className="font-semibold text-lg">{attempt.subject}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Lección: <span className="font-mono font-semibold">{attempt.paceNumber}</span> • Semana {attempt.weekNumber}
+                        {t("projections.lessonLabel")} <span className="font-mono font-semibold">{attempt.paceNumber}</span> • {t("projections.week")} {attempt.weekNumber}
                       </p>
                     </div>
                     <Badge variant="destructive" className="shrink-0">
-                      {attempt.failedGrades.length} intento{attempt.failedGrades.length > 1 ? 's' : ''}
+                      {attempt.failedGrades.length} {attempt.failedGrades.length > 1 ? t("projections.attempts") : t("projections.attempt")}
                     </Badge>
                   </div>
                   <div className="space-y-2">
@@ -1087,14 +1089,14 @@ export function ACEQuarterlyTable({
           </div>
           <div className="flex justify-between items-center pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              Total de intentos fallidos: <span className="font-bold text-red-600">{quarterStats.totalFailed}</span>
+              {t("projections.totalFailedAttempts")} <span className="font-bold text-red-600">{quarterStats.totalFailed}</span>
             </p>
             <Button
               variant="outline"
               onClick={() => setFailedAttemptsDialog(false)}
               className="cursor-pointer"
             >
-              Cerrar
+              {t("common.close")}
             </Button>
           </div>
         </DialogContent>
@@ -1104,10 +1106,10 @@ export function ACEQuarterlyTable({
       <ConfirmationDialog
         open={!!confirmAddDialog}
         onOpenChange={(open) => !open && setConfirmAddDialog(null)}
-        title="Sobrecarga de Bloque"
-        message={confirmAddDialog ? `Este bloque ya tiene ${confirmAddDialog.weekCount} lecciones programadas.\n\nEl máximo recomendado es ${MAX_PACES_PER_QUARTER} lecciones por trimestre.\n\n¿Deseas agregar esta lección de todas formas?` : ""}
-        confirmText="Agregar de Todas Formas"
-        cancelText="Cancelar"
+        title={t("projections.quarterOverload")}
+        message={confirmAddDialog ? t("projections.quarterOverloadMessage", { weekCount: confirmAddDialog.weekCount, maxPaces: MAX_PACES_PER_QUARTER }) : ""}
+        confirmText={t("projections.addAnyway")}
+        cancelText={t("common.cancel")}
         variant="default"
         onConfirm={() => confirmOverloadAdd(false)}
       />
