@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { useTranslation } from "react-i18next"
 
 interface ReportCardSubjectData {
   subject: string
@@ -41,6 +42,8 @@ interface ReportCardTableProps {
 }
 
 export function ReportCardTable({ quarter }: ReportCardTableProps) {
+  const { t } = useTranslation()
+
   const formatGrade = (grade: number | null): string => {
     if (grade === null) return "-"
     return grade.toFixed(2)
@@ -64,7 +67,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
         <div className="overflow-x-auto">
           <div className="mb-3">
             <h3 className="text-base font-semibold text-foreground">
-              Lecciones{" "}
+              {t("reportCards.lessons")}{" "}
               <span className="font-normal text-muted-foreground">
                 ({formatPercentage(quarter.pacePercentage)})
               </span>
@@ -73,13 +76,13 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
           <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
             <thead>
               <tr className="bg-primary/90 text-primary-foreground">
-                <th className="p-2 text-left font-semibold border border-primary/20">Materia</th>
+                <th className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.subject")}</th>
                 {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
                   <th key={i} className="p-2 text-center font-semibold border border-primary/20 min-w-[60px]">
-                    {maxPacesPerSubject === 1 ? "Lección" : "Lección"}
+                    {t("reportCards.lesson")}
                   </th>
                 ))}
-                <th className="p-2 text-center font-semibold border border-primary/20">PROM.</th>
+                <th className="p-2 text-center font-semibold border border-primary/20">{t("reportCards.average")}</th>
               </tr>
             </thead>
             <tbody>
@@ -115,7 +118,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
                     {/* PACE row */}
                     <tr className="bg-white">
                       <td className="p-2 text-right text-xs text-muted-foreground border border-gray-300 w-12">
-                        Lección
+                        {t("reportCards.lesson")}
                       </td>
                       {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
                         <td key={i} className="p-2 text-center border border-gray-300">
@@ -137,7 +140,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               ) : (
                 <tr className="bg-white">
                   <td colSpan={maxPacesPerSubject + 2} className="p-4 text-center text-muted-foreground border border-gray-300">
-                    No hay lecciones asignadas para este bloque
+                    {t("reportCards.noLessonsAssigned")}
                   </td>
                 </tr>
               )}
@@ -151,10 +154,10 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
             <tbody>
               <tr className={quarter.academicProjectionCompleted ? "bg-green-600 text-white" : "bg-red-600 text-white"}>
                 <td className="p-3 text-left font-semibold border border-primary/20">
-                  Proyección Académica Completada
+                  {t("reportCards.academicProjectionCompleted")}
                 </td>
                 <td className="p-3 text-center font-semibold border border-primary/20 w-24">
-                  {quarter.academicProjectionCompleted ? "SÍ" : "NO"}
+                  {quarter.academicProjectionCompleted ? t("reportCards.yes") : t("reportCards.no")}
                 </td>
               </tr>
             </tbody>
@@ -165,7 +168,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
         <div className="overflow-x-auto">
           <div className="mb-3">
             <h3 className="text-base font-semibold text-foreground">
-              Asignaciones Mensuales{" "}
+              {t("reportCards.monthlyAssignments")}{" "}
               <span className="font-normal text-muted-foreground">
                 ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
               </span>
@@ -174,8 +177,8 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
           <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
             <thead>
               <tr className="bg-primary/90 text-primary-foreground">
-                <th className="p-2 text-left font-semibold border border-primary/20">Asignación</th>
-                <th className="p-2 text-center font-semibold border border-primary/20">Calificación</th>
+                <th className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.assignment")}</th>
+                <th className="p-2 text-center font-semibold border border-primary/20">{t("reportCards.grade")}</th>
               </tr>
             </thead>
             <tbody>
@@ -191,7 +194,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
                   ))}
                   {/* Average row for Monthly Assignments */}
                   <tr className="bg-primary/90 text-primary-foreground">
-                    <td className="p-2 text-left font-semibold border border-primary/20">Promedio</td>
+                    <td className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.averageLabel")}</td>
                     <td className="p-2 text-center font-semibold border border-primary/20">
                       {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "0.00"}
                     </td>
@@ -200,7 +203,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               ) : (
                 <tr className="bg-white">
                   <td colSpan={2} className="p-4 text-center text-muted-foreground border border-gray-300">
-                    No hay asignaciones mensuales para este bloque
+                    {t("reportCards.noMonthlyAssignments")}
                   </td>
                 </tr>
               )}
@@ -214,7 +217,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
             <tbody>
               <tr className="bg-gray-100 font-semibold">
                 <td className="p-2 border border-gray-300">
-                  Promedio Lecciones ({formatPercentage(quarter.pacePercentage)})
+                  {t("reportCards.lessonsAverage")} ({formatPercentage(quarter.pacePercentage)})
                 </td>
                 <td className="p-2 text-center border border-gray-300">
                   {quarter.overallAverage !== null ? formatGrade(quarter.overallAverage) : "-"}
@@ -222,7 +225,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </tr>
               <tr className="bg-gray-100 font-semibold">
                 <td className="p-2 border border-gray-300">
-                  Promedio Asignaciones Mensuales ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
+                  {t("reportCards.monthlyAssignmentsAverage")} ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
                 </td>
                 <td className="p-2 text-center border border-gray-300">
                   {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "-"}
@@ -230,14 +233,14 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </tr>
               <tr className="bg-gray-100 font-semibold">
                 <td className="p-2 border border-gray-300">
-                  Lecciones Aprobadas
+                  {t("reportCards.passedLessons")}
                 </td>
                 <td className="p-2 text-center border border-gray-300">
                   {quarter.totalPassedPaces}
                 </td>
               </tr>
               <tr className="bg-primary text-primary-foreground font-bold">
-                <td className="p-3 border border-primary/20">Calificación Final</td>
+                <td className="p-3 border border-primary/20">{t("reportCards.finalGrade")}</td>
                 <td className="p-3 text-center border border-primary/20 text-lg">
                   {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
                 </td>

@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useTranslation } from "react-i18next"
 
 interface StudentsTableProps {
   students: Student[]
@@ -31,17 +32,6 @@ interface ColumnConfig {
   sortable?: boolean
 }
 
-const COLUMNS: ColumnConfig[] = [
-  { key: 'firstName', label: 'Nombre', sortable: true },
-  { key: 'lastName', label: 'Apellidos', sortable: true },
-  { key: 'age', label: 'Edad', sortable: true },
-  { key: 'certification', label: 'Certificación', sortable: true },
-  { key: 'graduation', label: 'Graduación', sortable: true },
-  { key: 'nivel', label: 'Nivel', sortable: false },
-  { key: 'gradoEscolar', label: 'Grado Escolar', sortable: false },
-  { key: 'actions', label: '', sortable: false },
-]
-
 export function StudentsTable({
   students,
   onStudentSelect,
@@ -53,6 +43,18 @@ export function StudentsTable({
   totalItems,
   onPageChange
 }: StudentsTableProps) {
+  const { t } = useTranslation()
+
+  const COLUMNS: ColumnConfig[] = [
+    { key: 'firstName', label: t("common.name"), sortable: true },
+    { key: 'lastName', label: t("common.lastName"), sortable: true },
+    { key: 'age', label: t("students.age"), sortable: true },
+    { key: 'certification', label: t("students.certification"), sortable: true },
+    { key: 'graduation', label: t("students.graduation"), sortable: true },
+    { key: 'nivel', label: t("students.level"), sortable: false },
+    { key: 'gradoEscolar', label: t("students.schoolGrade"), sortable: false },
+    { key: 'actions', label: '', sortable: false },
+  ]
 
   const getSortIcon = (field: "firstName" | "lastName") => {
     const isActive = sortField === field
@@ -161,7 +163,7 @@ export function StudentsTable({
                         </div>
                       )
                     case 'age':
-                      return <div className="text-sm font-medium">{student.age} años</div>
+                      return <div className="text-sm font-medium">{t("students.ageYears", { age: student.age })}</div>
                     case 'certification':
                       return (
                         <Badge

@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FilePlus, Sparkles, Copy } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface CreateProjectionDialogProps {
   open: boolean
@@ -24,13 +25,15 @@ export function CreateProjectionDialog({
   onSelectGenerate,
   onSelectFromTemplate,
 }: CreateProjectionDialogProps) {
+  const { t } = useTranslation()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Crear Proyección</DialogTitle>
+          <DialogTitle>{t("projections.createDialogTitle")}</DialogTitle>
           <DialogDescription>
-            Elige cómo deseas crear la proyección académica
+            {t("projections.createDialogDescription")}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -44,9 +47,9 @@ export function CreateProjectionDialog({
                 <Sparkles className="h-5 w-5 text-purple-600" />
               </div>
               <div className="flex-1">
-                <div className="font-semibold w-full break-words text-gray-900">Generar Proyección Automática</div>
+                <div className="font-semibold w-full break-words text-gray-900">{t("projections.generateAutomaticTitle")}</div>
                 <div className="text-sm text-gray-600 w-full break-words mt-1">
-                  El sistema generará automáticamente una proyección basada en las materias y lecciones que elijas. Puedes personalizar todo.
+                  {t("projections.generateAutomaticDescription")}
                 </div>
               </div>
             </div>
@@ -61,9 +64,9 @@ export function CreateProjectionDialog({
                 <Copy className="h-5 w-5 text-green-600" />
               </div>
               <div className="flex-1">
-                <div className="font-semibold w-full break-words text-gray-900">Desde Plantilla</div>
+                <div className="font-semibold w-full break-words text-gray-900">{t("projections.fromTemplateTitle")}</div>
                 <div className="text-sm text-gray-600 w-full break-words mt-1">
-                  Crea una proyección rápidamente usando una plantilla predefinida. Selecciona estudiante y plantilla.
+                  {t("projections.fromTemplateDescription")}
                 </div>
               </div>
             </div>
@@ -78,9 +81,9 @@ export function CreateProjectionDialog({
                 <FilePlus className="h-5 w-5 text-blue-600" />
               </div>
               <div className="flex-1">
-                <div className="font-semibold w-full break-words text-gray-900">Crear Proyección Vacía</div>
+                <div className="font-semibold w-full break-words text-gray-900">{t("projections.emptyProjectionTitle")}</div>
                 <div className="text-sm text-gray-600 w-full break-words mt-1">
-                  Crea una proyección sin lecciones. Podrás agregar lecciones manualmente después.
+                  {t("projections.emptyProjectionDescription")}
                 </div>
               </div>
             </div>
@@ -88,7 +91,7 @@ export function CreateProjectionDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t("common.cancel")}
           </Button>
         </DialogFooter>
       </DialogContent>

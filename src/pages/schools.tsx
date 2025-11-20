@@ -15,6 +15,7 @@ import { SchoolFormDialog } from "@/components/school-form-dialog"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
 import { ErrorDialog } from "@/components/ui/error-dialog"
+import { useTranslation } from "react-i18next"
 
 interface School {
   id: string
@@ -29,6 +30,7 @@ interface School {
 export default function SchoolsPage() {
   const api = useApi()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [schools, setSchools] = React.useState<School[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -66,7 +68,7 @@ export default function SchoolsPage() {
         return
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cargar información del usuario"
+      const errorMessage = err instanceof Error ? err.message : t("common.error")
       setError(errorMessage)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -77,7 +79,7 @@ export default function SchoolsPage() {
       const schoolsData = await api.schools.getAll()
       setSchools(schoolsData)
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al cargar escuelas"
+      const errorMessage = err instanceof Error ? err.message : t("common.error")
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -190,8 +192,8 @@ export default function SchoolsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gestión de Escuelas"
-        description="Administra las escuelas del sistema"
+        title={t("schools.title")}
+        description={t("schools.description")}
       />
 
       {error && (
@@ -203,7 +205,7 @@ export default function SchoolsPage() {
 
       {/* Search */}
       <SearchBar
-        placeholder="Buscar escuelas por nombre, dirección o email..."
+        placeholder={t("schools.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -212,7 +214,7 @@ export default function SchoolsPage() {
       <div className="flex justify-end">
         <Button onClick={handleCreate} className="cursor-pointer">
           <Plus className="h-4 w-4 mr-2" />
-          Crear Escuela
+          {t("common.create")} {t("schools.title")}
         </Button>
       </div>
 
@@ -234,7 +236,7 @@ export default function SchoolsPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No se encontraron escuelas</p>
+            <p className="text-muted-foreground">{t("schools.noSchools")}</p>
           </CardContent>
         </Card>
       )}

@@ -5,9 +5,11 @@ import { useApi } from "@/services/api"
 import type { CurrentWeekInfo } from "@/services/api"
 import { BreadcrumbNav } from "@/components/breadcrumb-nav"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { useTranslation } from "react-i18next"
 
 export function Header() {
   const api = useApi()
+  const { t } = useTranslation()
   const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
   const [loading, setLoading] = React.useState(true)
 
@@ -33,7 +35,7 @@ export function Header() {
   if (loading) {
     return (
       <div className="flex items-center gap-3 ml-auto">
-        <span className="text-xs text-muted-foreground">Cargando...</span>
+        <span className="text-xs text-muted-foreground">{t("common.loading")}</span>
       </div>
     )
   }
@@ -78,6 +80,17 @@ export function Header() {
     ? ((quarterOrder - 1) * 9) + activeWeek
     : 0
 
+  // Get translated quarter name
+  const getQuarterLabel = (quarterName: string) => {
+    const quarterLabels: { [key: string]: string } = {
+      'Q1': t("monthlyAssignments.quarterLabelQ1"),
+      'Q2': t("monthlyAssignments.quarterLabelQ2"),
+      'Q3': t("monthlyAssignments.quarterLabelQ3"),
+      'Q4': t("monthlyAssignments.quarterLabelQ4"),
+    }
+    return quarterLabels[quarterName] || activeQuarter?.displayName || quarterName
+  }
+
   return (
     <>
       {/* Mobile menu trigger - only on small screens */}
@@ -93,15 +106,15 @@ export function Header() {
             <Clock className="h-4 w-4 text-green-600" />
             <div className="flex flex-col">
               <span className="text-xs font-semibold text-green-900">
-                {activeQuarter.displayName} - Semana {currentWeekInQuarter}
+                {getQuarterLabel(activeQuarter.name)} - {t("common.week")} {currentWeekInQuarter}
               </span>
               <span className="text-xs text-muted-foreground">
-                Semana {currentSchoolWeek} del año escolar
+                {t("common.week")} {currentSchoolWeek} {t("common.ofTheSchoolYear")}
               </span>
             </div>
           </div>
           <Badge className="bg-green-600 hover:bg-green-700 text-white">
-            Semana {currentSchoolWeek}
+            {t("common.week")} {currentSchoolWeek}
           </Badge>
         </div>
       )}

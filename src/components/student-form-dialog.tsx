@@ -14,6 +14,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { GraduationCap, AlertTriangle } from "lucide-react"
 import { useApi } from "@/services/api"
+import { useTranslation } from "react-i18next"
 
 interface CertificationType {
   id: string
@@ -53,6 +54,7 @@ export function StudentFormDialog({
   schoolId,
   onSave,
 }: StudentFormDialogProps) {
+  const { t } = useTranslation()
   const api = useApi()
   const [isSaving, setIsSaving] = React.useState(false)
   const [certificationTypes, setCertificationTypes] = React.useState<CertificationType[]>([])
@@ -318,10 +320,10 @@ export function StudentFormDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
-            Crear Nuevo Estudiante
+            {t("students.createStudent")}
           </DialogTitle>
           <DialogDescription>
-            Agrega un nuevo estudiante a la escuela
+            {t("students.createStudentDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -330,13 +332,13 @@ export function StudentFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="firstName">
-                  Nombre <span className="text-destructive">*</span>
+                  {t("common.name")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="Nombre del estudiante"
+                  placeholder={t("students.namePlaceholder")}
                   className={errors.firstName ? "border-destructive" : ""}
                 />
                 {errors.firstName && (
@@ -349,13 +351,13 @@ export function StudentFormDialog({
 
               <Field>
                 <FieldLabel htmlFor="lastName">
-                  Apellido <span className="text-destructive">*</span>
+                  {t("common.lastName")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Apellido del estudiante"
+                  placeholder={t("students.lastNamePlaceholder")}
                   className={errors.lastName ? "border-destructive" : ""}
                 />
                 {errors.lastName && (
@@ -370,7 +372,7 @@ export function StudentFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="birthDate">
-                  Fecha de Nacimiento <span className="text-destructive">*</span>
+                  {t("students.birthDate")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <DatePicker
                   value={formData.birthDate}
@@ -387,7 +389,7 @@ export function StudentFormDialog({
 
               <Field>
                 <FieldLabel htmlFor="graduationDate">
-                  Fecha de Graduación <span className="text-destructive">*</span>
+                  {t("students.graduationDate")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <DatePicker
                   value={formData.graduationDate}
@@ -405,7 +407,7 @@ export function StudentFormDialog({
 
             <Field>
               <FieldLabel htmlFor="certificationTypeId">
-                Tipo de Certificación <span className="text-destructive">*</span>
+                {t("students.certificationType")} <span className="text-destructive">*</span>
               </FieldLabel>
               <Select
                 value={formData.certificationTypeId}
@@ -413,7 +415,7 @@ export function StudentFormDialog({
                 disabled={loadingCertTypes}
               >
                 <SelectTrigger className={errors.certificationTypeId ? "border-destructive" : ""}>
-                  <SelectValue placeholder={loadingCertTypes ? "Cargando..." : "Seleccionar tipo de certificación"} />
+                  <SelectValue placeholder={loadingCertTypes ? t("common.loading") : t("students.selectCertificationType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {certificationTypes.map((type) => (
@@ -433,7 +435,7 @@ export function StudentFormDialog({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="contactPhone">Teléfono de Contacto</FieldLabel>
+                <FieldLabel htmlFor="contactPhone">{t("students.contactPhone")}</FieldLabel>
                 <Input
                   id="contactPhone"
                   value={formData.contactPhone}
@@ -443,12 +445,12 @@ export function StudentFormDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="address">Dirección</FieldLabel>
+                <FieldLabel htmlFor="address">{t("common.address")}</FieldLabel>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Dirección completa"
+                  placeholder={t("students.fullAddress")}
                 />
               </Field>
             </div>
@@ -462,29 +464,29 @@ export function StudentFormDialog({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <FieldLabel htmlFor="isLeveled" className="cursor-pointer">
-                Estudiante Nivelado
+                {t("students.leveledStudent")}
               </FieldLabel>
             </div>
 
             {formData.isLeveled && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field>
-                  <FieldLabel htmlFor="expectedLevel">Nivel Esperado</FieldLabel>
+                  <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
                   <Input
                     id="expectedLevel"
                     value={formData.expectedLevel}
                     onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
-                    placeholder="Ej: 6to grado"
+                    placeholder={t("students.expectedLevelPlaceholder")}
                   />
                 </Field>
 
                 <Field>
-                  <FieldLabel htmlFor="currentLevel">Nivel Actual</FieldLabel>
+                  <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
                   <Input
                     id="currentLevel"
                     value={formData.currentLevel}
                     onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
-                    placeholder="Ej: 5to grado"
+                    placeholder={t("students.currentLevelPlaceholder")}
                   />
                 </Field>
               </div>
@@ -492,24 +494,24 @@ export function StudentFormDialog({
 
             {/* Parents Section */}
             <div className="border-t pt-6 mt-6">
-              <h3 className="text-lg font-semibold mb-4">Información de Padres/Tutores</h3>
+              <h3 className="text-lg font-semibold mb-4">{t("forms.parentsInfo")}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Se requiere al menos un padre/madre/tutor. Máximo dos.
+                {t("forms.parentsRequired")}
               </p>
 
               {/* Parent 1 (Required) */}
               <div className="space-y-4 mb-6">
-                <h4 className="text-sm font-medium">Padre/Madre/Tutor 1 <span className="text-destructive">*</span></h4>
+                <h4 className="text-sm font-medium">{t("students.parent1")} <span className="text-destructive">*</span></h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field>
                     <FieldLabel htmlFor="parent1FirstName">
-                      Nombre <span className="text-destructive">*</span>
+                      {t("common.name")} <span className="text-destructive">*</span>
                     </FieldLabel>
                     <Input
                       id="parent1FirstName"
                       value={formData.parent1FirstName}
                       onChange={(e) => setFormData({ ...formData, parent1FirstName: e.target.value })}
-                      placeholder="Nombre del padre/madre"
+                      placeholder={t("students.parentNamePlaceholder")}
                       className={errors.parent1FirstName ? "border-destructive" : ""}
                     />
                     {errors.parent1FirstName && (
@@ -522,13 +524,13 @@ export function StudentFormDialog({
 
                   <Field>
                     <FieldLabel htmlFor="parent1LastName">
-                      Apellido <span className="text-destructive">*</span>
+                      {t("common.lastName")} <span className="text-destructive">*</span>
                     </FieldLabel>
                     <Input
                       id="parent1LastName"
                       value={formData.parent1LastName}
                       onChange={(e) => setFormData({ ...formData, parent1LastName: e.target.value })}
-                      placeholder="Apellido del padre/madre"
+                      placeholder={t("students.parentLastNamePlaceholder")}
                       className={errors.parent1LastName ? "border-destructive" : ""}
                     />
                     {errors.parent1LastName && (
@@ -563,20 +565,20 @@ export function StudentFormDialog({
 
                   <Field>
                     <FieldLabel htmlFor="parent1Relationship">
-                      Relación <span className="text-destructive">*</span>
+                      {t("students.relationship")} <span className="text-destructive">*</span>
                     </FieldLabel>
                     <Select
                       value={formData.parent1Relationship}
                       onValueChange={(value) => setFormData({ ...formData, parent1Relationship: value })}
                     >
                       <SelectTrigger className={errors.parent1Relationship ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Seleccionar relación" />
+                        <SelectValue placeholder={t("students.selectRelationship")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Father">Padre</SelectItem>
-                        <SelectItem value="Mother">Madre</SelectItem>
-                        <SelectItem value="Guardian">Tutor</SelectItem>
-                        <SelectItem value="Parent">Padre/Madre</SelectItem>
+                        <SelectItem value="Father">{t("students.father")}</SelectItem>
+                        <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                        <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                        <SelectItem value="Parent">{t("students.parent")}</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.parent1Relationship && (
@@ -600,23 +602,23 @@ export function StudentFormDialog({
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <FieldLabel htmlFor="hasSecondParent" className="cursor-pointer">
-                    Agregar segundo padre/madre/tutor
+                    {t("forms.addSecondParent")}
                   </FieldLabel>
                 </div>
 
                 {formData.hasSecondParent && (
                   <>
-                    <h4 className="text-sm font-medium">Padre/Madre/Tutor 2</h4>
+                    <h4 className="text-sm font-medium">{t("students.parent2")}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Field>
                         <FieldLabel htmlFor="parent2FirstName">
-                          Nombre <span className="text-destructive">*</span>
+                          {t("common.name")} <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                           id="parent2FirstName"
                           value={formData.parent2FirstName}
                           onChange={(e) => setFormData({ ...formData, parent2FirstName: e.target.value })}
-                          placeholder="Nombre del segundo padre/madre"
+                          placeholder={t("students.secondParentNamePlaceholder")}
                           className={errors.parent2FirstName ? "border-destructive" : ""}
                         />
                         {errors.parent2FirstName && (
@@ -629,13 +631,13 @@ export function StudentFormDialog({
 
                       <Field>
                         <FieldLabel htmlFor="parent2LastName">
-                          Apellido <span className="text-destructive">*</span>
+                          {t("common.lastName")} <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                           id="parent2LastName"
                           value={formData.parent2LastName}
                           onChange={(e) => setFormData({ ...formData, parent2LastName: e.target.value })}
-                          placeholder="Apellido del segundo padre/madre"
+                          placeholder={t("students.secondParentLastNamePlaceholder")}
                           className={errors.parent2LastName ? "border-destructive" : ""}
                         />
                         {errors.parent2LastName && (
@@ -650,7 +652,7 @@ export function StudentFormDialog({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Field>
                         <FieldLabel htmlFor="parent2Email">
-                          Email <span className="text-destructive">*</span>
+                          {t("common.email")} <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Input
                           id="parent2Email"
@@ -670,20 +672,20 @@ export function StudentFormDialog({
 
                       <Field>
                         <FieldLabel htmlFor="parent2Relationship">
-                          Relación <span className="text-destructive">*</span>
+                          {t("students.relationship")} <span className="text-destructive">*</span>
                         </FieldLabel>
                         <Select
                           value={formData.parent2Relationship}
                           onValueChange={(value) => setFormData({ ...formData, parent2Relationship: value })}
                         >
                           <SelectTrigger className={errors.parent2Relationship ? "border-destructive" : ""}>
-                            <SelectValue placeholder="Seleccionar relación" />
+                            <SelectValue placeholder={t("students.selectRelationship")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Father">Padre</SelectItem>
-                            <SelectItem value="Mother">Madre</SelectItem>
-                            <SelectItem value="Guardian">Tutor</SelectItem>
-                            <SelectItem value="Parent">Padre/Madre</SelectItem>
+                            <SelectItem value="Father">{t("students.father")}</SelectItem>
+                            <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                            <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                            <SelectItem value="Parent">{t("students.parent")}</SelectItem>
                           </SelectContent>
                         </Select>
                         {errors.parent2Relationship && (
@@ -707,10 +709,10 @@ export function StudentFormDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Guardando..." : "Crear Estudiante"}
+            {isSaving ? t("common.saving") : t("students.createButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

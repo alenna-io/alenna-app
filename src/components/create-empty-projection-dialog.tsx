@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useApi } from "@/services/api"
+import { useTranslation } from "react-i18next"
 
 interface Student {
   id: string
@@ -39,6 +40,7 @@ export function CreateEmptyProjectionDialog({
   activeSchoolYear,
 }: CreateEmptyProjectionDialogProps) {
   const api = useApi()
+  const { t } = useTranslation()
   const [students, setStudents] = React.useState<Student[]>([])
   const [loading, setLoading] = React.useState(false)
   const [isCreating, setIsCreating] = React.useState(false)
@@ -103,18 +105,18 @@ export function CreateEmptyProjectionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Crear Proyección Vacía</DialogTitle>
+          <DialogTitle>{t("projections.createEmptyTitle")}</DialogTitle>
           <DialogDescription>
-            Crea una proyección sin lecciones. Podrás agregar lecciones manualmente después.
+            {t("projections.createEmptyDescription")}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="py-8 text-center">Cargando...</div>
+          <div className="py-8 text-center">{t("projections.loading")}</div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="student">Estudiante *</Label>
+              <Label htmlFor="student">{t("projections.student")} *</Label>
               <Select
                 value={formData.studentId}
                 onValueChange={(value) =>
@@ -122,7 +124,7 @@ export function CreateEmptyProjectionDialog({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un estudiante" />
+                  <SelectValue placeholder={t("projections.selectStudent")} />
                 </SelectTrigger>
                 <SelectContent>
                   {students.map((student) => (
@@ -135,15 +137,15 @@ export function CreateEmptyProjectionDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="schoolYear">Año Escolar *</Label>
+              <Label htmlFor="schoolYear">{t("projections.schoolYear")} *</Label>
               {activeSchoolYear ? (
                 <div className="p-3 rounded-md border bg-blue-50 border-blue-200">
                   <div className="text-sm font-medium text-blue-900">{activeSchoolYear.name}</div>
-                  <div className="text-xs text-blue-700 mt-1">Año escolar activo</div>
+                  <div className="text-xs text-blue-700 mt-1">{t("projections.activeSchoolYear")}</div>
                 </div>
               ) : (
                 <div className="p-3 rounded-md border bg-yellow-50 border-yellow-200">
-                  <div className="text-sm text-yellow-800">No hay un año escolar activo</div>
+                  <div className="text-sm text-yellow-800">{t("projections.noActiveSchoolYear")}</div>
                 </div>
               )}
               <input type="hidden" value={activeSchoolYear?.name || ""} />
@@ -156,10 +158,10 @@ export function CreateEmptyProjectionDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={isCreating}
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={isCreating || !formData.studentId || !formData.schoolYear || !activeSchoolYear}>
-                {isCreating ? "Creando..." : "Crear Proyección"}
+                {isCreating ? t("projections.creating") : t("projections.createProjection")}
               </Button>
             </DialogFooter>
           </form>

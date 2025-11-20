@@ -8,6 +8,7 @@ import { useApi } from "@/services/api"
 import type { DailyGoalData } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 interface Student {
   id: string
@@ -66,6 +67,7 @@ export default function DailyGoalsPage() {
   const location = useLocation()
   const locationState = location.state as LocationState | null
   const api = useApi()
+  const { t } = useTranslation()
   const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -224,7 +226,7 @@ export default function DailyGoalsPage() {
           week: parseInt(week),
           dayOfWeek: dayIndex
         })
-        toast.success("Meta actualizada exitosamente")
+        toast.success(t("dailyGoals.goalUpdated"))
       } else if (value.trim()) {
         // Create new goal
         await api.dailyGoals.create(studentId, projectionId, {
@@ -235,7 +237,7 @@ export default function DailyGoalsPage() {
           text: value,
           isCompleted: false
         })
-        toast.success("Meta creada exitosamente")
+        toast.success(t("dailyGoals.goalCreated"))
       }
 
       // Refresh data to ensure consistency
@@ -243,9 +245,9 @@ export default function DailyGoalsPage() {
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating goal:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar la meta'
+      const errorMessage = err instanceof Error ? err.message : t("dailyGoals.errorUpdatingGoal")
 
-      toast.error(`Error: ${errorMessage}`)
+      toast.error(t("dailyGoals.errorPrefix") + ": " + errorMessage)
       setError(errorMessage)
 
       // ROLLBACK: Reload data to revert UI on error
@@ -299,16 +301,16 @@ export default function DailyGoalsPage() {
         }
       }
 
-      toast.success(newCompleted ? "Meta completada" : "Meta marcada como incompleta")
+      toast.success(newCompleted ? t("dailyGoals.goalCompleted") : t("dailyGoals.goalMarkedIncomplete"))
 
       // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error toggling goal completion:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar el estado de la meta'
+      const errorMessage = err instanceof Error ? err.message : t("dailyGoals.errorUpdatingGoalStatus")
 
-      toast.error(`Error: ${errorMessage}`)
+      toast.error(t("dailyGoals.errorPrefix") + ": " + errorMessage)
       setError(errorMessage)
 
       // ROLLBACK: Reload data to revert UI on error
@@ -343,16 +345,16 @@ export default function DailyGoalsPage() {
         notesCompleted: false
       })
 
-      toast.success(notes ? "Nota guardada" : "Nota eliminada")
+      toast.success(notes ? t("dailyGoals.noteSaved") : t("dailyGoals.noteDeleted"))
 
       // Refresh data to ensure consistency
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
       console.error('Error updating notes:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar la nota'
+      const errorMessage = err instanceof Error ? err.message : t("dailyGoals.errorUpdatingNote")
 
-      toast.error(`Error: ${errorMessage}`)
+      toast.error(t("dailyGoals.errorPrefix") + ": " + errorMessage)
       setError(errorMessage)
 
       // ROLLBACK: Reload data to revert UI on error
@@ -365,15 +367,12 @@ export default function DailyGoalsPage() {
     }
   }
 
-
-
-
   const getQuarterName = (quarter: string) => {
     const quarterNames: { [key: string]: string } = {
-      'Q1': 'Primer Bloque',
-      'Q2': 'Segundo Bloque',
-      'Q3': 'Tercer Bloque',
-      'Q4': 'Cuarto Bloque'
+      'Q1': t("dailyGoals.firstQuarter"),
+      'Q2': t("dailyGoals.secondQuarter"),
+      'Q3': t("dailyGoals.thirdQuarter"),
+      'Q4': t("dailyGoals.fourthQuarter")
     }
     return quarterNames[quarter] || quarter
   }
@@ -383,7 +382,7 @@ export default function DailyGoalsPage() {
       {/* Mobile-only back button (desktop uses breadcrumb) */}
       <div className="flex items-center gap-4 md:hidden">
         <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
-          Volver
+          {t("common.back")}
         </BackButton>
       </div>
 
@@ -405,7 +404,7 @@ export default function DailyGoalsPage() {
       <StudentInfoCard
         student={student || {
           id: studentId || "",
-          name: "Cargando estudiante...",
+          name: t("projections.loadingStudent"),
           currentGrade: "",
           schoolYear: ""
         }}
@@ -414,12 +413,12 @@ export default function DailyGoalsPage() {
 
       {/* Loading State */}
       {loading ? (
-        <Loading variant="spinner" message="Cargando metas diarias..." />
+        <Loading variant="spinner" message={t("dailyGoals.loading")} />
       ) : (
         /* Daily Goals Table */
         <DailyGoalsTable
           quarter={quarter || "Q1"}
-          quarterName={quarter ? getQuarterName(quarter) : "Primer Bloque"}
+          quarterName={quarter ? getQuarterName(quarter) : t("dailyGoals.firstQuarter")}
           week={parseInt(week || "1")}
           data={goalsData}
           subjects={Object.keys(goalsData)}

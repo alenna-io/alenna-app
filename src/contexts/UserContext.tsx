@@ -178,6 +178,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       setUserInfo(info)
 
+      // Update i18n language if user has a language preference
+      if (info.language && (info.language === 'es' || info.language === 'en')) {
+        try {
+          // Dynamically import i18n to avoid circular dependencies
+          import('@/lib/i18n').then(({ updateLanguageFromUser }) => {
+            updateLanguageFromUser(info.language);
+          });
+        } catch (e) {
+          console.warn('[UserContext] Failed to update language:', e);
+        }
+      }
+
       // Persist to sessionStorage
       try {
         sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(info))

@@ -14,6 +14,7 @@ import { SearchBar } from "@/components/ui/search-bar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { ChevronRight } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface ProjectionWithStudent {
   id: string
@@ -37,6 +38,7 @@ export default function ReportCardsPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { t } = useTranslation()
 
   const [projections, setProjections] = React.useState<ProjectionWithStudent[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -109,7 +111,7 @@ export default function ReportCardsPage() {
       } catch (err) {
         const error = err as Error
         console.error('Error fetching report cards:', error)
-        setError(error.message || 'Error al cargar las boletas')
+        setError(error.message || t("reportCards.loadError"))
       } finally {
         setIsLoading(false)
       }
@@ -128,14 +130,11 @@ export default function ReportCardsPage() {
   const filterFields: FilterField[] = [
     {
       key: "schoolYear",
-      label: "Año Escolar",
+      label: t("projections.schoolYear"),
       type: "select",
       color: "bg-blue-500",
-      placeholder: "Todos los años",
-      options: [
-        { value: "", label: "Todos los años" },
-        ...schoolYears.map(sy => ({ value: sy.name, label: sy.name }))
-      ]
+      placeholder: t("filters.allYears"),
+      options: schoolYears.map(sy => ({ value: sy.name, label: sy.name }))
     }
   ]
 
@@ -183,8 +182,8 @@ export default function ReportCardsPage() {
     return (
       <div className="space-y-6">
         <ErrorAlert
-          title="Error"
-          message="No se pudo cargar la información del usuario"
+          title={t("common.error")}
+          message={t("users.loadError")}
         />
       </div>
     )
@@ -197,8 +196,8 @@ export default function ReportCardsPage() {
     return (
       <div className="space-y-6">
         <ErrorAlert
-          title="Acceso denegado"
-          message="No tienes permiso para ver esta página"
+          title={t("common.accessDenied")}
+          message={t("common.accessDeniedMessage")}
         />
       </div>
     )
@@ -208,8 +207,8 @@ export default function ReportCardsPage() {
     <div className="space-y-6">
       {/* Page Title */}
       <PageHeader
-        title="Boletas"
-        description="Visualiza las boletas de calificaciones de los estudiantes"
+        title={t("reportCards.title")}
+        description={t("reportCards.description")}
       />
 
       {/* Search and Filters */}
@@ -217,7 +216,7 @@ export default function ReportCardsPage() {
         <SearchBar
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar por nombre de estudiante o año escolar..."
+          placeholder={t("reportCards.searchPlaceholder")}
         />
 
         <GenericFilters
@@ -232,7 +231,7 @@ export default function ReportCardsPage() {
 
       {/* Projections List */}
       {error ? (
-        <ErrorAlert title="Error" message={error} />
+        <ErrorAlert title={t("common.error")} message={error} />
       ) : paginatedProjections.length > 0 ? (
         <div className="space-y-4">
           {paginatedProjections.map((projection) => (
@@ -249,7 +248,7 @@ export default function ReportCardsPage() {
                         {projection.student.name}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        Año Escolar {projection.schoolYear}
+                        {t("projections.schoolYear")} {projection.schoolYear}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(projection.startDate).toLocaleDateString("es-MX")} - {new Date(projection.endDate).toLocaleDateString("es-MX")}
@@ -275,10 +274,10 @@ export default function ReportCardsPage() {
           <CardContent className="p-12 text-center">
             <EmptyState
               icon={FileText}
-              title="No hay boletas"
+              title={t("reportCards.noReportCards")}
               description={searchTerm || filters.schoolYear
-                ? "No se encontraron boletas con los filtros aplicados"
-                : "No se han creado proyecciones aún"}
+                ? t("reportCards.noReportCardsWithFilters")
+                : t("reportCards.noProjectionsYet")}
             />
           </CardContent>
         </Card>
@@ -288,7 +287,7 @@ export default function ReportCardsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Mostrando {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredProjections.length)} de {filteredProjections.length} boletas
+            {t("reportCards.showing", { start: startIndex + 1, end: Math.min(startIndex + itemsPerPage, filteredProjections.length), total: filteredProjections.length })}
           </p>
           <div className="flex gap-2">
             <button
@@ -296,14 +295,14 @@ export default function ReportCardsPage() {
               disabled={currentPage === 1}
               className="px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
             >
-              Anterior
+              {t("common.previous")}
             </button>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="px-4 py-2 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-accent"
             >
-              Siguiente
+              {t("common.next")}
             </button>
           </div>
         </div>

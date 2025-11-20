@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/ui/link-button"
 import { Building, ChevronLeft, MoreVertical, Eye, Edit, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,7 +60,7 @@ export function SchoolsTable({
   canEdit = false,
   canDelete = false
 }: SchoolsTableProps) {
-
+  const { t } = useTranslation()
   const startItem = (currentPage - 1) * 10 + 1
   const endItem = Math.min(currentPage * 10, totalItems)
 
@@ -70,7 +71,7 @@ export function SchoolsTable({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          Escuelas
+          {t("schools.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -118,12 +119,12 @@ export function SchoolsTable({
                         <div className="text-sm text-foreground space-y-1">
                           {school.teacherLimit !== undefined && (
                             <div className="text-xs text-muted-foreground">
-                              Maestros: <span className="font-semibold">{school.teacherLimit}</span>
+                              {t("schools.teachers")}: <span className="font-semibold">{school.teacherLimit}</span>
                             </div>
                           )}
                           {school.userLimit !== undefined && (
                             <div className="text-xs text-muted-foreground">
-                              Usuarios: <span className="font-semibold">{school.userLimit}</span>
+                              {t("schools.users")}: <span className="font-semibold">{school.userLimit}</span>
                             </div>
                           )}
                           {school.teacherLimit === undefined && school.userLimit === undefined && (
@@ -210,7 +211,7 @@ export function SchoolsTable({
         {schools.length === 0 && (
           <div className="text-center py-12">
             <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay escuelas para mostrar</p>
+            <p className="text-muted-foreground">{t("schools.noSchoolsToShow")}</p>
           </div>
         )}
       </CardContent>

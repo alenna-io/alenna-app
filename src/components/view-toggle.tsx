@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { List, LayoutGrid } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface ViewToggleProps {
   view: "cards" | "table"
@@ -8,11 +9,13 @@ interface ViewToggleProps {
 }
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
+  const { t } = useTranslation()
+
   return (
     <Card style={{ border: "none", boxShadow: "none", backgroundColor: "transparent" }}>
       <CardContent className="p-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-muted-foreground">Vista:</span>
+          <span className="text-sm font-medium text-muted-foreground">{t("common.viewLabel")}</span>
           <div className="flex rounded-lg border bg-muted/50">
             <Button
               variant={view === "table" ? "ghost" : "ghost"}
@@ -24,7 +27,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
                 }`}
             >
               <List className="h-4 w-4" />
-              <span className="text-sm font-medium">Lista</span>
+              <span className="text-sm font-medium">{t("common.list")}</span>
             </Button>
             <Button
               variant={view === "cards" ? "ghost" : "ghost"}
@@ -36,7 +39,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
                 }`}
             >
               <LayoutGrid className="h-4 w-4" />
-              <span className="text-sm font-medium">Tarjetas</span>
+              <span className="text-sm font-medium">{t("common.cards")}</span>
             </Button>
           </div>
         </div>

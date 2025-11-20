@@ -2,6 +2,7 @@ import * as React from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useTranslation } from "react-i18next"
 
 interface BreadcrumbItem {
   label: string
@@ -11,24 +12,25 @@ interface BreadcrumbItem {
 export function BreadcrumbNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [breadcrumbs, setBreadcrumbs] = React.useState<BreadcrumbItem[]>([])
 
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
     const items: BreadcrumbItem[] = []
 
-    // Map routes to breadcrumb labels
+    // Map routes to breadcrumb labels with translations
     const routeMap: Record<string, string> = {
-      'students': 'Estudiantes',
-      'users': 'Usuarios',
-      'schools': 'Escuelas',
-      'configuration': 'Configuración',
-      'projections': 'Proyecciones',
-      'my-profile': 'Mi Perfil',
-      'school-years': 'Años Escolares',
-      'school-info': 'Información de la Escuela',
-      'daily-goals': 'Metas Diarias',
-      'report-cards': 'Boletas',
+      'students': t("breadcrumbs.students"),
+      'users': t("breadcrumbs.users"),
+      'schools': t("breadcrumbs.schools"),
+      'configuration': t("breadcrumbs.configuration"),
+      'projections': t("breadcrumbs.projections"),
+      'my-profile': t("breadcrumbs.myProfile"),
+      'school-years': t("breadcrumbs.schoolYears"),
+      'school-info': t("breadcrumbs.schoolInfo"),
+      'daily-goals': t("breadcrumbs.dailyGoals"),
+      'report-cards': t("breadcrumbs.reportCards"),
     }
 
     let currentPath = ''
@@ -48,15 +50,15 @@ export function BreadcrumbNav() {
           continue
         } else if (prevSegment === 'report-cards') {
           // Show "Boleta" for projection ID after report-cards
-          items.push({ label: 'Boleta', path: currentPath })
+          items.push({ label: t("breadcrumbs.reportCard"), path: currentPath })
         } else if (prevSegment === 'students') {
-          items.push({ label: 'Detalle', path: currentPath })
+          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'users') {
-          items.push({ label: 'Detalle', path: currentPath })
+          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'schools') {
-          items.push({ label: 'Detalle', path: currentPath })
+          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'projections') {
-          items.push({ label: 'Proyección', path: currentPath })
+          items.push({ label: t("breadcrumbs.projection"), path: currentPath })
         }
         continue
       }
@@ -64,14 +66,14 @@ export function BreadcrumbNav() {
       // Handle special cases
       if (segment === 'week') {
         const weekNum = pathSegments[i + 1]
-        items.push({ label: `Semana ${weekNum}`, path: currentPath + `/${weekNum}` })
+        items.push({ label: t("breadcrumbs.week", { week: weekNum }), path: currentPath + `/${weekNum}` })
         break // Don't process further
       }
 
       // Handle quarter in path (Q1, Q2, etc.)
       if (segment.match(/^Q[1-4]$/)) {
         const quarterNum = segment.charAt(1)
-        items.push({ label: `Bloque ${quarterNum}`, path: currentPath })
+        items.push({ label: t("breadcrumbs.quarter", { quarter: quarterNum }), path: currentPath })
         continue
       }
 
@@ -83,7 +85,7 @@ export function BreadcrumbNav() {
     }
 
     setBreadcrumbs(items)
-  }, [location.pathname])
+  }, [location.pathname, t])
 
   // Don't show breadcrumbs on home page
   if (location.pathname === '/' || breadcrumbs.length === 0) {

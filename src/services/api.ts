@@ -176,6 +176,7 @@ export interface UserInfo {
   firstName?: string;
   lastName?: string;
   fullName: string;
+  language?: string;
   schoolId: string;
   schoolName: string;
   studentId?: string | null;
@@ -216,6 +217,8 @@ export const usersApi = {
     apiFetch('/users', token, { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id: string, data: Record<string, unknown>, token: string | null) => 
     apiFetch(`/users/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  updateMyProfile: (data: Record<string, unknown>, token: string | null) =>
+    apiFetch('/users/me', token, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id: string, token: string | null) => 
     apiFetch(`/users/${id}`, token, { method: 'DELETE' }),
 };
@@ -774,6 +777,10 @@ export function useApi() {
     updateUser: async (userId: string, userData: any) => {
       const token = await getToken();
       return usersApi.updateUser(userId, userData, token);
+    },
+    updateMyProfile: async (userData: any) => {
+      const token = await getToken();
+      return usersApi.updateMyProfile(userData, token);
     },
     deleteUser: async (userId: string) => {
       const token = await getToken();

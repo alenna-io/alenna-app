@@ -6,6 +6,7 @@ import { getInitials } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import * as React from "react"
 import { Loading } from "@/components/ui/loading"
+import { useTranslation } from "react-i18next"
 
 interface UserProfileProps {
   userId: string
@@ -31,6 +32,7 @@ interface UserDetail {
 }
 
 export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfileProps) {
+  const { t } = useTranslation()
   const api = useApi()
   const [user, setUser] = React.useState<UserDetail | null>(preloadedUser ? {
     id: preloadedUser.id,
@@ -123,9 +125,9 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4">
-          ← Volver a Usuarios
+          {t("users.backToUsers")}
         </Button>
-        <Loading variant="spinner" message="Cargando usuario..." />
+        <Loading variant="spinner" message={t("common.loading")} />
       </div>
     )
   }
@@ -134,7 +136,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4">
-          ← Volver a Usuarios
+          {t("users.backToUsers")}
         </Button>
         <div className="text-center py-8">
           <p className="text-red-600">{error}</p>
@@ -147,7 +149,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4">
-          ← Volver a Usuarios
+          {t("users.backToUsers")}
         </Button>
         <div className="text-center py-8">
           <p className="text-muted-foreground">Usuario no encontrado</p>
@@ -168,7 +170,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
           onClick={onBack}
           className="mb-4"
         >
-          ← Volver a Usuarios
+          {t("users.backToUsers")}
         </Button>
       </div>
 
@@ -197,7 +199,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
         {/* Personal Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Información Personal</CardTitle>
+            <CardTitle>{t("users.personalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -240,7 +242,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser }: UserProfile
         {/* School and Role Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Información de Acceso</CardTitle>
+            <CardTitle>{t("users.accessInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

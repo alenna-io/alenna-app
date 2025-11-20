@@ -18,6 +18,7 @@ import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { toast } from "sonner"
+import { useTranslation } from "react-i18next"
 
 interface Student {
   id: string
@@ -49,6 +50,7 @@ export function CreateFromTemplateDialog({
   onSuccess,
 }: CreateFromTemplateDialogProps) {
   const api = useApi()
+  const { t } = useTranslation()
   const [students, setStudents] = React.useState<Student[]>([])
   const [templates, setTemplates] = React.useState<Template[]>([])
   const [loading, setLoading] = React.useState(false)
@@ -152,7 +154,7 @@ export function CreateFromTemplateDialog({
         await api.projections.generate(payload)
       }
 
-      toast.success("Proyección creada exitosamente desde la plantilla")
+      toast.success(t("projections.createdFromTemplateSuccess"))
       onSuccess()
       onOpenChange(false)
     } catch (err) {
@@ -180,16 +182,16 @@ export function CreateFromTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Crear Proyección desde Plantilla</DialogTitle>
+          <DialogTitle>{t("projections.createFromTemplateTitle")}</DialogTitle>
           <DialogDescription>
-            Selecciona un estudiante y una plantilla para crear la proyección rápidamente
+            {t("projections.createFromTemplateDescription")}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
           <div className="py-8 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mt-2">Cargando...</p>
+            <p className="text-sm text-muted-foreground mt-2">{t("projections.loading")}</p>
           </div>
         ) : (
           <div className="space-y-4 py-4">
@@ -204,13 +206,13 @@ export function CreateFromTemplateDialog({
               <Alert className="bg-yellow-50 text-yellow-900 border-yellow-200">
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
                 <AlertDescription className="text-yellow-800">
-                  ⚠️ Advertencia: La plantilla seleccionada ({selectedTemplate?.level}) no corresponde al nivel del estudiante ({studentLevel}). Puedes continuar, pero verifica que sea correcto.
+                  {t("projections.levelMismatchWarning", { templateLevel: selectedTemplate?.level, studentLevel })}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label>Estudiante *</Label>
+              <Label>{t("projections.student")} *</Label>
               <Popover open={openStudentPopover} onOpenChange={setOpenStudentPopover}>
                 <PopoverTrigger asChild>
                   <Button
@@ -221,19 +223,19 @@ export function CreateFromTemplateDialog({
                   >
                     {formData.studentId
                       ? students.find((student) => student.id === formData.studentId)?.name
-                      : "Selecciona un estudiante..."}
+                      : t("projections.selectStudentPlaceholder")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput
-                      placeholder="Buscar estudiante..."
+                      placeholder={t("projections.searchStudent")}
                       value={studentSearchTerm}
                       onValueChange={setStudentSearchTerm}
                     />
                     <CommandList>
-                      <CommandEmpty>No se encontraron estudiantes.</CommandEmpty>
+                      <CommandEmpty>{t("projections.noStudentsFound")}</CommandEmpty>
                       <CommandGroup>
                         {students
                           .filter(student =>
@@ -273,7 +275,7 @@ export function CreateFromTemplateDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Plantilla *</Label>
+              <Label>{t("projections.template")} *</Label>
               <Popover open={openTemplatePopover} onOpenChange={setOpenTemplatePopover}>
                 <PopoverTrigger asChild>
                   <Button
@@ -284,19 +286,19 @@ export function CreateFromTemplateDialog({
                   >
                     {formData.templateId
                       ? templates.find((template) => template.id === formData.templateId)?.name
-                      : "Selecciona una plantilla..."}
+                      : t("projections.selectTemplatePlaceholder")}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput
-                      placeholder="Buscar plantilla..."
+                      placeholder={t("projections.searchTemplate")}
                       value={templateSearchTerm}
                       onValueChange={setTemplateSearchTerm}
                     />
                     <CommandList>
-                      <CommandEmpty>No se encontraron plantillas.</CommandEmpty>
+                      <CommandEmpty>{t("projections.noTemplatesFound")}</CommandEmpty>
                       {Object.entries(templatesByLevel)
                         .sort(([levelA], [levelB]) => levelA.localeCompare(levelB))
                         .map(([level, levelTemplates]) => {
@@ -307,7 +309,7 @@ export function CreateFromTemplateDialog({
                           )
                           if (filtered.length === 0) return null
                           return (
-                            <CommandGroup key={level} heading={`Nivel ${level}`}>
+                            <CommandGroup key={level} heading={t("projections.levelHeading", { level })}>
                               {filtered.map((template) => (
                                 <CommandItem
                                   key={template.id}
@@ -328,7 +330,7 @@ export function CreateFromTemplateDialog({
                                     <span>{template.name}</span>
                                     {template.isDefault && (
                                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium">
-                                        Predeterminada
+                                        {t("projections.default")}
                                       </span>
                                     )}
                                   </div>
@@ -345,9 +347,9 @@ export function CreateFromTemplateDialog({
 
             {selectedStudent && (
               <div className="text-sm text-muted-foreground">
-                <p>Estudiante: <span className="font-medium">{selectedStudent.name}</span></p>
+                <p>{t("projections.student")}: <span className="font-medium">{selectedStudent.name}</span></p>
                 {studentLevel && (
-                  <p>Nivel: <span className="font-medium">{studentLevel}</span></p>
+                  <p>{t("projections.level")}: <span className="font-medium">{studentLevel}</span></p>
                 )}
               </div>
             )}
@@ -356,16 +358,16 @@ export function CreateFromTemplateDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleCreate} disabled={isCreating || !formData.studentId || !formData.templateId || !activeSchoolYear}>
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Creando...
+                {t("projections.creating")}
               </>
             ) : (
-              "Crear Proyección"
+              t("projections.createProjection")
             )}
           </Button>
         </DialogFooter>

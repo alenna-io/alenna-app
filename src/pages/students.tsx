@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { StudentFormDialog } from "@/components/student-form-dialog"
 import { Card, CardContent } from "@/components/ui/card"
+import { useTranslation } from "react-i18next"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -35,6 +36,7 @@ export default function StudentsPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo } = useUser()
+  const { t } = useTranslation()
   const [students, setStudents] = React.useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -402,7 +404,7 @@ export default function StudentsPage() {
         {/* Mobile back button */}
         <div className="md:hidden">
           <BackButton onClick={handleBackToList}>
-            Volver a Estudiantes
+            {t("students.backToStudents")}
           </BackButton>
         </div>
         <ErrorAlert
@@ -449,8 +451,8 @@ export default function StudentsPage() {
       {/* Mobile back button for school context */}
       {schoolId && (
         <div className="md:hidden">
-          <BackButton onClick={() => navigate('/configuration/school-info')}>
-            Volver a Información de la Escuela
+          <BackButton onClick={() => navigate('/school-settings/school-info')}>
+            {t("students.backToSchoolInfo")}
           </BackButton>
         </div>
       )}
@@ -464,13 +466,13 @@ export default function StudentsPage() {
       )}
       <div className="flex items-center justify-between">
         <PageHeader
-          title={schoolId ? "Estudiantes de la Escuela" : "Estudiantes"}
-          description={schoolId ? "Gestiona los estudiantes de esta escuela específica" : "Gestiona la información de todos los estudiantes"}
+          title={schoolId ? t("students.titleForSchool") : t("students.title")}
+          description={schoolId ? t("students.descriptionForSchool") : t("students.description")}
         />
         {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
           <Button onClick={() => setIsStudentDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Agregar Estudiante
+            {t("students.addStudent")}
           </Button>
         )}
       </div>
@@ -481,15 +483,15 @@ export default function StudentsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Estudiantes registrados</p>
+                <p className="text-sm text-muted-foreground">{t("students.registered")}</p>
                 <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
               </div>
               {school.userLimit && (
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Límite de usuarios</p>
+                  <p className="text-sm text-muted-foreground">{t("students.limit")}</p>
                   <p className="text-2xl font-bold">{school.userLimit}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {Math.max(0, school.userLimit - studentsCount)} disponibles
+                    {Math.max(0, school.userLimit - studentsCount)} {t("students.available")}
                   </p>
                 </div>
               )}
@@ -500,7 +502,7 @@ export default function StudentsPage() {
 
       {/* Search */}
       <SearchBar
-        placeholder="Buscar estudiantes por nombre, certificación, teléfono o dirección..."
+        placeholder={t("students.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -521,8 +523,8 @@ export default function StudentsPage() {
         <div className="text-center py-8">
           <p className="text-muted-foreground">
             {searchTerm || Object.values(filters).some(f => f !== "")
-              ? "No se encontraron estudiantes que coincidan con los filtros"
-              : "No hay estudiantes registrados"
+              ? t("students.noResults")
+              : t("students.noStudents")
             }
           </p>
         </div>

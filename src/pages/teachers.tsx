@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { TeacherFormDialog } from "@/components/teacher-form-dialog"
 import { Card, CardContent } from "@/components/ui/card"
+import { useTranslation } from "react-i18next"
 
 type SortField = "firstName" | "lastName" | null
 type SortDirection = "asc" | "desc"
@@ -26,6 +27,7 @@ export default function TeachersPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo } = useUser()
+  const { t } = useTranslation()
   const [teachers, setTeachers] = React.useState<Teacher[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -201,9 +203,9 @@ export default function TeachersPage() {
 
   const handleBackToList = () => {
     if (schoolId) {
-      navigate(`/configuration/school-info`)
+      navigate(`/school-settings/school-info`)
     } else {
-      navigate('/configuration/school-info')
+      navigate('/school-settings/school-info')
     }
   }
 
@@ -270,7 +272,7 @@ export default function TeachersPage() {
       {schoolId && (
         <div className="md:hidden">
           <BackButton onClick={handleBackToList}>
-            Volver a Información de la Escuela
+            {t("teachers.backToSchoolInfo")}
           </BackButton>
         </div>
       )}
@@ -284,13 +286,13 @@ export default function TeachersPage() {
       )}
       <div className="flex items-center justify-between">
         <PageHeader
-          title={schoolId ? "Maestros de la Escuela" : "Maestros"}
-          description={schoolId ? "Gestiona los maestros de esta escuela específica" : "Gestiona la información de todos los maestros"}
+          title={schoolId ? t("teachers.titleForSchool") : t("teachers.title")}
+          description={schoolId ? t("teachers.descriptionForSchool") : t("teachers.description")}
         />
         {targetSchoolId && (
           <Button onClick={() => setIsTeacherDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Agregar Maestro
+            {t("teachers.addTeacher")}
           </Button>
         )}
       </div>
@@ -301,15 +303,15 @@ export default function TeachersPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Maestros registrados</p>
+                <p className="text-sm text-muted-foreground">{t("teachers.registered")}</p>
                 <p className="text-2xl font-bold text-green-600">{teachersCount}</p>
               </div>
               {school.teacherLimit && (
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Límite de maestros</p>
+                  <p className="text-sm text-muted-foreground">{t("teachers.limit")}</p>
                   <p className="text-2xl font-bold">{school.teacherLimit}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {Math.max(0, school.teacherLimit - teachersCount)} disponibles
+                    {Math.max(0, school.teacherLimit - teachersCount)} {t("teachers.available")}
                   </p>
                 </div>
               )}
@@ -320,7 +322,7 @@ export default function TeachersPage() {
 
       {/* Search */}
       <SearchBar
-        placeholder="Buscar maestros por nombre o email..."
+        placeholder={t("teachers.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
       />
@@ -335,8 +337,8 @@ export default function TeachersPage() {
         <div className="text-center py-8">
           <p className="text-muted-foreground">
             {searchTerm
-              ? "No se encontraron maestros que coincidan con la búsqueda"
-              : "No hay maestros registrados"}
+              ? t("teachers.noResults")
+              : t("teachers.noTeachers")}
           </p>
         </div>
       ) : (

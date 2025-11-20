@@ -12,11 +12,13 @@ import type { SchoolYear, ModuleData } from "@/services/api";
 import { toast } from "sonner";
 import { SchoolYearsTable } from "@/components/school-years-table";
 import { SchoolYearFormDialog } from "@/components/school-year-form-dialog";
+import { useTranslation } from "react-i18next";
 
 
 export default function SchoolYearsPage() {
   const navigate = useNavigate();
   const api = useApi();
+  const { t } = useTranslation();
   const [schoolYears, setSchoolYears] = React.useState<SchoolYear[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
@@ -106,18 +108,18 @@ export default function SchoolYearsPage() {
     try {
       if (editingYear) {
         await api.schoolYears.update(editingYear.id, formData);
-        toast.success("Año escolar actualizado correctamente");
+        toast.success(t("schoolYears.updatedSuccess"));
       } else {
         await api.schoolYears.create(formData);
-        toast.success("Año escolar creado correctamente");
+        toast.success(t("schoolYears.createdSuccess"));
       }
       fetchSchoolYears();
     } catch (error) {
       console.error('Error saving school year:', error);
-      const errorMessage = error instanceof Error ? error.message : "Error al guardar año escolar";
+      const errorMessage = error instanceof Error ? error.message : t("schoolYears.errorSaving");
       setErrorDialog({
         open: true,
-        title: "Error",
+        title: t("common.error"),
         message: errorMessage,
       });
       toast.error(errorMessage);
@@ -130,11 +132,11 @@ export default function SchoolYearsPage() {
       await api.schoolYears.setActive(id);
       fetchSchoolYears();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al activar año escolar");
+      toast.error(error instanceof Error ? error.message : t("schoolYears.errorActivating"));
       setErrorDialog({
         open: true,
-        title: "Error",
-        message: error instanceof Error ? error.message : "Error al activar año escolar",
+        title: t("common.error"),
+        message: error instanceof Error ? error.message : t("schoolYears.errorActivating"),
       });
     }
   };
@@ -147,13 +149,13 @@ export default function SchoolYearsPage() {
     try {
       await api.schoolYears.delete(year.id);
       fetchSchoolYears();
-      toast.success("Año escolar eliminado correctamente");
+      toast.success(t("schoolYears.deletedSuccess"));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Error al eliminar año escolar";
+      const errorMessage = error instanceof Error ? error.message : t("schoolYears.errorDeleting");
       toast.error(errorMessage);
       setErrorDialog({
         open: true,
-        title: "Error",
+        title: t("common.error"),
         message: errorMessage,
       });
     }
@@ -201,22 +203,22 @@ export default function SchoolYearsPage() {
       <div className="md:hidden">
         <Button
           variant="outline"
-          onClick={() => navigate("/configuration")}
+          onClick={() => navigate("/school-settings")}
           className="mb-4"
         >
-          ← Volver a Configuración
+          {t("schoolYears.backToSchoolSettings")}
         </Button>
       </div>
 
       <div className="flex justify-between items-center">
         <PageHeader
-          title="Años Escolares"
-          description="Gestiona los años escolares y sus trimestres"
+          title={t("schoolYears.title")}
+          description={t("schoolYears.description")}
         />
         {!isReadOnly && (
           <Button onClick={handleCreate} className="cursor-pointer">
             <Plus className="mr-2 h-4 w-4" />
-            Nuevo Año Escolar
+            {t("schoolYears.newSchoolYear")}
           </Button>
         )}
       </div>
@@ -253,7 +255,7 @@ export default function SchoolYearsPage() {
         onOpenChange={(open) => setErrorDialog({ ...errorDialog, open })}
         title={errorDialog.title || "Error"}
         message={errorDialog.message}
-        confirmText="Aceptar"
+        confirmText={t("common.accept")}
       />
     </div>
   );

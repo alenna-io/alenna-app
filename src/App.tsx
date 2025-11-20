@@ -12,6 +12,8 @@ import ProjectionsPage from '@/pages/projections'
 import ACEProjectionPage from '@/pages/ace-projection'
 import DailyGoalsPage from '@/pages/daily-goals'
 import ConfigurationPage from '@/pages/configuration'
+import ConfigurationLanguagePage from '@/pages/configuration-language'
+import SchoolSettingsPage from '@/pages/school-settings'
 import SchoolYearsPage from '@/pages/school-years'
 import SchoolInfoPage from '@/pages/school-info'
 import BillingPage from '@/pages/billing'
@@ -29,6 +31,7 @@ import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
 import { UserProvider } from '@/contexts/UserContext'
 import { Toaster } from '@/components/ui/sonner'
+import '@/lib/i18n' // Initialize i18n
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,8 +81,10 @@ export default function App() {
           <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
           <Route path="my-profile" element={<MyProfilePage />} />
           <Route path="configuration" element={<ConfigurationPage />} />
-          <Route path="configuration/school-info" element={<SchoolInfoPage />} />
-          <Route path="configuration/school-years" element={<SchoolYearsPage />} />
+          <Route path="configuration/language" element={<ConfigurationLanguagePage />} />
+          <Route path="school-settings" element={<SchoolSettingsPage />} />
+          <Route path="school-settings/school-info" element={<SchoolInfoPage />} />
+          <Route path="school-settings/school-years" element={<SchoolYearsPage />} />
           <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />

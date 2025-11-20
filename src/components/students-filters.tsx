@@ -1,5 +1,6 @@
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
+import { useTranslation } from "react-i18next"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -15,27 +16,29 @@ interface StudentsFiltersProps {
 }
 
 export function StudentsFilters({ filters, onFiltersChange, totalStudents, filteredCount }: StudentsFiltersProps) {
+  const { t } = useTranslation()
+
   const filterFields: FilterField[] = [
     {
       key: "certificationType",
-      label: "Tipo de Certificación",
+      label: t("filters.certificationType"),
       type: "select",
       color: "bg-blue-500",
-      placeholder: "Todas las certificaciones",
+      placeholder: t("filters.allCertifications"),
       options: [
         { value: "INEA", label: "INEA" },
         { value: "Grace Christian", label: "Grace Christian" },
         { value: "Home Life", label: "Home Life" },
         { value: "Lighthouse", label: "Lighthouse" },
-        { value: "Otro", label: "Otro" }
+        { value: "Otro", label: t("filters.other") }
       ]
     },
     {
       key: "graduationYear",
-      label: "Año de Graduación",
+      label: t("filters.graduationYear"),
       type: "select",
       color: "bg-green-500",
-      placeholder: "Todos los años",
+      placeholder: t("filters.allYears"),
       options: [
         { value: "2024", label: "2024" },
         { value: "2025", label: "2025" },
@@ -46,13 +49,13 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
     },
     {
       key: "isLeveled",
-      label: "Estado de Nivelación",
+      label: t("filters.levelingStatus"),
       type: "select",
       color: "bg-purple-500",
       options: [
-        { value: "true", label: "Nivelados" },
-        { value: "false", label: "No Nivelados" },
-        { value: "", label: "Todos" }
+        { value: "true", label: t("filters.leveled") },
+        { value: "false", label: t("filters.notLeveled") },
+        { value: "", label: t("filters.all") }
       ]
     }
   ]
