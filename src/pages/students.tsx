@@ -26,6 +26,7 @@ interface Filters extends Record<string, string> {
   certificationType: string
   graduationYear: string
   isLeveled: string
+  groupId: string
 }
 
 type SortField = "firstName" | "lastName" | null
@@ -48,8 +49,10 @@ export default function StudentsPage() {
   const [filters, setFilters] = React.useState<Filters>({
     certificationType: "",
     graduationYear: "",
-    isLeveled: ""
+    isLeveled: "",
+    groupId: ""
   })
+  const [groups, setGroups] = React.useState<Array<{ id: string; name: string | null; teacherName: string }>>([])
   const [view, setView] = React.useState<"cards" | "table">("table")
   const [sortField, setSortField] = React.useState<SortField>(null)
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
@@ -62,9 +65,17 @@ export default function StudentsPage() {
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
   const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
 
+  const isSuperAdmin = hasRole('SUPERADMIN')
   const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
   const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
   const isSchoolAdmin = hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+
+  // Redirect super admins - they should not access the students page
+  React.useEffect(() => {
+    if (isSuperAdmin && !studentId) {
+      navigate('/users', { replace: true })
+    }
+  }, [isSuperAdmin, studentId, navigate])
 
   // Fetch school info and students count for school admins
   React.useEffect(() => {
@@ -75,9 +86,17 @@ export default function StudentsPage() {
         const targetSchoolId = schoolId || userInfo?.schoolId
         if (!targetSchoolId) return
 
-        const schoolData = await api.schools.getById(targetSchoolId)
+        // Use /me endpoint for school admins to avoid permission issues
+        let schoolData
+        if (isSchoolAdmin && targetSchoolId === userInfo?.schoolId) {
+          // School admins should use /me endpoint when accessing their own school
+          schoolData = await api.schools.getMy()
+        } else {
+          schoolData = await api.schools.getById(targetSchoolId)
+        }
         setSchool(schoolData)
 
+        // Use the same schoolId logic for students count - school admins can access their own school
         const countData = await api.schools.getStudentsCount(targetSchoolId)
         setStudentsCount(countData.count)
       } catch (err) {
@@ -128,6 +147,39 @@ export default function StudentsPage() {
         const data = schoolId
           ? await api.schools.getStudents(schoolId)
           : await api.students.getAll()
+
+        // Fetch groups for filtering (only for school admins)
+        if (isSchoolAdmin && userInfo?.schoolId) {
+          try {
+            const schoolYears = await api.schoolYears.getAll()
+            const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
+            if (activeYear) {
+              const allGroups = await api.groups.getBySchoolYear(activeYear.id)
+              const teachers = await api.schools.getMyTeachers()
+
+              // Group by teacher and name to create unique groups
+              const groupMap = new Map<string, { id: string; name: string | null; teacherName: string }>()
+              allGroups.forEach((g: { id: string; teacherId: string; name: string | null; deletedAt: string | null }) => {
+                if (!g.deletedAt) {
+                  const teacher = teachers.find((t: { id: string }) => t.id === g.teacherId)
+                  const groupKey = `${g.teacherId}-${g.name || 'default'}`
+                  if (!groupMap.has(groupKey) && teacher) {
+                    groupMap.set(groupKey, {
+                      id: g.id, // Use first group ID as identifier
+                      name: g.name,
+                      teacherName: teacher.fullName
+                    })
+                  }
+                }
+              })
+              if (isMounted) {
+                setGroups(Array.from(groupMap.values()))
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching groups:', err)
+          }
+        }
 
         if (isMounted) {
           // Transform API data to match frontend Student type
@@ -270,7 +322,11 @@ export default function StudentsPage() {
         (filters.isLeveled === "true" && student.isLeveled) ||
         (filters.isLeveled === "false" && !student.isLeveled)
 
-      return matchesSearch && matchesCertification && matchesGraduationYear && matchesLeveling
+      // Group filter - this will be handled by fetching students from the group
+      // For now, return true and we'll handle group filtering separately
+      const matchesGroup = !filters.groupId
+
+      return matchesSearch && matchesCertification && matchesGraduationYear && matchesLeveling && matchesGroup
     })
 
     // Sort students
@@ -301,6 +357,120 @@ export default function StudentsPage() {
   React.useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, filters, sortField, sortDirection])
+
+  // Fetch students from group when group filter is selected
+  React.useEffect(() => {
+    if (!filters.groupId || !userInfo?.schoolId || studentId) {
+      // If no group filter or viewing a student, refetch all students
+      if (!filters.groupId && !studentId && !isStudentOnly) {
+        const fetchAllStudents = async () => {
+          try {
+            setIsLoading(true)
+            const data = schoolId
+              ? await api.schools.getStudents(schoolId)
+              : await api.students.getAll()
+
+            const transformedStudents: Student[] = data.map((student: unknown) => {
+              const s = student as Record<string, unknown>
+              return {
+                id: s.id as string,
+                firstName: s.firstName as string,
+                lastName: s.lastName as string,
+                name: s.name as string,
+                age: s.age as number,
+                birthDate: s.birthDate as string,
+                certificationType: s.certificationType as string,
+                graduationDate: s.graduationDate as string,
+                parents: (s.parents || []) as Student['parents'],
+                contactPhone: (s.contactPhone || '') as string,
+                isLeveled: s.isLeveled as boolean,
+                expectedLevel: s.expectedLevel as string | undefined,
+                address: (s.address || '') as string,
+              }
+            })
+            setStudents(transformedStudents)
+          } catch (err) {
+            console.error('Error fetching all students:', err)
+          } finally {
+            setIsLoading(false)
+          }
+        }
+        fetchAllStudents()
+      }
+      return
+    }
+
+    let isMounted = true
+
+    const fetchStudentsByGroup = async () => {
+      try {
+        setIsLoading(true)
+
+        // Find the group to get teacherId and schoolYearId
+        const schoolYears = await api.schoolYears.getAll()
+        const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
+        if (!activeYear) return
+
+        const allGroups = await api.groups.getBySchoolYear(activeYear.id)
+        const group = allGroups.find((g: { id: string; deletedAt: string | null }) =>
+          g.id === filters.groupId && !g.deletedAt
+        )
+
+        if (!group) return
+
+        // Get all groups with the same teacher, schoolYear, and name
+        const sameGroups = allGroups.filter((g: { teacherId: string; schoolYearId: string; name: string | null; deletedAt: string | null }) =>
+          !g.deletedAt &&
+          g.teacherId === group.teacherId &&
+          g.schoolYearId === group.schoolYearId &&
+          (group.name ? g.name === group.name : !g.name)
+        )
+
+        // Fetch students for this group
+        const allStudents = await api.students.getAll()
+        const studentIds = sameGroups.map((g: { studentId: string }) => g.studentId)
+        const groupStudents = allStudents.filter((s: { id: string }) => studentIds.includes(s.id))
+
+        if (isMounted) {
+          const transformedStudents: Student[] = groupStudents.map((student: unknown) => {
+            const s = student as Record<string, unknown>
+            return {
+              id: s.id as string,
+              firstName: s.firstName as string,
+              lastName: s.lastName as string,
+              name: s.name as string,
+              age: s.age as number,
+              birthDate: s.birthDate as string,
+              certificationType: s.certificationType as string,
+              graduationDate: s.graduationDate as string,
+              parents: (s.parents || []) as Student['parents'],
+              contactPhone: (s.contactPhone || '') as string,
+              isLeveled: s.isLeveled as boolean,
+              expectedLevel: s.expectedLevel as string | undefined,
+              address: (s.address || '') as string,
+            }
+          })
+          setStudents(transformedStudents)
+        }
+      } catch (err) {
+        console.error('Error fetching students by group:', err)
+        if (isMounted) {
+          setError((err as Error).message || 'Failed to load students')
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchStudentsByGroup()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.groupId, userInfo?.schoolId, studentId, schoolId, isStudentOnly])
 
   const handleStudentSelect = (student: Student) => {
     navigate(`/students/${student.id}`)
@@ -383,6 +553,11 @@ export default function StudentsPage() {
   const parentOnly = isParentOnly
 
   // Early returns after all hooks
+  // Redirect super admins - they should not access the students page
+  if (isSuperAdmin && !studentId) {
+    return <Navigate to="/users" replace />
+  }
+
   if (isStudentOnly && !studentId) {
     return <Navigate to="/my-profile" replace />
   }
@@ -427,7 +602,7 @@ export default function StudentsPage() {
 
   // Show loading state for students list
   if (isLoading) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   // Show parent-specific view
@@ -470,7 +645,7 @@ export default function StudentsPage() {
           description={schoolId ? t("students.descriptionForSchool") : t("students.description")}
         />
         {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
-          <Button onClick={() => setIsStudentDialogOpen(true)}>
+          <Button onClick={() => navigate('/students/create')}>
             <Plus className="h-4 w-4 mr-2" />
             {t("students.addStudent")}
           </Button>
@@ -514,6 +689,7 @@ export default function StudentsPage() {
           onFiltersChange={handleFiltersChange}
           totalStudents={students.length}
           filteredCount={filteredAndSortedStudents.length}
+          groups={groups}
         />
         <ViewToggle view={view} onViewChange={setView} />
       </div>

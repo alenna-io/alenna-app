@@ -135,7 +135,6 @@ export function GenericFilters<T extends Record<string, string>>({
                     onChange={(e) => handleFilterChange(field.key as keyof T, e.target.value)}
                     className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
                   >
-                    <option value="">{field.placeholder || t("filters.all")}</option>
                     {field.options?.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

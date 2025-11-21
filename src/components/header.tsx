@@ -19,9 +19,24 @@ export function Header() {
       try {
         const weekInfo = await api.schoolYears.getCurrentWeek()
         setCurrentWeekInfo(weekInfo)
-      } catch (err) {
-        console.error('Error fetching current week in header:', err)
-        // Don't fail if current week can't be fetched
+      } catch (err: unknown) {
+        // Silently handle missing active school year - this is expected for super admins
+        // or when no school year is configured yet
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        const statusCode = (err as any)?.status || (err as any)?.response?.status
+
+        // Check for 404 errors or messages indicating no active school year
+        if (statusCode === 404 ||
+          errorMessage.includes('año escolar activo') ||
+          errorMessage.includes('No hay un año escolar activo') ||
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found')) {
+          // Expected case - no active school year, don't show error
+          setCurrentWeekInfo(null)
+        } else {
+          // Unexpected error, log it (but don't log 404s as they're expected)
+          console.error('Error fetching current week in header:', err)
+        }
       } finally {
         setLoading(false)
       }

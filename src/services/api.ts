@@ -219,6 +219,10 @@ export const usersApi = {
     apiFetch(`/users/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   updateMyProfile: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/users/me', token, { method: 'PUT', body: JSON.stringify(data) }),
+  deactivateUser: (id: string, token: string | null) => 
+    apiFetch(`/users/${id}/deactivate`, token, { method: 'POST' }),
+  reactivateUser: (id: string, token: string | null) => 
+    apiFetch(`/users/${id}/reactivate`, token, { method: 'POST' }),
   deleteUser: (id: string, token: string | null) => 
     apiFetch(`/users/${id}`, token, { method: 'DELETE' }),
 };
@@ -398,11 +402,35 @@ export const schoolsApi = {
     apiFetch(`/schools/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) =>
     apiFetch(`/schools/${id}`, token, { method: 'DELETE' }),
+  activate: (id: string, token: string | null) =>
+    apiFetch(`/schools/${id}/activate`, token, { method: 'POST' }),
+  deactivate: (id: string, token: string | null) =>
+    apiFetch(`/schools/${id}/deactivate`, token, { method: 'POST' }),
   getStudentsCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/students/count`, token),
   getStudents: (id: string, token: string | null) => apiFetch(`/schools/${id}/students`, token),
   getTeachersCount: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers/count`, token),
   getTeachers: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers`, token),
+  getMyTeachers: (token: string | null) => apiFetch('/schools/me/teachers', token),
+  getMyTeachersCount: (token: string | null) => apiFetch('/schools/me/teachers/count', token),
   getCertificationTypes: (id: string, token: string | null) => apiFetch(`/schools/${id}/certification-types`, token),
+};
+
+// Groups API
+export const groupsApi = {
+  getBySchoolYear: (schoolYearId: string, token: string | null) => apiFetch(`/groups/school-year/${schoolYearId}`, token),
+  getById: (id: string, token: string | null) => apiFetch(`/groups/${id}`, token),
+  getGroupStudents: (groupId: string, token: string | null) => apiFetch(`/groups/${groupId}/students`, token),
+  create: (data: { teacherId: string; schoolYearId: string; name?: string | null; studentIds?: string[] }, token: string | null) =>
+    apiFetch('/groups', token, { method: 'POST', body: JSON.stringify(data) }),
+  addStudentsToGroup: (groupId: string, studentIds: string[], token: string | null) =>
+    apiFetch(`/groups/${groupId}/students`, token, { method: 'POST', body: JSON.stringify({ studentIds }) }),
+  removeStudentFromGroup: (groupId: string, studentId: string, token: string | null) =>
+    apiFetch(`/groups/${groupId}/students/${studentId}`, token, { method: 'DELETE' }),
+  delete: (id: string, token: string | null) => apiFetch(`/groups/${id}`, token, { method: 'DELETE' }),
+  getStudentsByTeacher: (teacherId: string, schoolYearId: string, token: string | null) =>
+    apiFetch(`/groups/teacher/${teacherId}/school-year/${schoolYearId}`, token),
+  getStudentAssignments: (schoolYearId: string, token: string | null) =>
+    apiFetch(`/groups/school-year/${schoolYearId}/students`, token),
 };
 
 // Custom hook for authenticated API calls
@@ -593,6 +621,14 @@ export function useApi() {
         const token = await getToken();
         return schoolsApi.delete(id, token);
       },
+      activate: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.activate(id, token);
+      },
+      deactivate: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.deactivate(id, token);
+      },
       getStudentsCount: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getStudentsCount(id, token);
@@ -608,6 +644,14 @@ export function useApi() {
       getTeachers: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getTeachers(id, token);
+      },
+      getMyTeachers: async () => {
+        const token = await getToken();
+        return schoolsApi.getMyTeachers(token);
+      },
+      getMyTeachersCount: async () => {
+        const token = await getToken();
+        return schoolsApi.getMyTeachersCount(token);
       },
       getCertificationTypes: async (id: string) => {
         const token = await getToken();
@@ -782,9 +826,55 @@ export function useApi() {
       const token = await getToken();
       return usersApi.updateMyProfile(userData, token);
     },
+    deactivateUser: async (userId: string) => {
+      const token = await getToken();
+      return usersApi.deactivateUser(userId, token);
+    },
+    reactivateUser: async (userId: string) => {
+      const token = await getToken();
+      return usersApi.reactivateUser(userId, token);
+    },
     deleteUser: async (userId: string) => {
       const token = await getToken();
       return usersApi.deleteUser(userId, token);
+    },
+    groups: {
+      getBySchoolYear: async (schoolYearId: string) => {
+        const token = await getToken();
+        return groupsApi.getBySchoolYear(schoolYearId, token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return groupsApi.getById(id, token);
+      },
+      getGroupStudents: async (groupId: string) => {
+        const token = await getToken();
+        return groupsApi.getGroupStudents(groupId, token);
+      },
+      create: async (data: { teacherId: string; schoolYearId: string; name?: string | null; studentIds?: string[] }) => {
+        const token = await getToken();
+        return groupsApi.create(data, token);
+      },
+      addStudentsToGroup: async (groupId: string, studentIds: string[]) => {
+        const token = await getToken();
+        return groupsApi.addStudentsToGroup(groupId, studentIds, token);
+      },
+      removeStudentFromGroup: async (groupId: string, studentId: string) => {
+        const token = await getToken();
+        return groupsApi.removeStudentFromGroup(groupId, studentId, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return groupsApi.delete(id, token);
+      },
+      getStudentsByTeacher: async (teacherId: string, schoolYearId: string) => {
+        const token = await getToken();
+        return groupsApi.getStudentsByTeacher(teacherId, schoolYearId, token);
+      },
+      getStudentAssignments: async (schoolYearId: string) => {
+        const token = await getToken();
+        return groupsApi.getStudentAssignments(schoolYearId, token);
+      },
     },
   };
 }

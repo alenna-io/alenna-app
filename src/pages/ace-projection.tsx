@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
 import { BackButton } from "@/components/ui/back-button"
@@ -14,7 +14,6 @@ import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import type { MonthlyAssignment } from "@/types/monthly-assignment"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ErrorDialog } from "@/components/ui/error-dialog"
-import { Navigate } from "react-router-dom"
 import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -51,6 +50,18 @@ export default function ACEProjectionPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+
+  // Check user roles for super admin
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSuperAdmin = hasRole('SUPERADMIN')
+
+  // Redirect super admins - they should not access projection detail page
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      navigate('/users', { replace: true })
+    }
+  }, [isSuperAdmin, navigate])
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
     quarter: string
@@ -562,6 +573,11 @@ export default function ACEProjectionPage() {
   // Check if user is a parent (read-only mode)
   const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
     !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
+
+  // Redirect super admins - they should not access projection detail page
+  if (isSuperAdmin) {
+    return <Navigate to="/users" replace />
+  }
 
   // Show permission error if user doesn't have access
   if (!hasPermission) {

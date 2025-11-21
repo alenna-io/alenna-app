@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
-import { LinkButton } from "@/components/ui/link-button"
-import { Users, ChevronLeft, MoreVertical, Eye, Edit, Trash2 } from "lucide-react"
+import { Users, ChevronLeft, ChevronRight, MoreVertical, Eye, Edit, Trash2, Power, PowerOff, Loader2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ interface User {
   firstName?: string
   lastName?: string
   schoolId: string
+  isActive: boolean
   roles: Array<{
     id: string
     name: string
@@ -36,6 +38,8 @@ interface UsersTableProps {
   schools: Array<{ id: string; name: string }>
   onUserSelect?: (user: User) => void
   onEdit?: (user: User) => void
+  onDeactivate?: (user: User) => void
+  onReactivate?: (user: User) => void
   onDelete?: (user: User) => void
   currentPage: number
   totalPages: number
@@ -43,6 +47,9 @@ interface UsersTableProps {
   onPageChange: (page: number) => void
   canEdit?: boolean
   canDelete?: boolean
+  currentUserId?: string
+  currentUserEmail?: string
+  updatingUsers?: Set<string>
 }
 
 interface ColumnConfig {
@@ -51,30 +58,39 @@ interface ColumnConfig {
   sortable?: boolean
 }
 
-const COLUMNS: ColumnConfig[] = [
-  { key: 'name', label: 'Usuario', sortable: false },
-  { key: 'email', label: 'Email', sortable: false },
-  { key: 'school', label: 'Escuela', sortable: false },
-  { key: 'roles', label: 'Roles', sortable: false },
-  { key: 'actions', label: '', sortable: false },
-]
+// COLUMNS will be defined inside the component to use translations
 
 export function UsersTable({
   users,
   schools,
   onUserSelect,
   onEdit,
+  onDeactivate,
+  onReactivate,
   onDelete,
   currentPage,
   totalPages,
   totalItems,
   onPageChange,
   canEdit = false,
-  canDelete = false
+  canDelete = false,
+  currentUserId,
+  currentUserEmail,
+  updatingUsers = new Set()
 }: UsersTableProps) {
+  const { t } = useTranslation()
 
   const startItem = (currentPage - 1) * 10 + 1
   const endItem = Math.min(currentPage * 10, totalItems)
+
+  const COLUMNS: ColumnConfig[] = [
+    { key: 'name', label: t("users.firstName"), sortable: false },
+    { key: 'email', label: t("users.email"), sortable: false },
+    { key: 'school', label: t("users.school"), sortable: false },
+    { key: 'status', label: t("common.status"), sortable: false },
+    { key: 'roles', label: t("users.roles"), sortable: false },
+    { key: 'actions', label: '', sortable: false },
+  ]
 
   const thClass = "h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm [&:last-child]:w-16"
   const tdClass = "p-4 align-middle first:px-6 first:py-3 [&:last-child]:w-16"
@@ -83,7 +99,7 @@ export function UsersTable({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          Usuarios
+          {t("users.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -132,7 +148,21 @@ export function UsersTable({
                     case 'school':
                       return (
                         <div className="text-sm text-foreground">
-                          {school ? school.name : 'Sin asignar'}
+                          {school ? school.name : t("common.noSelection")}
+                        </div>
+                      )
+                    case 'status':
+                      const isUpdating = updatingUsers.has(user.id)
+                      return (
+                        <div className="text-sm flex items-center gap-2">
+                          {isUpdating ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : null}
+                          <StatusBadge
+                            isActive={user.isActive}
+                            activeText={t("users.active")}
+                            inactiveText={t("users.inactive")}
+                          />
                         </div>
                       )
                     case 'roles':
@@ -167,9 +197,10 @@ export function UsersTable({
                                   e.stopPropagation()
                                   onUserSelect(user)
                                 }}
+                                className="cursor-pointer"
                               >
                                 <Eye className="h-4 w-4 mr-2" />
-                                Detalles
+                                {t("users.viewDetails") || "Detalles"}
                               </DropdownMenuItem>
                             )}
                             {canEdit && onEdit && (
@@ -178,21 +209,52 @@ export function UsersTable({
                                   e.stopPropagation()
                                   onEdit(user)
                                 }}
+                                className="cursor-pointer"
                               >
                                 <Edit className="h-4 w-4 mr-2" />
-                                Editar
+                                {t("users.editUser")}
                               </DropdownMenuItem>
                             )}
-                            {canDelete && onDelete && (
+                            {canDelete && user.isActive && onDeactivate && (currentUserId !== user.id && currentUserEmail !== user.email) && !updatingUsers.has(user.id) && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDeactivate(user)
+                                }}
+                                className="text-orange-600 cursor-pointer"
+                              >
+                                <PowerOff className="h-4 w-4 mr-2" />
+                                {t("users.deactivateUser")}
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete && !user.isActive && onReactivate && !updatingUsers.has(user.id) && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onReactivate(user)
+                                }}
+                                className="text-green-600 cursor-pointer"
+                              >
+                                <Power className="h-4 w-4 mr-2" />
+                                {t("users.reactivateUser")}
+                              </DropdownMenuItem>
+                            )}
+                            {updatingUsers.has(user.id) && (
+                              <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {t("common.loading")}
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete && !user.isActive && onDelete && (currentUserId !== user.id && currentUserEmail !== user.email) && (
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onDelete(user)
                                 }}
-                                className="text-red-600"
+                                className="text-red-600 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
+                                {t("users.deleteUser")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
@@ -224,7 +286,7 @@ export function UsersTable({
         {users.length === 0 && (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay usuarios para mostrar</p>
+            <p className="text-muted-foreground">{t("users.noUsers")}</p>
           </div>
         )}
       </CardContent>
@@ -232,7 +294,7 @@ export function UsersTable({
       {/* Pagination */}
       <CardFooter className="flex items-center justify-between px-6 py-4 border-t">
         <div className="text-sm text-muted-foreground">
-          Mostrando {startItem} - {endItem} de {totalItems} resultados
+          {t("common.showing", { start: startItem, end: endItem, total: totalItems })}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -268,14 +330,31 @@ export function UsersTable({
               return null
             })}
           </div>
-          <LinkButton
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">{t("common.goTo")}:</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const page = parseInt(e.target.value, 10)
+                if (!isNaN(page) && page >= 1 && page <= totalPages) {
+                  onPageChange(page)
+                }
+              }}
+              className="w-16 h-8 text-center border rounded-md px-2"
+            />
+          </div>
+          <Button
             variant="outline"
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || totalPages <= 1}
+            className="cursor-pointer"
           >
-            {<></>}
-          </LinkButton>
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       </CardFooter>
     </Card>

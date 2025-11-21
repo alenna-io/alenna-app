@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
@@ -39,6 +39,18 @@ export default function ReportCardsPage() {
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
   const { t } = useTranslation()
+
+  // Check user roles
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSuperAdmin = hasRole('SUPERADMIN')
+
+  // Redirect super admins - they should not access report cards page
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      navigate('/users', { replace: true })
+    }
+  }, [isSuperAdmin, navigate])
 
   const [projections, setProjections] = React.useState<ProjectionWithStudent[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -172,6 +184,11 @@ export default function ReportCardsPage() {
       labels.push(`${filterFields[0].label}: ${currentFilters.schoolYear}`)
     }
     return labels
+  }
+
+  // Redirect super admins - they should not access report cards page
+  if (isSuperAdmin) {
+    return <Navigate to="/users" replace />
   }
 
   if (isLoading || isLoadingUser) {

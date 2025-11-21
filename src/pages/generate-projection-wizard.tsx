@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -72,7 +72,20 @@ export default function GenerateProjectionWizardPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { t } = useTranslation()
-  const { isLoading: isLoadingUser } = useUser()
+  const { userInfo, isLoading: isLoadingUser } = useUser()
+
+  // Check user roles
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSuperAdmin = hasRole('SUPERADMIN')
+
+  // Redirect super admins - they should not access projection wizard
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      navigate('/users', { replace: true })
+    }
+  }, [isSuperAdmin, navigate])
+
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1)
   const [students, setStudents] = React.useState<Student[]>([])
   const [subjects, setSubjects] = React.useState<Subject[]>([])
@@ -550,6 +563,11 @@ export default function GenerateProjectionWizardPage() {
     const paces = s.endPace - s.startPace + 1 - s.skipPaces.length
     return sum + Math.max(0, paces)
   }, 0)
+
+  // Redirect super admins - they should not access projection wizard
+  if (isSuperAdmin) {
+    return <Navigate to="/users" replace />
+  }
 
   if (isLoadingUser || loading) {
     return <Loading />

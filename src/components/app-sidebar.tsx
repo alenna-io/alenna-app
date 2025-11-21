@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders, UsersRound } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -47,6 +47,7 @@ export function AppSidebar() {
     schools: { title: t("sidebar.schools"), url: "/schools", icon: Building },
     configuration: { title: t("sidebar.configuration"), url: "/configuration", icon: Settings },
     schoolSettings: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
+    groups: { title: t("sidebar.groups"), url: "/groups", icon: UsersRound },
   }), [t])
 
   // Fetch user's modules - wait for userInfo to be loaded first
@@ -189,7 +190,10 @@ export function AppSidebar() {
   // Build menu items from modules
   const filteredModules = modules.filter(module => {
     const hasActions = (module.actions?.length ?? 0) > 0
-    if (!hasActions) return false
+    // For super admins, allow users/schools/configuration even without actions
+    if (!hasActions && !(isSuperAdmin && (module.key === 'users' || module.key === 'schools' || module.key === 'configuration'))) {
+      return false
+    }
 
     // SUPERADMIN can only see: users, schools, and configuration
     if (isSuperAdmin) {
@@ -201,18 +205,64 @@ export function AppSidebar() {
       return false
     }
 
-    // Configuration is now available to all users (for language, profile, etc.)
-    // We don't filter it out anymore
-
-    if (module.key === 'students' && isStudentOnly) {
+    // Schools module only for Super Admins
+    if (module.key === 'schools' && !isSuperAdmin) {
       return false
     }
 
+    // Configuration is now available to all users (for language, profile, etc.)
+    // We don't filter it out anymore
+
+    // Students module - filter based on role
+    if (module.key === 'students') {
+      // Students can't see the students module (they see their own profile instead)
+      if (isStudentOnly) {
+        return false
+      }
+      // Super admins can't see students
+      if (isSuperAdmin) {
+        return false
+      }
+      // Parents, teachers, and school admins can see students
+      return true
+    }
+
+    // For school admins and teachers, show all other modules they have permissions for
     return true
   })
 
-  // Filter out configuration module (we'll add it manually to configuration section)
-  const otherModules = filteredModules.filter(module => module.key !== 'configuration')
+  // Filter out configuration and groups modules (we'll add them manually)
+  const otherModules = filteredModules.filter(module => module.key !== 'configuration' && module.key !== 'groups')
+
+  // For super admins, ensure users and schools modules are always present
+  if (isSuperAdmin) {
+    const hasUsersModule = otherModules.some(m => m.key === 'users')
+    const hasSchoolsModule = otherModules.some(m => m.key === 'schools')
+
+    if (!hasUsersModule) {
+      // Add users module manually for super admins
+      otherModules.push({
+        id: 'users-manual',
+        key: 'users',
+        name: t("sidebar.users"),
+        description: undefined,
+        displayOrder: 0,
+        actions: ['users.read', 'users.create', 'users.update', 'users.delete'],
+      } as ModuleData)
+    }
+
+    if (!hasSchoolsModule) {
+      // Add schools module manually for super admins
+      otherModules.push({
+        id: 'schools-manual',
+        key: 'schools',
+        name: t("sidebar.schools"),
+        description: undefined,
+        displayOrder: 1,
+        actions: ['schools.read', 'schools.create', 'schools.update', 'schools.delete'],
+      } as ModuleData)
+    }
+  }
 
   const navigationMenuItems = otherModules
     .map(module => {
@@ -237,8 +287,8 @@ export function AppSidebar() {
     })
   }
 
-  // Add projections menu item for teachers and school admins
-  if (isTeacherOrAdmin) {
+  // Add projections menu item for teachers and school admins (NOT super admins)
+  if (isTeacherOrAdmin && !isSuperAdmin) {
     navigationMenuItems.push({
       title: t("sidebar.projections"),
       url: "/projections",
@@ -252,12 +302,11 @@ export function AppSidebar() {
     })
   }
 
-  // Add report cards menu item for users with permission
+  // Add report cards menu item for users with permission (NOT super admins)
   // For teachers/admins, they can access report cards from the projections page
   // For parents/students, they can access from their profile/students list
-  // We'll add a general "Boletas" menu item that links to a list page
-  if (userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn'))) {
-    // For now, we'll add it for teachers/admins - parents/students can access via their profile
+  if (userInfo && !isSuperAdmin && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn'))) {
+    // Add it for teachers/admins - parents/students can access via their profile
     if (isTeacherOrAdmin) {
       navigationMenuItems.push({
         title: t("sidebar.reportCards"),
@@ -265,6 +314,24 @@ export function AppSidebar() {
         icon: FileText,
       })
     }
+  }
+
+  // Add Groups menu item - only for school admins (not super admins, not teachers)
+  if (isSchoolAdmin && !isSuperAdmin) {
+    navigationMenuItems.push({
+      title: t("sidebar.groups"),
+      url: "/groups",
+      icon: UsersRound,
+    })
+  }
+
+  // Add Teachers menu item - only for school admins (not super admins, not teachers)
+  if (isSchoolAdmin && !isSuperAdmin && userInfo?.schoolId) {
+    navigationMenuItems.push({
+      title: t("sidebar.teachers"),
+      url: `/schools/${userInfo.schoolId}/teachers`,
+      icon: Users,
+    })
   }
 
   const allNavigationItems = [...staticMenuItems, ...navigationMenuItems]
@@ -285,15 +352,6 @@ export function AppSidebar() {
       title: t("sidebar.schoolSettings"),
       url: "/school-settings",
       icon: Sliders,
-    })
-  }
-
-  // Add teachers menu item to configuration section for school admins only
-  if (isSchoolAdmin && !isSuperAdmin) {
-    configurationMenuItems.push({
-      title: t("sidebar.teachers"),
-      url: userInfo?.schoolId ? `/schools/${userInfo.schoolId}/teachers` : "/school-settings/school-info",
-      icon: Users,
     })
   }
   const { state, setOpenMobile, isMobile } = useSidebar()
@@ -374,7 +432,7 @@ export function AppSidebar() {
               </div>
             ) : allNavigationItems.length > 0 ? (
               <SidebarMenu>
-                {allNavigationItems.map((item) => {
+                {allNavigationItems.map((item, index) => {
                   // Special handling for report cards: activate "Boletas" if path contains /report-cards
                   const isReportCardPath = location.pathname.includes('/report-cards')
                   let isActive: boolean
@@ -394,7 +452,7 @@ export function AppSidebar() {
                   }
 
                   return (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={`${item.url}-${index}`}>
                       <SidebarMenuButton
                         asChild
                         isActive={isActive}

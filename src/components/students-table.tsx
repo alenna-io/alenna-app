@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye } from "lucide-react"
+import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Trash2 } from "lucide-react"
 import type { Student } from "@/types/student"
 import {
   DropdownMenu,
@@ -24,6 +24,9 @@ interface StudentsTableProps {
   totalPages: number
   totalItems: number
   onPageChange: (page: number) => void
+  onRemoveFromGroup?: (student: Student, groupAssignmentId: string) => void
+  groupAssignmentMap?: Map<string, string> // Maps student ID to group assignment ID
+  showRemoveFromGroup?: boolean
 }
 
 interface ColumnConfig {
@@ -41,7 +44,10 @@ export function StudentsTable({
   currentPage,
   totalPages,
   totalItems,
-  onPageChange
+  onPageChange,
+  onRemoveFromGroup,
+  groupAssignmentMap,
+  showRemoveFromGroup = false
 }: StudentsTableProps) {
   const { t } = useTranslation()
 
@@ -225,10 +231,26 @@ export function StudentsTable({
                                 e.stopPropagation()
                                 onStudentSelect(student)
                               }}
+                              className="cursor-pointer"
                             >
                               <Eye className="h-4 w-4 mr-2" />
-                              Detalles
+                              {t("common.view")}
                             </DropdownMenuItem>
+                            {showRemoveFromGroup && onRemoveFromGroup && groupAssignmentMap?.has(student.id) && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const assignmentId = groupAssignmentMap.get(student.id)
+                                  if (assignmentId) {
+                                    onRemoveFromGroup(student, assignmentId)
+                                  }
+                                }}
+                                className="cursor-pointer text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t("groups.removeFromGroup")}
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )
