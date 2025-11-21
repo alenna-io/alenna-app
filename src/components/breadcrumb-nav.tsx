@@ -3,6 +3,8 @@ import { useLocation, useNavigate, Link } from "react-router-dom"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "react-i18next"
+import { useApi } from "@/services/api"
+import { useUser } from "@/contexts/UserContext"
 
 interface BreadcrumbItem {
   label: string
@@ -13,7 +15,133 @@ export function BreadcrumbNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const api = useApi()
+  const { userInfo } = useUser()
   const [breadcrumbs, setBreadcrumbs] = React.useState<BreadcrumbItem[]>([])
+  const [userName, setUserName] = React.useState<string | null>(null)
+
+  // Check if user is school admin
+  const isSchoolAdmin = React.useMemo(() => {
+    return userInfo?.roles.some((role) => role.name === 'SCHOOL_ADMIN') &&
+      !userInfo?.roles.some((role) => role.name === 'SUPERADMIN')
+  }, [userInfo])
+
+  // Fetch user/teacher name when on user detail page or group detail page
+  React.useEffect(() => {
+    const pathSegments = location.pathname.split('/').filter(Boolean)
+    const userIndex = pathSegments.indexOf('users')
+    const groupsIndex = pathSegments.indexOf('groups')
+
+    // Check if we're on a user detail page
+    if (userIndex >= 0 && pathSegments.length > userIndex + 1) {
+      const userId = pathSegments[userIndex + 1]
+      // Check if it's a UUID (user detail page)
+      if (userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        const fetchUserName = async () => {
+          try {
+            let user: { id: string; firstName?: string; lastName?: string; email: string } | undefined
+
+            // For school admins, try /me/teachers first to avoid 404 errors
+            if (isSchoolAdmin) {
+              try {
+                const teachers = await api.schools.getMyTeachers()
+                user = teachers.find((t: { id: string }) => t.id === userId)
+                if (user) {
+                  // Found user, exit early
+                  const name = user.firstName && user.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user.email
+                  setUserName(name)
+                  return
+                }
+              } catch {
+                // Silently fail - expected for some cases
+              }
+              // If /me/teachers didn't find the user or failed, just show "Detail"
+              setUserName(null)
+              return
+            } else {
+              // For super admins, try getUsers
+              try {
+                const users = await api.getUsers()
+                user = users.find((u: { id: string }) => u.id === userId)
+              } catch {
+                // If getUsers fails, just show "Detail"
+                setUserName(null)
+                return
+              }
+            }
+
+            if (user) {
+              const name = user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.email
+              setUserName(name)
+            } else {
+              // If user not found in list (e.g., deactivated), just show "Detail" if not found
+              setUserName(null)
+            }
+          } catch {
+            // Silently fail - just show "Detail" instead
+            // Don't log to console to avoid noise from expected permission errors
+            setUserName(null)
+          }
+        }
+        fetchUserName()
+      } else {
+        setUserName(null)
+      }
+    }
+    // Check if we're on a group detail page (groups/:groupId)
+    else if (groupsIndex >= 0 && pathSegments.length > groupsIndex + 1) {
+      const groupId = pathSegments[groupsIndex + 1]
+      // Check if it's a UUID (group ID)
+      if (groupId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        const fetchGroupName = async () => {
+          try {
+            // Fetch group by ID to get group name
+            const group = await api.groups.getById(groupId)
+            if (group && !group.deletedAt) {
+              // Use group name if available, otherwise fetch teacher name
+              if (group.name) {
+                setUserName(group.name)
+                return
+              }
+
+              // If no group name, fetch teacher name
+              if (isSchoolAdmin) {
+                try {
+                  const teachers = await api.schools.getMyTeachers()
+                  const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
+                  if (teacher) {
+                    const name = teacher.firstName && teacher.lastName
+                      ? `${teacher.firstName} ${teacher.lastName}`
+                      : teacher.email || teacher.fullName || t("breadcrumbs.detail")
+                    setUserName(name)
+                    return
+                  }
+                } catch {
+                  // Silently fail
+                }
+              }
+              setUserName(null)
+            } else {
+              setUserName(null)
+            }
+          } catch {
+            // Silently fail - just show "Detail" instead
+            setUserName(null)
+          }
+        }
+        fetchGroupName()
+      } else {
+        setUserName(null)
+      }
+    } else {
+      setUserName(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, isSchoolAdmin])
 
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
@@ -31,6 +159,7 @@ export function BreadcrumbNav() {
       'school-info': t("breadcrumbs.schoolInfo"),
       'daily-goals': t("breadcrumbs.dailyGoals"),
       'report-cards': t("breadcrumbs.reportCards"),
+      'groups': t("breadcrumbs.groups"),
     }
 
     let currentPath = ''
@@ -54,11 +183,15 @@ export function BreadcrumbNav() {
         } else if (prevSegment === 'students') {
           items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'users') {
-          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
+          // Use user name if available, otherwise use "Detail"
+          items.push({ label: userName || t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'schools') {
           items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'projections') {
           items.push({ label: t("breadcrumbs.projection"), path: currentPath })
+        } else if (prevSegment === 'groups') {
+          // This is a group ID in groups path (groups/:groupId)
+          items.push({ label: userName || t("breadcrumbs.detail"), path: currentPath })
         }
         continue
       }
@@ -85,7 +218,7 @@ export function BreadcrumbNav() {
     }
 
     setBreadcrumbs(items)
-  }, [location.pathname, t])
+  }, [location.pathname, t, userName])
 
   // Don't show breadcrumbs on home page
   if (location.pathname === '/' || breadcrumbs.length === 0) {
@@ -139,4 +272,3 @@ export function BreadcrumbNav() {
     </div>
   )
 }
-

@@ -8,15 +8,20 @@ import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Plus, User as UserIcon, ChevronsUpDown, Check } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, User as UserIcon } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 import { useApi } from "@/services/api"
 import type { UserInfo } from "@/services/api"
 import { UsersTable } from "@/components/users-table"
+import { UsersFilters } from "@/components/users-filters"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 interface User {
   id: string
@@ -25,6 +30,7 @@ interface User {
   firstName?: string
   lastName?: string
   schoolId: string
+  isActive: boolean
   roles: Array<{
     id: string
     name: string
@@ -57,6 +63,11 @@ export default function UsersPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [filters, setFilters] = React.useState<{ role: string; schoolId: string; isActive: string }>({
+    role: "",
+    schoolId: "",
+    isActive: ""
+  })
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null)
@@ -67,12 +78,27 @@ export default function UsersPage() {
     userEmail: string
   }>({ open: false, userId: '', userName: '', userEmail: '' })
   const [deleteEmailInput, setDeleteEmailInput] = React.useState('')
+  const [deactivateConfirmation, setDeactivateConfirmation] = React.useState<{
+    open: boolean
+    userId: string
+    userName: string
+    userEmail: string
+  }>({ open: false, userId: '', userName: '', userEmail: '' })
+  const [deactivateEmailInput, setDeactivateEmailInput] = React.useState('')
+  const [reactivateConfirmation, setReactivateConfirmation] = React.useState<{
+    open: boolean
+    userId: string
+    userName: string
+  }>({ open: false, userId: '', userName: '' })
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
+  const [openSchoolPopover, setOpenSchoolPopover] = React.useState(false)
+  const [schoolSearchTerm, setSchoolSearchTerm] = React.useState("")
+  const [isCreating, setIsCreating] = React.useState(false)
+  const [updatingUsers, setUpdatingUsers] = React.useState<Set<string>>(new Set())
 
   // Form state for create/edit
   const [formData, setFormData] = React.useState({
-    clerkId: "",
     email: "",
     firstName: "",
     lastName: "",
@@ -85,25 +111,22 @@ export default function UsersPage() {
       const info = await api.auth.getUserInfo()
       setUserInfo(info)
 
-      // Only SCHOOL_ADMIN can manage users for their school
-      // SUPERADMIN cannot manage users - only schools
+      // SUPERADMIN can manage all users across all schools
+      // SCHOOL_ADMIN can manage users for their school
       const isSuperAdmin = info.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
-      const canManageUsers = !isSuperAdmin && info.permissions.includes('users.read')
+      const canManageUsers = isSuperAdmin || info.permissions.includes('users.read')
       setHasPermission(canManageUsers)
 
       if (!canManageUsers) {
-        if (isSuperAdmin) {
-          setError(t("users.superAdminError"))
-        } else {
-          setError(t("common.error"))
-        }
+        setError(t("common.error"))
         return
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t("users.loadError")
       setError(errorMessage)
+      setHasPermission(false)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [api, t])
 
   const loadUsers = React.useCallback(async () => {
     try {
@@ -146,30 +169,47 @@ export default function UsersPage() {
     loadUserInfo()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Check if user is super admin
+  const isSuperAdmin = React.useMemo(() => {
+    return userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN') ?? false
+  }, [userInfo])
+
   React.useEffect(() => {
     if (userInfo) {
       loadUsers()
       loadRoles()
-      loadSchools()
+      // Load schools for super admins or if we need to filter by school
+      if (isSuperAdmin) {
+        loadSchools()
+      } else if (userInfo.schoolId) {
+        // For non-super admins, add their school to the schools list for filtering
+        setSchools([{ id: userInfo.schoolId, name: userInfo.schoolName || 'Current School' }])
+      }
     }
-  }, [userInfo]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userInfo, isSuperAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreateUser = async () => {
+    setIsCreating(true)
+    setError(null)
     try {
-      // SCHOOL_ADMIN can only create users for their own school
-      // The schoolId is automatically set by the backend based on the user's school
+      // SUPERADMIN can create users for any school (must provide schoolId)
+      // SCHOOL_ADMIN can only create users for their own school (schoolId is set automatically)
       const createData = {
         ...formData,
-        // Remove schoolId - it will be set automatically from the authenticated user's school
-        schoolId: undefined,
+        // For super admins, include schoolId if provided; for school admins, omit it (set by backend)
+        schoolId: isSuperAdmin && formData.schoolId ? formData.schoolId : undefined,
       }
       await api.createUser(createData)
+      toast.success(t("users.createSuccess"))
       setIsCreateDialogOpen(false)
       resetForm()
       loadUsers()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al crear usuario"
+      const errorMessage = err instanceof Error ? err.message : t("users.createError")
       setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -195,12 +235,110 @@ export default function UsersPage() {
       resetForm()
       loadUsers()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al actualizar usuario"
+      const errorMessage = err instanceof Error ? err.message : t("users.updateError")
       setError(errorMessage)
     }
   }
 
+  const handleDeactivateUser = (user: User) => {
+    // Prevent users from deactivating themselves
+    if (userInfo?.id === user.id || userInfo?.email === user.email) {
+      toast.error(t("users.cannotDeactivateSelf"))
+      return
+    }
+    setDeactivateConfirmation({
+      open: true,
+      userId: user.id,
+      userName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email,
+      userEmail: user.email
+    })
+    setDeactivateEmailInput('')
+  }
+
+  const confirmDeactivateUser = async () => {
+    if (deactivateEmailInput !== deactivateConfirmation.userEmail) {
+      setError(t("users.emailMismatchError"))
+      return
+    }
+
+    const userId = deactivateConfirmation.userId
+
+    // Optimistic update
+    setUsers(prevUsers => prevUsers.map(user =>
+      user.id === userId ? { ...user, isActive: false } : user
+    ))
+    setUpdatingUsers(prev => new Set(prev).add(userId))
+    setDeactivateConfirmation({ open: false, userId: '', userName: '', userEmail: '' })
+    setDeactivateEmailInput('')
+
+    try {
+      await api.deactivateUser(userId)
+      toast.success(t("users.deactivateSuccess", { userName: deactivateConfirmation.userName }))
+      // Refresh to get actual state from server
+      loadUsers()
+    } catch (err: unknown) {
+      // Revert optimistic update on error
+      setUsers(prevUsers => prevUsers.map(user =>
+        user.id === userId ? { ...user, isActive: true } : user
+      ))
+      const errorMessage = err instanceof Error ? err.message : t("users.deactivateError")
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setUpdatingUsers(prev => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }
+  }
+
+  const handleReactivateUser = (user: User) => {
+    setReactivateConfirmation({
+      open: true,
+      userId: user.id,
+      userName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email
+    })
+  }
+
+  const confirmReactivateUser = async () => {
+    const userId = reactivateConfirmation.userId
+
+    // Optimistic update
+    setUsers(prevUsers => prevUsers.map(user =>
+      user.id === userId ? { ...user, isActive: true } : user
+    ))
+    setUpdatingUsers(prev => new Set(prev).add(userId))
+    setReactivateConfirmation({ open: false, userId: '', userName: '' })
+
+    try {
+      await api.reactivateUser(userId)
+      toast.success(t("users.reactivateSuccess", { userName: reactivateConfirmation.userName }))
+      // Refresh to get actual state from server
+      loadUsers()
+    } catch (err: unknown) {
+      // Revert optimistic update on error
+      setUsers(prevUsers => prevUsers.map(user =>
+        user.id === userId ? { ...user, isActive: false } : user
+      ))
+      const errorMessage = err instanceof Error ? err.message : t("users.reactivateError")
+      setError(errorMessage)
+      toast.error(errorMessage)
+    } finally {
+      setUpdatingUsers(prev => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }
+  }
+
   const handleDeleteUser = (userId: string, userName: string, userEmail: string) => {
+    // Prevent users from deleting themselves
+    if (userInfo?.id === userId || userInfo?.email === userEmail) {
+      toast.error(t("users.cannotDeleteSelf"))
+      return
+    }
     setDeleteConfirmation({
       open: true,
       userId,
@@ -212,30 +350,33 @@ export default function UsersPage() {
 
   const confirmDeleteUser = async () => {
     if (deleteEmailInput !== deleteConfirmation.userEmail) {
-      setError('El email ingresado no coincide con el email del usuario')
+      setError(t("users.emailMismatchError"))
       return
     }
 
     try {
       await api.deleteUser(deleteConfirmation.userId)
+      toast.success(t("users.deleteSuccess", { userName: deleteConfirmation.userName }))
       loadUsers()
       setDeleteConfirmation({ open: false, userId: '', userName: '', userEmail: '' })
       setDeleteEmailInput('')
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error al eliminar usuario"
+      const errorMessage = err instanceof Error ? err.message : t("users.deleteError")
       setError(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
   const resetForm = () => {
     setFormData({
-      clerkId: "",
       email: "",
       firstName: "",
       lastName: "",
-      schoolId: "", // Removed - SCHOOL_ADMIN can only create users for their own school
+      schoolId: isSuperAdmin ? "" : (userInfo?.schoolId || ""),
       roleIds: []
     })
+    setSchoolSearchTerm("")
+    setOpenSchoolPopover(false)
   }
 
   const openCreateDialog = () => {
@@ -246,7 +387,6 @@ export default function UsersPage() {
   const openEditDialog = (user: User) => {
     setSelectedUser(user)
     setFormData({
-      clerkId: user.clerkId,
       email: user.email,
       firstName: user.firstName || "",
       lastName: user.lastName || "",
@@ -264,10 +404,20 @@ export default function UsersPage() {
         includesIgnoreAccents(fullName, searchTerm) ||
         includesIgnoreAccents(user.email, searchTerm)
 
-      // SCHOOL_ADMIN only sees users from their own school (already filtered by backend)
-      return matchesSearch
+      // Filter by school
+      const matchesSchool = !filters.schoolId || user.schoolId === filters.schoolId
+
+      // Filter by role
+      const matchesRole = !filters.role || user.roles.some(role => role.id === filters.role)
+
+      // Filter by active/inactive status
+      const matchesStatus = !filters.isActive ||
+        (filters.isActive === "true" && user.isActive) ||
+        (filters.isActive === "false" && !user.isActive)
+
+      return matchesSearch && matchesSchool && matchesRole && matchesStatus
     })
-  }, [users, searchTerm])
+  }, [users, searchTerm, filters])
 
   // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
@@ -306,17 +456,25 @@ export default function UsersPage() {
         </BackButton>
       )}
 
-      <PageHeader
-        title={schoolId ? t("users.titleForSchool") : t("users.title")}
-        description={schoolId ? t("users.descriptionForSchool") : t("users.description")}
-      />
-
       {error && (
         <ErrorAlert
-          title="Error"
+          title={t("common.error")}
           message={error}
         />
       )}
+
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title={schoolId ? t("users.titleForSchool") : t("users.title")}
+          description={schoolId ? t("users.descriptionForSchool") : t("users.description")}
+        />
+        {userInfo && (userInfo.roles.some(role => role.name === 'SUPERADMIN') || userInfo?.permissions.includes('users.create')) && (
+          <Button onClick={openCreateDialog} className="cursor-pointer">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("users.createUser")}
+          </Button>
+        )}
+      </div>
 
       {/* Search */}
       <SearchBar
@@ -325,16 +483,19 @@ export default function UsersPage() {
         onChange={(e) => setSearchTerm(e.target.value)}
       />
 
-      {/* Filters - Removed for SCHOOL_ADMIN (only see their own school's users) */}
-
-      {/* Create Button - Only for SCHOOL_ADMIN, not SUPERADMIN */}
-      {userInfo && !userInfo.roles.some(role => role.name === 'SUPERADMIN') && userInfo?.permissions.includes('users.create') && (
-        <div className="flex justify-end">
-          <Button onClick={openCreateDialog} className="cursor-pointer">
-            <Plus className="h-4 w-4 mr-2" />
-            Crear Usuario
-          </Button>
-        </div>
+      {/* Filters */}
+      {(schools.length > 0 || roles.length > 0) && (
+        <UsersFilters
+          filters={filters}
+          onFiltersChange={(newFilters) => {
+            setFilters(newFilters)
+            setCurrentPage(1)
+          }}
+          totalUsers={users.length}
+          filteredCount={filteredUsers.length}
+          schools={schools}
+          roles={roles}
+        />
       )}
 
       {/* Users Table */}
@@ -344,19 +505,38 @@ export default function UsersPage() {
           schools={schools}
           onUserSelect={(user) => navigate(`/users/${user.id}`)}
           onEdit={userInfo?.permissions.includes('users.update') ? openEditDialog : undefined}
-          onDelete={userInfo?.permissions.includes('users.delete') ? (user) => handleDeleteUser(
-            user.id,
-            user.firstName && user.lastName
-              ? `${user.firstName} ${user.lastName}`
-              : user.email,
-            user.email
-          ) : undefined}
+          onDeactivate={userInfo?.permissions.includes('users.delete') ? (user) => {
+            // Prevent users from deactivating themselves
+            if (userInfo?.id === user.id || userInfo?.email === user.email) {
+              toast.error(t("users.cannotDeactivateSelf"))
+              return
+            }
+            handleDeactivateUser(user)
+          } : undefined}
+          onReactivate={userInfo?.permissions.includes('users.delete') ? (user) => handleReactivateUser(user) : undefined}
+          onDelete={userInfo?.permissions.includes('users.delete') ? (user) => {
+            // Prevent users from deleting themselves
+            if (userInfo?.id === user.id || userInfo?.email === user.email) {
+              toast.error(t("users.cannotDeleteSelf"))
+              return
+            }
+            handleDeleteUser(
+              user.id,
+              user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.email,
+              user.email
+            )
+          } : undefined}
           currentPage={currentPage}
           totalPages={totalPages}
           totalItems={filteredUsers.length}
           onPageChange={setCurrentPage}
           canEdit={userInfo?.permissions.includes('users.update') ?? false}
           canDelete={userInfo?.permissions.includes('users.delete') ?? false}
+          currentUserId={userInfo?.id}
+          currentUserEmail={userInfo?.email}
+          updatingUsers={updatingUsers}
         />
       ) : (
         <Card>
@@ -371,71 +551,133 @@ export default function UsersPage() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+            <DialogTitle>{t("users.createUser")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="clerkId">Clerk ID</Label>
+              <Label htmlFor="firstName">{t("users.firstName")}</Label>
               <Input
-                id="clerkId"
-                value={formData.clerkId}
-                onChange={(e) => setFormData({ ...formData, clerkId: e.target.value })}
-                placeholder="user_xxxxx"
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                placeholder={t("users.firstNamePlaceholder")}
               />
             </div>
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="lastName">{t("users.lastName")}</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder={t("users.lastNamePlaceholder")}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">{t("users.email")}</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="usuario@ejemplo.com"
+                placeholder={t("users.emailPlaceholder")}
               />
             </div>
+            {/* School selection - Only for SUPERADMIN */}
+            {isSuperAdmin && schools.length > 0 && (
+              <div>
+                <Label htmlFor="create-schoolId">{t("users.school")}</Label>
+                <Popover open={openSchoolPopover} onOpenChange={setOpenSchoolPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between",
+                        !formData.schoolId && "text-muted-foreground"
+                      )}
+                      id="create-schoolId"
+                    >
+                      {formData.schoolId
+                        ? schools.find((school) => school.id === formData.schoolId)?.name
+                        : t("users.selectSchool")}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder={t("common.search")}
+                        value={schoolSearchTerm}
+                        onValueChange={setSchoolSearchTerm}
+                      />
+                      <CommandList>
+                        <CommandEmpty>{t("common.noResults")}</CommandEmpty>
+                        <CommandGroup>
+                          {schools
+                            .filter((school) =>
+                              !schoolSearchTerm ||
+                              includesIgnoreAccents(school.name, schoolSearchTerm)
+                            )
+                            .map((school) => {
+                              const isSelected = formData.schoolId === school.id;
+                              return (
+                                <CommandItem
+                                  key={school.id}
+                                  value={school.id}
+                                  onSelect={() => {
+                                    setFormData({ ...formData, schoolId: school.id });
+                                    setOpenSchoolPopover(false);
+                                    setSchoolSearchTerm("");
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      isSelected ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {school.name}
+                                </CommandItem>
+                              );
+                            })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
             <div>
-              <Label htmlFor="firstName">Nombre</Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="Juan"
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName">Apellido</Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="Pérez"
-              />
-            </div>
-            {/* School selection removed - SCHOOL_ADMIN can only update users in their own school */}
-            <div>
-              <Label>Roles</Label>
+              <Label>{t("users.role")}</Label>
               <Select
                 value={formData.roleIds[0] || ""}
                 onValueChange={(value: string) => setFormData({ ...formData, roleIds: [value] })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar rol" />
+                  <SelectValue placeholder={t("users.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.displayName}
-                    </SelectItem>
-                  ))}
+                  {roles
+                    .filter((role) => role.name !== "SUPERADMIN")
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.displayName}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancelar
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+                disabled={isCreating}
+              >
+                {t("common.cancel")}
               </Button>
-              <Button onClick={handleCreateUser}>
-                Crear Usuario
+              <Button onClick={handleCreateUser} disabled={isCreating}>
+                {isCreating ? t("common.creating") : t("users.createUser")}
               </Button>
             </div>
           </div>
@@ -446,11 +688,11 @@ export default function UsersPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogTitle>{t("users.editUser")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">{t("users.email")}</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -459,7 +701,7 @@ export default function UsersPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-firstName">Nombre</Label>
+              <Label htmlFor="edit-firstName">{t("users.firstName")}</Label>
               <Input
                 id="edit-firstName"
                 value={formData.firstName}
@@ -467,7 +709,7 @@ export default function UsersPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-lastName">Apellido</Label>
+              <Label htmlFor="edit-lastName">{t("users.lastName")}</Label>
               <Input
                 id="edit-lastName"
                 value={formData.lastName}
@@ -476,29 +718,105 @@ export default function UsersPage() {
             </div>
             {/* School selection removed - SCHOOL_ADMIN can only update users in their own school */}
             <div>
-              <Label>Roles</Label>
+              <Label>{t("users.roles")}</Label>
               <Select
                 value={formData.roleIds[0] || ""}
                 onValueChange={(value: string) => setFormData({ ...formData, roleIds: [value] })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar rol" />
+                  <SelectValue placeholder={t("users.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.displayName}
-                    </SelectItem>
-                  ))}
+                  {roles
+                    .filter((role) => role.name !== "SUPERADMIN")
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.displayName}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button onClick={handleUpdateUser}>
-                Actualizar Usuario
+                {t("users.updateUser")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateConfirmation.open} onOpenChange={(open) => setDeactivateConfirmation({ ...deactivateConfirmation, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">{t("users.deactivateConfirm")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-orange-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-orange-700">{t("users.deactivateWarning")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("users.deactivateConfirmMessage", { userName: deactivateConfirmation.userName })}
+            </p>
+            <p className="text-sm text-gray-600">
+              {t("users.typeEmailToConfirmDeactivate", { userEmail: deactivateConfirmation.userEmail })}
+            </p>
+            <div>
+              <Label htmlFor="deactivate-email">{t("users.email")}</Label>
+              <Input
+                id="deactivate-email"
+                type="email"
+                value={deactivateEmailInput}
+                onChange={(e) => setDeactivateEmailInput(e.target.value)}
+                placeholder={t("users.deactivateEmailPlaceholder")}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button variant="outline" onClick={() => setDeactivateConfirmation({ ...deactivateConfirmation, open: false })}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeactivateUser}
+                disabled={deactivateEmailInput !== deactivateConfirmation.userEmail}
+              >
+                {t("users.deactivateUser")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reactivate Confirmation Dialog */}
+      <Dialog open={reactivateConfirmation.open} onOpenChange={(open) => setReactivateConfirmation({ ...reactivateConfirmation, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">{t("users.reactivateConfirm")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-green-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-green-700">{t("users.reactivateWarning")}</p>
+              <p className="text-sm text-green-600 mt-2">{t("users.reactivateNote")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("users.reactivateConfirmMessage", { userName: reactivateConfirmation.userName })}
+            </p>
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button variant="outline" onClick={() => setReactivateConfirmation({ ...reactivateConfirmation, open: false })}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={confirmReactivateUser}
+              >
+                {t("users.reactivateUser")}
               </Button>
             </div>
           </div>
@@ -507,26 +825,29 @@ export default function UsersPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ ...deleteConfirmation, open })}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Eliminar Usuario</DialogTitle>
+            <DialogTitle className="text-red-600">{t("users.deleteUser")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              ¿Estás seguro de que quieres eliminar al usuario <strong>"{deleteConfirmation.userName}"</strong>?
-              Esta acción no se puede deshacer.
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-red-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-red-700">{t("users.deleteWarning")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("users.deleteConfirmMessage", { userName: deleteConfirmation.userName })}
             </p>
             <p className="text-sm text-gray-600">
-              Para confirmar, escribe el email del usuario: <strong>{deleteConfirmation.userEmail}</strong>
+              {t("users.typeEmailToConfirm", { userEmail: deleteConfirmation.userEmail })}
             </p>
             <div>
-              <Label htmlFor="delete-email">Email del usuario</Label>
+              <Label htmlFor="delete-email">{t("users.email")}</Label>
               <Input
                 id="delete-email"
                 type="email"
                 value={deleteEmailInput}
                 onChange={(e) => setDeleteEmailInput(e.target.value)}
-                placeholder="Escribe el email aquí"
+                placeholder={t("users.deleteEmailPlaceholder")}
               />
             </div>
             <div className="flex justify-end gap-2">
@@ -534,14 +855,14 @@ export default function UsersPage() {
                 variant="outline"
                 onClick={() => setDeleteConfirmation({ ...deleteConfirmation, open: false })}
               >
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
                 onClick={confirmDeleteUser}
                 disabled={deleteEmailInput !== deleteConfirmation.userEmail}
               >
-                Eliminar
+                {t("users.deleteUser")}
               </Button>
             </div>
           </div>

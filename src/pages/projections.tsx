@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
@@ -43,6 +43,18 @@ export default function ProjectionsPage() {
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
   const { t } = useTranslation()
+
+  // Check user roles
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const checkRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSuperAdmin = checkRole('SUPERADMIN')
+
+  // Redirect super admins - they should not access projections page
+  React.useEffect(() => {
+    if (isSuperAdmin) {
+      navigate('/users', { replace: true })
+    }
+  }, [isSuperAdmin, navigate])
 
   const [projections, setProjections] = React.useState<ProjectionWithStudent[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -142,10 +154,8 @@ export default function ProjectionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.schoolYear, isLoadingUser])
 
-  // Check permissions
-  const roles = userInfo?.roles.map((role) => role.name) ?? []
-  const hasRole = (role: string) => roles.includes(role)
-  const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
+  // Check permissions (reuse roleNames and checkRole from above)
+  const isTeacherOrAdmin = checkRole('TEACHER') || checkRole('SCHOOL_ADMIN') || checkRole('PARENT')
 
   // Group projections by student to show one per student
   const projectionsByStudent = React.useMemo(() => {
@@ -259,8 +269,13 @@ export default function ProjectionsPage() {
   }
 
 
+  // Redirect super admins - they should not access projections page
+  if (isSuperAdmin) {
+    return <Navigate to="/users" replace />
+  }
+
   if (isLoading || isLoadingUser) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   if (!isTeacherOrAdmin) {

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Navigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,7 @@ import { Loading } from "@/components/ui/loading"
 import { MonthlyAssignmentsTable, type MonthlyAssignmentTemplate } from "@/components/monthly-assignments-table"
 import { MonthlyAssignmentFormDialog } from "@/components/monthly-assignment-form-dialog"
 import { useTranslation } from "react-i18next"
+import { useUser } from "@/contexts/UserContext"
 
 
 const QUARTERS = [
@@ -27,6 +29,13 @@ const QUARTERS = [
 export default function MonthlyAssignmentsPage() {
   const api = useApi()
   const { t } = useTranslation()
+  const { userInfo, isLoading: isLoadingUser } = useUser()
+
+  // Check user roles
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSuperAdmin = hasRole('SUPERADMIN')
+  const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
 
   const getQuarterLabel = (quarter: string) => {
     switch (quarter) {
@@ -186,8 +195,18 @@ export default function MonthlyAssignmentsPage() {
 
   const selectedSchoolYear = schoolYears.find(y => y.id === selectedSchoolYearId)
 
-  if (loading && !selectedSchoolYearId) {
+  // Redirect super admins - they should not access monthly assignments page
+  if (isSuperAdmin) {
+    return <Navigate to="/users" replace />
+  }
+
+  if (isLoadingUser || (loading && !selectedSchoolYearId)) {
     return <Loading message={t("monthlyAssignments.loading")} />
+  }
+
+  // Check if user has permission (teachers and school admins only)
+  if (!isTeacherOrAdmin && !isLoadingUser) {
+    return <Navigate to="/404" replace />
   }
 
   return (
