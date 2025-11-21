@@ -14,11 +14,14 @@ export function StatusBadge({
   className
 }: StatusBadgeProps) {
   const statusColor = isActive
-    ? "bg-green-100 text-green-800 border-green-200"
-    : "bg-gray-100 text-gray-800 border-gray-200"
+    ? "bg-green-100 text-green-800 border border-green-300"
+    : "bg-orange-100 text-orange-800 border border-orange-300"
 
   return (
-    <Badge className={`${statusColor} ${className || ""}`}>
+    <Badge
+      variant={isActive ? "default" : "secondary"}
+      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor} ${className || ""}`}
+    >
       {isActive ? activeText : inactiveText}
     </Badge>
   )

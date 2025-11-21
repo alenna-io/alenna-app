@@ -61,13 +61,11 @@ export default function TeachersPage() {
 
     const fetchSchoolInfo = async () => {
       try {
-        const targetSchoolId = schoolId || userInfo?.schoolId
-        if (!targetSchoolId) return
-
-        const schoolData = await api.schools.getById(targetSchoolId)
+        // Use /me endpoint for school admins to avoid permission issues
+        const schoolData = await api.schools.getMy()
         setSchool(schoolData)
 
-        const countData = await api.schools.getTeachersCount(targetSchoolId)
+        const countData = await api.schools.getMyTeachersCount()
         setTeachersCount(countData.count)
       } catch (err) {
         console.error('Error fetching school info:', err)
@@ -76,7 +74,7 @@ export default function TeachersPage() {
 
     fetchSchoolInfo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSchoolAdmin, schoolId, userInfo?.schoolId])
+  }, [isSchoolAdmin])
 
   // Fetch teachers list from API
   React.useEffect(() => {
@@ -99,13 +97,10 @@ export default function TeachersPage() {
         setIsLoading(true)
         setError(null)
 
-        // Use schoolId from route if available, otherwise use user's school
-        const targetSchoolId = schoolId || userInfo?.schoolId
-        if (!targetSchoolId) {
-          throw new Error("No se pudo determinar la escuela")
-        }
-
-        const data = await api.schools.getTeachers(targetSchoolId)
+        // Use /me endpoint for school admins to avoid permission issues
+        const data = isSchoolAdmin
+          ? await api.schools.getMyTeachers()
+          : await api.schools.getTeachers(schoolId || userInfo?.schoolId || '')
 
         if (isMounted) {
           // Transform API data to match frontend Teacher type
@@ -232,8 +227,10 @@ export default function TeachersPage() {
       throw new Error("No se pudo determinar la escuela")
     }
     await api.createUser({ ...data, schoolId: targetSchoolId })
-    // Reload teachers and count
-    const teachersData = await api.schools.getTeachers(targetSchoolId)
+    // Reload teachers and count - use /me endpoint for school admins
+    const teachersData = isSchoolAdmin
+      ? await api.schools.getMyTeachers()
+      : await api.schools.getTeachers(targetSchoolId)
     const transformedTeachers: Teacher[] = teachersData.map((teacher: unknown) => {
       const t = teacher as Record<string, unknown>
       return {
@@ -249,7 +246,9 @@ export default function TeachersPage() {
       }
     })
     setTeachers(transformedTeachers)
-    const countData = await api.schools.getTeachersCount(targetSchoolId)
+    const countData = isSchoolAdmin
+      ? await api.schools.getMyTeachersCount()
+      : await api.schools.getTeachersCount(targetSchoolId)
     setTeachersCount(countData.count)
   }
 

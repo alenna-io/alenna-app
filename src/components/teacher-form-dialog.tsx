@@ -55,20 +55,17 @@ export function TeacherFormDialog({
   const [loadingRoles, setLoadingRoles] = React.useState(false)
   const [teacherRoleId, setTeacherRoleId] = React.useState<string>("")
   const [errors, setErrors] = React.useState<{
-    clerkId?: string
     email?: string
     firstName?: string
     lastName?: string
     roleIds?: string
   }>({})
   const [formData, setFormData] = React.useState<{
-    clerkId: string
     email: string
     firstName: string
     lastName: string
     roleIds: string[]
   }>({
-    clerkId: "",
     email: "",
     firstName: "",
     lastName: "",
@@ -105,7 +102,6 @@ export function TeacherFormDialog({
   React.useEffect(() => {
     if (open) {
       setFormData({
-        clerkId: "",
         email: "",
         firstName: "",
         lastName: "",
@@ -117,38 +113,32 @@ export function TeacherFormDialog({
 
   const validateForm = (): boolean => {
     const newErrors: {
-      clerkId?: string
       email?: string
       firstName?: string
       lastName?: string
       roleIds?: string
     } = {}
 
-    // Validate clerkId
-    if (!formData.clerkId.trim()) {
-      newErrors.clerkId = "El Clerk ID es requerido"
-    }
-
     // Validate email
     if (!formData.email.trim()) {
-      newErrors.email = "El email es requerido"
+      newErrors.email = t("users.emailRequired")
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido"
+      newErrors.email = t("users.invalidEmail")
     }
 
     // Validate firstName
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "El nombre es requerido"
+      newErrors.firstName = t("users.firstNameRequired")
     }
 
     // Validate lastName
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "El apellido es requerido"
+      newErrors.lastName = t("users.lastNameRequired")
     }
 
     // Validate roleIds
     if (formData.roleIds.length === 0) {
-      newErrors.roleIds = "Debe seleccionar al menos un rol"
+      newErrors.roleIds = t("users.roleRequired")
     }
 
     setErrors(newErrors)
@@ -164,7 +154,7 @@ export function TeacherFormDialog({
     try {
       setIsSaving(true)
       await onSave({
-        clerkId: formData.clerkId.trim(),
+        clerkId: "", // Let backend generate it or handle it
         email: formData.email.trim(),
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
@@ -188,34 +178,12 @@ export function TeacherFormDialog({
             {t("teachers.addTeacher")}
           </DialogTitle>
           <DialogDescription>
-            Agrega un nuevo maestro a la escuela
+            {t("teachers.addTeacherDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="clerkId">
-                Clerk ID <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                id="clerkId"
-                value={formData.clerkId}
-                onChange={(e) => setFormData({ ...formData, clerkId: e.target.value })}
-                placeholder="user_xxxxx"
-                className={errors.clerkId ? "border-destructive" : ""}
-              />
-              {errors.clerkId && (
-                <div className="flex items-center gap-2 text-sm text-destructive mt-1">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>{errors.clerkId}</span>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                ID del usuario en Clerk
-              </p>
-            </Field>
-
             <Field>
               <FieldLabel htmlFor="email">
                 Email <span className="text-destructive">*</span>
@@ -286,7 +254,7 @@ export function TeacherFormDialog({
                 disabled={loadingRoles}
               >
                 <SelectTrigger className={errors.roleIds ? "border-destructive" : ""}>
-                  <SelectValue placeholder={loadingRoles ? t("common.loading") : "Seleccionar rol"} />
+                  <SelectValue placeholder={loadingRoles ? t("common.loading") : t("users.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
                   {roles
@@ -305,7 +273,7 @@ export function TeacherFormDialog({
                 </div>
               )}
               <p className="text-xs text-muted-foreground mt-1">
-                Los maestros pueden tener el rol de Maestro o Administrador de Escuela
+                {t("forms.teacherRolesInfo")}
               </p>
             </Field>
           </FieldGroup>
@@ -317,7 +285,7 @@ export function TeacherFormDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? t("common.saving") : t("teachers.addTeacher")}

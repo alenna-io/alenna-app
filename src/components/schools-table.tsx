@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LinkButton } from "@/components/ui/link-button"
-import { Building, ChevronLeft, MoreVertical, Eye, Edit, Trash2 } from "lucide-react"
+import { Building, ChevronLeft, MoreVertical, Eye, Edit, Trash2, Power, PowerOff, Loader2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { StatusBadge } from "@/components/ui/status-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ interface School {
   email?: string
   teacherLimit?: number
   userLimit?: number
+  isActive?: boolean
 }
 
 interface SchoolsTableProps {
@@ -25,12 +27,15 @@ interface SchoolsTableProps {
   onSchoolSelect?: (school: School) => void
   onEdit?: (school: School) => void
   onDelete?: (school: School) => void
+  onActivate?: (school: School) => void
+  onDeactivate?: (school: School) => void
   currentPage: number
   totalPages: number
   totalItems: number
   onPageChange: (page: number) => void
   canEdit?: boolean
   canDelete?: boolean
+  updatingSchools?: Set<string>
 }
 
 interface ColumnConfig {
@@ -44,6 +49,7 @@ const COLUMNS: ColumnConfig[] = [
   { key: 'address', label: 'Dirección', sortable: false },
   { key: 'email', label: 'Email', sortable: false },
   { key: 'phone', label: 'Teléfono', sortable: false },
+  { key: 'status', label: 'Estado', sortable: false },
   { key: 'limits', label: 'Límites', sortable: false },
   { key: 'actions', label: '', sortable: false },
 ]
@@ -53,12 +59,15 @@ export function SchoolsTable({
   onSchoolSelect,
   onEdit,
   onDelete,
+  onActivate,
+  onDeactivate,
   currentPage,
   totalPages,
   totalItems,
   onPageChange,
   canEdit = false,
-  canDelete = false
+  canDelete = false,
+  updatingSchools = new Set()
 }: SchoolsTableProps) {
   const { t } = useTranslation()
   const startItem = (currentPage - 1) * 10 + 1
@@ -112,6 +121,20 @@ export function SchoolsTable({
                       return (
                         <div className="text-sm text-foreground">
                           {school.phone || '-'}
+                        </div>
+                      )
+                    case 'status':
+                      const isUpdating = updatingSchools.has(school.id)
+                      return (
+                        <div className="flex items-center gap-2">
+                          {isUpdating ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          ) : null}
+                          <StatusBadge
+                            isActive={school.isActive !== false}
+                            activeText={t("schools.active")}
+                            inactiveText={t("schools.inactive")}
+                          />
                         </div>
                       )
                     case 'limits':
@@ -170,16 +193,46 @@ export function SchoolsTable({
                                 Editar
                               </DropdownMenuItem>
                             )}
+                            {canEdit && school.isActive !== false && onDeactivate && school.name.toLowerCase() !== "alenna" && !updatingSchools.has(school.id) && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDeactivate(school)
+                                }}
+                                className="text-orange-600 cursor-pointer"
+                              >
+                                <PowerOff className="h-4 w-4 mr-2" />
+                                {t("schools.deactivateSchool")}
+                              </DropdownMenuItem>
+                            )}
+                            {canEdit && school.isActive === false && onActivate && !updatingSchools.has(school.id) && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onActivate(school)
+                                }}
+                                className="text-green-600 cursor-pointer"
+                              >
+                                <Power className="h-4 w-4 mr-2" />
+                                {t("schools.activateSchool")}
+                              </DropdownMenuItem>
+                            )}
+                            {updatingSchools.has(school.id) && (
+                              <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                {t("common.loading")}
+                              </DropdownMenuItem>
+                            )}
                             {canDelete && onDelete && (
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   onDelete(school)
                                 }}
-                                className="text-red-600"
+                                className="text-red-600 cursor-pointer"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
+                                {t("schools.deleteSchool")}
                               </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>

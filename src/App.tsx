@@ -26,6 +26,11 @@ import ReportCardsListPage from '@/pages/report-cards-list'
 import ReportCardDetailPage from '@/pages/report-card-detail'
 import ReportCardsPage from '@/pages/report-cards'
 import GenerateProjectionWizardPage from '@/pages/generate-projection-wizard'
+import CreateStudentWizardPage from '@/pages/create-student-wizard'
+import CreateSchoolWizardPage from '@/pages/create-school-wizard'
+import GroupsPage from '@/pages/groups'
+import GroupDetailPage from '@/pages/group-detail'
+import CreateGroupWizardPage from '@/pages/create-group-wizard'
 import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
@@ -73,6 +78,7 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="students" element={<StudentsPage />} />
+          <Route path="students/create" element={<CreateStudentWizardPage />} />
           <Route path="students/:studentId" element={<StudentsPage />} />
           <Route path="projections" element={<ProjectionsPage />} />
           <Route path="projections/generate" element={<GenerateProjectionWizardPage />} />
@@ -89,9 +95,13 @@ export default function App() {
           <Route path="users" element={<UsersPage />} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="schools" element={<SchoolsPage />} />
+          <Route path="schools/create" element={<CreateSchoolWizardPage />} />
           <Route path="schools/:schoolId" element={<SchoolInfoPage />} />
           <Route path="schools/:schoolId/students" element={<StudentsPage />} />
           <Route path="schools/:schoolId/teachers" element={<TeachersPage />} />
+          <Route path="groups" element={<GroupsPage />} />
+          <Route path="groups/create" element={<CreateGroupWizardPage />} />
+          <Route path="groups/:groupId" element={<GroupDetailPage />} />
           <Route path="monthly-assignments" element={<MonthlyAssignmentsPage />} />
           <Route path="report-cards" element={<ReportCardsPage />} />
           <Route path="students/:studentId/report-cards" element={<ReportCardsListPage />} />

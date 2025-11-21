@@ -185,77 +185,77 @@ export function StudentFormDialog({
 
     // Validate firstName
     if (!formData.firstName.trim()) {
-      newErrors.firstName = "El nombre es requerido"
+      newErrors.firstName = t("students.validation.firstNameRequired")
     }
 
     // Validate lastName
     if (!formData.lastName.trim()) {
-      newErrors.lastName = "El apellido es requerido"
+      newErrors.lastName = t("students.validation.lastNameRequired")
     }
 
     // Validate birthDate
     if (!formData.birthDate) {
-      newErrors.birthDate = "La fecha de nacimiento es requerida"
+      newErrors.birthDate = t("students.validation.birthDateRequired")
     } else {
       const birthDate = new Date(formData.birthDate)
       const today = new Date()
       if (birthDate >= today) {
-        newErrors.birthDate = "La fecha de nacimiento debe ser anterior a hoy"
+        newErrors.birthDate = t("students.validation.birthDateFuture")
       }
     }
 
     // Validate certificationTypeId
     if (!formData.certificationTypeId) {
-      newErrors.certificationTypeId = "El tipo de certificación es requerido"
+      newErrors.certificationTypeId = t("students.validation.certificationTypeRequired")
     }
 
     // Validate graduationDate
     if (!formData.graduationDate) {
-      newErrors.graduationDate = "La fecha de graduación es requerida"
+      newErrors.graduationDate = t("students.validation.graduationDateRequired")
     } else if (formData.birthDate) {
       const birthDate = new Date(formData.birthDate)
       const graduationDate = new Date(formData.graduationDate)
       if (graduationDate <= birthDate) {
-        newErrors.graduationDate = "La fecha de graduación debe ser posterior a la fecha de nacimiento"
+        newErrors.graduationDate = t("students.validation.graduationDateBeforeBirth")
       }
     }
 
     // Validate parent 1 (required)
     if (!formData.parent1FirstName.trim()) {
-      newErrors.parent1FirstName = "El nombre del padre/madre es requerido"
+      newErrors.parent1FirstName = t("students.validation.parentNameRequired")
     }
     if (!formData.parent1LastName.trim()) {
-      newErrors.parent1LastName = "El apellido del padre/madre es requerido"
+      newErrors.parent1LastName = t("students.validation.parentLastNameRequired")
     }
     if (!formData.parent1Email.trim()) {
-      newErrors.parent1Email = "El email del padre/madre es requerido"
+      newErrors.parent1Email = t("students.validation.parentEmailRequired")
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent1Email)) {
-      newErrors.parent1Email = "Email inválido"
+      newErrors.parent1Email = t("students.validation.emailInvalid")
     }
     if (!formData.parent1Relationship.trim()) {
-      newErrors.parent1Relationship = "La relación es requerida"
+      newErrors.parent1Relationship = t("students.validation.relationshipRequired")
     }
 
     // Validate parent 2 (optional, but if filled, all fields required)
     if (formData.hasSecondParent) {
       if (!formData.parent2FirstName.trim()) {
-        newErrors.parent2FirstName = "El nombre del segundo padre/madre es requerido"
+        newErrors.parent2FirstName = t("students.validation.parentNameRequired")
       }
       if (!formData.parent2LastName.trim()) {
-        newErrors.parent2LastName = "El apellido del segundo padre/madre es requerido"
+        newErrors.parent2LastName = t("students.validation.parentLastNameRequired")
       }
       if (!formData.parent2Email.trim()) {
-        newErrors.parent2Email = "El email del segundo padre/madre es requerido"
+        newErrors.parent2Email = t("students.validation.parentEmailRequired")
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent2Email)) {
-        newErrors.parent2Email = "Email inválido"
+        newErrors.parent2Email = t("students.validation.emailInvalid")
       }
       if (!formData.parent2Relationship.trim()) {
-        newErrors.parent2Relationship = "La relación es requerida"
+        newErrors.parent2Relationship = t("students.validation.relationshipRequired")
       }
 
       // Ensure parent emails are different
       if (formData.parent1Email === formData.parent2Email) {
-        newErrors.parent2Email = "El email del segundo padre/madre debe ser diferente al del primero"
+        newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
       }
     }
 
@@ -552,7 +552,7 @@ export function StudentFormDialog({
                       type="email"
                       value={formData.parent1Email}
                       onChange={(e) => setFormData({ ...formData, parent1Email: e.target.value })}
-                      placeholder="padre@email.com"
+                      placeholder={t("students.parentEmailPlaceholder")}
                       className={errors.parent1Email ? "border-destructive" : ""}
                     />
                     {errors.parent1Email && (
@@ -659,7 +659,7 @@ export function StudentFormDialog({
                           type="email"
                           value={formData.parent2Email}
                           onChange={(e) => setFormData({ ...formData, parent2Email: e.target.value })}
-                          placeholder="padre2@email.com"
+                          placeholder={t("students.secondParentEmailPlaceholder")}
                           className={errors.parent2Email ? "border-destructive" : ""}
                         />
                         {errors.parent2Email && (

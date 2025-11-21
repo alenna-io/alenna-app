@@ -34,6 +34,9 @@ interface SchoolFormDialogProps {
     email?: string
     teacherLimit?: number
     userLimit?: number
+    adminEmail?: string
+    adminFirstName?: string
+    adminLastName?: string
   }) => Promise<void>
 }
 
@@ -58,6 +61,9 @@ export function SchoolFormDialog({
     email: string
     teacherLimit: string
     userLimit: string
+    adminEmail: string
+    adminFirstName: string
+    adminLastName: string
   }>({
     name: "",
     address: "",
@@ -65,6 +71,9 @@ export function SchoolFormDialog({
     email: "",
     teacherLimit: "",
     userLimit: "",
+    adminEmail: "",
+    adminFirstName: "",
+    adminLastName: "",
   })
 
   // Initialize form data when dialog opens or school changes
@@ -79,6 +88,9 @@ export function SchoolFormDialog({
           email: school.email || "",
           teacherLimit: school.teacherLimit?.toString() || "",
           userLimit: school.userLimit?.toString() || "",
+          adminEmail: "",
+          adminFirstName: "",
+          adminLastName: "",
         })
       } else {
         // Creating new school
@@ -89,6 +101,9 @@ export function SchoolFormDialog({
           email: "",
           teacherLimit: "",
           userLimit: "",
+          adminEmail: "",
+          adminFirstName: "",
+          adminLastName: "",
         })
       }
       setErrors({})
@@ -105,19 +120,19 @@ export function SchoolFormDialog({
 
     // Validate name
     if (!formData.name.trim()) {
-      newErrors.name = "El nombre de la escuela es requerido"
+      newErrors.name = t("schools.nameRequiredError")
     }
 
-    // Validate email if provided
-    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido"
+    // Validate admin email if creating new school
+    if (!school && formData.adminEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail)) {
+      newErrors.email = t("schools.invalidEmailError")
     }
 
     // Validate teacherLimit if provided
     if (formData.teacherLimit.trim()) {
       const limit = parseInt(formData.teacherLimit, 10)
       if (isNaN(limit) || limit <= 0) {
-        newErrors.teacherLimit = "El límite de maestros debe ser un número positivo"
+        newErrors.teacherLimit = t("forms.teacherLimitError")
       }
     }
 
@@ -125,7 +140,7 @@ export function SchoolFormDialog({
     if (formData.userLimit.trim()) {
       const limit = parseInt(formData.userLimit, 10)
       if (isNaN(limit) || limit <= 0) {
-        newErrors.userLimit = "El límite de usuarios debe ser un número positivo"
+        newErrors.userLimit = t("forms.userLimitError")
       }
     }
 
@@ -145,9 +160,12 @@ export function SchoolFormDialog({
         name: formData.name.trim(),
         address: formData.address.trim(),
         phone: formData.phone.trim() || undefined,
-        email: formData.email.trim() || undefined,
+        email: !school && formData.adminEmail.trim() ? formData.adminEmail.trim() : (school?.email || undefined), // Use admin email for new schools
         teacherLimit: formData.teacherLimit.trim() ? parseInt(formData.teacherLimit, 10) : undefined,
         userLimit: formData.userLimit.trim() ? parseInt(formData.userLimit, 10) : undefined,
+        adminEmail: !school && formData.adminEmail.trim() ? formData.adminEmail.trim() : undefined,
+        adminFirstName: !school && formData.adminFirstName.trim() ? formData.adminFirstName.trim() : undefined,
+        adminLastName: !school && formData.adminLastName.trim() ? formData.adminLastName.trim() : undefined,
       })
       onOpenChange(false)
     } catch (error) {
@@ -177,13 +195,13 @@ export function SchoolFormDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">
-                Nombre de la Escuela <span className="text-destructive">*</span>
+                {t("schools.schoolName")} <span className="text-destructive">*</span>
               </FieldLabel>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Nombre de la escuela"
+                placeholder={t("schools.schoolNamePlaceholder")}
                 className={errors.name ? "border-destructive" : ""}
               />
               {errors.name && (
@@ -195,41 +213,44 @@ export function SchoolFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="address">Dirección</FieldLabel>
+              <FieldLabel htmlFor="address">{t("schools.address")}</FieldLabel>
               <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Dirección completa"
+                placeholder={t("schools.addressPlaceholder")}
               />
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@escuela.edu"
-                  className={errors.email ? "border-destructive" : ""}
-                />
-                {errors.email && (
-                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>{errors.email}</span>
-                  </div>
-                )}
-              </Field>
+              {/* Email field only shown when editing - for new schools, email comes from admin user */}
+              {school && (
+                <Field>
+                  <FieldLabel htmlFor="email">{t("schools.email")}</FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder={t("users.emailPlaceholder")}
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && (
+                    <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>{errors.email}</span>
+                    </div>
+                  )}
+                </Field>
+              )}
 
               <Field>
-                <FieldLabel htmlFor="phone">Teléfono</FieldLabel>
+                <FieldLabel htmlFor="phone">{t("schools.phone")}</FieldLabel>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder={t("schools.phonePlaceholder")}
                 />
               </Field>
             </div>
@@ -243,7 +264,7 @@ export function SchoolFormDialog({
                   min="1"
                   value={formData.teacherLimit}
                   onChange={(e) => setFormData({ ...formData, teacherLimit: e.target.value })}
-                  placeholder="Ej: 50"
+                  placeholder={t("schools.teacherLimitPlaceholder")}
                   className={errors.teacherLimit ? "border-destructive" : ""}
                 />
                 {errors.teacherLimit && (
@@ -265,7 +286,7 @@ export function SchoolFormDialog({
                   min="1"
                   value={formData.userLimit}
                   onChange={(e) => setFormData({ ...formData, userLimit: e.target.value })}
-                  placeholder="Ej: 200"
+                  placeholder={t("schools.userLimitPlaceholder")}
                   className={errors.userLimit ? "border-destructive" : ""}
                 />
                 {errors.userLimit && (
@@ -279,6 +300,51 @@ export function SchoolFormDialog({
                 </p>
               </Field>
             </div>
+
+            {/* Admin User Fields - Only when creating a new school */}
+            {!school && (
+              <>
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="text-sm font-semibold mb-4">{t("schools.adminUser")}</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="adminEmail">
+                      {t("users.email")} <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={formData.adminEmail}
+                      onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
+                      placeholder={t("forms.adminEmailPlaceholder")}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="adminFirstName">
+                      {t("users.firstName")} <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="adminFirstName"
+                      value={formData.adminFirstName}
+                      onChange={(e) => setFormData({ ...formData, adminFirstName: e.target.value })}
+                      placeholder={t("forms.adminFirstNamePlaceholder")}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="adminLastName">
+                      {t("users.lastName")} <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="adminLastName"
+                      value={formData.adminLastName}
+                      onChange={(e) => setFormData({ ...formData, adminLastName: e.target.value })}
+                      placeholder={t("forms.adminLastNamePlaceholder")}
+                    />
+                  </Field>
+                </div>
+              </>
+            )}
           </FieldGroup>
         </div>
 
@@ -288,7 +354,7 @@ export function SchoolFormDialog({
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? t("common.saving") : school ? t("schools.updateSchool") : t("schools.createSchool")}

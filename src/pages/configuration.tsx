@@ -14,7 +14,7 @@ interface ConfigModule {
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
-  readPermission: string;
+  readPermission?: string; // Optional - if empty, accessible to all authenticated users
   writePermission?: string;
   readOnly?: boolean;
 }
@@ -38,8 +38,8 @@ export default function ConfigurationPage() {
       description: t("configuration.language.description"),
       icon: Languages,
       path: "/configuration/language",
-      readPermission: "users.read", // Everyone can read their own language preference
-      writePermission: "users.update", // Everyone can update their own language preference
+      readPermission: "", // No permission required - all authenticated users can access their language preference
+      writePermission: "", // No permission required - all authenticated users can update their language preference
     },
   ], [t]);
 
@@ -73,7 +73,13 @@ export default function ConfigurationPage() {
   }
 
   // Filter modules user has access to
+  // Language module is accessible to all authenticated users (no permission check needed)
   const accessibleModules = configModules.filter(module => {
+    // If no readPermission is specified, allow access to all authenticated users
+    if (!module.readPermission) {
+      return true;
+    }
+    // Otherwise, check if user has the required permission
     if (!hasPermission(module.readPermission)) {
       return false;
     }
