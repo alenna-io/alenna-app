@@ -5,6 +5,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
+    "creating": "Creating...",
     "search": "Search",
     "loading": "Loading...",
     "saving": "Saving...",
