@@ -180,6 +180,7 @@ export interface UserInfo {
   schoolId: string;
   schoolName: string;
   studentId?: string | null;
+  createdPassword: boolean;
   studentProfile?: {
     id: string;
     firstName: string;
@@ -207,6 +208,10 @@ export const authApi = {
   syncUser: (token: string | null) => apiFetch('/auth/sync', token, { method: 'POST' }),
   getCurrentUser: (token: string | null) => apiFetch('/auth/me', token),
   getUserInfo: (token: string | null) => apiFetch('/auth/info', token),
+  updatePassword: (password: string, token: string | null) => apiFetch('/auth/password', token, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  }),
 };
 
 // Users API
@@ -585,6 +590,10 @@ export function useApi() {
       },
     },
     auth: {
+      updatePassword: async (password: string) => {
+        const token = await getToken();
+        return authApi.updatePassword(password, token);
+      },
       syncUser: async () => {
         const token = await getToken();
         return authApi.syncUser(token);

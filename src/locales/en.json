@@ -867,5 +867,18 @@
     "noLecturesFound": "No lectures found",
     "noLecturesDescription": "Try adjusting your filters or search term",
     "lectures": "lectures"
+  },
+  "passwordSetup": {
+    "title": "Set Password",
+    "description": "Please set a password for your account",
+    "password": "Password",
+    "passwordPlaceholder": "Minimum 8 characters",
+    "passwordHint": "Must contain at least 8 characters, one uppercase letter, one lowercase letter, and one number",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "setupPassword": "Set Password",
+    "settingUp": "Setting up...",
+    "success": "Password set successfully",
+    "error": "Error setting password"
   }
 }
