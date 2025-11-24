@@ -87,7 +87,24 @@
     "schoolYear": {
       "title": "Años Escolares",
       "description": "Configuración de años escolares, trimestres y calendario"
+    },
+    "certificationTypes": {
+      "title": "Tipos de Certificación",
+      "description": "Administra los tipos de certificación disponibles para esta escuela"
     }
+  },
+  "certificationTypes": {
+    "title": "Tipos de Certificación",
+    "description": "Administra los tipos de certificación disponibles para esta escuela",
+    "backToSchoolSettings": "Volver a Configuración de la Escuela",
+    "nameLabel": "Nombre de la certificación",
+    "descriptionLabel": "Descripción",
+    "addNew": "Agregar tipo de certificación",
+    "noCertificationTypes": "Aún no se han definido tipos de certificación para esta escuela.",
+    "loadError": "Error al cargar los tipos de certificación",
+    "createSuccess": "Tipo de certificación creado exitosamente",
+    "createError": "Error al crear el tipo de certificación",
+    "nameRequired": "El nombre de la certificación es requerido"
   },
   "students": {
     "title": "Estudiantes",
@@ -528,7 +545,14 @@
     "detail": "Detalle",
     "projection": "Proyección",
     "week": "Semana {{week}}",
-    "quarter": "Bloque {{quarter}}"
+    "quarter": "Bloque {{quarter}}",
+    "dashboard": "Dashboard",
+    "lectures": "Lecciones",
+    "monthlyAssignments": "Asignaciones Mensuales",
+    "schoolSettings": "Escuela",
+    "teachers": "Maestros",
+    "documents": "Documentos",
+    "settings": "Configuración"
   },
   "sidebar": {
     "students": "Estudiantes",

@@ -23,6 +23,7 @@ interface CertificationType {
   id: string
   name: string
   description?: string
+  isActive?: boolean
 }
 
 export default function CreateStudentWizardPage() {
@@ -36,6 +37,10 @@ export default function CreateStudentWizardPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [certificationTypes, setCertificationTypes] = React.useState<CertificationType[]>([])
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [isCreatingCertification, setIsCreatingCertification] = React.useState(false)
+  const [newCertificationName, setNewCertificationName] = React.useState("")
+  const [newCertificationDescription, setNewCertificationDescription] = React.useState("")
+  const [isSavingCertification, setIsSavingCertification] = React.useState(false)
 
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -151,6 +156,40 @@ export default function CreateStudentWizardPage() {
       window.scrollTo(0, 0)
     } else {
       navigate("/students")
+    }
+  }
+
+  const handleCreateCertificationType = async () => {
+    if (!userInfo?.schoolId) return
+
+    const name = newCertificationName.trim()
+    const description = newCertificationDescription.trim()
+
+    if (!name) {
+      toast.error(t("certificationTypes.nameRequired") || "Certification name is required")
+      return
+    }
+
+    try {
+      setIsSavingCertification(true)
+      const created = await api.schools.createCertificationType(userInfo.schoolId, {
+        name,
+        description: description || undefined,
+        isActive: true,
+      })
+
+      const newType = created as CertificationType
+      setCertificationTypes((prev) => [...prev, newType])
+      setFormData((prev) => ({ ...prev, certificationTypeId: newType.id }))
+      setIsCreatingCertification(false)
+      setNewCertificationName("")
+      setNewCertificationDescription("")
+      toast.success(t("certificationTypes.createSuccess") || "Certification type created successfully")
+    } catch (error: unknown) {
+      const err = error as Error
+      toast.error(err.message || t("certificationTypes.createError") || "Error creating certification type")
+    } finally {
+      setIsSavingCertification(false)
     }
   }
 
@@ -351,6 +390,21 @@ export default function CreateStudentWizardPage() {
                       </SelectContent>
                     </Select>
                     {errors.certificationTypeId && <p className="text-sm text-destructive mt-1">{errors.certificationTypeId}</p>}
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        {t("certificationTypes.noCertificationTypes")}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="xs"
+                        onClick={() => setIsCreatingCertification((prev) => !prev)}
+                      >
+                        {isCreatingCertification
+                          ? t("common.cancel")
+                          : t("certificationTypes.addNew")}
+                      </Button>
+                    </div>
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="graduationDate">{t("students.graduationDate")} <span className="text-destructive">*</span></FieldLabel>
@@ -362,6 +416,41 @@ export default function CreateStudentWizardPage() {
                     {errors.graduationDate && <p className="text-sm text-destructive mt-1">{errors.graduationDate}</p>}
                   </Field>
                 </div>
+
+                {isCreatingCertification && (
+                  <div className="mt-4 space-y-3 border rounded-md p-4 bg-gray-50">
+                    <h3 className="text-sm font-semibold">
+                      {t("certificationTypes.addNew")}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field>
+                        <FieldLabel>{t("certificationTypes.nameLabel")}</FieldLabel>
+                        <Input
+                          value={newCertificationName}
+                          onChange={(e) => setNewCertificationName(e.target.value)}
+                          placeholder={t("certificationTypes.nameLabel") || "Certification name"}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel>{t("certificationTypes.descriptionLabel")}</FieldLabel>
+                        <Input
+                          value={newCertificationDescription}
+                          onChange={(e) => setNewCertificationDescription(e.target.value)}
+                          placeholder={t("certificationTypes.descriptionLabel") || "Optional description"}
+                        />
+                      </Field>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        onClick={handleCreateCertificationType}
+                        disabled={isSavingCertification}
+                      >
+                        {isSavingCertification ? t("common.saving") : t("certificationTypes.addNew")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 mt-4">
                   <input
