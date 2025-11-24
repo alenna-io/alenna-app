@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
 import { useModuleAccess } from '@/hooks/useModuleAccess';
 import { Loading } from '@/components/ui/loading';
 import { NotFoundPage } from '@/pages/not-found';
@@ -16,7 +15,6 @@ interface ModuleRouteGuardProps {
  */
 export function ModuleRouteGuard({ children, requiredModule, fallback }: ModuleRouteGuardProps) {
   const { hasModule, isLoading } = useModuleAccess();
-  const location = useLocation();
 
   // Show loading while checking module access
   if (isLoading) {
