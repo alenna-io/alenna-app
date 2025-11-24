@@ -21,19 +21,31 @@ export function SetupPasswordPage() {
   const [confirmPassword, setConfirmPassword] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [passwordValidationError, setPasswordValidationError] = React.useState<string | null>(null)
 
   const validatePassword = (pwd: string): string | null => {
-    if (pwd.length < 8) {
-      return "La contraseña debe tener al menos 8 caracteres"
+    if (pwd.length < 12) {
+      return t("passwordSetup.errors.minLength") || "La contraseña debe tener al menos 12 caracteres"
     }
     if (!/[A-Z]/.test(pwd)) {
-      return "La contraseña debe contener al menos una letra mayúscula"
+      return t("passwordSetup.errors.uppercase") || "La contraseña debe contener al menos una letra mayúscula"
     }
     if (!/[a-z]/.test(pwd)) {
-      return "La contraseña debe contener al menos una letra minúscula"
+      return t("passwordSetup.errors.lowercase") || "La contraseña debe contener al menos una letra minúscula"
     }
     if (!/[0-9]/.test(pwd)) {
-      return "La contraseña debe contener al menos un número"
+      return t("passwordSetup.errors.number") || "La contraseña debe contener al menos un número"
+    }
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pwd)) {
+      return t("passwordSetup.errors.specialChar") || "La contraseña debe contener al menos un carácter especial (!@#$%^&*...)"
+    }
+    // Check for common weak patterns
+    if (/^[a-zA-Z0-9]+$/.test(pwd) && pwd.length < 16) {
+      return t("passwordSetup.errors.tooSimple") || "La contraseña es demasiado simple. Usa una combinación más compleja"
+    }
+    // Check for sequential characters (e.g., "1234", "abcd")
+    if (/(.)\1{3,}/.test(pwd) || /(0123|1234|2345|3456|4567|5678|6789|7890|abcd|bcde|cdef|defg)/i.test(pwd)) {
+      return t("passwordSetup.errors.sequential") || "La contraseña no debe contener secuencias obvias"
     }
     return null
   }
@@ -46,11 +58,12 @@ export function SetupPasswordPage() {
     const passwordError = validatePassword(password)
     if (passwordError) {
       setError(passwordError)
+      setPasswordValidationError(passwordError)
       return
     }
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden")
+      setError(t("passwordSetup.errors.mismatch") || "Las contraseñas no coinciden")
       return
     }
 
@@ -106,15 +119,39 @@ export function SetupPasswordPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t("passwordSetup.passwordPlaceholder") || "Mínimo 8 caracteres"}
+                onChange={(e) => {
+                  const newPassword = e.target.value
+                  setPassword(newPassword)
+                  setError(null) // Clear submit error when user types
+                  // Validate in real-time only if user has started typing
+                  if (newPassword.length > 0) {
+                    const validationError = validatePassword(newPassword)
+                    setPasswordValidationError(validationError)
+                  } else {
+                    setPasswordValidationError(null)
+                  }
+                }}
+                placeholder={t("passwordSetup.passwordPlaceholder") || "Mínimo 12 caracteres"}
                 required
                 disabled={isLoading}
                 autoFocus
+                className={passwordValidationError ? "border-destructive" : ""}
               />
-              <p className="text-xs text-muted-foreground">
-                {t("passwordSetup.passwordHint") || "Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número"}
-              </p>
+              {passwordValidationError && (
+                <p className="text-xs text-destructive mt-1">
+                  {passwordValidationError}
+                </p>
+              )}
+              {!passwordValidationError && password.length > 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  {t("passwordSetup.validPassword") || "✓ Contraseña válida"}
+                </p>
+              )}
+              {password.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("passwordSetup.passwordHint") || "Debe tener al menos 12 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

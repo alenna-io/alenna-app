@@ -870,15 +870,26 @@
   },
   "passwordSetup": {
     "title": "Set Password",
-    "description": "Please set a password for your account",
+    "description": "Please set a strong password for your account",
     "password": "Password",
-    "passwordPlaceholder": "Minimum 8 characters",
-    "passwordHint": "Must contain at least 8 characters, one uppercase letter, one lowercase letter, and one number",
+    "passwordPlaceholder": "Minimum 12 characters",
+    "passwordHint": "Must have at least 12 characters, including uppercase, lowercase, numbers, and special characters",
     "confirmPassword": "Confirm Password",
     "confirmPasswordPlaceholder": "Repeat password",
     "setupPassword": "Set Password",
     "settingUp": "Setting up...",
     "success": "Password set successfully",
-    "error": "Error setting password"
+    "error": "Error setting password",
+    "errors": {
+      "minLength": "Password must be at least 12 characters long",
+      "uppercase": "Password must contain at least one uppercase letter",
+      "lowercase": "Password must contain at least one lowercase letter",
+      "number": "Password must contain at least one number",
+      "specialChar": "Password must contain at least one special character (!@#$%^&*...)",
+      "tooSimple": "Password is too simple. Use a more complex combination",
+      "sequential": "Password must not contain obvious sequences",
+      "mismatch": "Passwords do not match"
+    },
+    "validPassword": "Valid password"
   }
 }
