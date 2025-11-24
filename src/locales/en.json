@@ -87,7 +87,26 @@
     "schoolYear": {
       "title": "School Years",
       "description": "School years, quarters and calendar configuration"
+    },
+    "certificationTypes": {
+      "title": "Certification Types",
+      "description": "Manage certification types available for this school"
     }
+  },
+  "certificationTypes": {
+    "title": "Certification Types",
+    "description": "Manage certification types available for this school",
+    "backToSchoolSettings": "Back to School Settings",
+    "nameLabel": "Certification name",
+    "descriptionLabel": "Description",
+    "addNew": "Add certification type",
+    "noCertificationTypes": "No certification types have been defined for this school yet.",
+    "loadError": "Error loading certification types",
+    "createSuccess": "Certification type created successfully",
+    "createError": "Error creating certification type",
+    "nameRequired": "Certification name is required",
+    "searchPlaceholder": "Search or create certification...",
+    "createOption": "Create \"{{name}}\""
   },
   "sidebar": {
     "students": "Students",
@@ -542,7 +561,14 @@
     "detail": "Detail",
     "projection": "Projection",
     "week": "Week {{week}}",
-    "quarter": "Quarter {{quarter}}"
+    "quarter": "Quarter {{quarter}}",
+    "dashboard": "Dashboard",
+    "lectures": "Lectures",
+    "monthlyAssignments": "Monthly Assignments",
+    "schoolSettings": "School",
+    "teachers": "Teachers",
+    "documents": "Documents",
+    "settings": "Settings"
   },
   "wizard": {
     "title": "Generate Projection",

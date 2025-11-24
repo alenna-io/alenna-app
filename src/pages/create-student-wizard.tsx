@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 import { Card, CardContent } from "@/components/ui/card"
@@ -23,6 +23,7 @@ interface CertificationType {
   id: string
   name: string
   description?: string
+  isActive?: boolean
 }
 
 export default function CreateStudentWizardPage() {
@@ -36,6 +37,14 @@ export default function CreateStudentWizardPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [certificationTypes, setCertificationTypes] = React.useState<CertificationType[]>([])
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [isCreatingCertification, setIsCreatingCertification] = React.useState(false)
+  const [newCertificationName, setNewCertificationName] = React.useState("")
+  const [newCertificationDescription, setNewCertificationDescription] = React.useState("")
+  const [isSavingCertification, setIsSavingCertification] = React.useState(false)
+  const [certificationSearch, setCertificationSearch] = React.useState("")
+  const [isSelectOpen, setIsSelectOpen] = React.useState(false)
+  const [creatingCertificationName, setCreatingCertificationName] = React.useState<string | null>(null)
+  const searchInputRef = React.useRef<HTMLInputElement>(null)
 
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -153,6 +162,84 @@ export default function CreateStudentWizardPage() {
       navigate("/students")
     }
   }
+
+  const handleCreateCertificationType = async (nameFromSearch?: string) => {
+    if (!userInfo?.schoolId) return
+
+    const baseName = nameFromSearch ?? newCertificationName
+    const name = baseName.trim()
+    const description = newCertificationDescription.trim()
+
+    if (!name) {
+      toast.error(t("certificationTypes.nameRequired") || "Certification name is required")
+      return
+    }
+
+    // Check if certification already exists (case-insensitive)
+    const existingCert = certificationTypes.find(
+      (ct) => ct.name.toLowerCase() === name.toLowerCase()
+    )
+    if (existingCert) {
+      setFormData((prev) => ({ ...prev, certificationTypeId: existingCert.id }))
+      setCertificationSearch("")
+      setIsSelectOpen(false)
+      return
+    }
+
+    try {
+      setIsSavingCertification(true)
+      setCreatingCertificationName(name)
+      const created = await api.schools.createCertificationType(userInfo.schoolId, {
+        name,
+        description: description || undefined,
+        isActive: true,
+      })
+
+      const newType = created as CertificationType
+      setCertificationTypes((prev) => [...prev, newType])
+      setFormData((prev) => ({ ...prev, certificationTypeId: newType.id }))
+      setIsCreatingCertification(false)
+      setNewCertificationName("")
+      setNewCertificationDescription("")
+      setCertificationSearch("")
+      setCreatingCertificationName(null)
+      setIsSelectOpen(false)
+      toast.success(t("certificationTypes.createSuccess") || "Certification type created successfully")
+    } catch (error: unknown) {
+      const err = error as Error
+      toast.error(err.message || t("certificationTypes.createError") || "Error creating certification type")
+      setCreatingCertificationName(null)
+    } finally {
+      setIsSavingCertification(false)
+    }
+  }
+
+  const handleCertificationSelectChange = async (value: string) => {
+    const createPrefix = "__create__:"
+    if (value.startsWith(createPrefix)) {
+      const name = value.slice(createPrefix.length)
+      // Keep select open during creation
+      setIsSelectOpen(true)
+      // Fire async creation based on current search text
+      await handleCreateCertificationType(name)
+      // Select will be closed in handleCreateCertificationType on success
+    } else {
+      setFormData((prev) => ({ ...prev, certificationTypeId: value }))
+      setIsSelectOpen(false)
+      setCertificationSearch("")
+    }
+  }
+
+  // Auto-focus search input when select opens
+  React.useEffect(() => {
+    if (isSelectOpen && searchInputRef.current) {
+      // Small delay to ensure the SelectContent is rendered
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isSelectOpen])
 
   const handleSubmit = async () => {
     if (!userInfo?.schoolId) return
@@ -339,15 +426,60 @@ export default function CreateStudentWizardPage() {
                     <FieldLabel htmlFor="certificationTypeId">{t("students.certificationType")} <span className="text-destructive">*</span></FieldLabel>
                     <Select
                       value={formData.certificationTypeId}
-                      onValueChange={(value) => setFormData({ ...formData, certificationTypeId: value })}
+                      onValueChange={handleCertificationSelectChange}
+                      open={isSelectOpen}
+                      onOpenChange={setIsSelectOpen}
                     >
                       <SelectTrigger className={errors.certificationTypeId ? "border-destructive" : ""}>
                         <SelectValue placeholder={t("students.selectCertificationType")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {certificationTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                        ))}
+                        <div className="px-2 pb-1">
+                          <Input
+                            ref={searchInputRef}
+                            value={certificationSearch}
+                            onChange={(e) => setCertificationSearch(e.target.value)}
+                            placeholder={t("certificationTypes.searchPlaceholder") || "Search or create certification..."}
+                            className="h-8"
+                          />
+                        </div>
+                        {(certificationTypes.length > 0 || certificationSearch.trim()) && <SelectSeparator />}
+                        {certificationTypes
+                          .filter((type) =>
+                            certificationSearch.trim()
+                              ? type.name.toLowerCase().includes(certificationSearch.trim().toLowerCase())
+                              : true
+                          )
+                          .map((type) => (
+                            <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                          ))}
+                        {certificationSearch.trim() &&
+                          !certificationTypes.some(
+                            (type) => type.name.toLowerCase() === certificationSearch.trim().toLowerCase()
+                          ) && (
+                            <>
+                              {certificationTypes.length > 0 && <SelectSeparator />}
+                              <SelectItem
+                                value={`__create__:${certificationSearch.trim()}`}
+                                disabled={isSavingCertification || creatingCertificationName === certificationSearch.trim()}
+                              >
+                                {creatingCertificationName === certificationSearch.trim() ? (
+                                  <span className="flex items-center gap-2">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    {t("common.creating") || "Creating..."}
+                                  </span>
+                                ) : (
+                                  t("certificationTypes.createOption", { name: certificationSearch.trim() }) ||
+                                  `Create "${certificationSearch.trim()}"`
+                                )}
+                              </SelectItem>
+                            </>
+                          )}
+                        {certificationTypes.length === 0 && !certificationSearch.trim() && (
+                          <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                            {t("certificationTypes.noCertificationTypes")}
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     {errors.certificationTypeId && <p className="text-sm text-destructive mt-1">{errors.certificationTypeId}</p>}
@@ -362,6 +494,41 @@ export default function CreateStudentWizardPage() {
                     {errors.graduationDate && <p className="text-sm text-destructive mt-1">{errors.graduationDate}</p>}
                   </Field>
                 </div>
+
+                {isCreatingCertification && (
+                  <div className="mt-4 space-y-3 border rounded-md p-4 bg-gray-50">
+                    <h3 className="text-sm font-semibold">
+                      {t("certificationTypes.addNew")}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field>
+                        <FieldLabel>{t("certificationTypes.nameLabel")}</FieldLabel>
+                        <Input
+                          value={newCertificationName}
+                          onChange={(e) => setNewCertificationName(e.target.value)}
+                          placeholder={t("certificationTypes.nameLabel") || "Certification name"}
+                        />
+                      </Field>
+                      <Field>
+                        <FieldLabel>{t("certificationTypes.descriptionLabel")}</FieldLabel>
+                        <Input
+                          value={newCertificationDescription}
+                          onChange={(e) => setNewCertificationDescription(e.target.value)}
+                          placeholder={t("certificationTypes.descriptionLabel") || "Optional description"}
+                        />
+                      </Field>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        onClick={() => handleCreateCertificationType()}
+                        disabled={isSavingCertification}
+                      >
+                        {isSavingCertification ? t("common.saving") : t("certificationTypes.addNew")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 mt-4">
                   <input

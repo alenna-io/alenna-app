@@ -145,6 +145,16 @@ export function BreadcrumbNav() {
 
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
+
+    // Special case: Teachers module should be independent from Schools in breadcrumbs.
+    // Any route that includes "teachers" will show only a single "Teachers" crumb.
+    const teachersIndex = pathSegments.indexOf('teachers')
+    if (teachersIndex !== -1) {
+      const teachersPath = '/' + pathSegments.slice(0, teachersIndex + 1).join('/')
+      setBreadcrumbs([{ label: t("breadcrumbs.teachers"), path: teachersPath }])
+      return
+    }
+
     const items: BreadcrumbItem[] = []
 
     // Map routes to breadcrumb labels with translations
@@ -160,6 +170,13 @@ export function BreadcrumbNav() {
       'daily-goals': t("breadcrumbs.dailyGoals"),
       'report-cards': t("breadcrumbs.reportCards"),
       'groups': t("breadcrumbs.groups"),
+      'dashboard': t("breadcrumbs.dashboard"),
+      'lectures': t("breadcrumbs.lectures"),
+      'monthly-assignments': t("breadcrumbs.monthlyAssignments"),
+      'school-settings': t("breadcrumbs.schoolSettings"),
+      'teachers': t("breadcrumbs.teachers"),
+      'documents': t("breadcrumbs.documents"),
+      'settings': t("breadcrumbs.settings"),
     }
 
     let currentPath = ''

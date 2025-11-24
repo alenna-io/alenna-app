@@ -418,6 +418,8 @@ export const schoolsApi = {
   getMyTeachers: (token: string | null) => apiFetch('/schools/me/teachers', token),
   getMyTeachersCount: (token: string | null) => apiFetch('/schools/me/teachers/count', token),
   getCertificationTypes: (id: string, token: string | null) => apiFetch(`/schools/${id}/certification-types`, token),
+  createCertificationType: (id: string, data: { name: string; description?: string; isActive?: boolean }, token: string | null) =>
+    apiFetch(`/schools/${id}/certification-types`, token, { method: 'POST', body: JSON.stringify(data) }),
   getAllModules: (token: string | null) => apiFetch('/schools/modules/all', token),
   getSchoolModules: (id: string, token: string | null) => apiFetch(`/schools/${id}/modules`, token),
   enableModule: (id: string, moduleId: string, token: string | null) =>
@@ -671,6 +673,10 @@ export function useApi() {
       getCertificationTypes: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getCertificationTypes(id, token);
+      },
+      createCertificationType: async (id: string, data: { name: string; description?: string; isActive?: boolean }) => {
+        const token = await getToken();
+        return schoolsApi.createCertificationType(id, data, token);
       },
       getAllModules: async () => {
         const token = await getToken();
