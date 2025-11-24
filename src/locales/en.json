@@ -104,7 +104,9 @@
     "loadError": "Error loading certification types",
     "createSuccess": "Certification type created successfully",
     "createError": "Error creating certification type",
-    "nameRequired": "Certification name is required"
+    "nameRequired": "Certification name is required",
+    "searchPlaceholder": "Search or create certification...",
+    "createOption": "Create \"{{name}}\""
   },
   "sidebar": {
     "students": "Students",

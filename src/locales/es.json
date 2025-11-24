@@ -104,7 +104,9 @@
     "loadError": "Error al cargar los tipos de certificación",
     "createSuccess": "Tipo de certificación creado exitosamente",
     "createError": "Error al crear el tipo de certificación",
-    "nameRequired": "El nombre de la certificación es requerido"
+    "nameRequired": "El nombre de la certificación es requerido",
+    "searchPlaceholder": "Buscar o crear certificación...",
+    "createOption": "Crear \"{{name}}\""
   },
   "students": {
     "title": "Estudiantes",
