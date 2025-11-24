@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { SearchBar } from "@/components/ui/search-bar"
@@ -60,7 +61,11 @@ export default function GroupDetailPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo } = useUser()
+  const { hasModule } = useModuleAccess()
   const { t } = useTranslation()
+
+  // Check if teachers module is enabled
+  const hasTeachersModule = hasModule('teachers')
   const [isLoading, setIsLoading] = React.useState(true)
   const [groupDetail, setGroupDetail] = React.useState<GroupDetail | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
@@ -102,9 +107,17 @@ export default function GroupDetailPage() {
         const schoolYears = await api.schoolYears.getAll()
         const schoolYear = schoolYears.find((sy: { id: string }) => sy.id === group.schoolYearId)
 
-        // Fetch teacher
-        const teachers = await api.schools.getMyTeachers()
-        const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
+        // Fetch teacher only if teachers module is enabled
+        let teacher: { id: string; fullName: string } | undefined
+        if (hasTeachersModule) {
+          try {
+            const teachers = await api.schools.getMyTeachers()
+            teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
+          } catch (error) {
+            console.warn('Could not fetch teacher (module may not be enabled):', error)
+            // Continue without teacher name
+          }
+        }
 
         // Fetch students
         const studentsData = await api.students.getAll()
@@ -158,7 +171,7 @@ export default function GroupDetailPage() {
             id: group.id,
             name: group.name || null,
             teacherId: group.teacherId,
-            teacherName: teacher.fullName,
+            teacherName: teacher?.fullName || t("groups.noTeacher") || 'Sin maestro',
             schoolYearId: group.schoolYearId,
             schoolYearName: schoolYear.name,
             students: studentList

@@ -65,7 +65,7 @@ export default function ProjectionsPage() {
   const [activeSchoolYear, setActiveSchoolYear] = React.useState<{ id: string; name: string } | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<{ schoolYear: string }>({
-    schoolYear: ""
+    schoolYear: "all"
   })
   const [sortField, setSortField] = React.useState<"firstName" | "lastName">("lastName")
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc")
@@ -135,7 +135,7 @@ export default function ProjectionsPage() {
         setIsLoading(true)
         setError(null)
 
-        const year = filters.schoolYear || undefined
+        const year = filters.schoolYear && filters.schoolYear !== "all" ? filters.schoolYear : undefined
         const data = await api.projections.getAll(year) as ProjectionWithStudent[]
 
         setProjections(data)
@@ -148,7 +148,7 @@ export default function ProjectionsPage() {
       }
     }
 
-    if (!isLoadingUser && filters.schoolYear) {
+    if (!isLoadingUser) {
       fetchProjections()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,7 +297,7 @@ export default function ProjectionsPage() {
       color: "bg-blue-500",
       placeholder: t("filters.allYears"),
       options: [
-        { value: "", label: t("filters.allYears") },
+        { value: "all", label: t("filters.allYears") },
         ...schoolYears.map(sy => ({ value: sy.name, label: sy.name }))
       ]
     }
@@ -305,7 +305,7 @@ export default function ProjectionsPage() {
 
   const getActiveFilterLabels = (currentFilters: { schoolYear: string }) => {
     const labels: string[] = []
-    if (currentFilters.schoolYear) {
+    if (currentFilters.schoolYear && currentFilters.schoolYear !== "all") {
       labels.push(`${filterFields[0].label}: ${currentFilters.schoolYear}`)
     }
     return labels
@@ -376,7 +376,7 @@ export default function ProjectionsPage() {
                 icon={Calendar}
                 title={t("projections.noProjections")}
                 description={
-                  filters.schoolYear
+                  filters.schoolYear && filters.schoolYear !== "all"
                     ? t("projections.noProjectionsForYear", { year: filters.schoolYear })
                     : t("projections.noProjectionsFound")
                 }

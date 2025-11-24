@@ -25,6 +25,7 @@ import MonthlyAssignmentsPage from '@/pages/monthly-assignments'
 import ReportCardsListPage from '@/pages/report-cards-list'
 import ReportCardDetailPage from '@/pages/report-card-detail'
 import ReportCardsPage from '@/pages/report-cards'
+import LecturesPage from '@/pages/lectures'
 import GenerateProjectionWizardPage from '@/pages/generate-projection-wizard'
 import CreateStudentWizardPage from '@/pages/create-student-wizard'
 import CreateSchoolWizardPage from '@/pages/create-school-wizard'
@@ -35,7 +36,9 @@ import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
 import { UserProvider } from '@/contexts/UserContext'
+import { ModuleProvider } from '@/contexts/ModuleContext'
 import { Toaster } from '@/components/ui/sonner'
+import { ModuleRouteGuard } from '@/components/ModuleRouteGuard'
 import '@/lib/i18n' // Initialize i18n
 
 // Protected Route wrapper
@@ -44,7 +47,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     <>
       <SignedIn>
         <AuthSync>
-          <UserProvider>{children}</UserProvider>
+          <UserProvider>
+            <ModuleProvider>{children}</ModuleProvider>
+          </UserProvider>
         </AuthSync>
       </SignedIn>
       <SignedOut>
@@ -77,35 +82,36 @@ export default function App() {
         >
           <Route index element={<HomePage />} />
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="students" element={<StudentsPage />} />
-          <Route path="students/create" element={<CreateStudentWizardPage />} />
-          <Route path="students/:studentId" element={<StudentsPage />} />
-          <Route path="projections" element={<ProjectionsPage />} />
-          <Route path="projections/generate" element={<GenerateProjectionWizardPage />} />
-          <Route path="students/:studentId/projections" element={<ProjectionListPage />} />
-          <Route path="students/:studentId/projections/:projectionId" element={<ACEProjectionPage />} />
-          <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
+          <Route path="students" element={<ModuleRouteGuard requiredModule="students"><StudentsPage /></ModuleRouteGuard>} />
+          <Route path="students/create" element={<ModuleRouteGuard requiredModule="students"><CreateStudentWizardPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId" element={<ModuleRouteGuard requiredModule="students"><StudentsPage /></ModuleRouteGuard>} />
+          <Route path="projections" element={<ModuleRouteGuard requiredModule="projections"><ProjectionsPage /></ModuleRouteGuard>} />
+          <Route path="projections/generate" element={<ModuleRouteGuard requiredModule="projections"><GenerateProjectionWizardPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId/projections" element={<ModuleRouteGuard requiredModule="projections"><ProjectionListPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId/projections/:projectionId" element={<ModuleRouteGuard requiredModule="projections"><ACEProjectionPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<ModuleRouteGuard requiredModule="projections"><DailyGoalsPage /></ModuleRouteGuard>} />
           <Route path="my-profile" element={<MyProfilePage />} />
           <Route path="configuration" element={<ConfigurationPage />} />
           <Route path="configuration/language" element={<ConfigurationLanguagePage />} />
-          <Route path="school-settings" element={<SchoolSettingsPage />} />
-          <Route path="school-settings/school-info" element={<SchoolInfoPage />} />
-          <Route path="school-settings/school-years" element={<SchoolYearsPage />} />
+          <Route path="school-settings" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolSettingsPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/school-info" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolInfoPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/school-years" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearsPage /></ModuleRouteGuard>} />
           <Route path="configuration/billing" element={<BillingPage />} />
-          <Route path="users" element={<UsersPage />} />
-          <Route path="users/:userId" element={<UserDetailPage />} />
-          <Route path="schools" element={<SchoolsPage />} />
-          <Route path="schools/create" element={<CreateSchoolWizardPage />} />
+          <Route path="users" element={<ModuleRouteGuard requiredModule="users"><UsersPage /></ModuleRouteGuard>} />
+          <Route path="users/:userId" element={<ModuleRouteGuard requiredModule="users"><UserDetailPage /></ModuleRouteGuard>} />
+          <Route path="schools" element={<ModuleRouteGuard requiredModule="schools"><SchoolsPage /></ModuleRouteGuard>} />
+          <Route path="schools/create" element={<ModuleRouteGuard requiredModule="schools"><CreateSchoolWizardPage /></ModuleRouteGuard>} />
           <Route path="schools/:schoolId" element={<SchoolInfoPage />} />
           <Route path="schools/:schoolId/students" element={<StudentsPage />} />
           <Route path="schools/:schoolId/teachers" element={<TeachersPage />} />
-          <Route path="groups" element={<GroupsPage />} />
-          <Route path="groups/create" element={<CreateGroupWizardPage />} />
-          <Route path="groups/:groupId" element={<GroupDetailPage />} />
-          <Route path="monthly-assignments" element={<MonthlyAssignmentsPage />} />
-          <Route path="report-cards" element={<ReportCardsPage />} />
-          <Route path="students/:studentId/report-cards" element={<ReportCardsListPage />} />
-          <Route path="students/:studentId/report-cards/:projectionId" element={<ReportCardDetailPage />} />
+          <Route path="groups" element={<ModuleRouteGuard requiredModule="groups"><GroupsPage /></ModuleRouteGuard>} />
+          <Route path="groups/create" element={<ModuleRouteGuard requiredModule="groups"><CreateGroupWizardPage /></ModuleRouteGuard>} />
+          <Route path="groups/:groupId" element={<ModuleRouteGuard requiredModule="groups"><GroupDetailPage /></ModuleRouteGuard>} />
+          <Route path="lectures" element={<ModuleRouteGuard requiredModule="paces"><LecturesPage /></ModuleRouteGuard>} />
+          <Route path="monthly-assignments" element={<ModuleRouteGuard requiredModule="monthlyAssignments"><MonthlyAssignmentsPage /></ModuleRouteGuard>} />
+          <Route path="report-cards" element={<ModuleRouteGuard requiredModule="reportCards"><ReportCardsPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId/report-cards" element={<ModuleRouteGuard requiredModule="reportCards"><ReportCardsListPage /></ModuleRouteGuard>} />
+          <Route path="students/:studentId/report-cards/:projectionId" element={<ModuleRouteGuard requiredModule="reportCards"><ReportCardDetailPage /></ModuleRouteGuard>} />
           <Route path="documents" element={<div className="text-2xl font-bold">Documents Page</div>} />
           <Route path="settings" element={<div className="text-2xl font-bold">Settings Page</div>} />
         </Route>

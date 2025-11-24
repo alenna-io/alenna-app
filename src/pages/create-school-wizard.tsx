@@ -12,8 +12,9 @@ import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { useTranslation } from "react-i18next"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Checkbox } from "@/components/ui/checkbox"
 
-type WizardStep = 1 | 2 | 3 | 4
+type WizardStep = 1 | 2 | 3 | 4 | 5
 
 export default function CreateSchoolWizardPage() {
   const navigate = useNavigate()
@@ -40,7 +41,17 @@ export default function CreateSchoolWizardPage() {
     adminEmail: "",
     adminFirstName: "",
     adminLastName: "",
+    selectedModuleIds: [] as string[],
   })
+
+  const [availableModules, setAvailableModules] = React.useState<Array<{
+    id: string;
+    key: string;
+    name: string;
+    description: string | null;
+    displayOrder: number;
+  }>>([])
+  const [loadingModules, setLoadingModules] = React.useState(false)
 
   const validateStep = (step: WizardStep): boolean => {
     const newErrors: typeof errors = {}
@@ -103,11 +114,43 @@ export default function CreateSchoolWizardPage() {
       return
     }
 
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep((prev) => (prev + 1) as WizardStep)
       setError(null)
       setErrors({}) // Clear errors when moving to next step
     }
+  }
+
+  const loadModules = React.useCallback(async () => {
+    try {
+      setLoadingModules(true)
+      const modules = await api.schools.getAllModules()
+      setAvailableModules(modules)
+    } catch (error) {
+      console.error("Error loading modules:", error)
+      toast.error(t("schools.modules.fetchError") || "Error loading modules")
+    } finally {
+      setLoadingModules(false)
+    }
+  }, [api, t])
+
+  // Load modules when entering step 4
+  React.useEffect(() => {
+    if (currentStep === 4 && availableModules.length === 0) {
+      loadModules()
+    }
+  }, [currentStep, availableModules.length, loadModules])
+
+  const handleModuleToggle = (moduleId: string) => {
+    setFormData(prev => {
+      const isSelected = prev.selectedModuleIds.includes(moduleId)
+      return {
+        ...prev,
+        selectedModuleIds: isSelected
+          ? prev.selectedModuleIds.filter(id => id !== moduleId)
+          : [...prev.selectedModuleIds, moduleId]
+      }
+    })
   }
 
   const handleBack = () => {
@@ -146,6 +189,7 @@ export default function CreateSchoolWizardPage() {
         adminEmail: formData.adminEmail.trim(),
         adminFirstName: formData.adminFirstName.trim(),
         adminLastName: formData.adminLastName.trim(),
+        moduleIds: formData.selectedModuleIds.length > 0 ? formData.selectedModuleIds : undefined,
       }
 
       const createdSchool = await api.schools.create(schoolData)
@@ -188,7 +232,8 @@ export default function CreateSchoolWizardPage() {
     { number: 1, title: t("schools.wizard.step1Title"), description: t("schools.wizard.step1Description") },
     { number: 2, title: t("schools.wizard.step2Title"), description: t("schools.wizard.step2Description") },
     { number: 3, title: t("schools.wizard.step3Title"), description: t("schools.wizard.step3Description") },
-    { number: 4, title: t("schools.wizard.step4Title"), description: t("schools.wizard.step4Description") },
+    { number: 4, title: t("schools.wizard.step4Title") || "Modules", description: t("schools.wizard.step4Description") || "Select modules to enable for this school" },
+    { number: 5, title: t("schools.wizard.step5Title") || "Preview", description: t("schools.wizard.step5Description") || "Review all information before creating" },
   ]
 
   return (
@@ -452,10 +497,60 @@ export default function CreateSchoolWizardPage() {
             )}
 
             {currentStep === 4 && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">
+                    {t("schools.wizard.step4Title") || "Select Modules"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    {t("schools.wizard.step4Description") || "Choose which modules to enable for this school. You can change this later."}
+                  </p>
+
+                  {loadingModules ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground">{t("common.loading") || "Loading modules..."}</div>
+                    </div>
+                  ) : availableModules.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {t("schools.modules.noModules") || "No modules available"}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {availableModules.map((module) => (
+                        <div
+                          key={module.id}
+                          className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => handleModuleToggle(module.id)}
+                        >
+                          <Checkbox
+                            id={`module-${module.id}`}
+                            checked={formData.selectedModuleIds.includes(module.id)}
+                            onCheckedChange={() => handleModuleToggle(module.id)}
+                          />
+                          <div className="flex-1">
+                            <Label
+                              htmlFor={`module-${module.id}`}
+                              className="text-base font-semibold cursor-pointer"
+                            >
+                              {module.name}
+                            </Label>
+                            {module.description && (
+                              <p className="text-sm text-muted-foreground mt-1">{module.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentStep === 5 && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  {t("schools.wizard.previewTitle")}
+                  {t("schools.wizard.previewTitle") || "Preview"}
                 </h3>
 
                 <div className="space-y-4">
@@ -508,6 +603,24 @@ export default function CreateSchoolWizardPage() {
                       </div>
                     </div>
                   </div>
+
+                  <div>
+                    <h4 className="font-semibold mb-3">{t("schools.wizard.step4Title") || "Selected Modules"}</h4>
+                    {formData.selectedModuleIds.length === 0 ? (
+                      <p className="text-muted-foreground">{t("schools.wizard.noModulesSelected") || "No modules selected. Default modules will be enabled."}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {availableModules
+                          .filter(m => formData.selectedModuleIds.includes(m.id))
+                          .map(module => (
+                            <div key={module.id} className="flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              <span className="font-medium">{module.name}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -526,7 +639,7 @@ export default function CreateSchoolWizardPage() {
           </Button>
 
           <div className="flex gap-2">
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button
                 onClick={handleNext}
                 disabled={isCreating}

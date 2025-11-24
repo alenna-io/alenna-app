@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { Loading } from "@/components/ui/loading"
 import { toast } from "sonner"
 
@@ -26,7 +27,11 @@ export default function CreateGroupWizardPage() {
   const [searchParams] = useSearchParams()
   const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { hasModule } = useModuleAccess()
   const { t } = useTranslation()
+
+  // Check if teachers module is enabled - required for creating groups
+  const hasTeachersModule = hasModule('teachers')
 
   // Get initial teacher ID from query params (when adding to existing group)
   const initialTeacherId = searchParams.get('teacherId')
@@ -83,9 +88,23 @@ export default function CreateGroupWizardPage() {
 
         setSchoolYear(selectedYear)
 
-        // Fetch teachers
-        const teachersData = await api.schools.getMyTeachers()
-        setTeachers(teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName })))
+        // Fetch teachers only if teachers module is enabled
+        if (hasTeachersModule) {
+          try {
+            const teachersData = await api.schools.getMyTeachers()
+            setTeachers(teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName })))
+          } catch (error) {
+            console.error('Error fetching teachers:', error)
+            toast.error(t("groups.teachersModuleRequired") || "El módulo de maestros es requerido para crear grupos")
+            navigate("/groups")
+            return
+          }
+        } else {
+          // Teachers module is required for creating groups
+          toast.error(t("groups.teachersModuleRequired") || "El módulo de maestros debe estar habilitado para crear grupos")
+          navigate("/groups")
+          return
+        }
 
         // Fetch students
         const studentsData = await api.students.getAll()

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders, UsersRound } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders, UsersRound, Library } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -17,7 +17,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useApi } from "@/services/api"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 import type { ModuleData } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { LoadingSpinner } from "@/components/ui/loading"
@@ -34,122 +34,24 @@ const staticMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
 
 export function AppSidebar() {
   const location = useLocation()
-  const api = useApi()
   const { userInfo, isLoading: isLoadingUser } = useUser()
   const { t } = useTranslation()
-  const [modules, setModules] = React.useState<ModuleData[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
+  const { modules, isLoading } = useModuleAccess()
 
   // Module to route/icon mapping with translations
   const moduleConfig: Record<string, { title: string; url: string; icon: MenuIcon }> = React.useMemo(() => ({
     students: { title: t("sidebar.students"), url: "/students", icon: GraduationCap },
+    projections: { title: t("sidebar.projections"), url: "/projections", icon: BookOpen },
+    paces: { title: t("sidebar.lectures") || "Lectures", url: "/lectures", icon: Library },
+    monthlyAssignments: { title: t("sidebar.monthlyAssignments"), url: "/monthly-assignments", icon: ClipboardList },
+    reportCards: { title: t("sidebar.reportCards"), url: "/report-cards", icon: FileText },
+    groups: { title: t("sidebar.groups"), url: "/groups", icon: UsersRound },
+    teachers: { title: t("sidebar.teachers"), url: `/schools/${userInfo?.schoolId || ''}/teachers`, icon: Users },
+    school_admin: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
     users: { title: t("sidebar.users"), url: "/users", icon: Users },
     schools: { title: t("sidebar.schools"), url: "/schools", icon: Building },
     configuration: { title: t("sidebar.configuration"), url: "/configuration", icon: Settings },
-    schoolSettings: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
-    groups: { title: t("sidebar.groups"), url: "/groups", icon: UsersRound },
-  }), [t])
-
-  // Fetch user's modules - wait for userInfo to be loaded first
-  // Use a ref to track if we've already fetched modules for this user to prevent unnecessary re-fetches
-  const lastFetchedUserIdRef = React.useRef<string | null>(null)
-  const modulesFetchedRef = React.useRef<boolean>(false)
-
-  React.useEffect(() => {
-    // If userInfo is still loading, keep isLoading true but don't fetch yet
-    if (isLoadingUser) {
-      return
-    }
-
-    // If userInfo failed to load or is missing, stop loading and show empty state
-    if (!userInfo || !userInfo.id) {
-      // Log detailed info on mobile to help debug
-      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        console.warn('[AppSidebar] No userInfo available on mobile:', {
-          hasUserInfo: !!userInfo,
-          userInfoId: userInfo?.id,
-          userInfoEmail: userInfo?.email,
-          isLoadingUser,
-          userInfoKeys: userInfo ? Object.keys(userInfo) : [],
-        })
-      } else {
-        console.warn('[AppSidebar] No userInfo available, stopping module fetch')
-      }
-      setIsLoading(false)
-      setModules([])
-      lastFetchedUserIdRef.current = null
-      modulesFetchedRef.current = false
-      return
-    }
-
-    // Only fetch if this is a different user or we haven't fetched yet
-    if (lastFetchedUserIdRef.current === userInfo.id && modulesFetchedRef.current) {
-      // Already fetched modules for this user, don't re-fetch
-      return
-    }
-
-    // UserInfo is loaded and we haven't fetched modules for this user yet
-    let isMounted = true
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
-        const userModules = await api.modules.getUserModules()
-        if (isMounted) {
-          // Log on mobile to help debug
-          if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-            console.log('[AppSidebar] Modules fetched on mobile:', {
-              count: userModules?.length || 0,
-              modules: userModules?.map((m: ModuleData) => ({ key: m.key, name: m.name, actions: m.actions?.length || 0 })),
-            })
-          }
-          setModules(userModules || [])
-          lastFetchedUserIdRef.current = userInfo.id
-          modulesFetchedRef.current = true
-        }
-      } catch (error) {
-        // Enhanced error logging on mobile
-        if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          console.error('[AppSidebar] Error fetching modules on mobile:', {
-            error,
-            userId: userInfo.id,
-            userEmail: userInfo.email,
-            errorMessage: error instanceof Error ? error.message : String(error),
-          })
-        } else {
-          console.error('[AppSidebar] Error fetching modules:', error)
-        }
-        if (isMounted) {
-          setModules([])
-          // Don't set lastFetchedUserIdRef on error so we can retry
-          modulesFetchedRef.current = false
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchData()
-
-    return () => {
-      isMounted = false
-    }
-    // Only depend on isLoadingUser and userInfo.id - not the entire userInfo object
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingUser, userInfo?.id])
-
-  // Timeout fallback: if loading takes too long (10 seconds), stop loading
-  React.useEffect(() => {
-    if (!isLoading) return
-
-    const timeout = setTimeout(() => {
-      console.warn('[AppSidebar] Module loading timeout, stopping loading state')
-      setIsLoading(false)
-    }, 10000) // 10 second timeout
-
-    return () => clearTimeout(timeout)
-  }, [isLoading])
+  }), [t, userInfo?.schoolId])
 
   // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
@@ -187,31 +89,48 @@ export function AppSidebar() {
     }
   }, [roleNames, isSuperAdmin, isSchoolAdmin, isTeacherOnly, isTeacherOrAdmin, userInfo])
 
-  // Build menu items from modules
+  // Build menu items from modules - filter based on module access
   const filteredModules = modules.filter(module => {
     const hasActions = (module.actions?.length ?? 0) > 0
-    // For super admins, allow users/schools/configuration even without actions
-    if (!hasActions && !(isSuperAdmin && (module.key === 'users' || module.key === 'schools' || module.key === 'configuration'))) {
-      return false
+
+    // Module must have actions (permissions) to be shown
+    if (!hasActions) {
+      // Exception: Configuration module can be shown without actions (for language/profile settings)
+      if (module.key === 'configuration') {
+        return true;
+      }
+      return false;
     }
 
-    // SUPERADMIN can only see: users, schools, and configuration
+    // SUPERADMIN can only see: users, schools modules (only in Alenna school), and configuration
     if (isSuperAdmin) {
-      return module.key === 'users' || module.key === 'schools' || module.key === 'configuration'
+      const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
+      if (isAlennaSchool) {
+        return module.key === 'users' || module.key === 'schools' || module.key === 'configuration'
+      } else {
+        // Super admin in non-Alenna school can only see configuration
+        return module.key === 'configuration'
+      }
     }
 
-    // Usuarios module only for Super Admins
-    if (module.key === 'users' && !isSuperAdmin) {
-      return false
+    // Users module only for Super Admins in Alenna school
+    if (module.key === 'users') {
+      const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
+      if (!isSuperAdmin || !isAlennaSchool) {
+        return false;
+      }
     }
 
-    // Schools module only for Super Admins
-    if (module.key === 'schools' && !isSuperAdmin) {
-      return false
+    // Schools module only for Super Admins in Alenna school
+    if (module.key === 'schools') {
+      const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
+      if (!isSuperAdmin || !isAlennaSchool) {
+        return false
+      }
     }
 
-    // Configuration is now available to all users (for language, profile, etc.)
-    // We don't filter it out anymore
+    // Paces module is a separate module for browsing lectures catalog
+    // Keep it enabled - it will show in sidebar
 
     // Students module - filter based on role
     if (module.key === 'students') {
@@ -227,20 +146,36 @@ export function AppSidebar() {
       return true
     }
 
-    // For school admins and teachers, show all other modules they have permissions for
+    // Teachers module - only for school admins
+    if (module.key === 'teachers' && !isSchoolAdmin) {
+      return false;
+    }
+
+    // Groups module - only for school admins and teachers
+    if (module.key === 'groups' && !(isSchoolAdmin || hasRole('TEACHER'))) {
+      return false;
+    }
+
+    // School admin module - only for school admins (not super admins)
+    if (module.key === 'school_admin' && !isSchoolAdmin) {
+      return false;
+    }
+
+    // For all other modules (projections, monthlyAssignments, reportCards, paces), show if module is enabled
     return true
   })
 
-  // Filter out configuration and groups modules (we'll add them manually)
-  const otherModules = filteredModules.filter(module => module.key !== 'configuration' && module.key !== 'groups')
+  // Filter out configuration and school_admin modules (we'll add them manually to configuration section)
+  const otherModules = filteredModules.filter(module => module.key !== 'configuration' && module.key !== 'school_admin')
 
-  // For super admins, ensure users and schools modules are always present
-  if (isSuperAdmin) {
+  // For super admins in Alenna school, ensure users and schools modules are always present
+  const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
+  if (isSuperAdmin && isAlennaSchool) {
     const hasUsersModule = otherModules.some(m => m.key === 'users')
     const hasSchoolsModule = otherModules.some(m => m.key === 'schools')
 
     if (!hasUsersModule) {
-      // Add users module manually for super admins
+      // Add users module manually for super admins in Alenna school
       otherModules.push({
         id: 'users-manual',
         key: 'users',
@@ -252,7 +187,7 @@ export function AppSidebar() {
     }
 
     if (!hasSchoolsModule) {
-      // Add schools module manually for super admins
+      // Add schools module manually for super admins in Alenna school
       otherModules.push({
         id: 'schools-manual',
         key: 'schools',
@@ -265,6 +200,7 @@ export function AppSidebar() {
   }
 
   const navigationMenuItems = otherModules
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)) // Sort by displayOrder
     .map(module => {
       const config = moduleConfig[module.key] || {
         title: t(`modules.${module.key}`) || module.name,
@@ -287,52 +223,9 @@ export function AppSidebar() {
     })
   }
 
-  // Add projections menu item for teachers and school admins (NOT super admins)
-  if (isTeacherOrAdmin && !isSuperAdmin) {
-    navigationMenuItems.push({
-      title: t("sidebar.projections"),
-      url: "/projections",
-      icon: BookOpen,
-    })
-    // Add monthly assignments management for teachers and school admins
-    navigationMenuItems.push({
-      title: t("sidebar.monthlyAssignments"),
-      url: "/monthly-assignments",
-      icon: ClipboardList,
-    })
-  }
-
-  // Add report cards menu item for users with permission (NOT super admins)
-  // For teachers/admins, they can access report cards from the projections page
-  // For parents/students, they can access from their profile/students list
-  if (userInfo && !isSuperAdmin && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn'))) {
-    // Add it for teachers/admins - parents/students can access via their profile
-    if (isTeacherOrAdmin) {
-      navigationMenuItems.push({
-        title: t("sidebar.reportCards"),
-        url: "/report-cards",
-        icon: FileText,
-      })
-    }
-  }
-
-  // Add Groups menu item - only for school admins (not super admins, not teachers)
-  if (isSchoolAdmin && !isSuperAdmin) {
-    navigationMenuItems.push({
-      title: t("sidebar.groups"),
-      url: "/groups",
-      icon: UsersRound,
-    })
-  }
-
-  // Add Teachers menu item - only for school admins (not super admins, not teachers)
-  if (isSchoolAdmin && !isSuperAdmin && userInfo?.schoolId) {
-    navigationMenuItems.push({
-      title: t("sidebar.teachers"),
-      url: `/schools/${userInfo.schoolId}/teachers`,
-      icon: Users,
-    })
-  }
+  // Modules (projections, monthlyAssignments, reportCards, groups, teachers, school_admin)
+  // are now automatically added from filteredModules above based on module access
+  // No need to manually add them here
 
   const allNavigationItems = [...staticMenuItems, ...navigationMenuItems]
 
@@ -346,14 +239,16 @@ export function AppSidebar() {
     }
   ]
 
-  // Add School Settings for school admins only (not SUPERADMIN)
-  if (isSchoolAdmin && !isSuperAdmin) {
+  // Add School Settings (school_admin module) to configuration section if enabled
+  const schoolAdminModule = filteredModules.find(m => m.key === 'school_admin');
+  if (schoolAdminModule) {
     configurationMenuItems.unshift({
       title: t("sidebar.schoolSettings"),
       url: "/school-settings",
       icon: Sliders,
     })
   }
+
   const { state, setOpenMobile, isMobile } = useSidebar()
   const isCollapsed = state === "collapsed"
 

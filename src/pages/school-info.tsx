@@ -12,6 +12,7 @@ import type { UserInfo } from "@/services/api";
 import { StudentFormDialog } from "@/components/student-form-dialog";
 import { TeacherFormDialog } from "@/components/teacher-form-dialog";
 import { ErrorDialog } from "@/components/ui/error-dialog";
+import { SchoolModulesManager } from "@/components/school-modules-manager";
 import { useTranslation } from "react-i18next";
 
 interface SchoolInfo {
@@ -323,6 +324,24 @@ export default function SchoolInfoPage() {
                       </div>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Module Management Section - Super Admin Only */}
+            {isSuperAdmin && school && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    {t("schoolInfo.modulesManagement") || "Module Management"}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("schoolInfo.modulesDescription") || "Enable or disable modules for this school"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SchoolModulesManager schoolId={school.id} />
                 </CardContent>
               </Card>
             )}

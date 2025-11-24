@@ -19,6 +19,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { FileText } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 
 
 // Helper to create empty quarter data structure
@@ -44,12 +45,14 @@ export default function ACEProjectionPage() {
   const { studentId, projectionId } = useParams()
   const api = useApi()
   const { t } = useTranslation()
+  const { hasModule } = useModuleAccess()
   const [projectionData, setProjectionData] = React.useState(initialProjectionData)
   const [projectionDetail, setProjectionDetail] = React.useState<ProjectionDetail | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
+
 
   // Check user roles for super admin
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
@@ -141,9 +144,20 @@ export default function ACEProjectionPage() {
         }
         setProjectionData(convertedData)
 
-        // Fetch monthly assignments
-        const assignments = await api.monthlyAssignments.get(studentId, projectionId)
-        setMonthlyAssignments(assignments)
+        // Fetch monthly assignments only if module is enabled
+        const hasMonthlyAssignmentsModule = hasModule('monthlyAssignments')
+        if (hasMonthlyAssignmentsModule) {
+          try {
+            const assignments = await api.monthlyAssignments.get(studentId, projectionId)
+            setMonthlyAssignments(assignments)
+          } catch (err) {
+            // Silently fail if monthly assignments can't be fetched (module might not be enabled)
+            console.warn('Could not fetch monthly assignments:', err)
+            setMonthlyAssignments([])
+          }
+        } else {
+          setMonthlyAssignments([])
+        }
       } catch (err) {
         console.error('Error fetching projection detail:', err)
         const errorMessage = err instanceof Error ? err.message : 'Failed to load projection'
@@ -729,12 +743,14 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
-          <MonthlyAssignmentsSection
-            quarter="Q1"
-            assignments={monthlyAssignments}
-            isReadOnly={isParentOnly}
-            onGradeAssignment={handleGradeMonthlyAssignment}
-          />
+          {hasModule('monthlyAssignments') && (
+            <MonthlyAssignmentsSection
+              quarter="Q1"
+              assignments={monthlyAssignments}
+              isReadOnly={isParentOnly}
+              onGradeAssignment={handleGradeMonthlyAssignment}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="Q2" className="space-y-4 md:space-y-6">
@@ -752,12 +768,14 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
-          <MonthlyAssignmentsSection
-            quarter="Q2"
-            assignments={monthlyAssignments}
-            isReadOnly={isParentOnly}
-            onGradeAssignment={handleGradeMonthlyAssignment}
-          />
+          {hasModule('monthlyAssignments') && (
+            <MonthlyAssignmentsSection
+              quarter="Q2"
+              assignments={monthlyAssignments}
+              isReadOnly={isParentOnly}
+              onGradeAssignment={handleGradeMonthlyAssignment}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="Q3" className="space-y-4 md:space-y-6">
@@ -775,12 +793,14 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
-          <MonthlyAssignmentsSection
-            quarter="Q3"
-            assignments={monthlyAssignments}
-            isReadOnly={isParentOnly}
-            onGradeAssignment={handleGradeMonthlyAssignment}
-          />
+          {hasModule('monthlyAssignments') && (
+            <MonthlyAssignmentsSection
+              quarter="Q3"
+              assignments={monthlyAssignments}
+              isReadOnly={isParentOnly}
+              onGradeAssignment={handleGradeMonthlyAssignment}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="Q4" className="space-y-4 md:space-y-6">
@@ -798,12 +818,14 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
-          <MonthlyAssignmentsSection
-            quarter="Q4"
-            assignments={monthlyAssignments}
-            isReadOnly={isParentOnly}
-            onGradeAssignment={handleGradeMonthlyAssignment}
-          />
+          {hasModule('monthlyAssignments') && (
+            <MonthlyAssignmentsSection
+              quarter="Q4"
+              assignments={monthlyAssignments}
+              isReadOnly={isParentOnly}
+              onGradeAssignment={handleGradeMonthlyAssignment}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
