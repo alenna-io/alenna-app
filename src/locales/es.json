@@ -30,6 +30,8 @@
     "noResults": "No se encontraron resultados",
     "goBack": "Volver",
     "important": "Importante",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado",
     "view": "Detalles",
     "lastName": "Apellidos",
     "accept": "Aceptar",
@@ -318,6 +320,21 @@
     "emailMismatchError": "El email ingresado no coincide con el email de la escuela",
     "cannotDeactivateAlenna": "La escuela Alenna no puede ser desactivada",
     "cannotDeleteAlenna": "La escuela Alenna no puede ser eliminada",
+    "modules": {
+      "fetchError": "Error al cargar módulos",
+      "enableSuccess": "Módulo habilitado exitosamente",
+      "disableSuccess": "Módulo deshabilitado exitosamente",
+      "noModules": "No hay módulos disponibles",
+      "dependencyError": "No se puede habilitar {{module}}. Los módulos requeridos deben estar habilitados primero: {{dependencies}}",
+      "dependentModulesError": "No se puede deshabilitar {{module}}. Los siguientes módulos dependen de él: {{dependents}}. Por favor, deshabilítalos primero.",
+      "requires": "Requiere",
+      "selectAll": "Seleccionar Todos",
+      "deselectAll": "Deseleccionar Todos",
+      "dependenciesRequired": "Dependencias Requeridas",
+      "enableDependenciesFirst": "Habilita primero los siguientes módulos: {{dependencies}}",
+      "dependentModules": "Módulos Dependientes",
+      "usedBy": "Este módulo es requerido por: {{modules}}"
+    },
     "wizard": {
       "title": "Crear Nueva Escuela",
       "description": "Crea una nueva escuela paso a paso",
@@ -328,13 +345,16 @@
       "step2Description": "Establece los límites de capacidad",
       "step3Title": "Usuario Administrador",
       "step3Description": "Crea el administrador",
-      "step4Title": "Vista Previa",
-      "step4Description": "Revisa y confirma",
+      "step4Title": "Módulos",
+      "step4Description": "Seleccionar módulos a habilitar",
+      "step5Title": "Vista Previa",
+      "step5Description": "Revisa y confirma",
       "schoolInfo": "Información de la Escuela",
       "limitsInfo": "Límites de Capacidad",
       "adminUserDescription": "Este usuario será el administrador de la escuela. El email también se usará como email de contacto de la escuela.",
       "previewTitle": "Vista Previa",
-      "createSchool": "Crear Escuela"
+      "createSchool": "Crear Escuela",
+      "noModulesSelected": "No se seleccionaron módulos. Se habilitarán los módulos predeterminados."
     }
   },
   "schoolInfo": {
@@ -357,7 +377,9 @@
     "viewTeachersList": "Ver Lista de Maestros",
     "addNewTeacher": "Agregar Nuevo Maestro",
     "protectedInfo": "Información Protegida",
-    "protectedDescription": "Esta información es gestionada por Alenna para garantizar la integridad del sistema."
+    "protectedDescription": "Esta información es gestionada por Alenna para garantizar la integridad del sistema.",
+    "modulesManagement": "Gestión de Módulos",
+    "modulesDescription": "Habilitar o deshabilitar módulos para esta escuela"
   },
   "forms": {
     "parentsInfo": "Información de Padres/Tutores",
@@ -519,6 +541,7 @@
     "configurationSection": "Configuración",
     "myProfile": "Mi Perfil",
     "projections": "Proyecciones",
+    "lectures": "Lecciones",
     "monthlyAssignments": "Asignaciones Mensuales",
     "reportCards": "Boletas"
   },
@@ -582,8 +605,19 @@
   },
   "modules": {
     "students": "Estudiantes",
-    "users": "Usuarios",
+    "projections": "Proyecciones",
+    "paces": "Lecciones",
+    "monthlyAssignments": "Asignaciones Mensuales",
+    "reportCards": "Boletas",
+    "groups": "Grupos",
+    "teachers": "Maestros",
+    "school_admin": "Administración Escolar",
     "schools": "Escuelas",
+    "users": "Usuarios",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "activateSchool": "Activar Escuela",
+    "deactivateSchool": "Desactivar Escuela",
     "configuration": "Configuración"
   },
   "filters": {
@@ -604,7 +638,10 @@
     "notLeveled": "No Nivelados",
     "other": "Otro",
     "group": "Grupo",
-    "allGroups": "Todos los Grupos"
+    "allGroups": "Todos los Grupos",
+    "select": "Seleccionar...",
+    "search": "Buscar...",
+    "noResults": "No se encontraron resultados"
   },
   "projections": {
     "title": "Proyecciones",
@@ -752,6 +789,8 @@
   },
   "groups": {
     "title": "Grupos",
+    "noTeacher": "Sin maestro",
+    "teachersModuleRequired": "El módulo de maestros debe estar habilitado para crear grupos",
     "description": "Gestionar asignaciones maestro-estudiante por año escolar",
     "selectSchoolYear": "Seleccionar Año Escolar",
     "createGroup": "Crear Grupo",
@@ -815,5 +854,23 @@
     "deleteAssignmentSuccess": "Estudiante removido del grupo exitosamente",
     "deleteAssignmentError": "Error al remover estudiante del grupo",
     "removeFromGroup": "Remover del Grupo"
+  },
+  "lectures": {
+    "title": "Lecciones",
+    "description": "Explora y busca en el catálogo de lecciones",
+    "filters": "Filtros",
+    "code": "Código",
+    "name": "Nombre",
+    "category": "Categoría",
+    "level": "Nivel",
+    "subject": "Materia",
+    "search": "Buscar",
+    "allCategories": "Todas las Categorías",
+    "allLevels": "Todos los Niveles",
+    "allSubjects": "Todas las Materias",
+    "searchPlaceholder": "Buscar por nombre, código o materia...",
+    "noLecturesFound": "No se encontraron lecciones",
+    "noLecturesDescription": "Intenta ajustar tus filtros o término de búsqueda",
+    "lectures": "lecciones"
   }
 }

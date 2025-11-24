@@ -413,6 +413,12 @@ export const schoolsApi = {
   getMyTeachers: (token: string | null) => apiFetch('/schools/me/teachers', token),
   getMyTeachersCount: (token: string | null) => apiFetch('/schools/me/teachers/count', token),
   getCertificationTypes: (id: string, token: string | null) => apiFetch(`/schools/${id}/certification-types`, token),
+  getAllModules: (token: string | null) => apiFetch('/schools/modules/all', token),
+  getSchoolModules: (id: string, token: string | null) => apiFetch(`/schools/${id}/modules`, token),
+  enableModule: (id: string, moduleId: string, token: string | null) =>
+    apiFetch(`/schools/${id}/modules/enable`, token, { method: 'POST', body: JSON.stringify({ moduleId }) }),
+  disableModule: (id: string, moduleId: string, token: string | null) =>
+    apiFetch(`/schools/${id}/modules/disable`, token, { method: 'POST', body: JSON.stringify({ moduleId }) }),
 };
 
 // Groups API
@@ -656,6 +662,22 @@ export function useApi() {
       getCertificationTypes: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getCertificationTypes(id, token);
+      },
+      getAllModules: async () => {
+        const token = await getToken();
+        return schoolsApi.getAllModules(token);
+      },
+      getSchoolModules: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getSchoolModules(id, token);
+      },
+      enableModule: async (id: string, moduleId: string) => {
+        const token = await getToken();
+        return schoolsApi.enableModule(id, moduleId, token);
+      },
+      disableModule: async (id: string, moduleId: string) => {
+        const token = await getToken();
+        return schoolsApi.disableModule(id, moduleId, token);
       },
     },
     schoolYears: {

@@ -28,6 +28,8 @@
     "noResults": "No results found",
     "goBack": "Go Back",
     "important": "Important",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
     "view": "Details",
     "lastName": "Last Name",
     "accept": "Accept",
@@ -102,6 +104,7 @@
     "configurationSection": "Configuration",
     "myProfile": "My Profile",
     "projections": "Projections",
+    "lectures": "Lectures",
     "monthlyAssignments": "Monthly Assignments",
     "reportCards": "Report Cards"
   },
@@ -330,6 +333,21 @@
     "emailMismatchError": "The entered email does not match the school email",
     "cannotDeactivateAlenna": "The Alenna school cannot be deactivated",
     "cannotDeleteAlenna": "The Alenna school cannot be deleted",
+    "modules": {
+      "fetchError": "Error loading modules",
+      "enableSuccess": "Module enabled successfully",
+      "disableSuccess": "Module disabled successfully",
+      "noModules": "No modules available",
+      "dependencyError": "Cannot enable {{module}}. Required modules must be enabled first: {{dependencies}}",
+      "dependentModulesError": "Cannot disable {{module}}. The following modules depend on it: {{dependents}}. Please disable them first.",
+      "requires": "Requires",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "dependenciesRequired": "Dependencies Required",
+      "enableDependenciesFirst": "Enable the following modules first: {{dependencies}}",
+      "dependentModules": "Dependent Modules",
+      "usedBy": "This module is required by: {{modules}}"
+    },
     "wizard": {
       "title": "Create New School",
       "description": "Create a new school step by step",
@@ -340,13 +358,16 @@
       "step2Description": "Set capacity limits",
       "step3Title": "Admin User",
       "step3Description": "Create administrator",
-      "step4Title": "Preview",
-      "step4Description": "Review and confirm",
+      "step4Title": "Modules",
+      "step4Description": "Select modules to enable",
+      "step5Title": "Preview",
+      "step5Description": "Review and confirm",
       "schoolInfo": "School Information",
       "limitsInfo": "Capacity Limits",
       "adminUserDescription": "This user will be the school administrator. The email will also be used as the school's contact email.",
       "previewTitle": "Preview",
-      "createSchool": "Create School"
+      "createSchool": "Create School",
+      "noModulesSelected": "No modules selected. Default modules will be enabled."
     }
   },
   "schoolInfo": {
@@ -583,8 +604,15 @@
   },
     "modules": {
     "students": "Students",
-    "users": "Users",
+    "projections": "Projections",
+    "paces": "Lectures",
+    "monthlyAssignments": "Monthly Assignments",
+    "reportCards": "Report Cards",
+    "groups": "Groups",
+    "teachers": "Teachers",
+    "school_admin": "School Administration",
     "schools": "Schools",
+    "users": "Users",
     "active": "Active",
     "inactive": "Inactive",
     "activateSchool": "Activate School",
@@ -607,7 +635,10 @@
     "levelingStatus": "Leveling Status",
     "leveled": "Leveled",
     "notLeveled": "Not Leveled",
-    "other": "Other"
+    "other": "Other",
+    "select": "Select...",
+    "search": "Search...",
+    "noResults": "No results found"
   },
   "projections": {
     "title": "Projections",
@@ -756,6 +787,8 @@
   "groups": {
     "title": "Groups",
     "description": "Manage teacher-student assignments per school year",
+    "noTeacher": "No teacher",
+    "teachersModuleRequired": "The teachers module must be enabled to create groups",
     "selectSchoolYear": "Select School Year",
     "createGroup": "Create Group",
     "createGroupDescription": "Assign a student to a teacher for the current school year",
@@ -816,5 +849,23 @@
     "deleteAssignmentError": "Failed to remove student from group",
     "searchStudentsPlaceholder": "Search students by name...",
     "removeFromGroup": "Remove from Group"
+  },
+  "lectures": {
+    "title": "Lectures",
+    "description": "Browse and search the lectures catalog",
+    "filters": "Filters",
+    "code": "Code",
+    "name": "Name",
+    "category": "Category",
+    "level": "Level",
+    "subject": "Subject",
+    "search": "Search",
+    "allCategories": "All Categories",
+    "allLevels": "All Levels",
+    "allSubjects": "All Subjects",
+    "searchPlaceholder": "Search by name, code, or subject...",
+    "noLecturesFound": "No lectures found",
+    "noLecturesDescription": "Try adjusting your filters or search term",
+    "lectures": "lectures"
   }
 }

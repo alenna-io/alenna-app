@@ -15,6 +15,7 @@ import { includesIgnoreAccents } from "@/lib/string-utils"
 import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
 import { useUser } from "@/contexts/UserContext"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { SearchBar } from "@/components/ui/search-bar"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -37,7 +38,11 @@ export default function StudentsPage() {
   const navigate = useNavigate()
   const api = useApi()
   const { userInfo } = useUser()
+  const { hasModule } = useModuleAccess()
   const { t } = useTranslation()
+
+  // Check if teachers module is enabled
+  const hasTeachersModule = hasModule('teachers')
   const [students, setStudents] = React.useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -155,7 +160,17 @@ export default function StudentsPage() {
             const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
             if (activeYear) {
               const allGroups = await api.groups.getBySchoolYear(activeYear.id)
-              const teachers = await api.schools.getMyTeachers()
+
+              // Fetch teachers only if teachers module is enabled
+              let teachers: Array<{ id: string; fullName: string }> = []
+              if (hasTeachersModule) {
+                try {
+                  teachers = await api.schools.getMyTeachers()
+                } catch (teachersError) {
+                  // Teachers module might not be enabled - continue without teacher names
+                  console.warn('Could not fetch teachers:', teachersError)
+                }
+              }
 
               // Group by teacher and name to create unique groups
               const groupMap = new Map<string, { id: string; name: string | null; teacherName: string }>()
@@ -163,11 +178,11 @@ export default function StudentsPage() {
                 if (!g.deletedAt) {
                   const teacher = teachers.find((t: { id: string }) => t.id === g.teacherId)
                   const groupKey = `${g.teacherId}-${g.name || 'default'}`
-                  if (!groupMap.has(groupKey) && teacher) {
+                  if (!groupMap.has(groupKey)) {
                     groupMap.set(groupKey, {
                       id: g.id, // Use first group ID as identifier
                       name: g.name,
-                      teacherName: teacher.fullName
+                      teacherName: teacher?.fullName || t("groups.noTeacher") || 'Sin maestro' // Fallback if teacher not found
                     })
                   }
                 }
@@ -177,6 +192,7 @@ export default function StudentsPage() {
               }
             }
           } catch (err) {
+            // Silently fail - groups filter is optional
             console.error('Error fetching groups:', err)
           }
         }

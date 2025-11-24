@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { useTranslation } from "react-i18next"
 import { GroupsTable } from "@/components/groups-table"
 import { GroupsFilters } from "@/components/groups-filters"
@@ -43,7 +44,11 @@ export default function GroupsPage() {
   const api = useApi()
   const navigate = useNavigate()
   const { userInfo, isLoading: isLoadingUser } = useUser()
+  const { hasModule } = useModuleAccess()
   const { t } = useTranslation()
+
+  // Check if teachers module is enabled
+  const hasTeachersModule = hasModule('teachers')
   const [isLoading, setIsLoading] = React.useState(true)
   const [schoolYears, setSchoolYears] = React.useState<Array<{ id: string; name: string; isActive: boolean }>>([])
   const [teachers, setTeachers] = React.useState<Array<{ id: string; fullName: string }>>([])
@@ -81,9 +86,16 @@ export default function GroupsPage() {
           setFilters(prev => ({ ...prev, schoolYear: activeYear.id }))
         }
 
-        // Fetch teachers - use /me endpoint for school admins to avoid permission issues
-        const teachersData = await api.schools.getMyTeachers()
-        setTeachers(teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName })))
+        // Fetch teachers only if teachers module is enabled
+        if (hasTeachersModule) {
+          try {
+            const teachersData = await api.schools.getMyTeachers()
+            setTeachers(teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName })))
+          } catch (error) {
+            console.warn('Could not fetch teachers (module may not be enabled):', error)
+            // Continue without teachers - groups can still be displayed
+          }
+        }
 
         // Fetch all groups from all school years
         const allGroupsData: GroupFromAPI[] = []
@@ -101,16 +113,17 @@ export default function GroupsPage() {
         const grouped: GroupDisplay[] = allGroupsData
           .filter((group: GroupFromAPI) => !group.deletedAt)
           .map((group: GroupFromAPI) => {
-            const teacher = teachersData.find((t: { id: string }) => t.id === group.teacherId)
+            const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
             const schoolYear = schoolYearsData.find((sy: { id: string }) => sy.id === group.schoolYearId)
 
-            if (!teacher || !schoolYear) return null
+            // Allow groups even without teacher (when teachers module is disabled)
+            if (!schoolYear) return null
 
             return {
               id: group.id,
               name: group.name || null,
               teacherId: group.teacherId,
-              teacherName: teacher.fullName,
+              teacherName: teacher?.fullName || t("groups.noTeacher") || 'Sin maestro',
               schoolYearId: group.schoolYearId,
               schoolYearName: schoolYear.name,
               studentCount: group.studentCount || 0,

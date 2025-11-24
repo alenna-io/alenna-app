@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 // BackButton replaced with shadcn Button
-import { Calendar } from "lucide-react"
+import { Calendar, FileText } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import type { Student } from "@/types/student"
 import { ParentProfileDialog } from "@/components/parent-profile-dialog"
+import { useModuleAccess } from "@/hooks/useModuleAccess"
 
 interface StudentProfileProps {
   student: Student
@@ -21,8 +22,13 @@ interface StudentProfileProps {
 export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { hasModule } = useModuleAccess()
   const [selectedParent, setSelectedParent] = React.useState<Student['parents'][0] | null>(null)
   const [isParentDialogOpen, setIsParentDialogOpen] = React.useState(false)
+
+  // Check module access
+  const hasProjectionsModule = hasModule('projections')
+  const hasReportCardsModule = hasModule('reportCards')
 
 
   return (
@@ -142,44 +148,87 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
           </CardContent>
         </Card>
 
-        {/* A.C.E. Projections */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                {t("projections.academicProjections")}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t("projections.weeklyPlanning")}
-            </p>
-            {(isParentView || isStudentView) ? (
-              <LinkButton
-                variant="outline"
-                size="default"
-                showChevron={false}
-                className="w-full cursor-pointer"
-                onClick={() => navigate(`/students/${student.id}/projections`)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {t("projections.viewProjections")}
-              </LinkButton>
-            ) : (
-              <LinkButton
-                variant="default"
-                size="lg"
-                showChevron={false}
-                className="w-full max-w-xs cursor-pointer"
-                onClick={() => navigate(`/students/${student.id}/projections`)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {t("projections.manageProjections")}
-              </LinkButton>
-            )}
-          </CardContent>
-        </Card>
+        {/* A.C.E. Projections - Only show if projections module is enabled */}
+        {hasProjectionsModule && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  {t("projections.academicProjections")}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t("projections.weeklyPlanning")}
+              </p>
+              {(isParentView || isStudentView) ? (
+                <LinkButton
+                  variant="outline"
+                  size="default"
+                  showChevron={false}
+                  className="w-full cursor-pointer"
+                  onClick={() => navigate(`/students/${student.id}/projections`)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t("projections.viewProjections")}
+                </LinkButton>
+              ) : (
+                <LinkButton
+                  variant="default"
+                  size="lg"
+                  showChevron={false}
+                  className="w-full max-w-xs cursor-pointer"
+                  onClick={() => navigate(`/students/${student.id}/projections`)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t("projections.manageProjections")}
+                </LinkButton>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Report Cards - Only show if reportCards module is enabled */}
+        {hasReportCardsModule && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  {t("reportCards.title")}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t("reportCards.description") || "Ver y generar boletas de calificaciones"}
+              </p>
+              {(isParentView || isStudentView) ? (
+                <LinkButton
+                  variant="outline"
+                  size="default"
+                  showChevron={false}
+                  className="w-full cursor-pointer"
+                  onClick={() => navigate(`/students/${student.id}/report-cards`)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t("reportCards.viewReportCards") || "Ver Boletas"}
+                </LinkButton>
+              ) : (
+                <LinkButton
+                  variant="default"
+                  size="lg"
+                  showChevron={false}
+                  className="w-full max-w-xs cursor-pointer"
+                  onClick={() => navigate(`/students/${student.id}/report-cards`)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t("reportCards.manageReportCards") || "Gestionar Boletas"}
+                </LinkButton>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Parents Information - Hidden for parent users */}
         {!isParentView && !isStudentView && (
