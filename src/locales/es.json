@@ -872,5 +872,18 @@
     "noLecturesFound": "No se encontraron lecciones",
     "noLecturesDescription": "Intenta ajustar tus filtros o término de búsqueda",
     "lectures": "lecciones"
+  },
+  "passwordSetup": {
+    "title": "Establecer Contraseña",
+    "description": "Por favor establece una contraseña para tu cuenta",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Mínimo 8 caracteres",
+    "passwordHint": "Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número",
+    "confirmPassword": "Confirmar Contraseña",
+    "confirmPasswordPlaceholder": "Repite la contraseña",
+    "setupPassword": "Establecer Contraseña",
+    "settingUp": "Estableciendo...",
+    "success": "Contraseña establecida exitosamente",
+    "error": "Error al establecer la contraseña"
   }
 }

@@ -39,6 +39,8 @@ import { UserProvider } from '@/contexts/UserContext'
 import { ModuleProvider } from '@/contexts/ModuleContext'
 import { Toaster } from '@/components/ui/sonner'
 import { ModuleRouteGuard } from '@/components/ModuleRouteGuard'
+import { PasswordSetupGuard } from '@/components/PasswordSetupGuard'
+import { SetupPasswordPage } from '@/pages/setup-password'
 import '@/lib/i18n' // Initialize i18n
 
 // Protected Route wrapper
@@ -48,7 +50,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <SignedIn>
         <AuthSync>
           <UserProvider>
-            <ModuleProvider>{children}</ModuleProvider>
+            <PasswordSetupGuard>
+              <ModuleProvider>{children}</ModuleProvider>
+            </PasswordSetupGuard>
           </UserProvider>
         </AuthSync>
       </SignedIn>
@@ -70,6 +74,22 @@ export default function App() {
         <Route path="/login/*" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/*" element={<SignUpPage />} />
+
+        {/* Password setup route - requires auth but no layout */}
+        <Route
+          path="/setup-password"
+          element={
+            <SignedIn>
+              <AuthSync>
+                <UserProvider>
+                  <PasswordSetupGuard>
+                    <SetupPasswordPage />
+                  </PasswordSetupGuard>
+                </UserProvider>
+              </AuthSync>
+            </SignedIn>
+          }
+        />
 
         {/* Protected routes - with sidebar */}
         <Route
