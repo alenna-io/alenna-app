@@ -875,15 +875,26 @@
   },
   "passwordSetup": {
     "title": "Establecer Contraseña",
-    "description": "Por favor establece una contraseña para tu cuenta",
+    "description": "Por favor establece una contraseña segura para tu cuenta",
     "password": "Contraseña",
-    "passwordPlaceholder": "Mínimo 8 caracteres",
-    "passwordHint": "Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número",
+    "passwordPlaceholder": "Mínimo 12 caracteres",
+    "passwordHint": "Debe tener al menos 12 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales",
     "confirmPassword": "Confirmar Contraseña",
     "confirmPasswordPlaceholder": "Repite la contraseña",
     "setupPassword": "Establecer Contraseña",
     "settingUp": "Estableciendo...",
     "success": "Contraseña establecida exitosamente",
-    "error": "Error al establecer la contraseña"
+    "error": "Error al establecer la contraseña",
+    "errors": {
+      "minLength": "La contraseña debe tener al menos 12 caracteres",
+      "uppercase": "La contraseña debe contener al menos una letra mayúscula",
+      "lowercase": "La contraseña debe contener al menos una letra minúscula",
+      "number": "La contraseña debe contener al menos un número",
+      "specialChar": "La contraseña debe contener al menos un carácter especial (!@#$%^&*...)",
+      "tooSimple": "La contraseña es demasiado simple. Usa una combinación más compleja",
+      "sequential": "La contraseña no debe contener secuencias obvias",
+      "mismatch": "Las contraseñas no coinciden"
+    },
+    "validPassword": "Contraseña válida"
   }
 }
