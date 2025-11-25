@@ -186,13 +186,16 @@ export default function CreateStudentWizardPage() {
         }
       }
 
-      // When the student is marked as NOT leveled in the UI, levels are required and expected must be higher than current
+      // Always require current level
+      if (!formData.currentLevel) {
+        newErrors.currentLevel = t("students.validation.currentLevelRequired")
+      }
+
+      // When the student is marked as NOT leveled in the UI, expected level is also required
+      // and must be higher than the current level
       if (!formData.isLeveled) {
         if (!formData.expectedLevel) {
           newErrors.expectedLevel = t("students.validation.expectedLevelRequired")
-        }
-        if (!formData.currentLevel) {
-          newErrors.currentLevel = t("students.validation.currentLevelRequired")
         }
 
         if (formData.expectedLevel && formData.currentLevel) {
@@ -647,10 +650,28 @@ export default function CreateStudentWizardPage() {
                   </FieldLabel>
                 </div>
 
-                {!formData.isLeveled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field>
+                    <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")} <span className="text-destructive">*</span></FieldLabel>
+                    <Select
+                      value={formData.currentLevel}
+                      onValueChange={(value) => setFormData({ ...formData, currentLevel: value })}
+                    >
+                      <SelectTrigger className={errors.currentLevel ? "border-destructive" : ""}>
+                        <SelectValue placeholder={t("students.selectLevel") || t("students.currentLevelPlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVEL_OPTIONS.map((level) => (
+                          <SelectItem key={level} value={level}>{level}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.currentLevel && <p className="text-sm text-destructive mt-1">{errors.currentLevel}</p>}
+                  </Field>
+
+                  {!formData.isLeveled && (
                     <Field>
-                      <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
+                      <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")} <span className="text-destructive">*</span></FieldLabel>
                       <Select
                         value={formData.expectedLevel}
                         onValueChange={(value) => setFormData({ ...formData, expectedLevel: value })}
@@ -666,25 +687,8 @@ export default function CreateStudentWizardPage() {
                       </Select>
                       {errors.expectedLevel && <p className="text-sm text-destructive mt-1">{errors.expectedLevel}</p>}
                     </Field>
-                    <Field>
-                      <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
-                      <Select
-                        value={formData.currentLevel}
-                        onValueChange={(value) => setFormData({ ...formData, currentLevel: value })}
-                      >
-                        <SelectTrigger className={errors.currentLevel ? "border-destructive" : ""}>
-                          <SelectValue placeholder={t("students.selectLevel") || t("students.currentLevelPlaceholder")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {LEVEL_OPTIONS.map((level) => (
-                            <SelectItem key={level} value={level}>{level}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.currentLevel && <p className="text-sm text-destructive mt-1">{errors.currentLevel}</p>}
-                    </Field>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
@@ -990,15 +994,19 @@ export default function CreateStudentWizardPage() {
                   <h3 className="text-lg font-medium">{t("students.academicInfo")}</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted-foreground">{t("students.certificationType")}:</span> {" "}
+                      <span className="text-muted-foreground">{t("students.certificationType")}:</span>{" "}
                       {certificationTypes.find(t => t.id === formData.certificationTypeId)?.name}
                     </div>
-                    <div><span className="text-muted-foreground">{t("students.graduationDate")}:</span> {formData.graduationDate}</div>
+                    <div>
+                      <span className="text-muted-foreground">{t("students.graduationDate")}:</span> {formData.graduationDate}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t("students.currentLevel")}:</span> {formData.currentLevel || "-"}
+                    </div>
                     {!formData.isLeveled && (
-                      <>
-                        <div><span className="text-muted-foreground">{t("students.expectedLevel")}:</span> {formData.expectedLevel}</div>
-                        <div><span className="text-muted-foreground">{t("students.currentLevel")}:</span> {formData.currentLevel}</div>
-                      </>
+                      <div>
+                        <span className="text-muted-foreground">{t("students.expectedLevel")}:</span> {formData.expectedLevel || "-"}
+                      </div>
                     )}
                   </div>
                 </div>
