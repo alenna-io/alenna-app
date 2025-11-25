@@ -57,6 +57,8 @@ export const studentsApi = {
     apiFetch(`/students/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) => 
     apiFetch(`/students/${id}`, token, { method: 'DELETE' }),
+  deactivate: (id: string, token: string | null) =>
+    apiFetch(`/students/${id}/deactivate`, token, { method: 'POST' }),
 };
 
 // Projections API
@@ -471,6 +473,10 @@ export function useApi() {
       delete: async (id: string) => {
         const token = await getToken();
         return studentsApi.delete(id, token);
+      },
+      deactivate: async (id: string) => {
+        const token = await getToken();
+        return studentsApi.deactivate(id, token);
       },
     },
     projections: {

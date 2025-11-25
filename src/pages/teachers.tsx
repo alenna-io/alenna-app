@@ -259,7 +259,7 @@ export default function TeachersPage() {
 
   // Show loading state
   if (isLoading) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   const targetSchoolId = schoolId || userInfo?.schoolId
@@ -267,14 +267,6 @@ export default function TeachersPage() {
   // Show admin/teacher teachers list
   return (
     <div className="space-y-6">
-      {/* Mobile back button for school context */}
-      {schoolId && (
-        <div className="md:hidden">
-          <BackButton onClick={handleBackToList}>
-            {t("teachers.backToSchoolInfo")}
-          </BackButton>
-        </div>
-      )}
 
       {/* Error banner */}
       {error && (
@@ -283,7 +275,7 @@ export default function TeachersPage() {
           message={error}
         />
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <PageHeader
           title={schoolId ? t("teachers.titleForSchool") : t("teachers.title")}
           description={schoolId ? t("teachers.descriptionForSchool") : t("teachers.description")}

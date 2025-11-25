@@ -251,7 +251,7 @@ const Sidebar = React.forwardRef<
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
-        data-side={side}
+      // data-side={side}
       >
         {/* This is what handles the sidebar gap on desktop - always show for offcanvas on desktop */}
         <div

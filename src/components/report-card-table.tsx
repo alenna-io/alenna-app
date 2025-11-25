@@ -152,11 +152,11 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
             <tbody>
-              <tr className={quarter.academicProjectionCompleted ? "bg-green-600 text-white" : "bg-red-600 text-white"}>
+              <tr >
                 <td className="p-3 text-left font-semibold border border-primary/20">
                   {t("reportCards.academicProjectionCompleted")}
                 </td>
-                <td className="p-3 text-center font-semibold border border-primary/20 w-24">
+                <td className={`p-3 text-center font-semibold border border-primary/20 w-24 ${quarter.academicProjectionCompleted ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
                   {quarter.academicProjectionCompleted ? t("reportCards.yes") : t("reportCards.no")}
                 </td>
               </tr>

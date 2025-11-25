@@ -196,14 +196,9 @@ export function DailyGoalsTable({
                     className="text-center p-2 font-semibold min-w-[100px] border border-gray-300"
                   >
                     <div className="flex flex-col">
-                      <span className="text-base font-bold">
+                      <span className="text-xs font-bold">
                         {subjectToCategory?.get(subject) || subject}
                       </span>
-                      {subjectToCategory?.get(subject) && (
-                        <span className="text-xs font-normal opacity-75">
-                          {subject}
-                        </span>
-                      )}
                     </div>
                   </th>
                 ))}

@@ -210,7 +210,7 @@ export default function SchoolYearsPage() {
         </Button>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-6">
         <PageHeader
           title={t("schoolYears.title")}
           description={t("schoolYears.description")}

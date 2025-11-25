@@ -314,7 +314,7 @@ export default function ProjectionsPage() {
   return (
     <div className="space-y-6">
       {/* Page Title */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <PageHeader
           title={t("projections.title")}
           description={t("projections.description")}

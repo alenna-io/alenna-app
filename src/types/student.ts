@@ -22,5 +22,6 @@ export interface Student {
   expectedLevel?: string
   currentLevel?: string
   address: string
+  isActive: boolean
 }
 
