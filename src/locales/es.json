@@ -86,7 +86,8 @@
     "description": "Gestiona la configuración de tu escuela",
     "schoolInfo": {
       "title": "Información de la Escuela",
-      "description": "Nombre, dirección, contacto y configuración general"
+      "description": "Nombre, dirección, contacto y configuración general",
+      "schoolName": "Nombre"
     },
     "schoolYear": {
       "title": "Años Escolares",
@@ -420,7 +421,12 @@
     "protectedInfo": "Información Protegida",
     "protectedDescription": "Esta información es gestionada por Alenna para garantizar la integridad del sistema.",
     "modulesManagement": "Gestión de Módulos",
-    "modulesDescription": "Habilitar o deshabilitar módulos para esta escuela"
+    "modulesDescription": "Habilitar o deshabilitar módulos para esta escuela",
+    "schoolName": "Nombre",
+    "schoolId": "ID",
+    "email": "Email",
+    "phone": "Teléfono",
+    "address": "Dirección"
   },
   "forms": {
     "parentsInfo": "Información de Padres/Tutores",
