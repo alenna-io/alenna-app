@@ -13,11 +13,13 @@ import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import type { Projection } from "@/types/projection"
 import type { Student } from "@/types/student"
+import { useTranslation } from "react-i18next"
 
 export default function ProjectionListPage() {
   const navigate = useNavigate()
   const { studentId } = useParams()
   const api = useApi()
+  const { t } = useTranslation()
 
   const [student, setStudent] = React.useState<Student | null>(null)
   const [projections, setProjections] = React.useState<Projection[]>([])
@@ -87,8 +89,8 @@ export default function ProjectionListPage() {
     return (
       <div className="space-y-6">
         <ErrorAlert
-          title="Error al cargar datos"
-          message={error || 'No se pudo cargar el estudiante'}
+          title={t("projections.errorLoadingData")}
+          message={error || t("projections.errorLoadingStudent")}
         />
       </div>
     )
@@ -113,8 +115,8 @@ export default function ProjectionListPage() {
 
       {/* Page Title */}
       <PageHeader
-        title="Proyecciones Académicas"
-        description="Historial de proyecciones por año escolar"
+        title={t("projections.title")}
+        description={t("projections.description")}
       />
 
       {/* Projections List */}
@@ -131,7 +133,7 @@ export default function ProjectionListPage() {
                   <div className="flex items-center gap-3">
                     <div>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        Año Escolar {projection.schoolYear}
+                        {t("projections.schoolYear")} {projection.schoolYear}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {new Date(projection.startDate).toLocaleDateString("es-MX")} - {new Date(projection.endDate).toLocaleDateString("es-MX")}
@@ -158,12 +160,12 @@ export default function ProjectionListPage() {
           <CardContent className="p-12 text-center">
             <EmptyState
               icon={Calendar}
-              title="No hay proyecciones"
-              description="No se han creado proyecciones para este estudiante"
+              title={t("projections.noProjections")}
+              description={t("projections.noProjectionsDescription")}
               action={canCreateProjection && !isStudentOnly && !isParentOnly ? {
-                label: "Crear Primera Proyección",
+                label: t("projections.createProjection"),
                 onClick: () => {
-                  console.log('Create projection')
+                  navigate(`/projections`)
                 }
               } : undefined}
             />

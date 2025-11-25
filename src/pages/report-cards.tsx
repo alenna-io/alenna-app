@@ -192,7 +192,7 @@ export default function ReportCardsPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   if (!userInfo) {

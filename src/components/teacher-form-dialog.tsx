@@ -186,14 +186,14 @@ export function TeacherFormDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="email">
-                Email <span className="text-destructive">*</span>
+                {t("common.email")} <span className="text-destructive">*</span>
               </FieldLabel>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="maestro@escuela.edu"
+                placeholder={t("teachers.emailPlaceholder") || "maestro@escuela.edu"}
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && (
@@ -207,13 +207,13 @@ export function TeacherFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="firstName">
-                  Nombre <span className="text-destructive">*</span>
+                  {t("common.name")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
                   id="firstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="Nombre del maestro"
+                  placeholder={t("teachers.firstNamePlaceholder") || t("users.firstNamePlaceholder")}
                   className={errors.firstName ? "border-destructive" : ""}
                 />
                 {errors.firstName && (
@@ -226,13 +226,13 @@ export function TeacherFormDialog({
 
               <Field>
                 <FieldLabel htmlFor="lastName">
-                  Apellido <span className="text-destructive">*</span>
+                  {t("common.lastName")} <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
                   id="lastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Apellido del maestro"
+                  placeholder={t("teachers.lastNamePlaceholder") || t("users.lastNamePlaceholder")}
                   className={errors.lastName ? "border-destructive" : ""}
                 />
                 {errors.lastName && (

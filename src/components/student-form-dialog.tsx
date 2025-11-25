@@ -36,6 +36,7 @@ interface StudentFormDialogProps {
   onSave: (data: {
     firstName: string
     lastName: string
+    email: string
     birthDate: string
     certificationTypeId: string
     graduationDate: string
@@ -62,6 +63,7 @@ export function StudentFormDialog({
   const [errors, setErrors] = React.useState<{
     firstName?: string
     lastName?: string
+    email?: string
     birthDate?: string
     certificationTypeId?: string
     graduationDate?: string
@@ -78,6 +80,7 @@ export function StudentFormDialog({
   const [formData, setFormData] = React.useState<{
     firstName: string
     lastName: string
+    email: string
     birthDate: string
     certificationTypeId: string
     graduationDate: string
@@ -98,6 +101,7 @@ export function StudentFormDialog({
   }>({
     firstName: "",
     lastName: "",
+    email: "",
     birthDate: "",
     certificationTypeId: "",
     graduationDate: "",
@@ -143,6 +147,7 @@ export function StudentFormDialog({
       setFormData({
         firstName: "",
         lastName: "",
+        email: "",
         birthDate: "",
         certificationTypeId: "",
         graduationDate: "",
@@ -169,6 +174,7 @@ export function StudentFormDialog({
     const newErrors: {
       firstName?: string
       lastName?: string
+      email?: string
       birthDate?: string
       certificationTypeId?: string
       graduationDate?: string
@@ -191,6 +197,12 @@ export function StudentFormDialog({
     // Validate lastName
     if (!formData.lastName.trim()) {
       newErrors.lastName = t("students.validation.lastNameRequired")
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = t("students.validation.studentEmailRequired")
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = t("students.validation.emailInvalid")
     }
 
     // Validate birthDate
@@ -295,6 +307,7 @@ export function StudentFormDialog({
       await onSave({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
         birthDate: new Date(formData.birthDate).toISOString(),
         certificationTypeId: formData.certificationTypeId,
         graduationDate: new Date(formData.graduationDate).toISOString(),
@@ -368,6 +381,26 @@ export function StudentFormDialog({
                 )}
               </Field>
             </div>
+
+            <Field>
+              <FieldLabel htmlFor="studentEmail">
+                {t("students.email")} <span className="text-destructive">*</span>
+              </FieldLabel>
+              <Input
+                id="studentEmail"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder={t("students.emailPlaceholder") || "student@email.com"}
+                className={errors.email ? "border-destructive" : ""}
+              />
+              {errors.email && (
+                <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>{errors.email}</span>
+                </div>
+              )}
+            </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
@@ -464,7 +497,7 @@ export function StudentFormDialog({
                 className="h-4 w-4 rounded border-gray-300"
               />
               <FieldLabel htmlFor="isLeveled" className="cursor-pointer">
-                {t("students.leveledStudent")}
+                {t("students.notLeveledStudent")}
               </FieldLabel>
             </div>
 

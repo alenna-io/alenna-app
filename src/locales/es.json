@@ -63,7 +63,11 @@
     "parent": "Padre/Madre",
     "parents": "Padres",
     "admin": "Administrador",
-    "administrator": "Administrador"
+    "administrator": "Administrador",
+    "pageNotFound": "Página no encontrada",
+    "pageNotFoundDescription": "La página que buscas no existe o no está disponible.",
+    "pageNotFoundContactAdmin": "Si crees que esto es un error, contacta a tu administrador.",
+    "pageNotFoundBackToHome": "Volver al Inicio"
   },
   "configuration": {
     "title": "Configuración",
@@ -121,8 +125,10 @@
     "certificationType": "Tipo de Certificación",
     "selectCertificationType": "Seleccionar tipo de certificación",
     "contactPhone": "Teléfono de Contacto",
+    "email": "Correo electrónico",
+    "emailPlaceholder": "estudiante@email.com",
     "fullAddress": "Dirección completa",
-    "leveledStudent": "Estudiante Nivelado",
+    "notLeveledStudent": "Estudiante No Nivelado",
     "expectedLevel": "Nivel Esperado",
     "currentLevel": "Nivel Actual",
     "expectedLevelPlaceholder": "Ej: 6to grado",
@@ -156,32 +162,45 @@
     "academicInfo": "Información Académica",
     "parentsInfo": "Información de Padres",
     "noParents": "No se ha registrado información de padres",
+    "selectExistingParent": "Seleccionar padre/madre existente",
+    "searchParentPlaceholder": "Buscar padre/madre por nombre o correo...",
     "step1Description": "Ingresa la información básica del estudiante",
     "step2Description": "Ingresa los detalles académicos",
     "step3Description": "Agrega información de padre/madre/tutor",
     "step4Description": "Revisa y confirma",
-    "createSuccess": "Estudiante creado exitosamente",
-    "createError": "Error al crear estudiante",
-    "age": "Edad",
+      "createSuccess": "Estudiante creado exitosamente",
+      "createError": "Error al crear estudiante",
+      "deactivateStudent": "Desactivar Estudiante",
+      "deactivateConfirmMessage": "¿Estás seguro de que deseas desactivar al estudiante \"{{studentName}}\"?",
+      "deactivateSuccess": "Estudiante {{studentName}} desactivado exitosamente",
+      "deactivateError": "Error al desactivar estudiante",
+      "age": "Edad",
     "ageYears": "{{age}} años",
     "certification": "Certificación",
     "graduation": "Graduación",
     "level": "Nivel",
-    "schoolGrade": "Grado Escolar",
-    "validation": {
+      "schoolGrade": "Grado Escolar",
+      "selectLevel": "Seleccionar nivel",
+      "validation": {
       "firstNameRequired": "El nombre es requerido",
       "lastNameRequired": "El apellido es requerido",
       "birthDateRequired": "La fecha de nacimiento es requerida",
       "birthDateFuture": "La fecha de nacimiento debe ser anterior a hoy",
+      "birthDateMinimumAge": "El estudiante debe tener al menos 3 años",
+      "studentEmailRequired": "El correo del estudiante es requerido",
       "certificationTypeRequired": "El tipo de certificación es requerido",
       "graduationDateRequired": "La fecha de graduación es requerida",
       "graduationDateBeforeBirth": "La fecha de graduación debe ser posterior a la fecha de nacimiento",
+      "graduationDateFuture": "La fecha de graduación debe ser una fecha futura",
       "parentNameRequired": "El nombre del padre/madre es requerido",
       "parentLastNameRequired": "El apellido del padre/madre es requerido",
       "parentEmailRequired": "El email del padre/madre es requerido",
       "emailInvalid": "Email inválido",
       "relationshipRequired": "La relación es requerida",
-      "parentEmailsMustBeDifferent": "El email del segundo padre/madre debe ser diferente al del primero"
+      "parentEmailsMustBeDifferent": "El email del segundo padre/madre debe ser diferente al del primero",
+      "expectedLevelRequired": "El nivel esperado es requerido cuando el estudiante no está nivelado",
+      "currentLevelRequired": "El nivel actual es requerido cuando el estudiante no está nivelado",
+      "expectedLevelHigherThanCurrent": "El nivel esperado debe ser mayor que el nivel actual"
     }
   },
   "teachers": {
@@ -199,7 +218,10 @@
     "noTeachers": "No hay maestros registrados",
     "backToSchoolInfo": "Volver a Información de la Escuela",
     "noTeachersToShow": "No hay maestros para mostrar",
-    "roles": "Roles"
+    "roles": "Roles",
+    "emailPlaceholder": "maestro@escuela.edu",
+    "firstNamePlaceholder": "Nombre del maestro",
+    "lastNamePlaceholder": "Apellido del maestro"
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -529,9 +551,10 @@
     "loadingReportCard": "Cargando boleta...",
     "errorLoadingReportCard": "Error al cargar la boleta",
     "errorMessage": "No se pudo cargar la boleta de calificaciones",
-    "exportError": "Error al exportar el PDF. Por favor, inténtalo de nuevo."
+    "exportError": "Error al exportar el PDF. Por favor, inténtalo de nuevo.",
+    "manageReportCards": "Gestionar Boletas"	
   },
-    "breadcrumbs": {
+  "breadcrumbs": {
     "groups": "Grupos",
     "students": "Estudiantes",
     "users": "Usuarios",
@@ -771,7 +794,8 @@
     "errorAddingLessonTitle": "Error agregando Lección",
     "errorDeletingLesson": "Error al eliminar Lección",
     "errorDeletingLessonTitle": "Error eliminando Lección",
-    "createdFromTemplateSuccess": "Proyección creada exitosamente desde la plantilla"
+    "createdFromTemplateSuccess": "Proyección creada exitosamente desde la plantilla",
+    "noProjectionsDescription": "No se han creado proyecciones para este estudiante"
   },
   "dailyGoals": {
     "title": "Metas Diarias",
@@ -845,7 +869,7 @@
     "searchStudents": "Buscar estudiantes...",
     "noStudentsFound": "No se encontraron estudiantes",
     "createSuccessMulti": "{{count}} estudiante(s) asignado(s) exitosamente a {{teacherName}}",
-    "groupName": "Nombre del Grupo",
+    "groupName": "Nombre",
     "groupNameRequired": "El nombre del grupo es requerido",
     "groupNamePlaceholder": "Ingrese el nombre del grupo",
     "schoolYear": "Año Escolar",
@@ -858,7 +882,7 @@
     "wizardStep3Description": "Revise y confirme la creación del grupo",
     "groupDetail": "Detalle del Grupo",
     "editGroup": "Editar Grupo",
-    "studentsAssigned": "Estudiantes Asignados",
+    "studentsAssigned": "Estudiantes",
     "viewDetails": "Ver Detalles",
     "assignStudent": "Asignar Estudiante",
     "noStudentsAssigned": "No hay estudiantes asignados a este maestro",

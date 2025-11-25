@@ -63,7 +63,11 @@
     "parent": "Parent",
     "parents": "Parents",
     "admin": "Admin",
-    "administrator": "Administrator"
+    "administrator": "Administrator",
+    "pageNotFound": "Page not found",
+    "pageNotFoundDescription": "The page you are looking for does not exist or is not available.",
+    "pageNotFoundContactAdmin": "If you believe this is an error, contact your administrator.",
+    "pageNotFoundBackToHome": "Back to Home"
   },
   "configuration": {
     "title": "Settings",
@@ -140,8 +144,10 @@
     "certificationType": "Certification Type",
     "selectCertificationType": "Select certification type",
     "contactPhone": "Contact Phone",
+    "email": "Email",
+    "emailPlaceholder": "student@email.com",
     "fullAddress": "Full address",
-    "leveledStudent": "Leveled Student",
+    "notLeveledStudent": "Not leveled student",
     "expectedLevel": "Expected Level",
     "currentLevel": "Current Level",
     "expectedLevelPlaceholder": "E.g: 6th grade",
@@ -175,32 +181,45 @@
     "academicInfo": "Academic Information",
     "parentsInfo": "Parents Information",
     "noParents": "No parent information has been registered",
+    "selectExistingParent": "Select existing parent",
+    "searchParentPlaceholder": "Search parent by name or email...",
     "step1Description": "Enter student's basic information",
     "step2Description": "Enter academic details",
     "step3Description": "Add parent/guardian information",
     "step4Description": "Review and confirm",
-    "createSuccess": "Student created successfully",
-    "createError": "Error creating student",
-    "age": "Age",
+      "createSuccess": "Student created successfully",
+      "createError": "Error creating student",
+      "deactivateStudent": "Deactivate Student",
+      "deactivateConfirmMessage": "Are you sure you want to deactivate student \"{{studentName}}\"?",
+      "deactivateSuccess": "Student {{studentName}} deactivated successfully",
+      "deactivateError": "Error deactivating student",
+      "age": "Age",
     "ageYears": "{{age}} years",
     "certification": "Certification",
     "graduation": "Graduation",
     "level": "Level",
-    "schoolGrade": "School Grade",
-    "validation": {
+      "schoolGrade": "School Grade",
+      "selectLevel": "Select level",
+      "validation": {
       "firstNameRequired": "First name is required",
       "lastNameRequired": "Last name is required",
       "birthDateRequired": "Birth date is required",
       "birthDateFuture": "Birth date must be before today",
+      "birthDateMinimumAge": "Student must be at least 3 years old",
+      "studentEmailRequired": "Student email is required",
       "certificationTypeRequired": "Certification type is required",
       "graduationDateRequired": "Graduation date is required",
       "graduationDateBeforeBirth": "Graduation date must be after birth date",
+      "graduationDateFuture": "Graduation date must be in the future",
       "parentNameRequired": "Parent's first name is required",
       "parentLastNameRequired": "Parent's last name is required",
       "parentEmailRequired": "Parent's email is required",
       "emailInvalid": "Invalid email",
       "relationshipRequired": "Relationship is required",
-      "parentEmailsMustBeDifferent": "Second parent's email must be different from the first"
+      "parentEmailsMustBeDifferent": "Second parent's email must be different from the first",
+      "expectedLevelRequired": "Expected level is required when the student is not leveled",
+      "currentLevelRequired": "Current level is required when the student is not leveled",
+      "expectedLevelHigherThanCurrent": "Expected level must be higher than current level"
     }
   },
   "teachers": {
@@ -217,7 +236,10 @@
     "noTeachers": "No registered teachers",
     "backToSchoolInfo": "Back to School Information",
     "noTeachersToShow": "No teachers to show",
-    "roles": "Roles"
+    "roles": "Roles",
+    "emailPlaceholder": "teacher@school.edu",
+    "firstNamePlaceholder": "Teacher first name",
+    "lastNamePlaceholder": "Teacher last name"
   },
   "users": {
     "title": "User Management",
@@ -539,7 +561,8 @@
     "loadingReportCard": "Loading report card...",
     "errorLoadingReportCard": "Error loading report card",
     "errorMessage": "Could not load the report card",
-    "exportError": "Error exporting PDF. Please try again."
+    "exportError": "Error exporting PDF. Please try again.",
+    "manageReportCards": "Manage Report Cards"
   },
     "breadcrumbs": {
     "groups": "Groups",
@@ -768,7 +791,8 @@
     "errorAddingLessonTitle": "Error Adding Lecture",
     "errorDeletingLesson": "Error deleting lesson",
     "errorDeletingLessonTitle": "Error Deleting Lecture",
-    "createdFromTemplateSuccess": "Projection created successfully from template"
+    "createdFromTemplateSuccess": "Projection created successfully from template",
+    "noProjectionsDescription": "No projections have been created for this student"
   },
   "dailyGoals": {
     "title": "Daily Goals",
@@ -840,7 +864,7 @@
     "selectedStudents": "{{count}} student(s) selected",
     "searchStudents": "Search students...",
     "createSuccessMulti": "{{count}} student(s) assigned successfully to {{teacherName}}",
-    "groupName": "Group Name",
+    "groupName": "Name",
     "groupNameRequired": "Group name is required",
     "groupNamePlaceholder": "Enter group name",
     "schoolYear": "School Year",
@@ -853,7 +877,7 @@
     "wizardStep3Description": "Review and confirm group creation",
     "groupDetail": "Group Detail",
     "editGroup": "Edit Group",
-    "studentsAssigned": "Students Assigned",
+    "studentsAssigned": "Students",
     "viewDetails": "View Details",
     "assignStudent": "Assign Student",
     "noStudentsAssigned": "No students assigned to this teacher",

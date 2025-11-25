@@ -5,7 +5,6 @@ import { TeachersTable } from "@/components/teachers-table"
 import { ViewToggle } from "@/components/view-toggle"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
-import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Navigate } from "react-router-dom"
 import { includesIgnoreAccents } from "@/lib/string-utils"
@@ -196,14 +195,6 @@ export default function TeachersPage() {
     navigate(`/users/${teacher.id}`, { state: { fromTeachers: true } })
   }
 
-  const handleBackToList = () => {
-    if (schoolId) {
-      navigate(`/school-settings/school-info`)
-    } else {
-      navigate('/school-settings/school-info')
-    }
-  }
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       // Toggle direction
@@ -259,7 +250,7 @@ export default function TeachersPage() {
 
   // Show loading state
   if (isLoading) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   const targetSchoolId = schoolId || userInfo?.schoolId
@@ -267,14 +258,6 @@ export default function TeachersPage() {
   // Show admin/teacher teachers list
   return (
     <div className="space-y-6">
-      {/* Mobile back button for school context */}
-      {schoolId && (
-        <div className="md:hidden">
-          <BackButton onClick={handleBackToList}>
-            {t("teachers.backToSchoolInfo")}
-          </BackButton>
-        </div>
-      )}
 
       {/* Error banner */}
       {error && (
@@ -283,7 +266,7 @@ export default function TeachersPage() {
           message={error}
         />
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <PageHeader
           title={schoolId ? t("teachers.titleForSchool") : t("teachers.title")}
           description={schoolId ? t("teachers.descriptionForSchool") : t("teachers.description")}

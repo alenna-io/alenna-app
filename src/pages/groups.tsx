@@ -192,7 +192,7 @@ export default function GroupsPage() {
   }, [filters.schoolYear, schoolYears])
 
   if (isLoadingUser || isLoading) {
-    return <Loading variant="list" />
+    return <Loading variant="table" />
   }
 
   // Only school admins can access groups
@@ -207,7 +207,7 @@ export default function GroupsPage() {
   return (
     <div className="space-y-6">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <PageHeader
           title={t("groups.title")}
           description={t("groups.description")}

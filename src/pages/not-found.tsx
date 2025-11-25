@@ -3,6 +3,7 @@ import { FileX } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 interface NotFoundPageProps {
   isUnauthorized?: boolean
@@ -10,6 +11,7 @@ interface NotFoundPageProps {
 
 export function NotFoundPage({ isUnauthorized = false }: NotFoundPageProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const handleBack = () => {
     navigate('/')
@@ -17,9 +19,9 @@ export function NotFoundPage({ isUnauthorized = false }: NotFoundPageProps) {
 
   const icon = FileX
   const iconColor = "text-gray-600 dark:text-gray-400"
-  const iconBg = "bg-gray-100 dark:bg-gray-800"
-  const title = "Página No Encontrada"
-  const message = "La página que buscas no existe o no está disponible."
+  const iconBg = "bg-gray-100 dark:bg-gray-900"
+  const title = t("common.pageNotFound")
+  const message = t("common.pageNotFoundDescription")
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -39,7 +41,7 @@ export function NotFoundPage({ isUnauthorized = false }: NotFoundPageProps) {
               </p>
               {isUnauthorized && (
                 <p className="text-sm text-muted-foreground">
-                  Si crees que esto es un error, contacta a tu administrador.
+                  {t("common.pageNotFoundContactAdmin")}
                 </p>
               )}
             </div>
@@ -48,7 +50,7 @@ export function NotFoundPage({ isUnauthorized = false }: NotFoundPageProps) {
               onClick={handleBack}
               className="cursor-pointer"
             >
-              Volver al Inicio
+              {t("common.pageNotFoundBackToHome")}
             </Button>
           </div>
         </CardContent>

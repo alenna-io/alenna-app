@@ -224,7 +224,7 @@ export default function ReportCardDetailPage() {
   const backDestination = isStudentOnly ? '/my-profile' : `/students/${studentId}/report-cards`
 
   return (
-    <div className="space-y-4 md:space-y-6 print:space-y-2 bg-blue-50 min-h-screen">
+    <div className="space-y-4 md:space-y-6 print:space-y-2 min-h-screen">
       {/* Mobile back button */}
       <div className="md:hidden print:hidden">
         <BackButton to={backDestination}>

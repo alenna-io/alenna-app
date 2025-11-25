@@ -26,6 +26,16 @@ interface CertificationType {
   isActive?: boolean
 }
 
+interface ExistingParent {
+  id: string
+  name: string
+  email: string
+}
+
+const LEVEL_OPTIONS = [
+  'L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11', 'L12'
+]
+
 export default function CreateStudentWizardPage() {
   const navigate = useNavigate()
   const api = useApi()
@@ -36,7 +46,12 @@ export default function CreateStudentWizardPage() {
   const [isSaving, setIsSaving] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
   const [certificationTypes, setCertificationTypes] = React.useState<CertificationType[]>([])
+  const [existingParents, setExistingParents] = React.useState<ExistingParent[]>([])
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [parent1Search, setParent1Search] = React.useState("")
+  const [parent2Search, setParent2Search] = React.useState("")
+  const [parent1Locked, setParent1Locked] = React.useState(false)
+  const [parent2Locked, setParent2Locked] = React.useState(false)
   const [isCreatingCertification, setIsCreatingCertification] = React.useState(false)
   const [newCertificationName, setNewCertificationName] = React.useState("")
   const [newCertificationDescription, setNewCertificationDescription] = React.useState("")
@@ -49,12 +64,13 @@ export default function CreateStudentWizardPage() {
   const [formData, setFormData] = React.useState({
     firstName: "",
     lastName: "",
+    email: "",
     birthDate: "",
     contactPhone: "",
     address: "",
     certificationTypeId: "",
     graduationDate: "",
-    isLeveled: false,
+    isLeveled: true,
     expectedLevel: "",
     currentLevel: "",
     parent1FirstName: "",
@@ -77,8 +93,38 @@ export default function CreateStudentWizardPage() {
 
       try {
         setIsLoading(true)
+
+        // Always load certification types first so the wizard works even if we cannot load users
         const types = await api.schools.getCertificationTypes(userInfo.schoolId)
         setCertificationTypes(types as CertificationType[])
+
+        // Try to load existing parents from current school's students, but do not block the wizard if this fails
+        try {
+          const studentsData = await api.students.getAll()
+
+          const parentsMap = new Map<string, ExistingParent>()
+
+            ; (studentsData as any[]).forEach((s) => {
+              const studentParents = (s.parents as any[]) || []
+              studentParents.forEach((p) => {
+                if (!p || !p.id || !p.email) return
+                if (parentsMap.has(p.id)) return
+
+                const name = (p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email) as string
+
+                parentsMap.set(p.id as string, {
+                  id: p.id as string,
+                  name,
+                  email: p.email as string,
+                })
+              })
+            })
+
+          setExistingParents(Array.from(parentsMap.values()))
+        } catch (studentsError) {
+          console.warn('Could not load existing parents for wizard:', studentsError)
+          setExistingParents([])
+        }
       } catch (error) {
         console.error('Error fetching wizard data:', error)
         toast.error(t("students.createError") || "Error loading data")
@@ -99,20 +145,64 @@ export default function CreateStudentWizardPage() {
     if (step === 1) {
       if (!formData.firstName.trim()) newErrors.firstName = t("students.validation.firstNameRequired")
       if (!formData.lastName.trim()) newErrors.lastName = t("students.validation.lastNameRequired")
+      if (!formData.email.trim()) {
+        newErrors.email = t("students.validation.studentEmailRequired") || "El correo del estudiante es requerido"
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = t("students.validation.emailInvalid") || "Email inválido"
+      }
       if (!formData.birthDate) {
         newErrors.birthDate = t("students.validation.birthDateRequired")
       } else {
         const birthDate = new Date(formData.birthDate)
-        if (birthDate >= new Date()) newErrors.birthDate = t("students.validation.birthDateFuture")
+        const today = new Date()
+        if (birthDate >= today) {
+          newErrors.birthDate = t("students.validation.birthDateFuture")
+        } else {
+          // Calculate age
+          const age = today.getFullYear() - birthDate.getFullYear()
+          const monthDiff = today.getMonth() - birthDate.getMonth()
+          const dayDiff = today.getDate() - birthDate.getDate()
+
+          // Adjust age if birthday hasn't occurred this year yet
+          const actualAge = (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) ? age - 1 : age
+
+          if (actualAge < 3) {
+            newErrors.birthDate = t("students.validation.birthDateMinimumAge")
+          }
+        }
       }
     } else if (step === 2) {
       if (!formData.certificationTypeId) newErrors.certificationTypeId = t("students.validation.certificationTypeRequired")
       if (!formData.graduationDate) {
         newErrors.graduationDate = t("students.validation.graduationDateRequired")
-      } else if (formData.birthDate) {
-        const birth = new Date(formData.birthDate)
+      } else {
         const grad = new Date(formData.graduationDate)
-        if (grad <= birth) newErrors.graduationDate = t("students.validation.graduationDateBeforeBirth")
+        const today = new Date()
+        if (grad <= today) {
+          newErrors.graduationDate = t("students.validation.graduationDateFuture")
+        } else if (formData.birthDate) {
+          const birth = new Date(formData.birthDate)
+          if (grad <= birth) newErrors.graduationDate = t("students.validation.graduationDateBeforeBirth")
+        }
+      }
+
+      // When the student is marked as NOT leveled in the UI, levels are required and expected must be higher than current
+      if (!formData.isLeveled) {
+        if (!formData.expectedLevel) {
+          newErrors.expectedLevel = t("students.validation.expectedLevelRequired")
+        }
+        if (!formData.currentLevel) {
+          newErrors.currentLevel = t("students.validation.currentLevelRequired")
+        }
+
+        if (formData.expectedLevel && formData.currentLevel) {
+          const expectedIndex = LEVEL_OPTIONS.indexOf(formData.expectedLevel)
+          const currentIndex = LEVEL_OPTIONS.indexOf(formData.currentLevel)
+
+          if (expectedIndex !== -1 && currentIndex !== -1 && expectedIndex <= currentIndex) {
+            newErrors.expectedLevel = t("students.validation.expectedLevelHigherThanCurrent")
+          }
+        }
       }
     } else if (step === 3) {
       // Parent 1
@@ -268,6 +358,7 @@ export default function CreateStudentWizardPage() {
         schoolId: userInfo.schoolId,
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
         birthDate: new Date(formData.birthDate).toISOString(),
         certificationTypeId: formData.certificationTypeId,
         graduationDate: new Date(formData.graduationDate).toISOString(),
@@ -300,7 +391,7 @@ export default function CreateStudentWizardPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="w-full p-3 space-y-6 max-w-4xl mx-auto">
+      <div className="w-full p-3 space-y-6">
         <BackButton to="/students">
           {t("students.backToStudents")}
         </BackButton>
@@ -385,15 +476,27 @@ export default function CreateStudentWizardPage() {
                   </Field>
                 </div>
 
+                <Field>
+                  <FieldLabel htmlFor="birthDate">{t("students.birthDate")} <span className="text-destructive">*</span></FieldLabel>
+                  <DatePicker
+                    value={formData.birthDate}
+                    onChange={(date) => setFormData({ ...formData, birthDate: date || "" })}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                  {errors.birthDate && <p className="text-sm text-destructive mt-1">{errors.birthDate}</p>}
+                </Field>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field>
-                    <FieldLabel htmlFor="birthDate">{t("students.birthDate")} <span className="text-destructive">*</span></FieldLabel>
-                    <DatePicker
-                      value={formData.birthDate}
-                      onChange={(date) => setFormData({ ...formData, birthDate: date || "" })}
-                      max={new Date().toISOString().split('T')[0]}
+                    <FieldLabel htmlFor="email">{t("students.email")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder={t("students.emailPlaceholder") || "student@email.com"}
+                      className={errors.email ? "border-destructive" : ""}
                     />
-                    {errors.birthDate && <p className="text-sm text-destructive mt-1">{errors.birthDate}</p>}
+                    {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="contactPhone">{t("students.contactPhone")}</FieldLabel>
@@ -415,6 +518,7 @@ export default function CreateStudentWizardPage() {
                     placeholder={t("students.fullAddress")}
                   />
                 </Field>
+
               </div>
             )}
 
@@ -534,34 +638,50 @@ export default function CreateStudentWizardPage() {
                   <input
                     type="checkbox"
                     id="isLeveled"
-                    checked={formData.isLeveled}
-                    onChange={(e) => setFormData({ ...formData, isLeveled: e.target.checked })}
+                    checked={!formData.isLeveled}
+                    onChange={(e) => setFormData({ ...formData, isLeveled: !e.target.checked })}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <FieldLabel htmlFor="isLeveled" className="cursor-pointer m-0">
-                    {t("students.leveledStudent")}
+                    {t("students.notLeveledStudent")}
                   </FieldLabel>
                 </div>
 
-                {formData.isLeveled && (
+                {!formData.isLeveled && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <Field>
                       <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
-                      <Input
-                        id="expectedLevel"
+                      <Select
                         value={formData.expectedLevel}
-                        onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
-                        placeholder={t("students.expectedLevelPlaceholder")}
-                      />
+                        onValueChange={(value) => setFormData({ ...formData, expectedLevel: value })}
+                      >
+                        <SelectTrigger className={errors.expectedLevel ? "border-destructive" : ""}>
+                          <SelectValue placeholder={t("students.selectLevel") || t("students.expectedLevelPlaceholder")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEVEL_OPTIONS.map((level) => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.expectedLevel && <p className="text-sm text-destructive mt-1">{errors.expectedLevel}</p>}
                     </Field>
                     <Field>
                       <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
-                      <Input
-                        id="currentLevel"
+                      <Select
                         value={formData.currentLevel}
-                        onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
-                        placeholder={t("students.currentLevelPlaceholder")}
-                      />
+                        onValueChange={(value) => setFormData({ ...formData, currentLevel: value })}
+                      >
+                        <SelectTrigger className={errors.currentLevel ? "border-destructive" : ""}>
+                          <SelectValue placeholder={t("students.selectLevel") || t("students.currentLevelPlaceholder")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEVEL_OPTIONS.map((level) => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.currentLevel && <p className="text-sm text-destructive mt-1">{errors.currentLevel}</p>}
                     </Field>
                   </div>
                 )}
@@ -571,8 +691,80 @@ export default function CreateStudentWizardPage() {
             {/* Step 3: Parents */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-md mb-6">
+                <div>
                   <h3 className="font-medium mb-4">{t("students.parent1")} <span className="text-destructive">*</span></h3>
+
+                  {existingParents.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <FieldLabel className="text-xs mb-1">
+                        {t("students.selectExistingParent")}
+                      </FieldLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          const parent = existingParents.find((p) => p.id === value)
+                          if (parent) {
+                            const [firstName, ...rest] = parent.name.split(" ")
+                            setFormData((prev) => ({
+                              ...prev,
+                              parent1FirstName: firstName || "",
+                              parent1LastName: rest.join(" ") || "",
+                              parent1Email: parent.email,
+                            }))
+                            setParent1Locked(true)
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("students.searchParentPlaceholder")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <div className="px-2 pb-1">
+                            <Input
+                              value={parent1Search}
+                              onChange={(e) => setParent1Search(e.target.value)}
+                              placeholder={t("students.searchParentPlaceholder")}
+                              className="h-8"
+                            />
+                          </div>
+                          {existingParents
+                            .filter((parent) =>
+                              parent1Search.trim()
+                                ? `${parent.name} ${parent.email}`
+                                  .toLowerCase()
+                                  .includes(parent1Search.trim().toLowerCase())
+                                : true
+                            )
+                            .map((parent) => (
+                              <SelectItem key={parent.id} value={parent.id}>
+                                {parent.name} ({parent.email})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {parent1Locked && (
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => {
+                              setParent1Locked(false)
+                              setFormData((prev) => ({
+                                ...prev,
+                                parent1FirstName: "",
+                                parent1LastName: "",
+                                parent1Email: "",
+                              }))
+                            }}
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Field>
                       <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
@@ -581,6 +773,7 @@ export default function CreateStudentWizardPage() {
                         onChange={(e) => setFormData({ ...formData, parent1FirstName: e.target.value })}
                         placeholder={t("students.parentNamePlaceholder")}
                         className={errors.parent1FirstName ? "border-destructive" : ""}
+                        disabled={parent1Locked}
                       />
                       {errors.parent1FirstName && <p className="text-sm text-destructive mt-1">{errors.parent1FirstName}</p>}
                     </Field>
@@ -591,6 +784,7 @@ export default function CreateStudentWizardPage() {
                         onChange={(e) => setFormData({ ...formData, parent1LastName: e.target.value })}
                         placeholder={t("students.parentLastNamePlaceholder")}
                         className={errors.parent1LastName ? "border-destructive" : ""}
+                        disabled={parent1Locked}
                       />
                       {errors.parent1LastName && <p className="text-sm text-destructive mt-1">{errors.parent1LastName}</p>}
                     </Field>
@@ -604,6 +798,7 @@ export default function CreateStudentWizardPage() {
                         onChange={(e) => setFormData({ ...formData, parent1Email: e.target.value })}
                         placeholder={t("students.parentEmailPlaceholder")}
                         className={errors.parent1Email ? "border-destructive" : ""}
+                        disabled={parent1Locked}
                       />
                       {errors.parent1Email && <p className="text-sm text-destructive mt-1">{errors.parent1Email}</p>}
                     </Field>
@@ -642,8 +837,80 @@ export default function CreateStudentWizardPage() {
                 </div>
 
                 {formData.hasSecondParent && (
-                  <div className="bg-gray-50 p-4 rounded-md">
+                  <div className="mt-10">
                     <h3 className="font-medium mb-4">{t("students.parent2")}</h3>
+
+                    {existingParents.length > 0 && (
+                      <div className="mb-4 space-y-2">
+                        <FieldLabel className="text-xs mb-1">
+                          {t("students.selectExistingParent")}
+                        </FieldLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            const parent = existingParents.find((p) => p.id === value)
+                            if (parent) {
+                              const [firstName, ...rest] = parent.name.split(" ")
+                              setFormData((prev) => ({
+                                ...prev,
+                                parent2FirstName: firstName || "",
+                                parent2LastName: rest.join(" ") || "",
+                                parent2Email: parent.email,
+                              }))
+                              setParent2Locked(true)
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("students.searchParentPlaceholder")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <div className="px-2 pb-1">
+                              <Input
+                                value={parent2Search}
+                                onChange={(e) => setParent2Search(e.target.value)}
+                                placeholder={t("students.searchParentPlaceholder")}
+                                className="h-8"
+                              />
+                            </div>
+                            {existingParents
+                              .filter((parent) =>
+                                parent2Search.trim()
+                                  ? `${parent.name} ${parent.email}`
+                                    .toLowerCase()
+                                    .includes(parent2Search.trim().toLowerCase())
+                                  : true
+                              )
+                              .map((parent) => (
+                                <SelectItem key={parent.id} value={parent.id}>
+                                  {parent.name} ({parent.email})
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {parent2Locked && (
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                setParent2Locked(false)
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  parent2FirstName: "",
+                                  parent2LastName: "",
+                                  parent2Email: "",
+                                }))
+                              }}
+                            >
+                              {t("common.delete")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Field>
                         <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
@@ -652,6 +919,7 @@ export default function CreateStudentWizardPage() {
                           onChange={(e) => setFormData({ ...formData, parent2FirstName: e.target.value })}
                           placeholder={t("students.secondParentNamePlaceholder")}
                           className={errors.parent2FirstName ? "border-destructive" : ""}
+                          disabled={parent2Locked}
                         />
                         {errors.parent2FirstName && <p className="text-sm text-destructive mt-1">{errors.parent2FirstName}</p>}
                       </Field>
@@ -662,6 +930,7 @@ export default function CreateStudentWizardPage() {
                           onChange={(e) => setFormData({ ...formData, parent2LastName: e.target.value })}
                           placeholder={t("students.secondParentLastNamePlaceholder")}
                           className={errors.parent2LastName ? "border-destructive" : ""}
+                          disabled={parent2Locked}
                         />
                         {errors.parent2LastName && <p className="text-sm text-destructive mt-1">{errors.parent2LastName}</p>}
                       </Field>
@@ -675,6 +944,7 @@ export default function CreateStudentWizardPage() {
                           onChange={(e) => setFormData({ ...formData, parent2Email: e.target.value })}
                           placeholder={t("students.secondParentEmailPlaceholder")}
                           className={errors.parent2Email ? "border-destructive" : ""}
+                          disabled={parent2Locked}
                         />
                         {errors.parent2Email && <p className="text-sm text-destructive mt-1">{errors.parent2Email}</p>}
                       </Field>
@@ -710,6 +980,7 @@ export default function CreateStudentWizardPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div><span className="text-muted-foreground">{t("common.name")}:</span> {formData.firstName} {formData.lastName}</div>
                     <div><span className="text-muted-foreground">{t("students.birthDate")}:</span> {formData.birthDate}</div>
+                    <div><span className="text-muted-foreground">{t("students.email")}:</span> {formData.email}</div>
                     <div><span className="text-muted-foreground">{t("students.contactPhone")}:</span> {formData.contactPhone || "-"}</div>
                     <div><span className="text-muted-foreground">{t("common.address")}:</span> {formData.address || "-"}</div>
                   </div>
@@ -723,7 +994,7 @@ export default function CreateStudentWizardPage() {
                       {certificationTypes.find(t => t.id === formData.certificationTypeId)?.name}
                     </div>
                     <div><span className="text-muted-foreground">{t("students.graduationDate")}:</span> {formData.graduationDate}</div>
-                    {formData.isLeveled && (
+                    {!formData.isLeveled && (
                       <>
                         <div><span className="text-muted-foreground">{t("students.expectedLevel")}:</span> {formData.expectedLevel}</div>
                         <div><span className="text-muted-foreground">{t("students.currentLevel")}:</span> {formData.currentLevel}</div>

@@ -100,7 +100,7 @@ export default function SchoolSettingsPage() {
   };
 
   if (loading) {
-    return <Loading variant="list" />;
+    return <Loading variant="table" />;
   }
 
   // Only school admins can access school settings (not SUPERADMIN or others)
