@@ -54,9 +54,11 @@ export default function MyProfilePage() {
             contactPhone: profile.contactPhone ?? '',
             isLeveled: profile.isLeveled,
             expectedLevel: profile.expectedLevel,
+            currentLevel: (profile as { currentLevel?: string }).currentLevel,
             address: profile.address ?? '',
             parents: profile.parents ?? [],
             age: calculateAge(profile.birthDate),
+            isActive: ((profile as { isActive?: boolean }).isActive ?? true),
           }
 
           setStudent(derivedStudent)

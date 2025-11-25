@@ -5,7 +5,6 @@ import { TeachersTable } from "@/components/teachers-table"
 import { ViewToggle } from "@/components/view-toggle"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
-import { BackButton } from "@/components/ui/back-button"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { Navigate } from "react-router-dom"
 import { includesIgnoreAccents } from "@/lib/string-utils"
@@ -194,14 +193,6 @@ export default function TeachersPage() {
   const handleTeacherSelect = (teacher: Teacher) => {
     // Navigate to user detail page for editing
     navigate(`/users/${teacher.id}`, { state: { fromTeachers: true } })
-  }
-
-  const handleBackToList = () => {
-    if (schoolId) {
-      navigate(`/school-settings/school-info`)
-    } else {
-      navigate('/school-settings/school-info')
-    }
   }
 
   const handleSort = (field: SortField) => {
