@@ -17,6 +17,7 @@ import { Plus } from "lucide-react"
 import { TeacherFormDialog } from "@/components/teacher-form-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 type SortField = "firstName" | "lastName" | null
 type SortDirection = "asc" | "desc"
@@ -207,7 +208,6 @@ export default function TeachersPage() {
   }
 
   const handleCreateTeacher = async (data: {
-    clerkId: string
     email: string
     firstName: string
     lastName: string
@@ -215,32 +215,42 @@ export default function TeachersPage() {
   }) => {
     const targetSchoolId = schoolId || userInfo?.schoolId
     if (!targetSchoolId) {
-      throw new Error("No se pudo determinar la escuela")
+      toast.error(t("teachers.createError") || "No se pudo determinar la escuela")
+      return
     }
-    await api.createUser({ ...data, schoolId: targetSchoolId })
-    // Reload teachers and count - use /me endpoint for school admins
-    const teachersData = isSchoolAdmin
-      ? await api.schools.getMyTeachers()
-      : await api.schools.getTeachers(targetSchoolId)
-    const transformedTeachers: Teacher[] = teachersData.map((teacher: unknown) => {
-      const t = teacher as Record<string, unknown>
-      return {
-        id: t.id as string,
-        clerkId: t.clerkId as string,
-        email: t.email as string,
-        firstName: t.firstName as string,
-        lastName: t.lastName as string,
-        fullName: t.fullName as string,
-        schoolId: t.schoolId as string,
-        roles: (t.roles || []) as Teacher['roles'],
-        primaryRole: t.primaryRole as Teacher['primaryRole'],
-      }
-    })
-    setTeachers(transformedTeachers)
-    const countData = isSchoolAdmin
-      ? await api.schools.getMyTeachersCount()
-      : await api.schools.getTeachersCount(targetSchoolId)
-    setTeachersCount(countData.count)
+
+    try {
+      await api.createUser({ ...data, schoolId: targetSchoolId })
+      // Reload teachers and count - use /me endpoint for school admins
+      const teachersData = isSchoolAdmin
+        ? await api.schools.getMyTeachers()
+        : await api.schools.getTeachers(targetSchoolId)
+      const transformedTeachers: Teacher[] = teachersData.map((teacher: unknown) => {
+        const t = teacher as Record<string, unknown>
+        return {
+          id: t.id as string,
+          clerkId: t.clerkId as string,
+          email: t.email as string,
+          firstName: t.firstName as string,
+          lastName: t.lastName as string,
+          fullName: t.fullName as string,
+          schoolId: t.schoolId as string,
+          roles: (t.roles || []) as Teacher['roles'],
+          primaryRole: t.primaryRole as Teacher['primaryRole'],
+        }
+      })
+      setTeachers(transformedTeachers)
+      const countData = isSchoolAdmin
+        ? await api.schools.getMyTeachersCount()
+        : await api.schools.getTeachersCount(targetSchoolId)
+      setTeachersCount(countData.count)
+      toast.success(t("teachers.createSuccess") || "Maestro creado correctamente")
+    } catch (error) {
+      const err = error as Error
+      console.error("Error creating teacher:", err)
+      toast.error(err.message || t("teachers.createError") || "Error al crear maestro")
+      throw error
+    }
   }
 
   // Show permission error if user doesn't have access
