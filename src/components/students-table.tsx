@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
-import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Trash2, PowerOff } from "lucide-react"
+import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Trash2 } from "lucide-react"
 import type { Student } from "@/types/student"
 import {
   DropdownMenu,
@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTranslation } from "react-i18next"
-import { StatusBadge } from "@/components/ui/status-badge"
 
 interface StudentsTableProps {
   students: Student[]
@@ -28,7 +27,6 @@ interface StudentsTableProps {
   onRemoveFromGroup?: (student: Student, groupAssignmentId: string) => void
   groupAssignmentMap?: Map<string, string> // Maps student ID to group assignment ID
   showRemoveFromGroup?: boolean
-  onDeactivateStudent?: (student: Student) => void
 }
 
 interface ColumnConfig {
@@ -49,8 +47,7 @@ export function StudentsTable({
   onPageChange,
   onRemoveFromGroup,
   groupAssignmentMap,
-  showRemoveFromGroup = false,
-  onDeactivateStudent,
+  showRemoveFromGroup = false
 }: StudentsTableProps) {
   const { t } = useTranslation()
 
@@ -60,7 +57,6 @@ export function StudentsTable({
     { key: 'age', label: t("students.age"), sortable: true },
     { key: 'certification', label: t("students.certification"), sortable: true },
     { key: 'graduation', label: t("students.graduation"), sortable: true },
-    { key: 'status', label: t("common.status"), sortable: false },
     { key: 'nivel', label: t("students.level"), sortable: false },
     { key: 'gradoEscolar', label: t("students.schoolGrade"), sortable: false },
     { key: 'actions', label: '', sortable: false },
@@ -202,16 +198,6 @@ export function StudentsTable({
                           )}
                         </div>
                       )
-                    case 'status':
-                      return (
-                        <div className="text-sm flex items-center gap-2">
-                          <StatusBadge
-                            isActive={student.isActive}
-                            activeText={t("users.active")}
-                            inactiveText={t("users.inactive")}
-                          />
-                        </div>
-                      )
                     case 'gradoEscolar':
                       return (
                         <div className="flex items-center gap-2">
@@ -250,18 +236,6 @@ export function StudentsTable({
                               <Eye className="h-4 w-4 mr-2" />
                               {t("common.view")}
                             </DropdownMenuItem>
-                            {onDeactivateStudent && student.isActive && (
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onDeactivateStudent(student)
-                                }}
-                                className="cursor-pointer text-orange-600"
-                              >
-                                <PowerOff className="h-4 w-4 mr-2" />
-                                {t("students.deactivateStudent")}
-                              </DropdownMenuItem>
-                            )}
                             {showRemoveFromGroup && onRemoveFromGroup && groupAssignmentMap?.has(student.id) && (
                               <DropdownMenuItem
                                 onClick={(e) => {

@@ -15,7 +15,6 @@ interface UserProfileProps {
   userId: string
   onBack: () => void
   user?: any // Optional pre-loaded user data
-  context?: 'users' | 'teachers'
   onDeactivate?: (user: UserDetail) => void
   onReactivate?: (user: UserDetail) => void
   onDelete?: (user: UserDetail) => void
@@ -42,7 +41,7 @@ interface UserDetail {
   updatedAt: string
 }
 
-export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate, onReactivate, onDelete, canManage = false, currentUserId, currentUserEmail, context = 'users' }: UserProfileProps) {
+export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate, onReactivate, onDelete, canManage = false, currentUserId, currentUserEmail }: UserProfileProps) {
   const { t, i18n } = useTranslation()
   const api = useApi()
   const { userInfo } = useUser()
@@ -162,7 +161,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4 md:hidden">
-          {context === 'teachers' ? t("teachers.backToSchoolInfo") : t("users.backToUsers")}
+          {t("users.backToUsers")}
         </Button>
         <Loading variant="spinner" message={t("common.loading")} />
       </div>
@@ -173,7 +172,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4 md:hidden">
-          {context === 'teachers' ? t("teachers.backToSchoolInfo") : t("users.backToUsers")}
+          {t("users.backToUsers")}
         </Button>
         <div className="text-center py-8">
           <p className="text-red-600">{error || t("users.loadError")}</p>
@@ -186,7 +185,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
     return (
       <div className="space-y-6">
         <Button variant="outline" onClick={onBack} className="mb-4 md:hidden">
-          {context === 'teachers' ? t("teachers.backToSchoolInfo") : t("users.backToUsers")}
+          {t("users.backToUsers")}
         </Button>
         <div className="text-center py-8">
           <p className="text-muted-foreground">{t("users.userNotFound")}</p>
@@ -207,13 +206,11 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
           onClick={onBack}
           className="mb-4 md:hidden"
         >
-          {context === 'teachers' ? t("teachers.backToSchoolInfo") : t("users.backToUsers")}
+          {t("users.backToUsers")}
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold">
-        {context === 'teachers' ? t("teachers.title") : t("users.userProfile")}
-      </h1>
+      <h1 className="text-3xl font-bold">{t("users.userProfile")}</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Header */}

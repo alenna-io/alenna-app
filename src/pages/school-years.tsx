@@ -11,7 +11,6 @@ import { useApi } from "@/services/api";
 import type { SchoolYear, ModuleData } from "@/services/api";
 import { toast } from "sonner";
 import { SchoolYearsTable } from "@/components/school-years-table";
-import { SchoolYearFormDialog } from "@/components/school-year-form-dialog";
 import { useTranslation } from "react-i18next";
 
 
@@ -23,8 +22,6 @@ export default function SchoolYearsPage() {
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
   const [isReadOnly, setIsReadOnly] = React.useState(false);
-  const [editingYear, setEditingYear] = React.useState<SchoolYear | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [errorDialog, setErrorDialog] = React.useState<{
     open: boolean;
     title?: string;
@@ -82,50 +79,13 @@ export default function SchoolYearsPage() {
   };
 
   const handleCreate = () => {
-    setEditingYear(null);
-    setIsDialogOpen(true);
+    navigate("/school-settings/school-years/wizard");
   };
 
   const handleEdit = (year: SchoolYear) => {
-    setEditingYear(year);
-    setIsDialogOpen(true);
+    navigate(`/school-settings/school-years/wizard/${year.id}`);
   };
 
-  const handleSave = async (formData: {
-    name: string;
-    startDate: string;
-    endDate: string;
-    quarters: Array<{
-      id?: string;
-      name: string;
-      displayName: string;
-      startDate: string;
-      endDate: string;
-      order: number;
-      weeksCount: number;
-    }>;
-  }) => {
-    try {
-      if (editingYear) {
-        await api.schoolYears.update(editingYear.id, formData);
-        toast.success(t("schoolYears.updatedSuccess"));
-      } else {
-        await api.schoolYears.create(formData);
-        toast.success(t("schoolYears.createdSuccess"));
-      }
-      fetchSchoolYears();
-    } catch (error) {
-      console.error('Error saving school year:', error);
-      const errorMessage = error instanceof Error ? error.message : t("schoolYears.errorSaving");
-      setErrorDialog({
-        open: true,
-        title: t("common.error"),
-        message: errorMessage,
-      });
-      toast.error(errorMessage);
-      throw error; // Re-throw to let dialog handle it
-    }
-  };
 
   const handleSetActive = async (id: string) => {
     try {
@@ -210,7 +170,7 @@ export default function SchoolYearsPage() {
         </Button>
       </div>
 
-      <div className="flex justify-between items-center flex-wrap gap-6">
+      <div className="flex justify-between items-center">
         <PageHeader
           title={t("schoolYears.title")}
           description={t("schoolYears.description")}
@@ -235,19 +195,6 @@ export default function SchoolYearsPage() {
         canDelete={!isReadOnly}
       />
 
-      {/* Form Dialog */}
-      <SchoolYearFormDialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) {
-            setEditingYear(null)
-          }
-        }}
-        schoolYear={editingYear}
-        existingSchoolYears={schoolYears}
-        onSave={handleSave}
-      />
 
       {/* Error Dialog */}
       <ErrorDialog

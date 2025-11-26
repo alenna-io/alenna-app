@@ -146,20 +146,6 @@ export function BreadcrumbNav() {
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
 
-    // Special case: Teacher detail via /users/:id for SCHOOL_ADMIN coming from teachers page
-    // We detect this via location.state?.fromTeachers, which is set by TeachersPage.
-    const fromTeachers = (location.state as any)?.fromTeachers
-    const usersIndex = pathSegments.indexOf('users')
-    if (fromTeachers && usersIndex !== -1 && pathSegments.length > usersIndex + 1) {
-      const teacherListPath = `/schools/${userInfo?.schoolId || ''}/teachers`
-      const detailPath = location.pathname
-      setBreadcrumbs([
-        { label: t("breadcrumbs.teachers"), path: teacherListPath },
-        { label: userName || t("breadcrumbs.detail"), path: detailPath },
-      ])
-      return
-    }
-
     // Special case: Teachers module should be independent from Schools in breadcrumbs.
     // Any route that includes "teachers" will show only a single "Teachers" crumb.
     const teachersIndex = pathSegments.indexOf('teachers')
