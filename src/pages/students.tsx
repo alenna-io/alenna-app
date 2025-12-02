@@ -281,6 +281,7 @@ export default function StudentsPage() {
             isLeveled: s.isLeveled as boolean,
             expectedLevel: s.expectedLevel as string | undefined,
             address: (s.address || '') as string,
+            isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
           }
 
           setSelectedStudent(transformedStudent)

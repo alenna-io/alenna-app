@@ -160,6 +160,7 @@ export default function GroupDetailPage() {
                 isLeveled: s.isLeveled as boolean,
                 expectedLevel: s.expectedLevel as string | undefined,
                 address: (s.address || '') as string,
+                isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
               }
               fullStudents.push(student)
               assignmentMap.set(student.id, gs.id) // Map studentId to groupStudentId
@@ -254,6 +255,7 @@ export default function GroupDetailPage() {
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
               address: (s.address || '') as string,
+              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
             }
             updatedFullStudents.push(student)
             updatedAssignmentMap.set(student.id, gs.id)
@@ -338,6 +340,7 @@ export default function GroupDetailPage() {
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
               address: (s.address || '') as string,
+              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
             }
             updatedFullStudents.push(student)
             updatedAssignmentMap.set(student.id, gs.id)
