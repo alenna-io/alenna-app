@@ -9,6 +9,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, BookOpen, Plus } from "lucide-react"
 import { useApi } from "@/services/api"
 import { Loading } from "@/components/ui/loading"
@@ -39,7 +46,7 @@ export function PacePickerDialog({
   onClose,
   onSelect,
   categoryFilter,
-  levelFilter,
+  // levelFilter is deprecated - level filtering is now handled by the dropdown in the dialog
   title = "Seleccionar Lección",
   existingPaceCatalogIds = []
 }: PacePickerDialogProps) {
@@ -48,23 +55,51 @@ export function PacePickerDialog({
   const [paces, setPaces] = React.useState<PaceCatalogItem[]>([])
   const [loading, setLoading] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [selectedLevel, setSelectedLevel] = React.useState<string>("all")
 
   React.useEffect(() => {
     if (open) {
       fetchPaces()
+      setSelectedLevel("all") // Reset level filter when dialog opens
+      setSearchTerm("") // Reset search when dialog opens
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, categoryFilter, levelFilter])
+  }, [open, categoryFilter])
 
   const fetchPaces = async () => {
     try {
       setLoading(true)
-      const filters: { category?: string, level?: string } = {}
-      if (categoryFilter) filters.category = categoryFilter
-      if (levelFilter) filters.level = levelFilter
+      // Fetch ALL paces for the category (no level filter)
+      const filters: { category?: string } = {}
+      if (categoryFilter) {
+        filters.category = categoryFilter
+      }
 
       const data = await api.paceCatalog.get(filters)
-      setPaces(data)
+      // Sort by level first, then by code
+      const sortedData = [...data].sort((a, b) => {
+        // First sort by level (L1, L2, etc., with Electives at the end)
+        const getLevelSortValue = (levelId: string): string => {
+          if (levelId === 'Electives') return '99' // Put Electives at the end
+          const match = levelId.match(/L(\d+)/)
+          if (match) {
+            return match[1].padStart(2, '0')
+          }
+          return levelId // Fallback for other formats
+        }
+
+        const levelA = getLevelSortValue(a.levelId)
+        const levelB = getLevelSortValue(b.levelId)
+
+        if (levelA !== levelB) {
+          return levelA.localeCompare(levelB)
+        }
+        // Then sort by code
+        const codeA = parseInt(a.code) || 0
+        const codeB = parseInt(b.code) || 0
+        return codeA - codeB
+      })
+      setPaces(sortedData)
     } catch (error) {
       console.error('Error fetching Lectures:', error)
       setPaces([])
@@ -73,15 +108,44 @@ export function PacePickerDialog({
     }
   }
 
-  const filteredPaces = paces.filter(pace => {
-    if (!searchTerm) return true
-    const search = searchTerm.toLowerCase()
-    return (
-      pace.code.toLowerCase().includes(search) ||
-      pace.name.toLowerCase().includes(search) ||
-      pace.subSubjectName.toLowerCase().includes(search)
-    )
-  })
+  // Get unique levels from paces
+  const availableLevels = React.useMemo(() => {
+    const levels = new Set<string>()
+    paces.forEach(pace => {
+      if (pace.levelId) {
+        levels.add(pace.levelId)
+      }
+    })
+    return Array.from(levels).sort((a, b) => {
+      // Sort levels: L1, L2, ..., L12, Electives
+      if (a === 'Electives') return 1
+      if (b === 'Electives') return -1
+      const numA = parseInt(a.replace('L', '')) || 0
+      const numB = parseInt(b.replace('L', '')) || 0
+      return numA - numB
+    })
+  }, [paces])
+
+  const filteredPaces = React.useMemo(() => {
+    let filtered = paces
+
+    // Filter by level if selected
+    if (selectedLevel && selectedLevel !== "all") {
+      filtered = filtered.filter(pace => pace.levelId === selectedLevel)
+    }
+
+    // Filter by search term
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(pace =>
+        pace.code.toLowerCase().includes(search) ||
+        pace.name.toLowerCase().includes(search) ||
+        pace.subSubjectName.toLowerCase().includes(search)
+      )
+    }
+
+    return filtered
+  }, [paces, selectedLevel, searchTerm])
 
   const handleSelectPace = (pace: PaceCatalogItem) => {
     // Don't allow selecting paces that are already in the projection
@@ -113,21 +177,36 @@ export function PacePickerDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {categoryFilter && levelFilter
-              ? `Lecciones de ${categoryFilter} - ${levelFilter}`
+            {categoryFilter
+              ? `Lecciones de ${categoryFilter}`
               : 'Busca y selecciona una lección del catálogo'}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por código, nombre o tema..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        {/* Search and Level Filter */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por código, nombre o tema..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Nivel" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los niveles</SelectItem>
+              {availableLevels.map((level) => (
+                <SelectItem key={level} value={level}>
+                  {level}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* PACE List */}
