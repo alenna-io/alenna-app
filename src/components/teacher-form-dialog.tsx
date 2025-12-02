@@ -26,6 +26,7 @@ interface TeacherFormDialogProps {
   onOpenChange: (open: boolean) => void
   schoolId: string // Used implicitly - backend sets schoolId from authenticated user
   onSave: (data: {
+    clerkId: string
     email: string
     firstName: string
     lastName: string
@@ -153,7 +154,7 @@ export function TeacherFormDialog({
     try {
       setIsSaving(true)
       await onSave({
-        // Omit clerkId so the backend/ClerkService creates a new Clerk user automatically
+        clerkId: "", // Let backend generate it or handle it
         email: formData.email.trim(),
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),

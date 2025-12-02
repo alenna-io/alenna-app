@@ -22,8 +22,6 @@ import { Plus } from "lucide-react"
 import { StudentFormDialog } from "@/components/student-form-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
-import { toast } from "sonner"
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -68,10 +66,6 @@ export default function StudentsPage() {
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
   const [studentsCount, setStudentsCount] = React.useState<number>(0)
   const itemsPerPage = 10
-  const [deactivateStudentDialog, setDeactivateStudentDialog] = React.useState<{
-    open: boolean
-    student: Student | null
-  }>({ open: false, student: null })
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
   const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
@@ -220,9 +214,7 @@ export default function StudentsPage() {
               contactPhone: (s.contactPhone || '') as string,
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
-              currentLevel: s.currentLevel as string | undefined,
               address: (s.address || '') as string,
-              isActive: (s.isActive as boolean) ?? true,
             }
           })
 
@@ -288,9 +280,8 @@ export default function StudentsPage() {
             contactPhone: (s.contactPhone || '') as string,
             isLeveled: s.isLeveled as boolean,
             expectedLevel: s.expectedLevel as string | undefined,
-            currentLevel: s.currentLevel as string | undefined,
             address: (s.address || '') as string,
-            isActive: (s.isActive as boolean) ?? true,
+            isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
           }
 
           setSelectedStudent(transformedStudent)
@@ -411,9 +402,7 @@ export default function StudentsPage() {
                 contactPhone: (s.contactPhone || '') as string,
                 isLeveled: s.isLeveled as boolean,
                 expectedLevel: s.expectedLevel as string | undefined,
-                currentLevel: s.currentLevel as string | undefined,
                 address: (s.address || '') as string,
-                isActive: (s.isActive as boolean) ?? true,
               }
             })
             setStudents(transformedStudents)
@@ -476,7 +465,6 @@ export default function StudentsPage() {
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
               address: (s.address || '') as string,
-              isActive: (s.isActive as boolean) ?? true,
             }
           })
           setStudents(transformedStudents)
@@ -571,62 +559,12 @@ export default function StudentsPage() {
         contactPhone: (s.contactPhone || '') as string,
         isLeveled: s.isLeveled as boolean,
         expectedLevel: s.expectedLevel as string | undefined,
-        currentLevel: s.currentLevel as string | undefined,
         address: (s.address || '') as string,
-        isActive: (s.isActive as boolean) ?? true,
       }
     })
     setStudents(transformedStudents)
     const countData = await api.schools.getStudentsCount(targetSchoolId)
     setStudentsCount(countData.count)
-  }
-
-  const handleDeactivateStudent = (student: Student) => {
-    setDeactivateStudentDialog({ open: true, student })
-  }
-
-  const confirmDeactivateStudent = async () => {
-    const student = deactivateStudentDialog.student
-    if (!student) return
-
-    try {
-      await api.students.deactivate(student.id)
-      toast.success(t("students.deactivateSuccess", { studentName: student.name }))
-
-      // Reload students list to reflect updated state
-      const data = schoolId
-        ? await api.schools.getStudents(schoolId)
-        : await api.students.getAll()
-
-      const transformedStudents: Student[] = data.map((studentData: unknown) => {
-        const s = studentData as Record<string, unknown>
-        return {
-          id: s.id as string,
-          firstName: s.firstName as string,
-          lastName: s.lastName as string,
-          name: s.name as string,
-          age: s.age as number,
-          birthDate: s.birthDate as string,
-          certificationType: s.certificationType as string,
-          graduationDate: s.graduationDate as string,
-          parents: (s.parents || []) as Student['parents'],
-          contactPhone: (s.contactPhone || '') as string,
-          isLeveled: s.isLeveled as boolean,
-          expectedLevel: s.expectedLevel as string | undefined,
-          currentLevel: s.currentLevel as string | undefined,
-          address: (s.address || '') as string,
-          isActive: (s.isActive as boolean) ?? true,
-        }
-      })
-      setStudents(transformedStudents)
-    } catch (err) {
-      const error = err as Error
-      const errorMessage = error.message || t("students.deactivateError")
-      setError(errorMessage)
-      toast.error(errorMessage)
-    } finally {
-      setDeactivateStudentDialog({ open: false, student: null })
-    }
   }
 
   // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
@@ -806,7 +744,6 @@ export default function StudentsPage() {
               totalPages={totalPages}
               totalItems={filteredAndSortedStudents.length}
               onPageChange={setCurrentPage}
-              onDeactivateStudent={isSchoolAdmin ? handleDeactivateStudent : undefined}
             />
           )}
         </>
@@ -824,20 +761,6 @@ export default function StudentsPage() {
           onSave={handleCreateStudent}
         />
       )}
-
-      {/* Deactivate Student Confirmation Dialog */}
-      <ConfirmationDialog
-        open={deactivateStudentDialog.open}
-        onOpenChange={(open) => setDeactivateStudentDialog(prev => ({ ...prev, open }))}
-        title={t("students.deactivateStudent")}
-        message={t("students.deactivateConfirmMessage", {
-          studentName: deactivateStudentDialog.student?.name ?? "",
-        })}
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-        variant="destructive"
-        onConfirm={confirmDeactivateStudent}
-      />
     </div >
   )
 }

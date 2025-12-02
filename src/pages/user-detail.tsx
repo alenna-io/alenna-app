@@ -276,7 +276,6 @@ export default function UserDetailPage() {
           userId={userId}
           onBack={handleBackToList}
           user={targetUser}
-          context={location.state?.fromTeachers ? 'teachers' : 'users'}
           onDeactivate={canDeactivate ? handleDeactivateUser : undefined}
           onReactivate={canReactivate ? handleReactivateUser : undefined}
           onDelete={canDelete ? handleDeleteUser : undefined}

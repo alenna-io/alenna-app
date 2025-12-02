@@ -207,7 +207,7 @@ export default function GroupsPage() {
   return (
     <div className="space-y-6">
       {/* Header with Create Button */}
-      <div className="flex items-center justify-between flex-wrap gap-6">
+      <div className="flex items-center justify-between">
         <PageHeader
           title={t("groups.title")}
           description={t("groups.description")}

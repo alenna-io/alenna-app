@@ -57,8 +57,6 @@ export const studentsApi = {
     apiFetch(`/students/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) => 
     apiFetch(`/students/${id}`, token, { method: 'DELETE' }),
-  deactivate: (id: string, token: string | null) =>
-    apiFetch(`/students/${id}/deactivate`, token, { method: 'POST' }),
 };
 
 // Projections API
@@ -169,6 +167,7 @@ export const schoolYearsApi = {
   update: (id: string, data: Record<string, unknown>, token: string | null) => apiFetch(`/school-years/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) => apiFetch(`/school-years/${id}`, token, { method: 'DELETE' }),
   setActive: (id: string, token: string | null) => apiFetch(`/school-years/${id}/activate`, token, { method: 'POST' }),
+  previewWeeks: (data: Record<string, unknown>, token: string | null) => apiFetch('/school-years/preview-weeks', token, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Auth API
@@ -474,10 +473,6 @@ export function useApi() {
         const token = await getToken();
         return studentsApi.delete(id, token);
       },
-      deactivate: async (id: string) => {
-        const token = await getToken();
-        return studentsApi.deactivate(id, token);
-      },
     },
     projections: {
       getAll: async (year?: string) => {
@@ -729,6 +724,10 @@ export function useApi() {
       setActive: async (id: string) => {
         const token = await getToken();
         return schoolYearsApi.setActive(id, token);
+      },
+      previewWeeks: async (data: Record<string, unknown>) => {
+        const token = await getToken();
+        return schoolYearsApi.previewWeeks(data, token);
       },
     },
     schoolMonthlyAssignments: {

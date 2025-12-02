@@ -222,7 +222,7 @@ export function MobileDebugPanel() {
                             {new Date(log.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        <div className="font-mono text-xs break-words">{log.message}</div>
+                        <div className="font-mono text-xs wrap-break-word">{log.message}</div>
                         {log.data && (
                           <pre className="mt-1 text-xs overflow-auto bg-black/5 p-2 rounded">
                             {JSON.stringify(log.data, null, 2)}

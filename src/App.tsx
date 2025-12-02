@@ -15,6 +15,7 @@ import ConfigurationPage from '@/pages/configuration'
 import ConfigurationLanguagePage from '@/pages/configuration-language'
 import SchoolSettingsPage from '@/pages/school-settings'
 import SchoolYearsPage from '@/pages/school-years'
+import SchoolYearWizardPage from '@/pages/school-year-wizard'
 import SchoolInfoPage from '@/pages/school-info'
 import CertificationTypesPage from '@/pages/certification-types'
 import BillingPage from '@/pages/billing'
@@ -117,10 +118,12 @@ export default function App() {
           <Route path="school-settings" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolSettingsPage /></ModuleRouteGuard>} />
           <Route path="school-settings/school-info" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolInfoPage /></ModuleRouteGuard>} />
           <Route path="school-settings/school-years" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearsPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/school-years/wizard/:schoolYearId" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/school-years/wizard" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
           <Route path="school-settings/certification-types" element={<ModuleRouteGuard requiredModule="school_admin"><CertificationTypesPage /></ModuleRouteGuard>} />
           <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<ModuleRouteGuard requiredModule="users"><UsersPage /></ModuleRouteGuard>} />
-          <Route path="users/:userId" element={<UserDetailPage />} />
+          <Route path="users/:userId" element={<ModuleRouteGuard requiredModule="users"><UserDetailPage /></ModuleRouteGuard>} />
           <Route path="schools" element={<ModuleRouteGuard requiredModule="schools"><SchoolsPage /></ModuleRouteGuard>} />
           <Route path="schools/create" element={<ModuleRouteGuard requiredModule="schools"><CreateSchoolWizardPage /></ModuleRouteGuard>} />
           <Route path="schools/:schoolId" element={<SchoolInfoPage />} />
