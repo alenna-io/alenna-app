@@ -710,8 +710,7 @@ export default function ACEProjectionPage() {
             setPacePickerContext(null)
           }}
           onSelect={handlePaceSelect}
-          categoryFilter={pacePickerContext.subject}
-          levelFilter={projectionDetail?.student.currentLevel}
+          categoryFilter={subjectToCategory.get(pacePickerContext.subject) || pacePickerContext.subject}
           title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 })}
           existingPaceCatalogIds={existingPaceCatalogIds}
         />
