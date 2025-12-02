@@ -229,16 +229,43 @@ export default function SchoolYearWizardPage() {
     return date.toISOString().split('T')[0]
   }
 
+  // Helper function to get day of week from YYYY-MM-DD string (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  function getDayOfWeek(dateString: string): number {
+    const date = new Date(dateString + 'T00:00:00')
+    return date.getDay()
+  }
+
   // Helper function to adjust subsequent weeks after a date change
-  function adjustSubsequentWeeks(weeks: PreviewWeek[], changedWeekIndex: number, isStartDate: boolean, quarterEndDate?: string): PreviewWeek[] {
+  function adjustSubsequentWeeks(weeks: PreviewWeek[], changedWeekIndex: number, isStartDate: boolean, holidays: HolidayFormRange[], quarterEndDate?: string): PreviewWeek[] {
     const newWeeks = [...weeks]
     const changedWeek = newWeeks[changedWeekIndex]
     const quarterEnd = quarterEndDate ? new Date(`${quarterEndDate}T00:00:00`) : null
 
     if (isStartDate) {
       // If start date changed, update previous week's end date to be one day before
+      // Note: This reverse adjustment doesn't currently account for holidays between weeks in reverse
       if (changedWeekIndex > 0) {
-        const prevEndDate = addDays(changedWeek.startDate, -1)
+        let prevEndDate = addDays(changedWeek.startDate, -1)
+
+        // Check if prevEndDate falls in a holiday
+        if (holidays && holidays.length > 0) {
+          let overlapFound = true
+          while (overlapFound) {
+            overlapFound = false
+            const checkDate = new Date(`${prevEndDate}T00:00:00`)
+            for (const h of holidays) {
+              const hStart = new Date(`${h.startDate}T00:00:00`)
+              const hEnd = new Date(`${h.endDate}T00:00:00`)
+              if (checkDate >= hStart && checkDate <= hEnd) {
+                // If it lands in a holiday, move before the holiday starts
+                prevEndDate = addDays(h.startDate, -1)
+                overlapFound = true
+                break
+              }
+            }
+          }
+        }
+
         newWeeks[changedWeekIndex - 1] = {
           ...newWeeks[changedWeekIndex - 1],
           endDate: prevEndDate,
@@ -246,31 +273,108 @@ export default function SchoolYearWizardPage() {
       }
     } else {
       // If end date changed, cascade the change through all subsequent weeks
-      // The next week should start one day after the changed week's new end date
-      // Each subsequent week maintains its original duration but shifts to start right after the previous
       for (let i = changedWeekIndex; i < newWeeks.length - 1; i++) {
         const currentWeek = newWeeks[i]
         const nextWeek = newWeeks[i + 1]
 
         // Calculate the next week's start date (one day after current week ends)
-        const nextStartDate = addDays(currentWeek.endDate, 1)
+        let nextStartDate = addDays(currentWeek.endDate, 1)
+
+        // Find first valid Monday (skipping holidays and weekends)
+        let findingStart = true
+        while (findingStart) {
+          findingStart = false
+
+          // First, skip holidays
+          if (holidays && holidays.length > 0) {
+            const checkDate = new Date(`${nextStartDate}T00:00:00`)
+            for (const h of holidays) {
+              const hStart = new Date(`${h.startDate}T00:00:00`)
+              const hEnd = new Date(`${h.endDate}T00:00:00`)
+              if (checkDate >= hStart && checkDate <= hEnd) {
+                // Skip to the day after the holiday ends
+                nextStartDate = addDays(h.endDate, 1)
+                findingStart = true
+                break
+              }
+            }
+          }
+
+          // If we just skipped a holiday, check again from the new position
+          if (findingStart) continue
+
+          // Now ensure we're on a Monday (always start weeks on Monday)
+          const dayOfWeek = getDayOfWeek(nextStartDate) // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+          if (dayOfWeek !== 1) {
+            // Not Monday - move to the next Monday
+            if (dayOfWeek === 0) {
+              // Sunday - move to next day (Monday)
+              nextStartDate = addDays(nextStartDate, 1)
+            } else {
+              // Any other weekday - move to next Monday
+              const daysUntilMonday = (8 - dayOfWeek) % 7
+              nextStartDate = addDays(nextStartDate, daysUntilMonday)
+            }
+            findingStart = true
+          }
+
+          // After adjusting to Monday, we might have landed in a holiday
+          // So we need to check again (the loop will continue)
+        }
 
         // Ensure the start date doesn't exceed quarter end
         if (quarterEnd) {
           const nextStartDateObj = new Date(`${nextStartDate}T00:00:00`)
           if (nextStartDateObj > quarterEnd) {
             // Don't create weeks beyond the quarter end
+            newWeeks.splice(i + 1)
             break
           }
         }
 
-        // Preserve the original duration of the next week
-        const originalNextStart = new Date(nextWeek.startDate)
-        const originalNextEnd = new Date(nextWeek.endDate)
-        const daysInWeek = Math.floor((originalNextEnd.getTime() - originalNextStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+        // Calculate end date: always end on the Sunday of the week containing the start date
+        // If start is Monday, end is Sunday (6 days later)
+        // If start is Tuesday, end is Sunday (5 days later), etc.
+        const startDayOfWeek = getDayOfWeek(nextStartDate)
+        const daysToSunday = startDayOfWeek === 0 ? 0 : (7 - startDayOfWeek) // 0=Sun, 1=Mon, 6=Sat
+        let nextEndDate = addDays(nextStartDate, daysToSunday)
 
-        // Calculate new end date maintaining the same duration
-        let nextEndDate = addDays(nextStartDate, daysInWeek - 1)
+        // Trim end date if it falls in a holiday
+        if (holidays && holidays.length > 0) {
+          let overlapFound = true
+          while (overlapFound) {
+            overlapFound = false
+            // We check if the computed end date falls inside a holiday
+            // If so, we snap to the day before that holiday starts.
+            const checkDate = new Date(`${nextEndDate}T00:00:00`)
+            for (const h of holidays) {
+              const hStart = new Date(`${h.startDate}T00:00:00`)
+              const hEnd = new Date(`${h.endDate}T00:00:00`)
+              if (checkDate >= hStart && checkDate <= hEnd) {
+                // If it lands in a holiday, move before the holiday starts
+                nextEndDate = addDays(h.startDate, -1)
+                overlapFound = true
+                break
+              }
+            }
+
+            // Also ensure we didn't move start > end (e.g. week completely inside holiday)
+            // If so, nextStartDate needs to move? 
+            // But nextStartDate was already adjusted to NOT start in a holiday.
+            // So if nextEndDate moves back before nextStartDate, it means the duration fits entirely in a holiday gap?
+            // Or we just have a 1-day week or invalid week.
+            if (new Date(nextEndDate) < new Date(nextStartDate)) {
+              // If trimming makes it invalid, we effectively have to skip this holiday entirely?
+              // But nextStartDate logic should have handled "starting" after holiday.
+              // If nextStartDate is valid (not holiday), and nextEndDate (by duration) hits a holiday, 
+              // trimming back is correct. It just becomes a shorter week.
+              // Unless nextStartDate was effectively "just before" a holiday?
+              // E.g. Start Mon. Holiday starts Tue. End date was Fri.
+              // Trim end to Mon. Week is Mon-Mon (1 day). Correct.
+            }
+          }
+        }
 
         // Ensure the end date doesn't exceed quarter end
         if (quarterEnd) {
@@ -820,7 +924,7 @@ export default function SchoolYearWizardPage() {
                                   newWeeks[wIndex].endDate = addDays(date, 6) // Default to 7-day week
                                 }
                                 // Adjust subsequent weeks
-                                const adjustedWeeks = adjustSubsequentWeeks(newWeeks, wIndex, true, q.endDate)
+                                const adjustedWeeks = adjustSubsequentWeeks(newWeeks, wIndex, true, q.holidays, q.endDate)
                                 updateQuarter(index, (old) => ({ ...old, previewWeeks: adjustedWeeks }))
                               }}
                               placeholder={t("schoolYears.startDate")}
@@ -844,7 +948,7 @@ export default function SchoolYearWizardPage() {
                                   newWeeks[wIndex].startDate = addDays(date, -6) // Default to 7-day week
                                 }
                                 // Adjust subsequent weeks
-                                const adjustedWeeks = adjustSubsequentWeeks(newWeeks, wIndex, false, q.endDate)
+                                const adjustedWeeks = adjustSubsequentWeeks(newWeeks, wIndex, false, q.holidays, q.endDate)
                                 updateQuarter(index, (old) => ({ ...old, previewWeeks: adjustedWeeks }))
                               }}
                               placeholder={t("schoolYears.endDate")}
@@ -857,7 +961,7 @@ export default function SchoolYearWizardPage() {
                     )
                   })}
                 </div>
-                <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded-md border border-blue-200 dark:border-blue-900">
+                <p className="text-xs text-blue-900 bg-blue-50 p-3 rounded-md border border-blue-200">
                   {t("schoolYears.previewDescription")}
                 </p>
               </div>
@@ -866,8 +970,8 @@ export default function SchoolYearWizardPage() {
 
           {isLastQuarter && (
             <div className="pt-6 border-t mt-6">
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
-                <p className="text-sm text-blue-900 dark:text-blue-100 flex items-start gap-2">
+              <div className="bg-blue-50 border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-900 flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   {t("schoolYears.summaryHint")}
                 </p>
