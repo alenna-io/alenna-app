@@ -18,10 +18,10 @@ import { useUser } from "@/contexts/UserContext"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { SearchBar } from "@/components/ui/search-bar"
 import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
+import { Plus, Users } from "lucide-react"
 import { StudentFormDialog } from "@/components/student-form-dialog"
-import { Card, CardContent } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -65,6 +65,7 @@ export default function StudentsPage() {
   const [isStudentDialogOpen, setIsStudentDialogOpen] = React.useState(false)
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
   const [studentsCount, setStudentsCount] = React.useState<number>(0)
+  const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
   const itemsPerPage = 10
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
@@ -657,41 +658,46 @@ export default function StudentsPage() {
           message={error}
         />
       )}
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title={schoolId ? t("students.titleForSchool") : t("students.title")}
-          description={schoolId ? t("students.descriptionForSchool") : t("students.description")}
-        />
-        {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
-          <Button onClick={() => navigate('/students/create')}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("students.addStudent")}
-          </Button>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <PageHeader
+            title={schoolId ? t("students.titleForSchool") : t("students.title")}
+            description={schoolId ? t("students.descriptionForSchool") : t("students.description")}
+            className="flex-1"
+          />
+          {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
+            <Button
+              onClick={() => {
+                // Check if limit is reached
+                if (school?.userLimit && studentsCount >= school.userLimit) {
+                  setLimitWarningDialog({
+                    open: true,
+                    title: t("students.limitReached"),
+                    message: t("students.limitReachedMessage", { limit: school.userLimit })
+                  })
+                } else {
+                  navigate('/students/create')
+                }
+              }}
+              disabled={school?.userLimit ? studentsCount >= school.userLimit : false}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t("students.addStudent")}
+            </Button>
+          )}
+        </div>
+
+        {/* Count and Limit Display - Compact inline */}
+        {isSchoolAdmin && school && school.userLimit && (
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground">{t("students.registered")}:</span>
+            <span className="text-base font-semibold text-blue-600">
+              {studentsCount}/{school.userLimit}
+            </span>
+          </div>
         )}
       </div>
-
-      {/* Count and Limit Display for School Admins */}
-      {isSchoolAdmin && school && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">{t("students.registered")}</p>
-                <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
-              </div>
-              {school.userLimit && (
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">{t("students.limit")}</p>
-                  <p className="text-2xl font-bold">{school.userLimit}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {Math.max(0, school.userLimit - studentsCount)} {t("students.available")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Search */}
       <SearchBar
@@ -760,6 +766,25 @@ export default function StudentsPage() {
           schoolId={schoolId || userInfo?.schoolId || ''}
           onSave={handleCreateStudent}
         />
+      )}
+
+      {/* Limit Warning Dialog */}
+      {limitWarningDialog && (
+        <AlertDialog open={limitWarningDialog.open} onOpenChange={(open) => setLimitWarningDialog(open ? limitWarningDialog : null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{limitWarningDialog.title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {limitWarningDialog.message}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setLimitWarningDialog(null)}>
+                {t("common.accept")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div >
   )

@@ -45,7 +45,7 @@ export function ACEQuarterlyTable({
   currentWeek,
   isActive = false,
   isReadOnly = false,
-  subjectToCategory,
+  subjectToCategory: _subjectToCategory,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -230,7 +230,11 @@ export function ACEQuarterlyTable({
     }
 
     // Check if pace already exists in this subject
-    const paceExists = data[subject].some(pace => pace && pace.number === newPaceNumber)
+    const paceExists = data[subject].some(paceOrArray => {
+      if (!paceOrArray) return false
+      const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
+      return paces.some(pace => pace && pace.number === newPaceNumber)
+    })
     if (paceExists) {
       setAlertDialog({
         title: t("projections.duplicateLesson"),
@@ -306,25 +310,30 @@ export function ACEQuarterlyTable({
     let totalFailed = 0 // Total failed attempts across all PACEs
 
     subjects.forEach(subject => {
-      data[subject].forEach(pace => {
-        if (pace) {
-          expected++
+      data[subject].forEach(paceOrArray => {
+        if (paceOrArray) {
+          const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
+          paces.forEach(pace => {
+            if (pace) {
+              expected++
 
-          // Use explicit backend flag when available, otherwise fall back to grade
-          if (pace.isFailed) {
-            failed++
-          } else if (pace.isCompleted) {
-            if (isPaceFailing(pace.grade)) {
-              failed++
-            } else {
-              completed++
+              // Use explicit backend flag when available, otherwise fall back to grade
+              if (pace.isFailed) {
+                failed++
+              } else if (pace.isCompleted) {
+                if (isPaceFailing(pace.grade)) {
+                  failed++
+                } else {
+                  completed++
+                }
+              }
+
+              // Count total failed attempts from history
+              if (pace.gradeHistory) {
+                totalFailed += pace.gradeHistory.filter((h: { grade: number }) => h.grade < 80).length
+              }
             }
-          }
-
-          // Count total failed attempts from history
-          if (pace.gradeHistory) {
-            totalFailed += pace.gradeHistory.filter(h => h.grade < 80).length
-          }
+          })
         }
       })
     })
@@ -349,17 +358,22 @@ export function ACEQuarterlyTable({
     }> = []
 
     subjects.forEach((subject) => {
-      data[subject].forEach((pace, weekIndex) => {
-        if (pace && pace.gradeHistory) {
-          const failedGrades = pace.gradeHistory.filter(h => h.grade < 80)
-          if (failedGrades.length > 0) {
-            attempts.push({
-              subject,
-              paceNumber: pace.number,
-              weekNumber: weekIndex + 1,
-              failedGrades
-            })
-          }
+      data[subject].forEach((paceOrArray, weekIndex) => {
+        if (paceOrArray) {
+          const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
+          paces.forEach(pace => {
+            if (pace && pace.gradeHistory) {
+              const failedGrades = pace.gradeHistory.filter((h: { grade: number }) => h.grade < 80)
+              if (failedGrades.length > 0) {
+                attempts.push({
+                  subject,
+                  paceNumber: pace.number,
+                  weekNumber: weekIndex + 1,
+                  failedGrades
+                })
+              }
+            }
+          })
         }
       })
     })
@@ -457,387 +471,394 @@ export function ACEQuarterlyTable({
                     >
                       <div className="flex flex-col">
                         <span className="text-base font-bold">
-                          {subjectToCategory?.get(subject) || subject}
+                          {subject}
                         </span>
-                        {subjectToCategory?.get(subject) && (
-                          <span className="text-xs font-normal opacity-75">
-                            {subject}
-                          </span>
-                        )}
                       </div>
                     </td>
-                    {data[subject].map((pace, weekIndex) => (
-                      <td
-                        key={weekIndex}
-                        className="py-1.5 px-2 text-center align-middle border border-gray-300"
-                        draggable={!isReadOnly && !!pace}
-                        onDragStart={(e) => {
-                          if (!isReadOnly && pace) {
-                            setDraggedPace({ subject, weekIndex })
+                    {data[subject].map((paceOrArray, weekIndex) => {
+                      // Handle both single pace and array of paces
+                      const isArray = Array.isArray(paceOrArray)
+                      const paces = isArray ? paceOrArray : (paceOrArray ? [paceOrArray] : [])
+                      const primaryPace = paces[0] || null
 
-                            // Create a custom drag image
-                            const dragPreview = document.createElement('div')
-                            dragPreview.style.position = 'absolute'
-                            dragPreview.style.top = '-1000px'
-                            dragPreview.style.left = '-1000px'
-                            dragPreview.style.padding = '8px 12px'
-                            dragPreview.style.background = pace.isCompleted
-                              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                              : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)'
-                            dragPreview.style.border = pace.isCompleted
-                              ? '2px solid #059669'
-                              : '2px solid #9ca3af'
-                            dragPreview.style.borderRadius = '6px'
-                            dragPreview.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)'
-                            dragPreview.style.fontFamily = 'monospace'
-                            dragPreview.style.fontSize = '14px'
-                            dragPreview.style.fontWeight = '600'
-                            dragPreview.style.color = pace.isCompleted ? '#ffffff' : '#1f2937'
-                            dragPreview.style.opacity = '0.95'
-                            dragPreview.style.transform = 'rotate(5deg)'
-                            dragPreview.style.zIndex = '10000'
-                            dragPreview.textContent = pace.number
+                      return (
+                        <td
+                          key={weekIndex}
+                          data-week-index={weekIndex}
+                          data-subject={subject}
+                          className="py-1.5 px-2 text-center align-middle border border-gray-300"
+                          draggable={!isReadOnly && !!primaryPace && !isArray}
+                          onDragStart={(e) => {
+                            if (!isReadOnly && primaryPace && !isArray) {
+                              setDraggedPace({ subject, weekIndex })
 
-                            document.body.appendChild(dragPreview)
-                            dragImageRef.current = dragPreview
+                              // Create a custom drag image
+                              const dragPreview = document.createElement('div')
+                              dragPreview.style.position = 'absolute'
+                              dragPreview.style.top = '-1000px'
+                              dragPreview.style.left = '-1000px'
+                              dragPreview.style.padding = '8px 12px'
+                              dragPreview.style.background = primaryPace.isCompleted
+                                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)'
+                              dragPreview.style.border = primaryPace.isCompleted
+                                ? '2px solid #059669'
+                                : '2px solid #9ca3af'
+                              dragPreview.style.borderRadius = '6px'
+                              dragPreview.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)'
+                              dragPreview.style.fontFamily = 'monospace'
+                              dragPreview.style.fontSize = '14px'
+                              dragPreview.style.fontWeight = '600'
+                              dragPreview.style.color = primaryPace.isCompleted ? '#ffffff' : '#1f2937'
+                              dragPreview.style.opacity = '0.95'
+                              dragPreview.style.transform = 'rotate(5deg)'
+                              dragPreview.style.zIndex = '10000'
+                              dragPreview.textContent = primaryPace.number
 
-                            // Set custom drag image
-                            e.dataTransfer.effectAllowed = 'move'
-                            e.dataTransfer.setDragImage(dragPreview, dragPreview.offsetWidth / 2, dragPreview.offsetHeight / 2)
+                              document.body.appendChild(dragPreview)
+                              dragImageRef.current = dragPreview
 
-                            // Add visual feedback to the source cell
-                            e.currentTarget.style.opacity = '0.5'
-                            e.currentTarget.style.cursor = 'grabbing'
-                          }
-                        }}
-                        onDragOver={(e) => {
-                          if (draggedPace && draggedPace.subject === subject) {
-                            e.preventDefault()
-                            e.dataTransfer.dropEffect = 'move'
-                            // Add visual feedback to drop target
-                            if (draggedPace.weekIndex !== weekIndex) {
-                              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
-                              e.currentTarget.style.borderColor = '#3b82f6'
+                              // Set custom drag image
+                              e.dataTransfer.effectAllowed = 'move'
+                              e.dataTransfer.setDragImage(dragPreview, dragPreview.offsetWidth / 2, dragPreview.offsetHeight / 2)
+
+                              // Add visual feedback to the source cell
+                              e.currentTarget.style.opacity = '0.5'
+                              e.currentTarget.style.cursor = 'grabbing'
                             }
-                          }
-                        }}
-                        onDragLeave={(e) => {
-                          // Remove visual feedback when leaving drop target
-                          e.currentTarget.style.backgroundColor = ''
-                          e.currentTarget.style.borderColor = ''
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          // Remove visual feedback
-                          e.currentTarget.style.backgroundColor = ''
-                          e.currentTarget.style.borderColor = ''
-
-                          // Clean up drag image
-                          if (dragImageRef.current && dragImageRef.current.parentNode) {
-                            document.body.removeChild(dragImageRef.current)
-                            dragImageRef.current = null
-                          }
-
-                          if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
-                            onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
-                          }
-                          setDraggedPace(null)
-                        }}
-                        onDragEnd={(e) => {
-                          setDraggedPace(null)
-                          // Restore source cell appearance
-                          e.currentTarget.style.opacity = '1'
-                          e.currentTarget.style.cursor = ''
-                          // Clean up drag image
-                          if (dragImageRef.current && dragImageRef.current.parentNode) {
-                            document.body.removeChild(dragImageRef.current)
-                            dragImageRef.current = null
-                          }
-                          // Also clean up any drop target highlighting
-                          const allCells = e.currentTarget.closest('table')?.querySelectorAll('td')
-                          allCells?.forEach(cell => {
-                            if (cell instanceof HTMLElement) {
-                              cell.style.backgroundColor = ''
-                              cell.style.borderColor = ''
-                            }
-                          })
-                        }}
-                        // Touch handlers for mobile/iPad
-                        onTouchStart={(e) => {
-                          if (!isReadOnly && pace) {
-                            const touch = e.touches[0]
-                            setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
-                            // Create drag preview for touch devices
-                            setTouchDragPreview({
-                              paceNumber: pace.number,
-                              isCompleted: pace.isCompleted,
-                              x: touch.clientX,
-                              y: touch.clientY
-                            })
-                            // Prevent text selection and default touch behavior
-                            e.preventDefault()
-                            // Disable text selection on the cell
-                            if (e.currentTarget instanceof HTMLElement) {
-                              e.currentTarget.style.userSelect = 'none'
-                              e.currentTarget.style.webkitUserSelect = 'none'
-                            }
-                          }
-                        }}
-                        onTouchMove={(e) => {
-                          if (touchStart && touchStart.subject === subject && touchStart.weekIndex === weekIndex && pace) {
-                            // Prevent scrolling while dragging
-                            e.preventDefault()
-                            const touch = e.touches[0]
-                            // Update drag preview position
-                            setTouchDragPreview({
-                              paceNumber: pace.number,
-                              isCompleted: pace.isCompleted,
-                              x: touch.clientX,
-                              y: touch.clientY
-                            })
-                            // Add visual feedback to source cell
-                            e.currentTarget.style.opacity = '0.5'
-                            // Highlight potential drop targets
-                            const element = document.elementFromPoint(touch.clientX, touch.clientY)
-                            const targetCell = element?.closest('td[data-week-index]')
-                            // Remove previous highlights
-                            const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
-                            allCells?.forEach(cell => {
-                              if (cell instanceof HTMLElement && cell !== e.currentTarget) {
-                                cell.style.backgroundColor = ''
-                                cell.style.borderColor = ''
-                              }
-                            })
-                            // Highlight current target if valid
-                            if (targetCell && targetCell instanceof HTMLElement) {
-                              const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
-                              const targetSubject = targetCell.getAttribute('data-subject') || ''
-                              if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
-                                targetCell.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
-                                targetCell.style.borderColor = '#3b82f6'
+                          }}
+                          onDragOver={(e) => {
+                            if (draggedPace && draggedPace.subject === subject) {
+                              e.preventDefault()
+                              e.dataTransfer.dropEffect = 'move'
+                              // Add visual feedback to drop target
+                              if (draggedPace.weekIndex !== weekIndex) {
+                                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
+                                e.currentTarget.style.borderColor = '#3b82f6'
                               }
                             }
-                          }
-                        }}
-                        onTouchEnd={(e) => {
-                          if (touchStart && touchStart.subject === subject) {
-                            const touch = e.changedTouches[0]
-                            // Try to find the target cell at touch end position
-                            const element = document.elementFromPoint(touch.clientX, touch.clientY)
-                            const targetCell = element?.closest('td[data-week-index]')
+                          }}
+                          onDragLeave={(e) => {
+                            // Remove visual feedback when leaving drop target
+                            e.currentTarget.style.backgroundColor = ''
+                            e.currentTarget.style.borderColor = ''
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            // Remove visual feedback
+                            e.currentTarget.style.backgroundColor = ''
+                            e.currentTarget.style.borderColor = ''
 
-                            if (targetCell) {
-                              const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
-                              const targetSubject = targetCell.getAttribute('data-subject') || ''
-
-                              // Only drop if it's the same subject and different week
-                              if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
-                                onPaceDrop?.(quarter, subject, touchStart.weekIndex, targetWeekIndex)
-                              }
+                            // Clean up drag image
+                            if (dragImageRef.current && dragImageRef.current.parentNode) {
+                              document.body.removeChild(dragImageRef.current)
+                              dragImageRef.current = null
                             }
 
-                            // Clean up
+                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                              onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
+                            }
+                            setDraggedPace(null)
+                          }}
+                          onDragEnd={(e) => {
+                            setDraggedPace(null)
+                            // Restore source cell appearance
                             e.currentTarget.style.opacity = '1'
-                            e.currentTarget.style.userSelect = ''
-                            e.currentTarget.style.webkitUserSelect = ''
-                            const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
+                            e.currentTarget.style.cursor = ''
+                            // Clean up drag image
+                            if (dragImageRef.current && dragImageRef.current.parentNode) {
+                              document.body.removeChild(dragImageRef.current)
+                              dragImageRef.current = null
+                            }
+                            // Also clean up any drop target highlighting
+                            const allCells = e.currentTarget.closest('table')?.querySelectorAll('td')
                             allCells?.forEach(cell => {
                               if (cell instanceof HTMLElement) {
                                 cell.style.backgroundColor = ''
                                 cell.style.borderColor = ''
                               }
                             })
-                          }
-                          setTouchStart(null)
-                          setTouchDragPreview(null)
-                        }}
-                        data-week-index={weekIndex}
-                        data-subject={subject}
-                      >
-                        {pace ? (
-                          editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                            <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                              {gradePhase === 'grade' || gradePhase === null ? (
-                                <>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={gradeInput}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value)
-                                      if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                        setGradeInput(e.target.value)
+                          }}
+                          // Touch handlers for mobile/iPad
+                          onTouchStart={(e) => {
+                            if (!isReadOnly && primaryPace && !isArray) {
+                              const touch = e.touches[0]
+                              setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
+                              // Create drag preview for touch devices
+                              setTouchDragPreview({
+                                paceNumber: primaryPace.number,
+                                isCompleted: primaryPace.isCompleted,
+                                x: touch.clientX,
+                                y: touch.clientY
+                              })
+                              // Prevent text selection and default touch behavior
+                              e.preventDefault()
+                              // Disable text selection on the cell
+                              if (e.currentTarget instanceof HTMLElement) {
+                                e.currentTarget.style.userSelect = 'none'
+                                e.currentTarget.style.webkitUserSelect = 'none'
+                              }
+                            }
+                          }}
+                          onTouchMove={(e) => {
+                            if (touchStart && touchStart.subject === subject && touchStart.weekIndex === weekIndex && primaryPace && !isArray) {
+                              // Prevent scrolling while dragging
+                              e.preventDefault()
+                              const touch = e.touches[0]
+                              // Update drag preview position
+                              setTouchDragPreview({
+                                paceNumber: primaryPace.number,
+                                isCompleted: primaryPace.isCompleted,
+                                x: touch.clientX,
+                                y: touch.clientY
+                              })
+                              // Add visual feedback to source cell
+                              e.currentTarget.style.opacity = '0.5'
+                              // Highlight potential drop targets
+                              const element = document.elementFromPoint(touch.clientX, touch.clientY)
+                              const targetCell = element?.closest('td[data-week-index]')
+                              // Remove previous highlights
+                              const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
+                              allCells?.forEach(cell => {
+                                if (cell instanceof HTMLElement && cell !== e.currentTarget) {
+                                  cell.style.backgroundColor = ''
+                                  cell.style.borderColor = ''
+                                }
+                              })
+                              // Highlight current target if valid
+                              if (targetCell && targetCell instanceof HTMLElement) {
+                                const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
+                                const targetSubject = targetCell.getAttribute('data-subject') || ''
+                                if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
+                                  targetCell.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'
+                                  targetCell.style.borderColor = '#3b82f6'
+                                }
+                              }
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            if (touchStart && touchStart.subject === subject) {
+                              const touch = e.changedTouches[0]
+                              // Try to find the target cell at touch end position
+                              const element = document.elementFromPoint(touch.clientX, touch.clientY)
+                              const targetCell = element?.closest('td[data-week-index]')
+
+                              if (targetCell) {
+                                const targetWeekIndex = parseInt(targetCell.getAttribute('data-week-index') || '-1')
+                                const targetSubject = targetCell.getAttribute('data-subject') || ''
+
+                                // Only drop if it's the same subject and different week
+                                if (targetSubject === subject && targetWeekIndex >= 0 && targetWeekIndex !== touchStart.weekIndex) {
+                                  onPaceDrop?.(quarter, subject, touchStart.weekIndex, targetWeekIndex)
+                                }
+                              }
+
+                              // Clean up
+                              e.currentTarget.style.opacity = '1'
+                              e.currentTarget.style.userSelect = ''
+                              e.currentTarget.style.webkitUserSelect = ''
+                              const allCells = e.currentTarget.closest('table')?.querySelectorAll('td[data-week-index]')
+                              allCells?.forEach(cell => {
+                                if (cell instanceof HTMLElement) {
+                                  cell.style.backgroundColor = ''
+                                  cell.style.borderColor = ''
+                                }
+                              })
+                            }
+                            setTouchStart(null)
+                            setTouchDragPreview(null)
+                          }}
+                        >
+                          {primaryPace ? (
+                            editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
+                              <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                                {gradePhase === 'grade' || gradePhase === null ? (
+                                  <>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={gradeInput}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        if (e.target.value === '' || (val >= 0 && val <= 100)) {
+                                          setGradeInput(e.target.value)
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
+                                        if (e.key === 'Escape') handleGradeCancel()
+                                      }}
+                                      placeholder="0-100"
+                                      className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Siguiente"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={() => handleGradeSkipComment(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Guardar sin comentario"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={handleGradeCancel}
+                                        className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Cancelar"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="text-xs text-center text-gray-600 mb-1">
+                                      Grado: <span className="font-semibold">{gradeInput}%</span>
+                                    </div>
+                                    <textarea
+                                      value={commentInput}
+                                      onChange={(e) => setCommentInput(e.target.value)}
+                                      placeholder="Comentario (opcional)..."
+                                      className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                                      rows={2}
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Guardar con comentario"
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => setGradePhase('grade')}
+                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                        title="Volver"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ) : paces.length > 0 ? (
+                              <div className="relative flex flex-col items-center gap-1 w-full group/pace">
+                                {paces.map((pace, paceIdx) => (
+                                  <div
+                                    key={paceIdx}
+                                    className={`inline-flex flex-col items-center ${!isReadOnly && !isArray ? 'cursor-pointer' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      if (!isReadOnly && !isArray) {
+                                        handlePaceClick(subject, weekIndex, pace)
                                       }
                                     }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                      if (e.key === 'Escape') handleGradeCancel()
+                                  >
+                                    <Badge
+                                      variant="outline"
+                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                        ? "bg-red-100 text-red-800 border-red-500 border-2"
+                                        : pace.isCompleted
+                                          ? "bg-green-100 text-green-800 border-green-500 border-2"
+                                          : "bg-white text-gray-800 border-gray-300 border-2"
+                                        }`}
+                                    >
+                                      {(pace.isFailed || pace.isCompleted) && (
+                                        pace.isFailed || isPaceFailing(pace.grade) ? (
+                                          <XCircle className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-red-600 fill-red-100" />
+                                        ) : (
+                                          <CheckCircle2 className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-green-600 fill-green-100" />
+                                        )
+                                      )}
+                                      {pace.number}
+                                    </Badge>
+                                    {paceIdx === 0 && (
+                                      <span className={`text-xs mt-0.5 ${getGradeColor(pace.grade)}`}>
+                                        {pace.grade !== null ? `${pace.grade}%` : "—"}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                                {!isReadOnly && !isArray && primaryPace && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      const rect = e.currentTarget.getBoundingClientRect()
+                                      setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
                                     }}
-                                    placeholder="0-100"
-                                    className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    autoFocus
-                                  />
-                                  <div className="flex gap-1">
-                                    <button
-                                      onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                      className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                      title="Siguiente"
-                                    >
-                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      onClick={() => handleGradeSkipComment(subject, weekIndex)}
-                                      className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                      title="Guardar sin comentario"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={handleGradeCancel}
-                                      className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                      title="Cancelar"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="text-xs text-center text-gray-600 mb-1">
-                                    Grado: <span className="font-semibold">{gradeInput}%</span>
-                                  </div>
-                                  <textarea
-                                    value={commentInput}
-                                    onChange={(e) => setCommentInput(e.target.value)}
-                                    placeholder="Comentario (opcional)..."
-                                    className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                                    rows={2}
-                                    autoFocus
-                                  />
-                                  <div className="flex gap-1">
-                                    <button
-                                      onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                      className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                      title="Guardar con comentario"
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => setGradePhase('grade')}
-                                      className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                      title="Volver"
-                                    >
-                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="relative flex items-center justify-center w-full group/pace">
-                              <div
-                                className={`inline-flex flex-col items-center ${!isReadOnly ? 'cursor-pointer' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (!isReadOnly) {
-                                    handlePaceClick(subject, weekIndex, pace)
+                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
+                                  >
+                                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : null
+                          ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
+                            <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={paceNumberInput}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  // Only allow numbers and max 4 digits
+                                  if (/^\d{0,4}$/.test(value)) {
+                                    setPaceNumberInput(value)
                                   }
                                 }}
-                              >
-                                <Badge
-                                  variant="outline"
-                                  className={`font-mono text-sm px-3 py-1 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                    ? "bg-red-100 text-red-800 border-red-500 border-2"
-                                    : pace.isCompleted
-                                      ? "bg-green-100 text-green-800 border-green-500 border-2"
-                                      : "bg-white text-gray-800 border-gray-300 border-2"
-                                    }`}
-                                >
-                                  {(pace.isFailed || pace.isCompleted) && (
-                                    pace.isFailed || isPaceFailing(pace.grade) ? (
-                                      <XCircle className="h-3 w-3 absolute -top-1 -right-1 text-red-600 fill-red-100" />
-                                    ) : (
-                                      <CheckCircle2 className="h-3 w-3 absolute -top-1 -right-1 text-green-600 fill-green-100" />
-                                    )
-                                  )}
-                                  {pace.number}
-                                </Badge>
-                                <span className={`text-xs mt-1 ${getGradeColor(pace.grade)}`}>
-                                  {pace.grade !== null ? `${pace.grade}%` : "—"}
-                                </span>
-                              </div>
-                              {!isReadOnly && (
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
+                                  if (e.key === 'Escape') handleAddPaceCancel()
+                                }}
+                                placeholder="1XXX"
+                                className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                                autoFocus
+                              />
+                              <div className="flex gap-1">
                                 <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
-                                  }}
-                                  className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
+                                  onClick={() => handleAddPaceSubmit(subject, weekIndex)}
+                                  className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                  title={t("projections.add")}
                                 >
-                                  <MoreVertical className="h-4 w-4 text-gray-500" />
+                                  <Check className="h-4 w-4" />
                                 </button>
-                              )}
+                                <button
+                                  onClick={handleAddPaceCancel}
+                                  className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                  title="Cancelar"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
-                          )
-                        ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
-                          <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={paceNumberInput}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                // Only allow numbers and max 4 digits
-                                if (/^\d{0,4}$/.test(value)) {
-                                  setPaceNumberInput(value)
-                                }
+                          ) : !isReadOnly ? (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAddPaceClick(subject, weekIndex)
                               }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
-                                if (e.key === 'Escape') handleAddPaceCancel()
-                              }}
-                              placeholder="1XXX"
-                              className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                              autoFocus
-                            />
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                title={t("projections.add")}
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={handleAddPaceCancel}
-                                className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                title="Cancelar"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                              className="h-full w-full min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
+                            >
+                              <span className="text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
+                                +
+                              </span>
                             </div>
-                          </div>
-                        ) : !isReadOnly ? (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAddPaceClick(subject, weekIndex)
-                            }}
-                            className="h-full w-full min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
-                          >
-                            <span className="text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
-                              +
-                            </span>
-                          </div>
-                        ) : null}
-                      </td>
-                    ))}
+                          ) : null}
+                        </td>
+                      )
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -889,7 +910,8 @@ export function ACEQuarterlyTable({
         >
           <button
             onClick={() => {
-              const pace = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
               if (pace) {
                 handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
                 setOptionsMenu(null)
@@ -900,21 +922,26 @@ export function ACEQuarterlyTable({
             <Edit className="h-4 w-4" />
             Editar Nota
           </button>
-          {data[optionsMenu.subject][optionsMenu.weekIndex]?.isCompleted && (
-            <button
-              onClick={() => {
-                onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
-                setOptionsMenu(null)
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-              Marcar Incompleto
-            </button>
-          )}
+          {(() => {
+            const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+            const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+            return pace?.isCompleted
+          })() && (
+              <button
+                onClick={() => {
+                  onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
+                  setOptionsMenu(null)
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+                Marcar Incompleto
+              </button>
+            )}
           <button
             onClick={() => {
-              const pace = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
               if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
                 setHistoryDialog({
                   subject: optionsMenu.subject,
@@ -926,14 +953,19 @@ export function ACEQuarterlyTable({
               }
             }}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!data[optionsMenu.subject][optionsMenu.weekIndex]?.gradeHistory || data[optionsMenu.subject][optionsMenu.weekIndex]?.gradeHistory?.length === 0}
+            disabled={(() => {
+              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+              return !pace?.gradeHistory || pace.gradeHistory.length === 0
+            })()}
           >
             <History className="h-4 w-4" />
             Ver Historial
           </button>
           <button
             onClick={() => {
-              const pace = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
               if (pace) {
                 handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
                 setOptionsMenu(null)

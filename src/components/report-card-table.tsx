@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
+import { getCategoryOrder } from "@/utils/category-order"
 
 interface ReportCardSubjectData {
   subject: string
@@ -53,6 +54,13 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
     return `${percentage}%`
   }
 
+  // Sort subjects by category order
+  const sortedSubjects = React.useMemo(() => {
+    return [...quarter.subjects].sort((a, b) => {
+      return getCategoryOrder(a.subject) - getCategoryOrder(b.subject)
+    })
+  }, [quarter.subjects])
+
   // Get all unique PACE positions (to determine column count)
   // Use at least 1 column for the table structure even if there are no PACEs
   const maxPacesPerSubject = Math.max(
@@ -86,8 +94,8 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </tr>
             </thead>
             <tbody>
-              {quarter.subjects.length > 0 ? (
-                quarter.subjects.map((subject) => (
+              {sortedSubjects.length > 0 ? (
+                sortedSubjects.map((subject) => (
                   <React.Fragment key={subject.subject}>
                     {/* Subject name row */}
                     <tr className="bg-primary/10">

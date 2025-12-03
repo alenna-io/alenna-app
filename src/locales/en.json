@@ -129,8 +129,10 @@
     "myProfile": "My Profile",
     "projections": "Projections",
     "lectures": "Lectures",
-    "monthlyAssignments": "Monthly Assignments",
-    "reportCards": "Report Cards"
+    "monthlyAssignments": "Assignments",
+    "reportCards": "Report Cards",
+    "academicSection": "Academic",
+    "schoolManagementSection": "School Management"
   },
   "students": {
     "title": "Students",
@@ -188,6 +190,8 @@
     "step4Description": "Review and confirm",
     "createSuccess": "Student created successfully",
     "createError": "Error creating student",
+    "limitReached": "Student Limit Reached",
+    "limitReachedMessage": "The student limit ({{limit}}) has been reached. You cannot create more students.",
     "age": "Age",
     "ageYears": "{{age}} years",
     "certification": "Certification",
@@ -229,7 +233,9 @@
     "roles": "Roles",
     "emailPlaceholder": "teacher@school.edu",
     "firstNamePlaceholder": "Teacher first name",
-    "lastNamePlaceholder": "Teacher last name"
+    "lastNamePlaceholder": "Teacher last name",
+    "limitReached": "Teacher Limit Reached",
+    "limitReachedMessage": "The teacher limit ({{limit}}) has been reached. You cannot create more teachers."
   },
   "users": {
     "title": "User Management",
@@ -558,10 +564,10 @@
     "assignmentName": "Assignment Name",
     "quarter": "Quarter",
     "status": "Status",
-    "quarterQ1": "Quarter 1 (Q1)",
-    "quarterQ2": "Quarter 2 (Q2)",
-    "quarterQ3": "Quarter 3 (Q3)",
-    "quarterQ4": "Quarter 4 (Q4)",
+    "quarterQ1": "Q1",
+    "quarterQ2": "Q2",
+    "quarterQ3": "Q3",
+    "quarterQ4": "Q4",
     "quarterLabelQ1": "Quarter 1",
     "quarterLabelQ2": "Quarter 2",
     "quarterLabelQ3": "Quarter 3",

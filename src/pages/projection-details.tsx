@@ -13,6 +13,7 @@ import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import type { MonthlyAssignment } from "@/types/monthly-assignment"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { getCategoryOrder } from "@/utils/category-order"
 import { ErrorDialog } from "@/components/ui/error-dialog"
 import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
@@ -179,25 +180,65 @@ export default function ACEProjectionPage() {
 
   // Helper function to convert API pace detail to PaceData (including ID for updates)
   const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
-    const result: QuarterData = {}
+    // First, group sub-subjects by category
+    const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
     Object.keys(quarterPaces).forEach(subject => {
-      result[subject] = quarterPaces[subject].map(pace => {
-        if (!pace) return null
-
-        return {
-          id: pace.id, // Include ID for updates/deletes
-          number: pace.number,
-          grade: pace.grade,
-          isCompleted: pace.isCompleted,
-          isFailed: pace.isFailed,
-          gradeHistory: pace.gradeHistory.map(gh => ({
-            grade: gh.grade,
-            date: gh.date,
-            note: gh.note,
-          })),
+      const firstPace = quarterPaces[subject].find(p => p !== null)
+      if (firstPace && firstPace.category) {
+        const category = firstPace.category
+        if (!categoryGroups.has(category)) {
+          categoryGroups.set(category, [])
         }
-      })
+        categoryGroups.get(category)!.push(subject)
+      }
+    })
+
+    // Now build result grouped by category
+    const result: QuarterData = {}
+
+    // Sort categories by default order
+    const sortedCategories = Array.from(categoryGroups.keys()).sort((a, b) => {
+      return getCategoryOrder(a) - getCategoryOrder(b)
+    })
+
+    sortedCategories.forEach(category => {
+      const subjects = categoryGroups.get(category)!
+      // For each week (0-8), collect all paces from all sub-subjects in this category
+      const weekPaces: (import('@/types/pace').PaceData | null | import('@/types/pace').PaceData[])[] = Array(9).fill(null)
+
+      for (let weekIndex = 0; weekIndex < 9; weekIndex++) {
+        const pacesForWeek: import('@/types/pace').PaceData[] = []
+
+        subjects.forEach(subject => {
+          const pace = quarterPaces[subject][weekIndex]
+          if (pace) {
+            pacesForWeek.push({
+              id: pace.id,
+              number: pace.number,
+              grade: pace.grade,
+              isCompleted: pace.isCompleted,
+              isFailed: pace.isFailed,
+              gradeHistory: pace.gradeHistory.map(gh => ({
+                grade: gh.grade,
+                date: gh.date,
+                note: gh.note,
+              })),
+            })
+          }
+        })
+
+        // If only one pace, store it directly; if multiple, store as array; if none, null
+        if (pacesForWeek.length === 0) {
+          weekPaces[weekIndex] = null
+        } else if (pacesForWeek.length === 1) {
+          weekPaces[weekIndex] = pacesForWeek[0]
+        } else {
+          weekPaces[weekIndex] = pacesForWeek
+        }
+      }
+
+      result[category] = weekPaces
     })
 
     return result
@@ -231,16 +272,25 @@ export default function ACEProjectionPage() {
     if (!studentId || !projectionId) return
 
     const quarterData = projectionData[quarter as keyof typeof projectionData]
-    const fromPace = quarterData[subject][fromWeek]
-    const toPace = quarterData[subject][toWeek]
+    const fromPaceRaw = quarterData[subject][fromWeek]
+    const toPaceRaw = quarterData[subject][toWeek]
+
+    // Only allow dragging single paces, not arrays
+    const fromPace = Array.isArray(fromPaceRaw) ? null : fromPaceRaw
+    const toPace = Array.isArray(toPaceRaw) ? null : toPaceRaw
+
+    if (!fromPace || !fromPace.id) {
+      console.error('Cannot drag: source pace is invalid or an array')
+      return
+    }
 
     // OPTIMISTIC UPDATE: Immediately swap the PACEs in the UI
     const updatedProjectionData = { ...projectionData }
     updatedProjectionData[quarter as keyof typeof projectionData] = {
       ...quarterData,
       [subject]: quarterData[subject].map((pace, idx) => {
-        if (idx === fromWeek) return toPace
-        if (idx === toWeek) return fromPace
+        if (idx === fromWeek) return toPaceRaw
+        if (idx === toWeek) return fromPaceRaw
         return pace
       })
     }
@@ -248,12 +298,10 @@ export default function ACEProjectionPage() {
 
     try {
       // Move the dragged PACE to the target position
-      if (fromPace && fromPace.id) {
-        await api.projections.movePace(studentId, projectionId, fromPace.id, {
-          quarter,
-          week: toWeek + 1 // Convert index to week number
-        })
-      }
+      await api.projections.movePace(studentId, projectionId, fromPace.id, {
+        quarter,
+        week: toWeek + 1 // Convert index to week number
+      })
 
       // If there was a PACE at the target position, swap it
       if (toPace && toPace.id) {
@@ -654,9 +702,6 @@ export default function ACEProjectionPage() {
         </BackButton>
       </div>
 
-      {/* Student Info Card */}
-      <StudentInfoCard student={student} showBadge={false} />
-
       {/* Title with Ver Boleta button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <SectionHeader
@@ -675,31 +720,8 @@ export default function ACEProjectionPage() {
         )}
       </div>
 
-      {/* Total Paces Summary */}
-      {projectionDetail && (() => {
-        // Calculate total paces across all quarters
-        let totalPaces = 0
-        Object.values(projectionDetail.quarters).forEach(quarter => {
-          Object.values(quarter).forEach(weekPaces => {
-            weekPaces.forEach(pace => {
-              if (pace !== null) {
-                totalPaces++
-              }
-            })
-          })
-        })
-
-        return (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
-                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })()}
+      {/* Student Info Card */}
+      <StudentInfoCard student={student} showBadge={false} />
 
       {/* PACE Picker Dialog */}
       {pacePickerContext && (
@@ -817,6 +839,7 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
+
           {hasModule('monthlyAssignments') && (
             <MonthlyAssignmentsSection
               quarter="Q4"
@@ -827,6 +850,32 @@ export default function ACEProjectionPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Total Paces Summary */}
+      {projectionDetail && (() => {
+        // Calculate total paces across all quarters
+        let totalPaces = 0
+        Object.values(projectionDetail.quarters).forEach(quarter => {
+          Object.values(quarter).forEach(weekPaces => {
+            weekPaces.forEach(pace => {
+              if (pace !== null) {
+                totalPaces++
+              }
+            })
+          })
+        })
+
+        return (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
+                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Error Dialog */}
       <ErrorDialog

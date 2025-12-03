@@ -230,7 +230,9 @@ export default function ProjectionsPage() {
   }
 
   const handleProjectionSelect = (projection: ProjectionWithStudent) => {
-    navigate(`/students/${projection.studentId}/projections/${projection.id}`)
+    navigate(`/students/${projection.studentId}/projections/${projection.id}`, {
+      state: { fromProjectionsList: true, studentName: projection.student.name }
+    })
   }
 
   const handleProjectionDelete = async (projection: ProjectionWithStudent) => {

@@ -1,13 +1,12 @@
 import * as React from "react"
 import { Navigate } from "react-router-dom"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { PageHeader } from "@/components/ui/page-header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Plus, Percent } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { SchoolYear } from "@/services/api"
@@ -210,26 +209,24 @@ export default function MonthlyAssignmentsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t("monthlyAssignments.title")}
-        description={t("monthlyAssignments.description")}
-      />
-
-      {/* School Year Selector */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("projections.schoolYear")}</CardTitle>
-          <CardDescription>{t("projections.selectSchoolYearForAssignments")}</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-4 md:space-y-6">
+      {/* Header with School Year Selector - Compact */}
+      <div className="flex flex-col gap-4">
+        <PageHeader
+          title={t("monthlyAssignments.title")}
+          description={t("monthlyAssignments.description")}
+        />
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium text-black">{t("common.schoolYear")}:</h2>
           <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
-            <SelectTrigger className="w-full md:w-[300px] [&>span]:!line-clamp-none">
+            <SelectTrigger className="w-full sm:w-[200px] cursor-pointer">
               <SelectValue placeholder={t("projections.selectSchoolYear")}>
                 {selectedSchoolYear ? (
-                  <span className="flex items-center gap-2">
-                    <span>{selectedSchoolYear.name}</span>
-                    {selectedSchoolYear.isActive && <Badge className="shrink-0">{t("projections.active")}</Badge>}
+                  <span className="flex items-center gap-2 truncate">
+                    <span className="truncate">{selectedSchoolYear.name}</span>
+                    {selectedSchoolYear.isActive && (
+                      <Badge variant="default" className="shrink-0 text-xs">{t("projections.active")}</Badge>
+                    )}
                   </span>
                 ) : null}
               </SelectValue>
@@ -242,29 +239,33 @@ export default function MonthlyAssignmentsPage() {
               ))}
             </SelectContent>
           </Select>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {selectedSchoolYearId && (
         <>
-          {/* Grade Percentages Section */}
+          {/* Grade Percentages Section - Compact Horizontal Design */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Percent className="h-5 w-5" />
-                {t("monthlyAssignments.gradePercentageTitle")}
-              </CardTitle>
-              <CardDescription>
-                {t("monthlyAssignments.gradePercentageDescription")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col xl:flex-row xl:items-center gap-4 xl:gap-6">
+                <div className="shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {t("monthlyAssignments.gradePercentageTitle")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 hidden xl:block">
+                    {t("monthlyAssignments.gradePercentageDescription")}
+                  </p>
+                </div>
+                <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
                   {QUARTERS.map(quarter => (
-                    <Field key={quarter.value}>
-                      <FieldLabel>{getQuarterLabel(quarter.value)}</FieldLabel>
-                      <div className="flex gap-2">
+                    <div key={quarter.value} className="flex flex-col gap-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        {getQuarterLabel(quarter.value)}:
+                      </label>
+                      <div className="flex items-center gap-1">
                         <Input
                           type="number"
                           min="0"
@@ -278,38 +279,38 @@ export default function MonthlyAssignmentsPage() {
                             const value = parseInt(e.target.value) || 0
                             handleUpdatePercentage(quarter.value, value)
                           }}
-                          className="flex-1"
+                          className="h-8 w-full w-max-20 text-center px-2"
                         />
-                        <span className="text-sm text-muted-foreground self-center">%</span>
+                        <span className="text-sm text-muted-foreground shrink-0">%</span>
                       </div>
-                    </Field>
+                    </div>
                   ))}
                 </div>
-              </FieldGroup>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3 xl:hidden">
+                {t("monthlyAssignments.gradePercentageDescription")}
+              </p>
             </CardContent>
           </Card>
 
           {/* Assignments Table */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold">{t("monthlyAssignments.title")}</h2>
-              <p className="text-sm text-muted-foreground">
-                {t("monthlyAssignments.manageForYear", { year: selectedSchoolYear?.name })}
-              </p>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+              </div>
+              <Button onClick={handleCreate} className="cursor-pointer w-full sm:w-auto shrink-0">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("monthlyAssignments.newAssignment")}
+              </Button>
             </div>
-            <Button onClick={handleCreate} className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("monthlyAssignments.newAssignment")}
-            </Button>
+            <MonthlyAssignmentsTable
+              assignments={templates}
+              onEdit={handleEdit}
+              onDelete={(assignment) => setDeleteDialog(assignment)}
+              canEdit={true}
+              canDelete={true}
+            />
           </div>
-
-          <MonthlyAssignmentsTable
-            assignments={templates}
-            onEdit={handleEdit}
-            onDelete={(assignment) => setDeleteDialog(assignment)}
-            canEdit={true}
-            canDelete={true}
-          />
         </>
       )}
 

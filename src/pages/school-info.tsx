@@ -4,16 +4,16 @@ import { BackButton } from "@/components/ui/back-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
 import { Loading } from "@/components/ui/loading";
-import { Button } from "@/components/ui/button";
-import { Building2, Mail, Phone, MapPin, Lock, Users, Plus, Eye, GraduationCap } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Lock, Users, GraduationCap } from "lucide-react";
 import { useApi } from "@/services/api";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 import type { UserInfo } from "@/services/api";
 import { StudentFormDialog } from "@/components/student-form-dialog";
 import { TeacherFormDialog } from "@/components/teacher-form-dialog";
 import { ErrorDialog } from "@/components/ui/error-dialog";
 import { SchoolModulesManager } from "@/components/school-modules-manager";
 import { useTranslation } from "react-i18next";
+import { useModuleAccess } from "@/hooks/useModuleAccess";
 
 interface SchoolInfo {
   id: string;
@@ -21,6 +21,8 @@ interface SchoolInfo {
   address?: string;
   phone?: string;
   email?: string;
+  teacherLimit?: number;
+  userLimit?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,8 +30,8 @@ interface SchoolInfo {
 export default function SchoolInfoPage() {
   const { schoolId } = useParams();
   const api = useApi();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { hasModule } = useModuleAccess();
   const [school, setSchool] = React.useState<SchoolInfo | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
@@ -70,8 +72,10 @@ export default function SchoolInfoPage() {
         setSchool(schoolData as SchoolInfo);
 
         const isSuperAdmin = userData.roles.some((role: { name: string }) => role.name === 'SUPERADMIN');
+        const isSchoolAdmin = userData.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') && !isSuperAdmin;
         const canViewStudents = userData.permissions.includes('students.read');
-        const canViewTeachers = userData.permissions.includes('users.read');
+        // School admins can view teachers (module check will be done in rendering logic)
+        const canViewTeachers = isSchoolAdmin || userData.permissions.includes('users.read');
 
         // SUPERADMIN can see counts even if they can't manage students/teachers
         // Regular users need permissions to see counts
@@ -93,7 +97,10 @@ export default function SchoolInfoPage() {
         if (isSuperAdmin || canViewTeachers) {
           setLoadingTeachersCount(true);
           try {
-            const teachersCountData = await api.schools.getTeachersCount(schoolData.id);
+            // Use /me endpoint for school admins
+            const teachersCountData = isSchoolAdmin
+              ? await api.schools.getMyTeachersCount()
+              : await api.schools.getTeachersCount(schoolData.id);
             setTeachersCount(teachersCountData.count);
           } catch (error) {
             console.error("Error fetching teachers count:", error);
@@ -134,9 +141,8 @@ export default function SchoolInfoPage() {
   const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') ?? false;
 
   const canViewStudents = !isSuperAdmin && (userInfo?.permissions.includes('students.read') ?? false);
-  const canCreateStudents = !isSuperAdmin && isSchoolAdmin && (userInfo?.permissions.includes('students.create') ?? false);
-  const canViewTeachers = !isSuperAdmin && (userInfo?.permissions.includes('users.read') ?? false);
-  const canCreateTeachers = !isSuperAdmin && isSchoolAdmin && (userInfo?.permissions.includes('users.create') ?? false);
+  // School admins can view teachers if the teachers module is enabled
+  const canViewTeachers = !isSuperAdmin && isSchoolAdmin && hasModule('teachers');
 
   return (
     <div className="space-y-6">
@@ -180,6 +186,41 @@ export default function SchoolInfoPage() {
                     <p className="text-sm font-mono bg-muted px-3 py-2 rounded">{school.id}</p>
                   </div>
                 </div>
+
+                {/* Statistics - Integrated at bottom of General Info Card */}
+                {(canViewStudents || canViewTeachers || isSuperAdmin) && (
+                  <div className="pt-4 mt-4 border-t">
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                      {(canViewStudents || isSuperAdmin) && (
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm text-muted-foreground">{t("schoolInfo.totalStudents")}:</span>
+                          {loadingStudentsCount ? (
+                            <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+                          ) : (
+                            <span className="text-base font-semibold text-blue-600">
+                              {school?.userLimit ? `${studentsCount}/${school.userLimit}` : studentsCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {(canViewTeachers || isSuperAdmin) && (
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="text-sm text-muted-foreground">{t("schoolInfo.totalTeachers")}:</span>
+                          {loadingTeachersCount ? (
+                            <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+                          ) : (
+                            <span className="text-base font-semibold text-green-600">
+                              {school?.teacherLimit ? `${teachersCount}/${school.teacherLimit}` : teachersCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -220,113 +261,6 @@ export default function SchoolInfoPage() {
                 )}
               </CardContent>
             </Card>
-
-            {(canViewStudents || isSuperAdmin) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    {isSuperAdmin ? t("schoolInfo.studentsManagementSuperAdmin") : t("schoolInfo.studentsManagement")}
-                  </CardTitle>
-                  <CardDescription>
-                    {isSuperAdmin
-                      ? t("schoolInfo.studentsDescriptionSuperAdmin")
-                      : t("schoolInfo.studentsDescription")}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                        {t("schoolInfo.totalStudents")}
-                      </label>
-                      <div className="flex items-center gap-2">
-                        {loadingStudentsCount ? (
-                          <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
-                        ) : (
-                          <p className="text-2xl font-bold text-blue-600">{studentsCount}</p>
-                        )}
-                      </div>
-                    </div>
-                    {!isSuperAdmin && (
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          onClick={() => navigate('/students')}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          {t("schoolInfo.viewStudentsList")}
-                        </Button>
-                        {canCreateStudents && (
-                          <Button
-                            onClick={() => setIsStudentDialogOpen(true)}
-                            className="w-full"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            {t("schoolInfo.addNewStudent")}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Teachers Management Section */}
-            {(canViewTeachers || isSuperAdmin) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5" />
-                    {isSuperAdmin ? "Maestros" : "Gestión de Maestros"}
-                  </CardTitle>
-                  <CardDescription>
-                    {isSuperAdmin
-                      ? "Información de maestros de la escuela"
-                      : "Administra los maestros de la escuela"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className={isSuperAdmin ? "" : "grid grid-cols-1 md:grid-cols-2 gap-4"}>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-1 block">
-                        {t("schoolInfo.totalTeachers")}
-                      </label>
-                      <div className="flex items-center gap-2">
-                        {loadingTeachersCount ? (
-                          <div className="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
-                        ) : (
-                          <p className="text-2xl font-bold text-green-600">{teachersCount}</p>
-                        )}
-                      </div>
-                    </div>
-                    {!isSuperAdmin && (
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          onClick={() => navigate(schoolId ? `/schools/${schoolId}/teachers` : '/school-settings/school-info')}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          {t("schoolInfo.viewTeachersList")}
-                        </Button>
-                        {canCreateTeachers && (
-                          <Button
-                            onClick={() => setIsTeacherDialogOpen(true)}
-                            className="w-full"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            {t("schoolInfo.addNewTeacher")}
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Module Management Section - Super Admin Only */}
             {isSuperAdmin && school && (

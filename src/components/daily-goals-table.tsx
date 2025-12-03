@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
+import { sortCategoriesByOrder } from "@/utils/category-order"
 
 interface DailyGoalsTableProps {
   quarter: string
@@ -57,6 +58,142 @@ export function DailyGoalsTable({
   const canToggleGoal = Boolean(onGoalToggle)
   const canEditNotes = Boolean(onNotesUpdate)
 
+  // Group data by category if subjectToCategory mapping is available
+  const groupedData = React.useMemo(() => {
+    if (!subjectToCategory || subjectToCategory.size === 0) {
+      return { data, categories: subjects }
+    }
+
+    // Check if ANY of the subjects are sub-subjects (keys in subjectToCategory)
+    // If we have sub-subjects, we need to group them
+    const hasSubSubjects = subjects.some(subject => subjectToCategory.has(subject))
+
+    // If we don't have any sub-subjects, subjects are likely already categories
+    // Check if all subjects are category values (not keys)
+    const allCategoryValues = new Set(Array.from(subjectToCategory.values()))
+    const allSubjectKeys = new Set(Array.from(subjectToCategory.keys()))
+    const areAllCategories = !hasSubSubjects && subjects.length > 0 && subjects.every(subject =>
+      allCategoryValues.has(subject) && !allSubjectKeys.has(subject) && data[subject] !== undefined
+    )
+
+    // If subjects are already categories, use data as-is
+    if (areAllCategories) {
+      return { data, categories: subjects }
+    }
+
+    // We have sub-subjects that need to be grouped
+
+    // Get all unique categories
+    const allCategories = new Set<string>()
+    subjectToCategory.forEach((category) => {
+      allCategories.add(category)
+    })
+
+    // Add any subjects that don't have a category mapping
+    subjects.forEach(subject => {
+      if (!subjectToCategory.has(subject)) {
+        allCategories.add(subject)
+      }
+    })
+
+    // Group subjects by category
+    const categoryGroups = new Map<string, string[]>()
+    allCategories.forEach(category => {
+      categoryGroups.set(category, [])
+    })
+
+    subjects.forEach(subject => {
+      // Check if this subject is in the subjectToCategory mapping (it's a sub-subject)
+      if (subjectToCategory.has(subject)) {
+        const category = subjectToCategory.get(subject)!
+        if (!categoryGroups.has(category)) {
+          categoryGroups.set(category, [])
+        }
+        categoryGroups.get(category)!.push(subject)
+      } else {
+        // Subject doesn't have a mapping - check if it's already a category
+        // (i.e., it's a value in the mapping but not a key)
+        if (allCategoryValues.has(subject)) {
+          // It's a category, add it directly
+          if (!categoryGroups.has(subject)) {
+            categoryGroups.set(subject, [])
+          }
+        } else {
+          // Unknown subject, add as-is
+          if (!categoryGroups.has(subject)) {
+            categoryGroups.set(subject, [])
+          }
+          categoryGroups.get(subject)!.push(subject)
+        }
+      }
+    })
+
+    // Build grouped data structure
+    const result: DailyGoalData = {}
+    const categoryOrder: string[] = []
+
+    categoryGroups.forEach((subjectsInCategory, category) => {
+      categoryOrder.push(category)
+
+      // Combine goals from all sub-subjects in this category
+      const combinedGoals = Array(5).fill(null).map((_, dayIndex) => {
+        const goalsForDay: typeof data[string][number][] = []
+
+        subjectsInCategory.forEach(subject => {
+          const goal = data[subject]?.[dayIndex]
+          if (goal) {
+            goalsForDay.push(goal)
+          }
+        })
+
+        if (goalsForDay.length === 0) {
+          return {
+            text: '',
+            isCompleted: false,
+            notes: undefined,
+            notesCompleted: false,
+            notesHistory: []
+          }
+        }
+
+        if (goalsForDay.length === 1) {
+          return goalsForDay[0]
+        }
+
+        // Multiple goals - combine them
+        const combinedText = goalsForDay.map(g => g.text).filter(t => t).join(', ')
+        const combinedIsCompleted = goalsForDay.every(g => g.isCompleted)
+        const combinedNotes = goalsForDay.map(g => g.notes).filter(n => n).join('; ')
+
+        // Combine notes history
+        const combinedNotesHistory: Array<{ text: string, completedDate: string }> = []
+        goalsForDay.forEach(g => {
+          if (g.notesHistory) {
+            combinedNotesHistory.push(...g.notesHistory)
+          }
+        })
+        combinedNotesHistory.sort((a, b) =>
+          new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime()
+        )
+
+        return {
+          text: combinedText,
+          isCompleted: combinedIsCompleted,
+          notes: combinedNotes || undefined,
+          notesCompleted: goalsForDay.some(g => g.notesCompleted),
+          notesHistory: combinedNotesHistory
+        }
+      })
+
+      result[category] = combinedGoals
+    })
+
+    // Sort categories by default order
+    const sortedCategoryOrder = sortCategoriesByOrder(categoryOrder)
+
+    return { data: result, categories: sortedCategoryOrder }
+  }, [data, subjects, subjectToCategory])
+
   // Prevent body scroll when modal is open
   React.useEffect(() => {
     if (notesHistory) {
@@ -71,7 +208,7 @@ export function DailyGoalsTable({
 
   const handleGoalClick = (subject: string, dayIndex: number) => {
     if (!onGoalUpdate) return
-    const currentGoal = data[subject]?.[dayIndex]
+    const currentGoal = groupedData.data[subject]?.[dayIndex]
     const currentValue = currentGoal?.text || ""
     setEditingCell({ subject, dayIndex })
     setEditValue(currentValue)
@@ -117,7 +254,7 @@ export function DailyGoalsTable({
 
   const handleNotesClick = (subject: string, dayIndex: number) => {
     if (!onNotesUpdate) return
-    const currentNotes = data[subject]?.[dayIndex]?.notes || ""
+    const currentNotes = groupedData.data[subject]?.[dayIndex]?.notes || ""
     setEditingNotes({ subject, dayIndex })
     setNotesValue(currentNotes)
   }
@@ -151,12 +288,12 @@ export function DailyGoalsTable({
 
 
 
-  // Calculate completed goals
+  // Calculate completed goals using grouped data
   const completedGoals = React.useMemo(() => {
-    return subjects.reduce((total, subject) => {
-      return total + (data[subject]?.filter(goal => goal.isCompleted).length || 0)
+    return groupedData.categories.reduce((total, category) => {
+      return total + (groupedData.data[category]?.filter(goal => goal.isCompleted).length || 0)
     }, 0)
-  }, [data, subjects])
+  }, [groupedData])
 
   return (
     <Card>
@@ -175,7 +312,7 @@ export function DailyGoalsTable({
             <div className="flex items-center gap-2 text-xs md:text-sm">
               <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
               <span className="font-medium">
-                {subjects.length} {subjects.length === 1 ? t("dailyGoals.subjectSingular") : t("dailyGoals.subjectPlural")}
+                {groupedData.categories.length} {groupedData.categories.length === 1 ? t("dailyGoals.subjectSingular") : t("dailyGoals.subjectPlural")}
               </span>
             </div>
           </div>
@@ -190,14 +327,14 @@ export function DailyGoalsTable({
                 <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300">
                   {t("dailyGoals.day")}
                 </th>
-                {subjects.map((subject) => (
+                {groupedData.categories.map((category) => (
                   <th
-                    key={subject}
+                    key={category}
                     className="text-center p-2 font-semibold min-w-[100px] border border-gray-300"
                   >
                     <div className="flex flex-col">
                       <span className="text-xs font-bold">
-                        {subjectToCategory?.get(subject) || subject}
+                        {category}
                       </span>
                     </div>
                   </th>
@@ -220,12 +357,12 @@ export function DailyGoalsTable({
                       <span className="text-sm font-bold">{days[dayIndex]}</span>
                     </div>
                   </td>
-                  {subjects.map((subject) => (
+                  {groupedData.categories.map((category) => (
                     <td
-                      key={subject}
+                      key={category}
                       className="p-1 text-center align-middle border border-gray-300"
                     >
-                      {editingCell?.subject === subject && editingCell?.dayIndex === dayIndex ? (
+                      {editingCell?.subject === category && editingCell?.dayIndex === dayIndex ? (
                         <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
                           <div className="w-full">
                             {(() => {
@@ -279,7 +416,7 @@ export function DailyGoalsTable({
                             </button>
                           </div>
                         </div>
-                      ) : editingNotes?.subject === subject && editingNotes?.dayIndex === dayIndex ? (
+                      ) : editingNotes?.subject === category && editingNotes?.dayIndex === dayIndex ? (
                         <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
                           <textarea
                             value={notesValue}
@@ -310,76 +447,76 @@ export function DailyGoalsTable({
                       ) : (
                         <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
                           <div className="flex items-center justify-center w-full gap-2">
-                            {data[subject]?.[dayIndex]?.text && canToggleGoal && (
+                            {groupedData.data[category]?.[dayIndex]?.text && canToggleGoal && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   if (canToggleGoal) {
-                                    onGoalToggle?.(subject, dayIndex)
+                                    onGoalToggle?.(category, dayIndex)
                                   }
                                 }}
-                                className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${data[subject]?.[dayIndex]?.isCompleted
+                                className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${groupedData.data[category]?.[dayIndex]?.isCompleted
                                   ? "bg-green-500 border-green-500"
                                   : "bg-white border-gray-300 hover:border-green-400"
                                   }`}
-                                title={data[subject]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
+                                title={groupedData.data[category]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
                                 disabled={!canToggleGoal}
                               >
-                                {data[subject]?.[dayIndex]?.isCompleted && (
+                                {groupedData.data[category]?.[dayIndex]?.isCompleted && (
                                   <Check className="h-3 w-3 text-white" />
                                 )}
                               </button>
                             )}
-                            {data[subject]?.[dayIndex]?.text && !canToggleGoal && data[subject]?.[dayIndex]?.isCompleted && (
+                            {groupedData.data[category]?.[dayIndex]?.text && !canToggleGoal && groupedData.data[category]?.[dayIndex]?.isCompleted && (
                               <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
                                 <Check className="h-3 w-3" />
                               </Badge>
                             )}
                             <div
-                              onClick={() => handleGoalClick(subject, dayIndex)}
+                              onClick={() => handleGoalClick(category, dayIndex)}
                               className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                             >
-                              <span className={`text-sm font-mono text-center ${data[subject]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
+                              <span className={`text-sm font-mono text-center ${groupedData.data[category]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
                                 }`}>
-                                {data[subject]?.[dayIndex]?.text || (
+                                {groupedData.data[category]?.[dayIndex]?.text || (
                                   <span className="text-muted-foreground/50 text-xs">
                                     {isEditable ? t("dailyGoals.add") : '—'}
                                   </span>
                                 )}
                               </span>
                             </div>
-                            {data[subject]?.[dayIndex]?.text && (canEditNotes || (data[subject]?.[dayIndex]?.notesHistory?.length ?? 0) > 0) && (
+                            {groupedData.data[category]?.[dayIndex]?.text && (canEditNotes || (groupedData.data[category]?.[dayIndex]?.notesHistory?.length ?? 0) > 0) && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  const goal = data[subject]?.[dayIndex]
+                                  const goal = groupedData.data[category]?.[dayIndex]
                                   if (goal?.notesHistory && goal.notesHistory.length > 0 && !goal.notes) {
                                     // Show history if there's history and no active note
                                     setNotesHistory({
-                                      subject,
+                                      subject: category,
                                       dayIndex,
                                       history: goal.notesHistory
                                     })
                                   } else if (canEditNotes) {
                                     // Otherwise edit/add note
-                                    handleNotesClick(subject, dayIndex)
+                                    handleNotesClick(category, dayIndex)
                                   }
                                 }}
-                                className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-sm ${data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted
+                                className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-sm ${groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted
                                   ? "bg-red-500 hover:bg-red-600 text-white"
-                                  : (data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0)
+                                  : (groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0)
                                     ? "bg-orange-500 hover:bg-orange-600 text-white"
                                     : "bg-gray-200 hover:bg-gray-300 text-gray-600"
                                   }`}
                                 title={
-                                  data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted
+                                  groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted
                                     ? t("dailyGoals.editNote")
-                                    : (data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0)
+                                    : (groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0)
                                       ? t("dailyGoals.viewNotesHistory")
                                       : t("dailyGoals.addNote")
                                 }
                               >
-                                {data[subject]?.[dayIndex]?.notesHistory && data[subject]?.[dayIndex]?.notesHistory.length > 0 && !data[subject]?.[dayIndex]?.notes ? (
+                                {groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0 && !groupedData.data[category]?.[dayIndex]?.notes ? (
                                   <History className="h-4 w-4" />
                                 ) : (
                                   <Edit2 className="h-4 w-4" />
@@ -387,12 +524,12 @@ export function DailyGoalsTable({
                               </button>
                             )}
                           </div>
-                          {data[subject]?.[dayIndex]?.notes && !data[subject]?.[dayIndex]?.notesCompleted && (
+                          {groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted && (
                             <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
                               <div className="flex-1">
                                 <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">{t("dailyGoals.pending")}</p>
                                 <p className="text-sm font-medium leading-tight">
-                                  {data[subject]?.[dayIndex]?.notes}
+                                  {groupedData.data[category]?.[dayIndex]?.notes}
                                 </p>
                               </div>
                             </div>
@@ -423,13 +560,13 @@ export function DailyGoalsTable({
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
               <p className="text-lg md:text-2xl font-bold text-blue-600">
-                {subjects.length * 5}
+                {groupedData.categories.length * 5}
               </p>
               <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.totalGoals")}</p>
             </div>
             <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
               <p className="text-lg md:text-2xl font-bold text-purple-600">
-                {subjects.length}
+                {groupedData.categories.length}
               </p>
               <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.subjects")}</p>
             </div>

@@ -16,6 +16,15 @@ import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { Loading } from "@/components/ui/loading"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type WizardStep = 1 | 2 | 3 | 4
 
@@ -45,6 +54,7 @@ export default function CreateStudentWizardPage() {
   const [isSelectOpen, setIsSelectOpen] = React.useState(false)
   const [creatingCertificationName, setCreatingCertificationName] = React.useState<string | null>(null)
   const searchInputRef = React.useRef<HTMLInputElement>(null)
+  const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
 
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -78,6 +88,22 @@ export default function CreateStudentWizardPage() {
 
       try {
         setIsLoading(true)
+
+        // Check student limit before allowing creation
+        const schoolData = await api.schools.getMy()
+        if (schoolData?.userLimit) {
+          const countData = await api.schools.getStudentsCount(userInfo.schoolId)
+          if (countData.count >= schoolData.userLimit) {
+            setLimitWarningDialog({
+              open: true,
+              title: t("students.limitReached"),
+              message: t("students.limitReachedMessage", { limit: schoolData.userLimit })
+            })
+            setIsLoading(false)
+            return
+          }
+        }
+
         const types = await api.schools.getCertificationTypes(userInfo.schoolId)
         setCertificationTypes(types as CertificationType[])
       } catch (error) {
@@ -265,6 +291,26 @@ export default function CreateStudentWizardPage() {
   const handleSubmit = async () => {
     if (!userInfo?.schoolId) return
 
+    // Check student limit before creating
+    try {
+      const schoolData = await api.schools.getMy()
+      if (schoolData?.userLimit) {
+        const countData = await api.schools.getStudentsCount(userInfo.schoolId)
+        if (countData.count >= schoolData.userLimit) {
+          setLimitWarningDialog({
+            open: true,
+            title: t("students.limitReached"),
+            message: t("students.limitReachedMessage", { limit: schoolData.userLimit })
+          })
+          setIsSaving(false)
+          return
+        }
+      }
+    } catch (err) {
+      console.error('Error checking student limit:', err)
+      // Continue anyway - backend will also validate
+    }
+
     setIsSaving(true)
     try {
       const parents = [
@@ -305,7 +351,16 @@ export default function CreateStudentWizardPage() {
       navigate("/students")
     } catch (error: unknown) {
       const err = error as Error
-      toast.error(err.message || t("students.createError"))
+      // Check if error is about limit - show dialog instead of toast
+      if (err.message?.includes('límite') || err.message?.includes('limit')) {
+        setLimitWarningDialog({
+          open: true,
+          title: t("students.limitReached"),
+          message: err.message || t("students.limitReachedMessage", { limit: 0 })
+        })
+      } else {
+        toast.error(err.message || t("students.createError"))
+      }
     } finally {
       setIsSaving(false)
     }
@@ -820,6 +875,28 @@ export default function CreateStudentWizardPage() {
           </div>
         </div>
       </div>
+
+      {/* Limit Warning Dialog */}
+      {limitWarningDialog && (
+        <AlertDialog open={limitWarningDialog.open} onOpenChange={(open) => setLimitWarningDialog(open ? limitWarningDialog : null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{limitWarningDialog.title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {limitWarningDialog.message}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => {
+                setLimitWarningDialog(null)
+                navigate("/students")
+              }}>
+                {t("common.accept")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }

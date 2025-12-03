@@ -13,7 +13,7 @@ export interface PaceData {
   gradeHistory?: GradeHistory[] // History of all grades for this PACE
 }
 
-export type WeekPaces = (PaceData | null)[] // Array of 9 weeks, null if no PACE
+export type WeekPaces = (PaceData | null | PaceData[])[] // Array of 9 weeks, can have single pace, array of paces, or null
 
 export interface QuarterData {
   [subject: string]: WeekPaces
