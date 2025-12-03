@@ -272,16 +272,25 @@ export default function ACEProjectionPage() {
     if (!studentId || !projectionId) return
 
     const quarterData = projectionData[quarter as keyof typeof projectionData]
-    const fromPace = quarterData[subject][fromWeek]
-    const toPace = quarterData[subject][toWeek]
+    const fromPaceRaw = quarterData[subject][fromWeek]
+    const toPaceRaw = quarterData[subject][toWeek]
+
+    // Only allow dragging single paces, not arrays
+    const fromPace = Array.isArray(fromPaceRaw) ? null : fromPaceRaw
+    const toPace = Array.isArray(toPaceRaw) ? null : toPaceRaw
+
+    if (!fromPace || !fromPace.id) {
+      console.error('Cannot drag: source pace is invalid or an array')
+      return
+    }
 
     // OPTIMISTIC UPDATE: Immediately swap the PACEs in the UI
     const updatedProjectionData = { ...projectionData }
     updatedProjectionData[quarter as keyof typeof projectionData] = {
       ...quarterData,
       [subject]: quarterData[subject].map((pace, idx) => {
-        if (idx === fromWeek) return toPace
-        if (idx === toWeek) return fromPace
+        if (idx === fromWeek) return toPaceRaw
+        if (idx === toWeek) return fromPaceRaw
         return pace
       })
     }
@@ -289,12 +298,10 @@ export default function ACEProjectionPage() {
 
     try {
       // Move the dragged PACE to the target position
-      if (fromPace && fromPace.id) {
-        await api.projections.movePace(studentId, projectionId, fromPace.id, {
-          quarter,
-          week: toWeek + 1 // Convert index to week number
-        })
-      }
+      await api.projections.movePace(studentId, projectionId, fromPace.id, {
+        quarter,
+        week: toWeek + 1 // Convert index to week number
+      })
 
       // If there was a PACE at the target position, swap it
       if (toPace && toPace.id) {

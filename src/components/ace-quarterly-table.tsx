@@ -45,7 +45,7 @@ export function ACEQuarterlyTable({
   currentWeek,
   isActive = false,
   isReadOnly = false,
-  subjectToCategory,
+  subjectToCategory: _subjectToCategory,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
