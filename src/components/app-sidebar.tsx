@@ -330,13 +330,20 @@ export function AppSidebar() {
                 {allNavigationItems.map((item, index) => {
                   // Special handling for report cards: activate "Boletas" if path contains /report-cards
                   const isReportCardPath = location.pathname.includes('/report-cards')
+                  const locationState = location.state as { fromProjectionsList?: boolean } | null
+                  const isProjectionDetailFromList = locationState?.fromProjectionsList &&
+                    location.pathname.includes('/students/') &&
+                    location.pathname.includes('/projections/')
                   let isActive: boolean
 
                   if (item.url === '/report-cards') {
                     isActive = isReportCardPath
+                  } else if (item.url === '/projections') {
+                    // Activate "Proyecciones" if we're on projections page or came from projections list
+                    isActive = location.pathname.startsWith('/projections') || isProjectionDetailFromList
                   } else if (item.url === '/students') {
-                    // Don't activate "Estudiantes" if we're on a report card page
-                    isActive = !isReportCardPath && location.pathname.startsWith(item.url)
+                    // Don't activate "Estudiantes" if we're on a report card page or came from projections list
+                    isActive = !isReportCardPath && !isProjectionDetailFromList && location.pathname.startsWith(item.url)
                   } else if (item.url.includes('/teachers')) {
                     // Activate "Maestros" if we're on any teachers page
                     isActive = location.pathname.includes('/teachers')

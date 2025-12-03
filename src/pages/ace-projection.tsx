@@ -179,25 +179,59 @@ export default function ACEProjectionPage() {
 
   // Helper function to convert API pace detail to PaceData (including ID for updates)
   const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
-    const result: QuarterData = {}
+    // First, group sub-subjects by category
+    const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
     Object.keys(quarterPaces).forEach(subject => {
-      result[subject] = quarterPaces[subject].map(pace => {
-        if (!pace) return null
-
-        return {
-          id: pace.id, // Include ID for updates/deletes
-          number: pace.number,
-          grade: pace.grade,
-          isCompleted: pace.isCompleted,
-          isFailed: pace.isFailed,
-          gradeHistory: pace.gradeHistory.map(gh => ({
-            grade: gh.grade,
-            date: gh.date,
-            note: gh.note,
-          })),
+      const firstPace = quarterPaces[subject].find(p => p !== null)
+      if (firstPace && firstPace.category) {
+        const category = firstPace.category
+        if (!categoryGroups.has(category)) {
+          categoryGroups.set(category, [])
         }
-      })
+        categoryGroups.get(category)!.push(subject)
+      }
+    })
+
+    // Now build result grouped by category
+    const result: QuarterData = {}
+
+    categoryGroups.forEach((subjects, category) => {
+      // For each week (0-8), collect all paces from all sub-subjects in this category
+      const weekPaces: (import('@/types/pace').PaceData | null | import('@/types/pace').PaceData[])[] = Array(9).fill(null)
+
+      for (let weekIndex = 0; weekIndex < 9; weekIndex++) {
+        const pacesForWeek: import('@/types/pace').PaceData[] = []
+
+        subjects.forEach(subject => {
+          const pace = quarterPaces[subject][weekIndex]
+          if (pace) {
+            pacesForWeek.push({
+              id: pace.id,
+              number: pace.number,
+              grade: pace.grade,
+              isCompleted: pace.isCompleted,
+              isFailed: pace.isFailed,
+              gradeHistory: pace.gradeHistory.map(gh => ({
+                grade: gh.grade,
+                date: gh.date,
+                note: gh.note,
+              })),
+            })
+          }
+        })
+
+        // If only one pace, store it directly; if multiple, store as array; if none, null
+        if (pacesForWeek.length === 0) {
+          weekPaces[weekIndex] = null
+        } else if (pacesForWeek.length === 1) {
+          weekPaces[weekIndex] = pacesForWeek[0]
+        } else {
+          weekPaces[weekIndex] = pacesForWeek
+        }
+      }
+
+      result[category] = weekPaces
     })
 
     return result

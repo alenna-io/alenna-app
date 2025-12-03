@@ -5,7 +5,7 @@ import { Loading } from "@/components/ui/loading"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { useApi } from "@/services/api"
-import type { DailyGoalData } from "@/types/pace"
+import type { DailyGoalData, DailyGoal, NoteHistory } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
@@ -144,7 +144,7 @@ export default function DailyGoalsPage() {
           schoolYear: detail.schoolYear,
         })
       } catch (err) {
-        console.error("Error loading student for daily goals:", err)
+        console.error("[DailyGoalsPage] Error loading student for daily goals:", err)
         // Fallback to a generic placeholder if needed
         setStudent({
           id: studentId,
@@ -159,19 +159,6 @@ export default function DailyGoalsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, projectionId])
 
-  // Calculate total pages for a specific day
-  const calculateDayTotal = React.useMemo(() => {
-    const dayTotals = [0, 0, 0, 0, 0] // 5 days
-
-    Object.keys(goalsData).forEach(subject => {
-      goalsData[subject]?.forEach((goal, dayIndex) => {
-        const pages = calculatePagesFromValue(goal.text)
-        dayTotals[dayIndex] += pages
-      })
-    })
-    return dayTotals
-  }, [goalsData])
-
   // Build subject to category mapping
   const subjectToCategory = React.useMemo(() => {
     const mapping = new Map<string, string>()
@@ -184,59 +171,258 @@ export default function DailyGoalsPage() {
           }
         })
       })
+    } else {
+      // Fallback: Extract category from sub-subject names (e.g., "English L7" -> "English")
+      // This pattern matches sub-subject names that follow "Category Level" format
+      Object.keys(goalsData).forEach(subject => {
+        // Match pattern like "English L7", "Math L8", "Español y Ortografía L8"
+        // Extract the category part (everything before the last space and level indicator)
+        const match = subject.match(/^(.+?)\s+L\d+$/)
+        if (match && match[1]) {
+          mapping.set(subject, match[1].trim())
+        }
+      })
     }
     return mapping
-  }, [projectionDetail])
+  }, [projectionDetail, goalsData])
 
-  const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
-    if (!studentId || !projectionId || !quarter || !week) return
+  // Group daily goals by category
+  const groupedGoalsData = React.useMemo(() => {
+    // Get all categories from projection first
+    const allCategories = new Set<string>()
+    if (projectionDetail) {
+      Object.values(projectionDetail.quarters).forEach(quarter => {
+        Object.values(quarter).forEach(weekPaces => {
+          const firstPace = weekPaces.find(p => p !== null)
+          if (firstPace && firstPace.category) {
+            allCategories.add(firstPace.category)
+          }
+        })
+      })
+    }
 
-    const currentGoal = goalsData[subject]?.[dayIndex]
+    // If no projection detail, return goalsData as-is (can't group without mapping)
+    if (!projectionDetail || allCategories.size === 0) {
+      return goalsData
+    }
 
-    // OPTIMISTIC UPDATE: Immediately update the goal in the UI
-    const updatedGoalsData = { ...goalsData }
-    if (!updatedGoalsData[subject]) {
-      updatedGoalsData[subject] = Array(5).fill(null).map(() => ({
+
+    // allCategories already populated above
+
+    const categoryGroups = new Map<string, string[]>() // category -> [subjects]
+
+    // Initialize all categories with empty arrays
+    allCategories.forEach(category => {
+      categoryGroups.set(category, [])
+    })
+
+    // Group subjects by category
+    Object.keys(goalsData).forEach(subject => {
+      const category = subjectToCategory.get(subject)
+      if (category) {
+        if (!categoryGroups.has(category)) {
+          categoryGroups.set(category, [])
+        }
+        categoryGroups.get(category)!.push(subject)
+      }
+    })
+
+    // Build grouped result
+    const result: DailyGoalData = {}
+
+    categoryGroups.forEach((subjects, category) => {
+      // For each day (0-4), combine goals from all sub-subjects in this category
+      const combinedGoals: DailyGoal[] = Array(5).fill(null).map(() => ({
         text: '',
         isCompleted: false,
         notes: undefined,
         notesCompleted: false,
         notesHistory: []
       }))
+
+      for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+        const goalsForDay: DailyGoal[] = []
+
+        subjects.forEach(subject => {
+          const goal = goalsData[subject]?.[dayIndex]
+          if (goal && goal.text) {
+            goalsForDay.push(goal)
+          }
+        })
+
+        if (goalsForDay.length > 0) {
+          // Combine goals: if multiple, sum the pages or combine text
+          if (goalsForDay.length === 1) {
+            combinedGoals[dayIndex] = goalsForDay[0]
+          } else {
+            // Multiple goals for same day - combine them
+            const combinedText = goalsForDay.map(g => g.text).filter(t => t).join(', ')
+            const combinedIsCompleted = goalsForDay.every(g => g.isCompleted)
+            const combinedNotes = goalsForDay.map(g => g.notes).filter(n => n).join('; ')
+
+            // Combine notes history
+            const combinedNotesHistory: NoteHistory[] = []
+            goalsForDay.forEach(g => {
+              if (g.notesHistory) {
+                combinedNotesHistory.push(...g.notesHistory)
+              }
+            })
+            // Sort by date (most recent first)
+            combinedNotesHistory.sort((a, b) =>
+              new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime()
+            )
+
+            combinedGoals[dayIndex] = {
+              text: combinedText,
+              isCompleted: combinedIsCompleted,
+              notes: combinedNotes || undefined,
+              notesCompleted: goalsForDay.some(g => g.notesCompleted),
+              notesHistory: combinedNotesHistory
+            }
+          }
+        } else {
+          combinedGoals[dayIndex] = {
+            text: '',
+            isCompleted: false,
+            notes: undefined,
+            notesCompleted: false,
+            notesHistory: []
+          }
+        }
+      }
+
+      result[category] = combinedGoals
+    })
+
+    // Also add categories that don't have any goalsData yet (from projection but no goals)
+    allCategories.forEach(category => {
+      if (!result[category]) {
+        // Create empty goals for this category
+        result[category] = Array(5).fill(null).map(() => ({
+          text: '',
+          isCompleted: false,
+          notes: undefined,
+          notesCompleted: false,
+          notesHistory: []
+        }))
+      }
+    })
+
+    // Add any subjects that don't have a category mapping (fallback)
+    Object.keys(goalsData).forEach(subject => {
+      if (!subjectToCategory.has(subject)) {
+        result[subject] = goalsData[subject]
+      }
+    })
+
+    return result
+  }, [goalsData, projectionDetail, subjectToCategory])
+
+  // Calculate total pages for a specific day (use grouped data)
+  const calculateDayTotal = React.useMemo(() => {
+    const dayTotals = [0, 0, 0, 0, 0] // 5 days
+
+    // Use groupedGoalsData for calculation
+    const dataToUse = Object.keys(groupedGoalsData).length > 0 ? groupedGoalsData : goalsData
+
+    Object.keys(dataToUse).forEach(subject => {
+      dataToUse[subject]?.forEach((goal, dayIndex) => {
+        const pages = calculatePagesFromValue(goal.text)
+        dayTotals[dayIndex] += pages
+      })
+    })
+    return dayTotals
+  }, [goalsData, groupedGoalsData])
+
+  const handleGoalUpdate = async (subject: string, dayIndex: number, value: string) => {
+    if (!studentId || !projectionId || !quarter || !week) return
+
+    // Check if subject is a category (a category value) or a sub-subject (a key)
+    const isCategory = !subjectToCategory.has(subject) && Object.values(subjectToCategory).includes(subject)
+
+    // If it's a category, find all sub-subjects in that category
+    const subjectsToUpdate: string[] = []
+    if (isCategory) {
+      // subject is a category, find all sub-subjects
+      subjectToCategory.forEach((category, subSubject) => {
+        if (category === subject) {
+          subjectsToUpdate.push(subSubject)
+        }
+      })
+    } else {
+      // subject is a sub-subject (or doesn't have a category)
+      subjectsToUpdate.push(subject)
     }
 
-    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
-    updatedGoalsData[subject][dayIndex] = {
-      ...currentGoal,
-      text: value,
-      isCompleted: currentGoal?.isCompleted || false,
-      notes: currentGoal?.notes,
-      notesCompleted: currentGoal?.notesCompleted || false,
-      notesHistory: currentGoal?.notesHistory || []
-    }
+    // OPTIMISTIC UPDATE: Immediately update the goal in the UI for all relevant subjects
+    const updatedGoalsData = { ...goalsData }
+
+    subjectsToUpdate.forEach(subSubjectToUpdate => {
+      if (!updatedGoalsData[subSubjectToUpdate]) {
+        updatedGoalsData[subSubjectToUpdate] = Array(5).fill(null).map(() => ({
+          text: '',
+          isCompleted: false,
+          notes: undefined,
+          notesCompleted: false,
+          notesHistory: []
+        }))
+      }
+
+      const currentGoal = goalsData[subSubjectToUpdate]?.[dayIndex]
+      updatedGoalsData[subSubjectToUpdate] = [...updatedGoalsData[subSubjectToUpdate]]
+      updatedGoalsData[subSubjectToUpdate][dayIndex] = {
+        ...currentGoal,
+        text: value,
+        isCompleted: currentGoal?.isCompleted || false,
+        notes: currentGoal?.notes,
+        notesCompleted: currentGoal?.notesCompleted || false,
+        notesHistory: currentGoal?.notesHistory || []
+      }
+    })
+
     setGoalsData(updatedGoalsData)
 
     try {
-      if (currentGoal?.id) {
-        // Update existing goal
-        await api.dailyGoals.update(studentId, projectionId, currentGoal.id, {
-          text: value,
-          subject,
-          quarter,
-          week: parseInt(week),
-          dayOfWeek: dayIndex
-        })
+      // For API calls, use the first sub-subject in the category (or the subject itself if not a category)
+      const apiSubject = subjectsToUpdate[0] || subject
+      const apiGoal = goalsData[apiSubject]?.[dayIndex]
+
+      if (apiGoal?.id) {
+        // Update existing goal - update all sub-subjects in category
+        await Promise.all(subjectsToUpdate.map(async (subSubject) => {
+          const subGoal = goalsData[subSubject]?.[dayIndex]
+          if (subGoal?.id) {
+            await api.dailyGoals.update(studentId, projectionId, subGoal.id, {
+              text: value,
+              subject: subSubject,
+              quarter,
+              week: parseInt(week),
+              dayOfWeek: dayIndex
+            })
+          } else if (value.trim()) {
+            await api.dailyGoals.create(studentId, projectionId, {
+              subject: subSubject,
+              quarter,
+              week: parseInt(week),
+              dayOfWeek: dayIndex,
+              text: value,
+              isCompleted: false
+            })
+          }
+        }))
         toast.success(t("dailyGoals.goalUpdated"))
       } else if (value.trim()) {
-        // Create new goal
-        await api.dailyGoals.create(studentId, projectionId, {
-          subject,
-          quarter,
-          week: parseInt(week),
-          dayOfWeek: dayIndex,
-          text: value,
-          isCompleted: false
-        })
+        // Create new goal for all sub-subjects in category
+        await Promise.all(subjectsToUpdate.map(async (subSubject) => {
+          await api.dailyGoals.create(studentId, projectionId, {
+            subject: subSubject,
+            quarter,
+            week: parseInt(week),
+            dayOfWeek: dayIndex,
+            text: value,
+            isCompleted: false
+          })
+        }))
         toast.success(t("dailyGoals.goalCreated"))
       }
 
@@ -326,24 +512,47 @@ export default function DailyGoalsPage() {
   const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    const currentGoal = goalsData[subject]?.[dayIndex]
-    if (!currentGoal?.id) return
-
-    // OPTIMISTIC UPDATE: Immediately update notes in the UI
-    const updatedGoalsData = { ...goalsData }
-    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
-    updatedGoalsData[subject][dayIndex] = {
-      ...currentGoal,
-      notes: notes || undefined,
-      notesCompleted: false
+    // Check if subject is a category
+    const isCategory = Object.values(subjectToCategory).includes(subject)
+    const subjectsToUpdate: string[] = []
+    if (isCategory) {
+      subjectToCategory.forEach((category, subSubject) => {
+        if (category === subject) {
+          subjectsToUpdate.push(subSubject)
+        }
+      })
+    } else {
+      subjectsToUpdate.push(subject)
     }
+
+    // OPTIMISTIC UPDATE: Immediately update notes in the UI for all relevant subjects
+    const updatedGoalsData = { ...goalsData }
+
+    subjectsToUpdate.forEach(subSubjectToUpdate => {
+      const currentGoal = goalsData[subSubjectToUpdate]?.[dayIndex]
+      if (!currentGoal?.id) return
+
+      updatedGoalsData[subSubjectToUpdate] = [...updatedGoalsData[subSubjectToUpdate]]
+      updatedGoalsData[subSubjectToUpdate][dayIndex] = {
+        ...currentGoal,
+        notes: notes || undefined,
+        notesCompleted: false
+      }
+    })
+
     setGoalsData(updatedGoalsData)
 
     try {
-      await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
-        notes: notes || undefined,
-        notesCompleted: false
-      })
+      // Update notes for all sub-subjects in category
+      await Promise.all(subjectsToUpdate.map(async (subSubject) => {
+        const subGoal = goalsData[subSubject]?.[dayIndex]
+        if (subGoal?.id) {
+          await api.dailyGoals.updateNotes(studentId, projectionId, subGoal.id, {
+            notes: notes || undefined,
+            notesCompleted: false
+          })
+        }
+      }))
 
       toast.success(notes ? t("dailyGoals.noteSaved") : t("dailyGoals.noteDeleted"))
 
@@ -420,8 +629,8 @@ export default function DailyGoalsPage() {
           quarter={quarter || "Q1"}
           quarterName={quarter ? getQuarterName(quarter) : t("dailyGoals.firstQuarter")}
           week={parseInt(week || "1")}
-          data={goalsData}
-          subjects={Object.keys(goalsData)}
+          data={groupedGoalsData}
+          subjects={Object.keys(groupedGoalsData)}
           subjectToCategory={subjectToCategory}
           onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
           onGoalToggle={canEdit ? handleGoalToggle : undefined}

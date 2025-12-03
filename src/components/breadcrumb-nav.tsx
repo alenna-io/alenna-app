@@ -155,6 +155,27 @@ export function BreadcrumbNav() {
       return
     }
 
+    // Special case: Projection detail page accessed from projections list
+    // Path: /students/:studentId/projections/:projectionId
+    const locationState = location.state as { fromProjectionsList?: boolean; studentName?: string } | null
+    const projectionsIndex = pathSegments.indexOf('projections')
+    const studentsIndex = pathSegments.indexOf('students')
+
+    if (locationState?.fromProjectionsList &&
+      studentsIndex !== -1 &&
+      projectionsIndex !== -1 &&
+      projectionsIndex === studentsIndex + 2) {
+      // We're on a projection detail page accessed from projections list
+      // Show: Proyecciones > <student_name>
+      const studentName = locationState.studentName || t("breadcrumbs.detail")
+      const projectionsPath = '/projections'
+      setBreadcrumbs([
+        { label: t("breadcrumbs.projections"), path: projectionsPath },
+        { label: studentName, path: location.pathname }
+      ])
+      return
+    }
+
     const items: BreadcrumbItem[] = []
 
     // Map routes to breadcrumb labels with translations
