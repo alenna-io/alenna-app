@@ -13,6 +13,7 @@ import { useApi } from "@/services/api"
 import type { ProjectionDetail, PaceDetail } from "@/types/projection-detail"
 import type { MonthlyAssignment } from "@/types/monthly-assignment"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { getCategoryOrder } from "@/utils/category-order"
 import { ErrorDialog } from "@/components/ui/error-dialog"
 import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
@@ -196,7 +197,13 @@ export default function ACEProjectionPage() {
     // Now build result grouped by category
     const result: QuarterData = {}
 
-    categoryGroups.forEach((subjects, category) => {
+    // Sort categories by default order
+    const sortedCategories = Array.from(categoryGroups.keys()).sort((a, b) => {
+      return getCategoryOrder(a) - getCategoryOrder(b)
+    })
+
+    sortedCategories.forEach(category => {
+      const subjects = categoryGroups.get(category)!
       // For each week (0-8), collect all paces from all sub-subjects in this category
       const weekPaces: (import('@/types/pace').PaceData | null | import('@/types/pace').PaceData[])[] = Array(9).fill(null)
 
@@ -688,9 +695,6 @@ export default function ACEProjectionPage() {
         </BackButton>
       </div>
 
-      {/* Student Info Card */}
-      <StudentInfoCard student={student} showBadge={false} />
-
       {/* Title with Ver Boleta button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <SectionHeader
@@ -709,31 +713,8 @@ export default function ACEProjectionPage() {
         )}
       </div>
 
-      {/* Total Paces Summary */}
-      {projectionDetail && (() => {
-        // Calculate total paces across all quarters
-        let totalPaces = 0
-        Object.values(projectionDetail.quarters).forEach(quarter => {
-          Object.values(quarter).forEach(weekPaces => {
-            weekPaces.forEach(pace => {
-              if (pace !== null) {
-                totalPaces++
-              }
-            })
-          })
-        })
-
-        return (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
-                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })()}
+      {/* Student Info Card */}
+      <StudentInfoCard student={student} showBadge={false} />
 
       {/* PACE Picker Dialog */}
       {pacePickerContext && (
@@ -851,6 +832,7 @@ export default function ACEProjectionPage() {
             onDeletePace={isParentOnly ? undefined : handleDeletePace}
             isReadOnly={isParentOnly}
           />
+
           {hasModule('monthlyAssignments') && (
             <MonthlyAssignmentsSection
               quarter="Q4"
@@ -861,6 +843,32 @@ export default function ACEProjectionPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Total Paces Summary */}
+      {projectionDetail && (() => {
+        // Calculate total paces across all quarters
+        let totalPaces = 0
+        Object.values(projectionDetail.quarters).forEach(quarter => {
+          Object.values(quarter).forEach(weekPaces => {
+            weekPaces.forEach(pace => {
+              if (pace !== null) {
+                totalPaces++
+              }
+            })
+          })
+        })
+
+        return (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
+                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* Error Dialog */}
       <ErrorDialog

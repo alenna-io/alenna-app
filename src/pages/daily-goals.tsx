@@ -9,6 +9,7 @@ import type { DailyGoalData, DailyGoal, NoteHistory } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import { sortCategoriesByOrder } from "@/utils/category-order"
 
 interface Student {
   id: string
@@ -315,7 +316,14 @@ export default function DailyGoalsPage() {
       }
     })
 
-    return result
+    // Sort result keys by category order
+    const sortedKeys = sortCategoriesByOrder(Object.keys(result))
+    const sortedResult: DailyGoalData = {}
+    sortedKeys.forEach(key => {
+      sortedResult[key] = result[key]
+    })
+
+    return sortedResult
   }, [goalsData, projectionDetail, subjectToCategory])
 
   // Calculate total pages for a specific day (use grouped data)

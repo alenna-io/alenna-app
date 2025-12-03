@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
+import { sortCategoriesByOrder } from "@/utils/category-order"
 
 interface DailyGoalsTableProps {
   quarter: string
@@ -187,7 +188,10 @@ export function DailyGoalsTable({
       result[category] = combinedGoals
     })
 
-    return { data: result, categories: categoryOrder }
+    // Sort categories by default order
+    const sortedCategoryOrder = sortCategoriesByOrder(categoryOrder)
+
+    return { data: result, categories: sortedCategoryOrder }
   }, [data, subjects, subjectToCategory])
 
   // Prevent body scroll when modal is open

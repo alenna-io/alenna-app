@@ -9,7 +9,7 @@ import StudentsPage from '@/pages/students'
 import TeachersPage from '@/pages/teachers'
 import ProjectionListPage from '@/pages/projection-list'
 import ProjectionsPage from '@/pages/projections'
-import ACEProjectionPage from '@/pages/ace-projection'
+import ACEProjectionPage from '@/pages/projection-details'
 import DailyGoalsPage from '@/pages/daily-goals'
 import ConfigurationPage from '@/pages/configuration'
 import ConfigurationLanguagePage from '@/pages/configuration-language'
@@ -123,7 +123,7 @@ export default function App() {
           <Route path="school-settings/certification-types" element={<ModuleRouteGuard requiredModule="school_admin"><CertificationTypesPage /></ModuleRouteGuard>} />
           <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<ModuleRouteGuard requiredModule="users"><UsersPage /></ModuleRouteGuard>} />
-          <Route path="users/:userId" element={<ModuleRouteGuard requiredModule="users"><UserDetailPage /></ModuleRouteGuard>} />
+          <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="schools" element={<ModuleRouteGuard requiredModule="schools"><SchoolsPage /></ModuleRouteGuard>} />
           <Route path="schools/create" element={<ModuleRouteGuard requiredModule="schools"><CreateSchoolWizardPage /></ModuleRouteGuard>} />
           <Route path="schools/:schoolId" element={<SchoolInfoPage />} />

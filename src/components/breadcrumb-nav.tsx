@@ -145,6 +145,25 @@ export function BreadcrumbNav() {
 
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
+    const locationState = location.state as { fromProjectionsList?: boolean; studentName?: string; fromTeachers?: boolean } | null
+
+    // Special case: User detail page accessed from teachers page
+    // Path: /users/:userId with state.fromTeachers = true
+    const userIndex = pathSegments.indexOf('users')
+    if (userIndex >= 0 && pathSegments.length > userIndex + 1 && locationState?.fromTeachers) {
+      const userId = pathSegments[userIndex + 1]
+      // Check if it's a UUID (user detail page)
+      if (userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        // Show: Maestros > <teacher_name>
+        // Get schoolId from userInfo or use 'me' as fallback
+        const schoolId = userInfo?.schoolId || 'me'
+        setBreadcrumbs([
+          { label: t("breadcrumbs.teachers"), path: `/schools/${schoolId}/teachers` },
+          { label: userName || t("breadcrumbs.detail"), path: location.pathname }
+        ])
+        return
+      }
+    }
 
     // Special case: Teachers module should be independent from Schools in breadcrumbs.
     // Any route that includes "teachers" will show only a single "Teachers" crumb.
@@ -157,7 +176,6 @@ export function BreadcrumbNav() {
 
     // Special case: Projection detail page accessed from projections list
     // Path: /students/:studentId/projections/:projectionId
-    const locationState = location.state as { fromProjectionsList?: boolean; studentName?: string } | null
     const projectionsIndex = pathSegments.indexOf('projections')
     const studentsIndex = pathSegments.indexOf('students')
 
