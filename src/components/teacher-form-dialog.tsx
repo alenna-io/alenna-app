@@ -14,6 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GraduationCap, AlertTriangle } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Role {
   id: string
@@ -25,6 +34,8 @@ interface TeacherFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   schoolId: string // Used implicitly - backend sets schoolId from authenticated user
+  school?: { teacherLimit?: number }
+  teachersCount?: number
   onSave: (data: {
     clerkId: string
     email: string
@@ -38,6 +49,8 @@ export function TeacherFormDialog({
   open,
   onOpenChange,
   schoolId, // Used implicitly - backend sets schoolId from authenticated user
+  school,
+  teachersCount,
   onSave,
 }: TeacherFormDialogProps) {
   const { t } = useTranslation()
@@ -60,6 +73,7 @@ export function TeacherFormDialog({
     lastName?: string
     roleIds?: string
   }>({})
+  const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
   const [formData, setFormData] = React.useState<{
     email: string
     firstName: string
@@ -151,6 +165,16 @@ export function TeacherFormDialog({
       return
     }
 
+    // Check teacher limit before creating
+    if (school?.teacherLimit && teachersCount !== undefined && teachersCount >= school.teacherLimit) {
+      setLimitWarningDialog({
+        open: true,
+        title: t("teachers.limitReached"),
+        message: t("teachers.limitReachedMessage", { limit: school.teacherLimit })
+      })
+      return
+    }
+
     try {
       setIsSaving(true)
       await onSave({
@@ -163,7 +187,17 @@ export function TeacherFormDialog({
       onOpenChange(false)
     } catch (error) {
       console.error('Error saving teacher:', error)
-      throw error
+      const err = error as Error
+      // Check if error is about limit - show dialog instead of form error
+      if (err.message?.includes('límite') || err.message?.includes('limit')) {
+        setLimitWarningDialog({
+          open: true,
+          title: t("teachers.limitReached"),
+          message: err.message || t("teachers.limitReachedMessage", { limit: 0 })
+        })
+      } else {
+        throw error
+      }
     } finally {
       setIsSaving(false)
     }
@@ -292,6 +326,25 @@ export function TeacherFormDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Limit Warning Dialog */}
+      {limitWarningDialog && (
+        <AlertDialog open={limitWarningDialog.open} onOpenChange={(open) => setLimitWarningDialog(open ? limitWarningDialog : null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{limitWarningDialog.title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {limitWarningDialog.message}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setLimitWarningDialog(null)}>
+                {t("common.accept")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Dialog>
   )
 }

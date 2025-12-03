@@ -130,7 +130,9 @@
     "projections": "Projections",
     "lectures": "Lectures",
     "monthlyAssignments": "Assignments",
-    "reportCards": "Report Cards"
+    "reportCards": "Report Cards",
+    "academicSection": "Academic",
+    "schoolManagementSection": "School Management"
   },
   "students": {
     "title": "Students",
@@ -188,6 +190,8 @@
     "step4Description": "Review and confirm",
     "createSuccess": "Student created successfully",
     "createError": "Error creating student",
+    "limitReached": "Student Limit Reached",
+    "limitReachedMessage": "The student limit ({{limit}}) has been reached. You cannot create more students.",
     "age": "Age",
     "ageYears": "{{age}} years",
     "certification": "Certification",
@@ -229,7 +233,9 @@
     "roles": "Roles",
     "emailPlaceholder": "teacher@school.edu",
     "firstNamePlaceholder": "Teacher first name",
-    "lastNamePlaceholder": "Teacher last name"
+    "lastNamePlaceholder": "Teacher last name",
+    "limitReached": "Teacher Limit Reached",
+    "limitReachedMessage": "The teacher limit ({{limit}}) has been reached. You cannot create more teachers."
   },
   "users": {
     "title": "User Management",

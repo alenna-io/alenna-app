@@ -169,6 +169,8 @@
     "step4Description": "Revisa y confirma",
     "createSuccess": "Estudiante creado exitosamente",
     "createError": "Error al crear estudiante",
+    "limitReached": "Límite de Estudiantes Alcanzado",
+    "limitReachedMessage": "Se ha alcanzado el límite de estudiantes ({{limit}}). No se pueden crear más estudiantes.",
     "age": "Edad",
     "ageYears": "{{age}} años",
     "certification": "Certificación",
@@ -211,7 +213,9 @@
     "roles": "Roles",
     "emailPlaceholder": "maestro@escuela.edu",
     "firstNamePlaceholder": "Nombre del maestro",
-    "lastNamePlaceholder": "Apellido del maestro"
+    "lastNamePlaceholder": "Apellido del maestro",
+    "limitReached": "Límite de Maestros Alcanzado",
+    "limitReachedMessage": "Se ha alcanzado el límite de maestros ({{limit}}). No se pueden crear más maestros."
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -641,7 +645,9 @@
     "projections": "Proyecciones",
     "lectures": "Lecciones",
     "monthlyAssignments": "Asignaciones",
-    "reportCards": "Boletas"
+    "reportCards": "Boletas",
+    "academicSection": "Académico",
+    "schoolManagementSection": "Gestión Escolar"
   },
   "wizard": {
     "title": "Generar Proyección",

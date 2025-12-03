@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, ClipboardList, Sliders, UsersRound, Library } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2 } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -27,10 +27,6 @@ type MenuIcon = typeof GraduationCap
 
 // Module to route/icon mapping - will be created inside component to use translations
 
-// Always visible items (no module required)
-const staticMenuItems: Array<{ title: string; url: string; icon: MenuIcon }> = [
-  // { title: "Inicio", url: "/", icon: Home },
-]
 
 export function AppSidebar() {
   const location = useLocation()
@@ -43,10 +39,10 @@ export function AppSidebar() {
     students: { title: t("sidebar.students"), url: "/students", icon: GraduationCap },
     projections: { title: t("sidebar.projections"), url: "/projections", icon: BookOpen },
     paces: { title: t("sidebar.lectures") || "Lectures", url: "/lectures", icon: Library },
-    monthlyAssignments: { title: t("sidebar.monthlyAssignments"), url: "/monthly-assignments", icon: ClipboardList },
-    reportCards: { title: t("sidebar.reportCards"), url: "/report-cards", icon: FileText },
-    groups: { title: t("sidebar.groups"), url: "/groups", icon: UsersRound },
-    teachers: { title: t("sidebar.teachers"), url: `/schools/${userInfo?.schoolId || ''}/teachers`, icon: Users },
+    monthlyAssignments: { title: t("sidebar.monthlyAssignments"), url: "/monthly-assignments", icon: Calendar },
+    reportCards: { title: t("sidebar.reportCards"), url: "/report-cards", icon: Award },
+    groups: { title: t("sidebar.groups"), url: "/groups", icon: Users2 },
+    teachers: { title: t("sidebar.teachers"), url: `/schools/${userInfo?.schoolId || ''}/teachers`, icon: UserCog },
     school_admin: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
     users: { title: t("sidebar.users"), url: "/users", icon: Users },
     schools: { title: t("sidebar.schools"), url: "/schools", icon: Building },
@@ -199,35 +195,78 @@ export function AppSidebar() {
     }
   }
 
-  const navigationMenuItems = otherModules
-    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)) // Sort by displayOrder
+  // Organize navigation items into groups
+  const academicModules = ['students', 'projections', 'reportCards', 'monthlyAssignments']
+  const schoolManagementModules = ['groups', 'teachers', 'paces']
+
+  const academicItems = otherModules
+    .filter(module => academicModules.includes(module.key))
+    .sort((a, b) => {
+      const orderA = academicModules.indexOf(a.key)
+      const orderB = academicModules.indexOf(b.key)
+      return orderA - orderB
+    })
     .map(module => {
       const config = moduleConfig[module.key] || {
         title: t(`modules.${module.key}`) || module.name,
         url: `/${module.key}`,
         icon: FileText,
       }
-
       return {
         title: config.title,
         url: config.url,
         icon: config.icon,
+        moduleKey: module.key,
+      }
+    })
+
+  const schoolManagementItems = otherModules
+    .filter(module => schoolManagementModules.includes(module.key))
+    .sort((a, b) => {
+      const orderA = schoolManagementModules.indexOf(a.key)
+      const orderB = schoolManagementModules.indexOf(b.key)
+      return orderA - orderB
+    })
+    .map(module => {
+      const config = moduleConfig[module.key] || {
+        title: t(`modules.${module.key}`) || module.name,
+        url: `/${module.key}`,
+        icon: FileText,
+      }
+      return {
+        title: config.title,
+        url: config.url,
+        icon: config.icon,
+        moduleKey: module.key,
+      }
+    })
+
+  // Other items that don't fit into the groups above
+  const otherItems = otherModules
+    .filter(module => !academicModules.includes(module.key) && !schoolManagementModules.includes(module.key))
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+    .map(module => {
+      const config = moduleConfig[module.key] || {
+        title: t(`modules.${module.key}`) || module.name,
+        url: `/${module.key}`,
+        icon: FileText,
+      }
+      return {
+        title: config.title,
+        url: config.url,
+        icon: config.icon,
+        moduleKey: module.key,
       }
     })
 
   if (isStudentOnly) {
-    navigationMenuItems.push({
+    academicItems.push({
       title: t("sidebar.myProfile"),
       url: "/my-profile",
       icon: UserIcon,
+      moduleKey: 'my-profile',
     })
   }
-
-  // Modules (projections, monthlyAssignments, reportCards, groups, teachers, school_admin)
-  // are now automatically added from filteredModules above based on module access
-  // No need to manually add them here
-
-  const allNavigationItems = [...staticMenuItems, ...navigationMenuItems]
 
   // Configuration menu items
   // Always include Configuration for all users (for language, profile, etc.)
@@ -318,75 +357,114 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegación</SidebarGroupLabel>
-          <SidebarGroupContent>
-            {(isLoading || isLoadingUser) ? (
-              <div className="flex items-center justify-center py-4">
-                <LoadingSpinner size="md" className="text-muted-foreground" />
-              </div>
-            ) : allNavigationItems.length > 0 ? (
-              <SidebarMenu>
-                {allNavigationItems.map((item, index) => {
-                  // Special handling for report cards: activate "Boletas" if path contains /report-cards
-                  const isReportCardPath = location.pathname.includes('/report-cards')
-                  const locationState = location.state as { fromProjectionsList?: boolean; fromTeachers?: boolean } | null
-                  const isProjectionDetailFromList = !!locationState?.fromProjectionsList &&
-                    location.pathname.includes('/students/') &&
-                    location.pathname.includes('/projections/')
-                  let isActive: boolean
+        {/* Helper function to render menu items */}
+        {(() => {
+          const renderMenuItem = (item: { title: string; url: string; icon: MenuIcon; moduleKey?: string }, index: number) => {
+            const isReportCardPath = location.pathname.includes('/report-cards')
+            const locationState = location.state as { fromProjectionsList?: boolean; fromTeachers?: boolean } | null
+            const isProjectionDetailFromList = !!locationState?.fromProjectionsList &&
+              location.pathname.includes('/students/') &&
+              location.pathname.includes('/projections/')
+            let isActive: boolean
 
-                  if (item.url === '/report-cards') {
-                    isActive = isReportCardPath
-                  } else if (item.url === '/projections') {
-                    // Activate "Proyecciones" if we're on projections page or came from projections list
-                    isActive = location.pathname.startsWith('/projections') || isProjectionDetailFromList
-                  } else if (item.url === '/students') {
-                    // Don't activate "Estudiantes" if we're on a report card page or came from projections list
-                    isActive = !isReportCardPath && !isProjectionDetailFromList && location.pathname.startsWith(item.url)
-                  } else if (item.url.includes('/teachers')) {
-                    // Activate "Maestros" if we're on any teachers page OR viewing a teacher detail from teachers
-                    isActive = location.pathname.includes('/teachers') ||
-                      (location.pathname.startsWith('/users/') && !!locationState?.fromTeachers)
-                  } else {
-                    isActive = item.url === '/'
-                      ? location.pathname === '/'
-                      : location.pathname.startsWith(item.url)
-                  }
+            if (item.url === '/report-cards') {
+              isActive = isReportCardPath
+            } else if (item.url === '/projections') {
+              isActive = location.pathname.startsWith('/projections') || isProjectionDetailFromList
+            } else if (item.url === '/students') {
+              isActive = !isReportCardPath && !isProjectionDetailFromList && location.pathname.startsWith(item.url)
+            } else if (item.url.includes('/teachers')) {
+              isActive = location.pathname.includes('/teachers') ||
+                (location.pathname.startsWith('/users/') && !!locationState?.fromTeachers)
+            } else {
+              isActive = item.url === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(item.url)
+            }
 
-                  return (
-                    <SidebarMenuItem key={`${item.url}-${index}`}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        tooltip={item.title}
-                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
-                      >
-                        <Link
-                          to={item.url}
-                          onClick={() => {
-                            // Close sidebar on mobile when clicking a menu item
-                            if (isMobile) {
-                              setOpenMobile(false)
-                            }
-                          }}
-                          className="flex items-center gap-2 min-w-0"
-                        >
-                          <item.icon className="flex-shrink-0" />
-                          <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            ) : (
-              <div className="flex items-center justify-center py-4 text-sm text-muted-foreground px-4 text-center">
-                No hay módulos disponibles
-              </div>
-            )}
-          </SidebarGroupContent>
-        </SidebarGroup>
+            return (
+              <SidebarMenuItem key={`${item.url}-${index}`}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.title}
+                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
+                >
+                  <Link
+                    to={item.url}
+                    onClick={() => {
+                      if (isMobile) {
+                        setOpenMobile(false)
+                      }
+                    }}
+                    className="flex items-center gap-2 min-w-0"
+                  >
+                    <item.icon className="flex-shrink-0" />
+                    <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          }
+
+          return (
+            <>
+              {/* Academic Section */}
+              {academicItems.length > 0 && (
+                <SidebarGroup>
+                  <SidebarGroupLabel>{t("sidebar.academicSection") || "Academic"}</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    {(isLoading || isLoadingUser) ? (
+                      <div className="flex items-center justify-center py-4">
+                        <LoadingSpinner size="md" className="text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <SidebarMenu>
+                        {academicItems.map((item, index) => renderMenuItem(item, index))}
+                      </SidebarMenu>
+                    )}
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              )}
+
+              {/* School Management Section */}
+              {schoolManagementItems.length > 0 && (
+                <SidebarGroup>
+                  <SidebarGroupLabel>{t("sidebar.schoolManagementSection") || "School Management"}</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    {(isLoading || isLoadingUser) ? (
+                      <div className="flex items-center justify-center py-4">
+                        <LoadingSpinner size="md" className="text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <SidebarMenu>
+                        {schoolManagementItems.map((item, index) => renderMenuItem(item, index))}
+                      </SidebarMenu>
+                    )}
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              )}
+
+              {/* Other items (if any) */}
+              {otherItems.length > 0 && (
+                <SidebarGroup>
+                  <SidebarGroupLabel>Navegación</SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    {(isLoading || isLoadingUser) ? (
+                      <div className="flex items-center justify-center py-4">
+                        <LoadingSpinner size="md" className="text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <SidebarMenu>
+                        {otherItems.map((item, index) => renderMenuItem(item, index))}
+                      </SidebarMenu>
+                    )}
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              )}
+            </>
+          )
+        })()}
 
         {configurationMenuItems.length > 0 && (
           <SidebarGroup>
