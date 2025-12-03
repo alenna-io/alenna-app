@@ -63,6 +63,11 @@ export default function CreateStudentWizardPage() {
     birthDate: "",
     contactPhone: "",
     address: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    country: "",
+    zipCode: "",
     certificationTypeId: "",
     graduationDate: "",
     isLeveled: false,
@@ -71,11 +76,13 @@ export default function CreateStudentWizardPage() {
     parent1FirstName: "",
     parent1LastName: "",
     parent1Email: "",
+    parent1Phone: "",
     parent1Relationship: "",
     hasSecondParent: false,
     parent2FirstName: "",
     parent2LastName: "",
     parent2Email: "",
+    parent2Phone: "",
     parent2Relationship: "",
   })
 
@@ -152,6 +159,11 @@ export default function CreateStudentWizardPage() {
           }
         }
       }
+      if (!formData.streetAddress.trim()) newErrors.streetAddress = t("students.validation.streetAddressRequired") || "Street address is required"
+      if (!formData.city.trim()) newErrors.city = t("students.validation.cityRequired") || "City is required"
+      if (!formData.state.trim()) newErrors.state = t("students.validation.stateRequired") || "State is required"
+      if (!formData.country.trim()) newErrors.country = t("students.validation.countryRequired") || "Country is required"
+      if (!formData.zipCode.trim()) newErrors.zipCode = t("students.validation.zipCodeRequired") || "Zip code is required"
     } else if (step === 2) {
       if (!formData.certificationTypeId) newErrors.certificationTypeId = t("students.validation.certificationTypeRequired")
       if (!formData.graduationDate) {
@@ -170,6 +182,9 @@ export default function CreateStudentWizardPage() {
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent1Email)) {
         newErrors.parent1Email = t("students.validation.emailInvalid")
       }
+      if (!formData.parent1Phone.trim()) {
+        newErrors.parent1Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
+      }
       if (!formData.parent1Relationship) newErrors.parent1Relationship = t("students.validation.relationshipRequired")
 
       // Parent 2
@@ -180,6 +195,9 @@ export default function CreateStudentWizardPage() {
           newErrors.parent2Email = t("students.validation.parentEmailRequired")
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent2Email)) {
           newErrors.parent2Email = t("students.validation.emailInvalid")
+        }
+        if (!formData.parent2Phone.trim()) {
+          newErrors.parent2Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
         }
         if (!formData.parent2Relationship) newErrors.parent2Relationship = t("students.validation.relationshipRequired")
 
@@ -318,6 +336,7 @@ export default function CreateStudentWizardPage() {
           firstName: formData.parent1FirstName.trim(),
           lastName: formData.parent1LastName.trim(),
           email: formData.parent1Email.trim(),
+          phone: formData.parent1Phone.trim(),
           relationship: formData.parent1Relationship,
         }
       ]
@@ -327,6 +346,7 @@ export default function CreateStudentWizardPage() {
           firstName: formData.parent2FirstName.trim(),
           lastName: formData.parent2LastName.trim(),
           email: formData.parent2Email.trim(),
+          phone: formData.parent2Phone.trim(),
           relationship: formData.parent2Relationship,
         })
       }
@@ -344,6 +364,11 @@ export default function CreateStudentWizardPage() {
         expectedLevel: formData.expectedLevel.trim() || undefined,
         currentLevel: formData.currentLevel.trim() || undefined,
         address: formData.address.trim() || undefined,
+        streetAddress: formData.streetAddress.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        country: formData.country.trim() || undefined,
+        zipCode: formData.zipCode.trim() || undefined,
         parents,
       })
 
@@ -496,14 +521,68 @@ export default function CreateStudentWizardPage() {
                 </div>
 
                 <Field>
-                  <FieldLabel htmlFor="address">{t("common.address")}</FieldLabel>
+                  <FieldLabel htmlFor="streetAddress">{t("students.streetAddress")} <span className="text-destructive">*</span></FieldLabel>
                   <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder={t("students.fullAddress")}
+                    id="streetAddress"
+                    value={formData.streetAddress}
+                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                    placeholder={t("students.streetAddressPlaceholder")}
+                    className={errors.streetAddress ? "border-destructive" : ""}
                   />
+                  {errors.streetAddress && <p className="text-sm text-destructive mt-1">{errors.streetAddress}</p>}
                 </Field>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="city">{t("students.city")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder={t("students.cityPlaceholder")}
+                      className={errors.city ? "border-destructive" : ""}
+                    />
+                    {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="state">{t("students.state")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      placeholder={t("students.statePlaceholder")}
+                      className={errors.state ? "border-destructive" : ""}
+                    />
+                    {errors.state && <p className="text-sm text-destructive mt-1">{errors.state}</p>}
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="country">{t("students.country")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder={t("students.countryPlaceholder")}
+                      className={errors.country ? "border-destructive" : ""}
+                    />
+                    {errors.country && <p className="text-sm text-destructive mt-1">{errors.country}</p>}
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="zipCode">{t("students.zipCode")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="zipCode"
+                      value={formData.zipCode}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                      placeholder={t("students.zipCodePlaceholder")}
+                      className={errors.zipCode ? "border-destructive" : ""}
+                    />
+                    {errors.zipCode && <p className="text-sm text-destructive mt-1">{errors.zipCode}</p>}
+                  </Field>
+                </div>
 
               </div>
             )}
@@ -633,28 +712,26 @@ export default function CreateStudentWizardPage() {
                   </FieldLabel>
                 </div>
 
-                {formData.isLeveled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <Field>
-                      <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
-                      <Input
-                        id="expectedLevel"
-                        value={formData.expectedLevel}
-                        onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
-                        placeholder={t("students.expectedLevelPlaceholder")}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
-                      <Input
-                        id="currentLevel"
-                        value={formData.currentLevel}
-                        onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
-                        placeholder={t("students.currentLevelPlaceholder")}
-                      />
-                    </Field>
-                  </div>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field>
+                    <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
+                    <Input
+                      id="expectedLevel"
+                      value={formData.expectedLevel}
+                      onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
+                      placeholder={t("students.expectedLevelPlaceholder")}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
+                    <Input
+                      id="currentLevel"
+                      value={formData.currentLevel}
+                      onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
+                      placeholder={t("students.currentLevelPlaceholder")}
+                    />
+                  </Field>
+                </div>
               </div>
             )}
 
@@ -697,6 +774,19 @@ export default function CreateStudentWizardPage() {
                       />
                       {errors.parent1Email && <p className="text-sm text-destructive mt-1">{errors.parent1Email}</p>}
                     </Field>
+                    <Field>
+                      <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                      <Input
+                        type="tel"
+                        value={formData.parent1Phone}
+                        onChange={(e) => setFormData({ ...formData, parent1Phone: e.target.value })}
+                        placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                        className={errors.parent1Phone ? "border-destructive" : ""}
+                      />
+                      {errors.parent1Phone && <p className="text-sm text-destructive mt-1">{errors.parent1Phone}</p>}
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <Field>
                       <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
                       <Select
@@ -768,6 +858,19 @@ export default function CreateStudentWizardPage() {
                         />
                         {errors.parent2Email && <p className="text-sm text-destructive mt-1">{errors.parent2Email}</p>}
                       </Field>
+                      <Field>
+                        <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                        <Input
+                          type="tel"
+                          value={formData.parent2Phone}
+                          onChange={(e) => setFormData({ ...formData, parent2Phone: e.target.value })}
+                          placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                          className={errors.parent2Phone ? "border-destructive" : ""}
+                        />
+                        {errors.parent2Phone && <p className="text-sm text-destructive mt-1">{errors.parent2Phone}</p>}
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <Field>
                         <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
                         <Select

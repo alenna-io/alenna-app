@@ -27,10 +27,11 @@ import { useModuleAccess } from "@/hooks/useModuleAccess"
 const createEmptyQuarterData = (): QuarterData => ({
   Math: Array(9).fill(null),
   English: Array(9).fill(null),
+  "Word Building": Array(9).fill(null),
   Science: Array(9).fill(null),
   "Social Studies": Array(9).fill(null),
-  "Word Building": Array(9).fill(null),
-  Spanish: Array(9).fill(null)
+  Spanish: Array(9).fill(null),
+  Electives: Array(9).fill(null)
 })
 
 // Empty initial state (will be replaced by API data)
@@ -137,11 +138,12 @@ export default function ACEProjectionPage() {
         setProjectionDetail(detail)
 
         // Convert API data to the format expected by ACEQuarterlyTable
+        // Pass categories to ensure all projection categories are shown in all quarters
         const convertedData = {
-          Q1: convertQuarterData(detail.quarters.Q1),
-          Q2: convertQuarterData(detail.quarters.Q2),
-          Q3: convertQuarterData(detail.quarters.Q3),
-          Q4: convertQuarterData(detail.quarters.Q4),
+          Q1: convertQuarterData(detail.quarters.Q1, detail.categories),
+          Q2: convertQuarterData(detail.quarters.Q2, detail.categories),
+          Q3: convertQuarterData(detail.quarters.Q3, detail.categories),
+          Q4: convertQuarterData(detail.quarters.Q4, detail.categories),
         }
         setProjectionData(convertedData)
 
@@ -179,8 +181,11 @@ export default function ACEProjectionPage() {
   }, [studentId, projectionId])
 
   // Helper function to convert API pace detail to PaceData (including ID for updates)
-  const convertQuarterData = (quarterPaces: { [subject: string]: (PaceDetail | null)[] }): QuarterData => {
-    // First, group sub-subjects by category
+  const convertQuarterData = (
+    quarterPaces: { [subject: string]: (PaceDetail | null)[] },
+    projectionCategories?: string[]
+  ): QuarterData => {
+    // First, group sub-subjects by category from the paces in this quarter
     const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
     Object.keys(quarterPaces).forEach(subject => {
@@ -197,13 +202,25 @@ export default function ACEProjectionPage() {
     // Now build result grouped by category
     const result: QuarterData = {}
 
+    // Use categories from projection if available, otherwise use categories from paces
+    const categoriesFromPaces = Array.from(new Set(
+      Array.from(categoryGroups.keys())
+    ))
+
+    // Use projection categories if available, otherwise fall back to categories from paces
+    // This ensures ALL projection categories are shown, even if empty in this quarter
+    const allCategories = projectionCategories && projectionCategories.length > 0
+      ? new Set(projectionCategories)
+      : new Set(categoriesFromPaces)
+
     // Sort categories by default order
-    const sortedCategories = Array.from(categoryGroups.keys()).sort((a, b) => {
+    const sortedCategories = Array.from(allCategories).sort((a, b) => {
       return getCategoryOrder(a) - getCategoryOrder(b)
     })
 
+    // Process ALL categories (even if they have no paces in this quarter)
     sortedCategories.forEach(category => {
-      const subjects = categoryGroups.get(category)!
+      const subjects = categoryGroups.get(category) || [] // Empty array if category has no subjects in this quarter
       // For each week (0-8), collect all paces from all sub-subjects in this category
       const weekPaces: (import('@/types/pace').PaceData | null | import('@/types/pace').PaceData[])[] = Array(9).fill(null)
 
@@ -211,7 +228,7 @@ export default function ACEProjectionPage() {
         const pacesForWeek: import('@/types/pace').PaceData[] = []
 
         subjects.forEach(subject => {
-          const pace = quarterPaces[subject][weekIndex]
+          const pace = quarterPaces[subject]?.[weekIndex]
           if (pace) {
             pacesForWeek.push({
               id: pace.id,
@@ -238,6 +255,7 @@ export default function ACEProjectionPage() {
         }
       }
 
+      // Always add the category to result, even if all weeks are null (empty row)
       result[category] = weekPaces
     })
 
