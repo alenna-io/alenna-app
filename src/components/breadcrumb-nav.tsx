@@ -226,6 +226,23 @@ export function BreadcrumbNav() {
       const nextSegment = i < pathSegments.length - 1 ? pathSegments[i + 1] : null
       currentPath += `/${segment}`
 
+      // Handle "create" route
+      if (segment === 'create') {
+        if (prevSegment === 'students') {
+          items.push({ label: t("breadcrumbs.createStudent") || "Create Student", path: currentPath })
+          continue
+        } else if (prevSegment === 'schools') {
+          items.push({ label: t("breadcrumbs.createSchool") || "Create School", path: currentPath })
+          continue
+        } else if (prevSegment === 'groups') {
+          items.push({ label: t("breadcrumbs.createGroup") || "Create Group", path: currentPath })
+          continue
+        } else if (prevSegment === 'projections') {
+          items.push({ label: t("breadcrumbs.generateProjection") || "Generate Projection", path: currentPath })
+          continue
+        }
+      }
+
       // Skip UUIDs and numeric IDs in breadcrumbs display
       if (segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ||
         segment.match(/^\d+$/)) {

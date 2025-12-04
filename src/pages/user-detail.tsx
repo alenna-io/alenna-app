@@ -70,7 +70,10 @@ export default function UserDetailPage() {
             const teacher = teachers.find((t: { id: string }) => t.id === userId)
 
             if (teacher) {
-              setTargetUser(teacher)
+              setTargetUser({
+                ...teacher,
+                isActive: teacher.isActive !== undefined ? teacher.isActive : true
+              })
               setHasPermission(true)
               setLoading(false)
               return
@@ -262,7 +265,10 @@ export default function UserDetailPage() {
 
   // Show user profile if we have a userId
   if (userId) {
-    const canManage = userInfo?.permissions?.includes('users.delete') ?? false
+    const isSuperAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
+    const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') && !isSuperAdmin
+    // School admins can manage teachers from their school
+    const canManage = (isSuperAdmin && (userInfo?.permissions?.includes('users.delete') ?? false)) || isSchoolAdmin
     // Prevent users from deactivating/deleting themselves
     const isCurrentUser = userInfo?.id === userId || userInfo?.email === targetUser?.email
     const canDeactivate = canManage && !isCurrentUser

@@ -41,7 +41,21 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || `API request failed: ${response.status} ${response.statusText}`);
+    // If it's a validation error with errors array (ZodError format from backend)
+    if (error.error && Array.isArray(error.error)) {
+      const errorMessage = JSON.stringify({ error: 'Validation error', issues: error.error });
+      throw new Error(errorMessage);
+    }
+    // If it's a validation error with issues array (alternative format)
+    if (error.issues && Array.isArray(error.issues)) {
+      const errorMessage = JSON.stringify({ error: error.error || 'Validation error', issues: error.issues });
+      throw new Error(errorMessage);
+    }
+    // If error.error is a string, use it directly
+    if (typeof error.error === 'string') {
+      throw new Error(error.error);
+    }
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
   return response.json();
@@ -57,6 +71,10 @@ export const studentsApi = {
     apiFetch(`/students/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string, token: string | null) => 
     apiFetch(`/students/${id}`, token, { method: 'DELETE' }),
+  deactivate: (id: string, token: string | null) => 
+    apiFetch(`/students/${id}/deactivate`, token, { method: 'POST' }),
+  reactivate: (id: string, token: string | null) => 
+    apiFetch(`/students/${id}/reactivate`, token, { method: 'POST' }),
 };
 
 // Projections API
@@ -472,6 +490,14 @@ export function useApi() {
       delete: async (id: string) => {
         const token = await getToken();
         return studentsApi.delete(id, token);
+      },
+      deactivate: async (id: string) => {
+        const token = await getToken();
+        return studentsApi.deactivate(id, token);
+      },
+      reactivate: async (id: string) => {
+        const token = await getToken();
+        return studentsApi.reactivate(id, token);
       },
     },
     projections: {

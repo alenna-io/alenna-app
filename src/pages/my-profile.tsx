@@ -51,11 +51,15 @@ export default function MyProfilePage() {
             birthDate: profile.birthDate,
             graduationDate: profile.graduationDate,
             certificationType: profile.certificationType ?? 'Sin certificación',
-            contactPhone: profile.contactPhone ?? '',
+            phone: (profile as { phone?: string }).phone ?? '',
             isLeveled: profile.isLeveled,
             expectedLevel: profile.expectedLevel,
             currentLevel: (profile as { currentLevel?: string }).currentLevel,
-            address: profile.address ?? '',
+            streetAddress: (profile as { streetAddress?: string }).streetAddress,
+            city: (profile as { city?: string }).city,
+            state: (profile as { state?: string }).state,
+            country: (profile as { country?: string }).country,
+            zipCode: (profile as { zipCode?: string }).zipCode,
             parents: profile.parents ?? [],
             age: calculateAge(profile.birthDate),
             isActive: ((profile as { isActive?: boolean }).isActive ?? true),
@@ -140,16 +144,16 @@ export default function MyProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">Fecha de Nacimiento</label>
                 <p className="text-sm">{new Date(student.birthDate).toLocaleDateString("es-MX")}</p>
               </div>
-              {student.address && (
+              {(student.streetAddress || student.city) && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Dirección</label>
-                  <p className="text-sm">{student.address}</p>
+                  <p className="text-sm">{[student.streetAddress, student.city, student.state].filter(Boolean).join(', ')}</p>
                 </div>
               )}
-              {student.contactPhone && (
+              {student.phone && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
-                  <p className="text-sm">{student.contactPhone}</p>
+                  <p className="text-sm">{student.phone}</p>
                 </div>
               )}
             </CardContent>

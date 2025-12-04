@@ -11,15 +11,20 @@ import { useTranslation } from "react-i18next"
 import type { Student } from "@/types/student"
 import { ParentProfileDialog } from "@/components/parent-profile-dialog"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
+import { DangerZone } from "@/components/ui/danger-zone"
 
 interface StudentProfileProps {
   student: Student
   onBack: () => void
   isParentView?: boolean
   isStudentView?: boolean
+  canManage?: boolean
+  onDeactivate?: (student: Student) => void
+  onReactivate?: (student: Student) => void
+  onDelete?: (student: Student) => void
 }
 
-export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false, canManage = false, onDeactivate, onReactivate, onDelete }: StudentProfileProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { hasModule } = useModuleAccess()
@@ -88,23 +93,78 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Fecha de Nacimiento
+                {t("students.birthDate")}
               </label>
               <p className="text-sm">
                 {new Date(student.birthDate).toLocaleDateString("es-MX")}
               </p>
             </div>
+            {student.email && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("students.email")}
+                </label>
+                <p className="text-sm">{student.email}</p>
+              </div>
+            )}
+            {(student.streetAddress || student.city || student.state || student.country || student.zipCode) ? (
+              <>
+                {student.streetAddress && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      {t("students.streetAddress")}
+                    </label>
+                    <p className="text-sm">{student.streetAddress}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  {student.city && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        {t("students.city")}
+                      </label>
+                      <p className="text-sm">{student.city}</p>
+                    </div>
+                  )}
+                  {student.state && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        {t("students.state")}
+                      </label>
+                      <p className="text-sm">{student.state}</p>
+                    </div>
+                  )}
+                  {student.country && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        {t("students.country")}
+                      </label>
+                      <p className="text-sm">{student.country}</p>
+                    </div>
+                  )}
+                  {student.zipCode && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        {t("students.zipCode")}
+                      </label>
+                      <p className="text-sm">{student.zipCode}</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("students.fullAddress")}
+                </label>
+                <p className="text-sm text-muted-foreground">-</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-muted-foreground">
-                Dirección
+                {t("students.phone")}
               </label>
-              <p className="text-sm">{student.address}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                Teléfono de Contacto
-              </label>
-              <p className="text-sm">{student.contactPhone}</p>
+              <p className="text-sm">{student.phone || "-"}</p>
             </div>
           </CardContent>
         </Card>
@@ -131,104 +191,112 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
+                {t("students.currentLevel")}
+              </label>
+              <p className="text-sm">{student.currentLevel || "-"}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
                 Va Nivelado
               </label>
               <p className="text-sm">
                 {student.isLeveled ? "Sí" : "No"}
               </p>
             </div>
-            {student.isLeveled && student.expectedLevel && (
+            {!student.isLeveled && (
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
-                  Nivel Esperado
+                  {t("students.expectedLevel")}
                 </label>
-                <p className="text-sm">{student.expectedLevel}</p>
+                <p className="text-sm">{student.expectedLevel || "-"}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* A.C.E. Projections - Only show if projections module is enabled */}
-        {hasProjectionsModule && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  {t("projections.academicProjections")}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t("projections.weeklyPlanning")}
-              </p>
-              {(isParentView || isStudentView) ? (
-                <LinkButton
-                  variant="outline"
-                  size="default"
-                  showChevron={false}
-                  className="w-full cursor-pointer"
-                  onClick={() => navigate(`/students/${student.id}/projections`)}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {t("projections.viewProjections")}
-                </LinkButton>
-              ) : (
-                <LinkButton
-                  variant="default"
-                  size="lg"
-                  showChevron={false}
-                  className="w-full max-w-xs cursor-pointer"
-                  onClick={() => navigate(`/students/${student.id}/projections`)}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  {t("projections.manageProjections")}
-                </LinkButton>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <div className='flex flex-row flex-wrap md:flex-nowrap gap-4 w-full col-span-2'>
+          {/* A.C.E. Projections - Only show if projections module is enabled */}
+          {hasProjectionsModule && (
+            <Card className="w-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {t("projections.academicProjections")}
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t("projections.weeklyPlanning")}
+                </p>
+                {(isParentView || isStudentView) ? (
+                  <LinkButton
+                    variant="outline"
+                    size="default"
+                    showChevron={false}
+                    className="w-full cursor-pointer"
+                    onClick={() => navigate(`/students/${student.id}/projections`)}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {t("projections.viewProjections")}
+                  </LinkButton>
+                ) : (
+                  <LinkButton
+                    variant="default"
+                    size="lg"
+                    showChevron={false}
+                    className="w-full max-w-xs cursor-pointer"
+                    onClick={() => navigate(`/students/${student.id}/projections`)}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {t("projections.manageProjections")}
+                  </LinkButton>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Report Cards - Only show if reportCards module is enabled */}
-        {hasReportCardsModule && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  {t("reportCards.title")}
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t("reportCards.description") || "Ver y generar boletas de calificaciones"}
-              </p>
-              {(isParentView || isStudentView) ? (
-                <LinkButton
-                  variant="outline"
-                  size="default"
-                  showChevron={false}
-                  className="w-full cursor-pointer"
-                  onClick={() => navigate(`/students/${student.id}/report-cards`)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t("reportCards.viewReportCards") || "Ver Boletas"}
-                </LinkButton>
-              ) : (
-                <LinkButton
-                  variant="default"
-                  size="lg"
-                  showChevron={false}
-                  className="w-full max-w-xs cursor-pointer"
-                  onClick={() => navigate(`/students/${student.id}/report-cards`)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t("reportCards.manageReportCards") || "Gestionar Boletas"}
-                </LinkButton>
-              )}
-            </CardContent>
-          </Card>
-        )}
+          {/* Report Cards - Only show if reportCards module is enabled */}
+          {hasReportCardsModule && (
+            <Card className="w-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    {t("reportCards.title")}
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {t("reportCards.description") || "Ver y generar boletas de calificaciones"}
+                </p>
+                {(isParentView || isStudentView) ? (
+                  <LinkButton
+                    variant="outline"
+                    size="default"
+                    showChevron={false}
+                    className="w-full cursor-pointer"
+                    onClick={() => navigate(`/students/${student.id}/report-cards`)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t("reportCards.viewReportCards") || "Ver Boletas"}
+                  </LinkButton>
+                ) : (
+                  <LinkButton
+                    variant="default"
+                    size="lg"
+                    showChevron={false}
+                    className="w-full max-w-xs cursor-pointer"
+                    onClick={() => navigate(`/students/${student.id}/report-cards`)}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t("reportCards.manageReportCards") || "Gestionar Boletas"}
+                  </LinkButton>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Parents Information - Hidden for parent users */}
         {!isParentView && !isStudentView && (
@@ -289,6 +357,54 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
               }
             }}
             parent={selectedParent}
+          />
+        )}
+
+        {/* Danger Zone - Only for school admins */}
+        {canManage && !isParentView && !isStudentView && (
+          <DangerZone
+            title={t("students.dangerZone")}
+            actions={[
+              ...(student.isActive && onDeactivate
+                ? [
+                  {
+                    title: t("students.deactivate"),
+                    description: t("students.deactivateDescription"),
+                    buttonText: t("students.deactivate"),
+                    buttonVariant: "outline" as const,
+                    buttonClassName: "bg-red-50 border-red-300 text-red-700 hover:bg-red-100",
+                    borderClassName: "border-l-red-300",
+                    onClick: () => onDeactivate(student),
+                  },
+                ]
+                : []),
+              ...(!student.isActive && onReactivate
+                ? [
+                  {
+                    title: t("students.reactivate"),
+                    description: t("students.reactivateDescription"),
+                    buttonText: t("students.reactivate"),
+                    buttonVariant: "outline" as const,
+                    buttonClassName: "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100",
+                    borderClassName: "border-l-blue-300",
+                    onClick: () => onReactivate(student),
+                  },
+                ]
+                : []),
+              ...(!student.isActive && onDelete
+                ? [
+                  {
+                    title: t("students.delete"),
+                    description: t("students.deleteDescription"),
+                    buttonText: t("students.delete"),
+                    buttonVariant: "destructive" as const,
+                    buttonClassName: "bg-red-600 hover:bg-red-700 text-white",
+                    borderClassName: "border-l-red-300",
+                    onClick: () => onDelete(student),
+                  },
+                ]
+                : []),
+            ]}
           />
         )}
       </div>

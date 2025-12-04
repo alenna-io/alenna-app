@@ -6,6 +6,7 @@ import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye } from "lucide-react"
 import type { Teacher } from "@/types/teacher"
+import { StatusBadge } from "@/components/ui/status-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -116,8 +117,17 @@ export function TeachersTable({
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
-                              {teacher.firstName}
+                            <div className="flex items-center gap-2">
+                              <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
+                                {teacher.firstName}
+                              </div>
+                              {teacher && !teacher.isActive && (
+                                <StatusBadge
+                                  isActive={false}
+                                  activeText={t("common.active")}
+                                  inactiveText={t("common.inactive")}
+                                />
+                              )}
                             </div>
                           </div>
                         </div>

@@ -2,14 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { StatusBadge } from "@/components/ui/status-badge"
 import { getInitials } from "@/lib/string-utils"
+import { DangerZone } from "@/components/ui/danger-zone"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import * as React from "react"
 import { Loading } from "@/components/ui/loading"
 import { useTranslation } from "react-i18next"
-import { Power, PowerOff, Trash2 } from "lucide-react"
 
 interface UserProfileProps {
   userId: string
@@ -86,6 +85,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
           schoolId: preloadedUser.schoolId,
           schoolName,
           roles: preloadedUser.roles || [],
+          isActive: preloadedUser.isActive !== undefined ? preloadedUser.isActive : true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         })
@@ -95,9 +95,9 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
 
       // Otherwise, fetch from API
       // Check if user is school admin - if so, try /me/teachers endpoint first
-      const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') && 
-                           !userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
-      
+      const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') &&
+        !userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
+
       let userDetail: any = null
 
       if (isSchoolAdmin) {
@@ -278,60 +278,9 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
         {/* School and Role Information */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>{t("users.accessInfo")}</CardTitle>
-              {canManage && user && (
-                <div className="flex gap-2">
-                  {user.isActive !== false && onDeactivate && (currentUserId !== user.id && currentUserEmail !== user.email) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDeactivate(user)}
-                      className="cursor-pointer text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    >
-                      <PowerOff className="h-4 w-4 mr-2" />
-                      {t("users.deactivateUser")}
-                    </Button>
-                  )}
-                  {user.isActive === false && onReactivate && (currentUserId !== user.id && currentUserEmail !== user.email) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onReactivate(user)}
-                      className="cursor-pointer text-green-600 hover:text-green-700 hover:bg-green-50"
-                    >
-                      <Power className="h-4 w-4 mr-2" />
-                      {t("users.reactivateUser")}
-                    </Button>
-                  )}
-                  {user.isActive === false && onDelete && (currentUserId !== user.id && currentUserEmail !== user.email) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDelete(user)}
-                      className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      {t("users.deleteUser")}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
+            <CardTitle>{t("users.accessInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("common.status")}
-              </label>
-              <div className="mt-1">
-                <StatusBadge
-                  isActive={user.isActive !== false}
-                  activeText={t("users.active")}
-                  inactiveText={t("users.inactive")}
-                />
-              </div>
-            </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">
                 {t("users.school")}
@@ -368,6 +317,54 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
             </div>
           </CardContent>
         </Card>
+
+        {/* Danger Zone - Only for school admins managing teachers */}
+        {canManage && (currentUserId !== user.id && currentUserEmail !== user.email) && (
+          <DangerZone
+            title={t("users.dangerZone")}
+            actions={[
+              ...(user.isActive !== false && onDeactivate
+                ? [
+                  {
+                    title: t("users.deactivateUser"),
+                    description: t("users.deactivateDescription"),
+                    buttonText: t("students.deactivate"),
+                    buttonVariant: "outline" as const,
+                    buttonClassName: "bg-red-50 border-red-300 text-red-700 hover:bg-red-100",
+                    borderClassName: "border-l-red-300",
+                    onClick: () => onDeactivate(user),
+                  },
+                ]
+                : []),
+              ...(user.isActive === false && onReactivate
+                ? [
+                  {
+                    title: t("users.reactivateUser"),
+                    description: t("users.reactivateDescription"),
+                    buttonText: t("students.reactivate"),
+                    buttonVariant: "outline" as const,
+                    buttonClassName: "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100",
+                    borderClassName: "border-l-blue-300",
+                    onClick: () => onReactivate(user),
+                  },
+                ]
+                : []),
+              ...(user.isActive === false && onDelete
+                ? [
+                  {
+                    title: t("users.deleteUser"),
+                    description: t("users.deleteDescription"),
+                    buttonText: t("students.delete"),
+                    buttonVariant: "destructive" as const,
+                    buttonClassName: "bg-red-600 hover:bg-red-700 text-white",
+                    borderClassName: "border-l-red-300",
+                    onClick: () => onDelete(user),
+                  },
+                ]
+                : []),
+            ]}
+          />
+        )}
       </div>
     </div>
   )

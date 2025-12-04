@@ -22,12 +22,17 @@ import { Plus, Users } from "lucide-react"
 import { StudentFormDialog } from "@/components/student-form-dialog"
 import { useTranslation } from "react-i18next"
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 interface Filters extends Record<string, string> {
   certificationType: string
   graduationYear: string
   isLeveled: string
   groupId: string
+  isActive: string
 }
 
 type SortField = "firstName" | "lastName" | null
@@ -52,10 +57,11 @@ export default function StudentsPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<Filters>({
-    certificationType: "",
-    graduationYear: "",
-    isLeveled: "",
-    groupId: ""
+    certificationType: "all",
+    graduationYear: "all",
+    isLeveled: "all",
+    groupId: "all",
+    isActive: "all"
   })
   const [groups, setGroups] = React.useState<Array<{ id: string; name: string | null; teacherName: string }>>([])
   const [view, setView] = React.useState<"cards" | "table">("table")
@@ -66,6 +72,11 @@ export default function StudentsPage() {
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
   const [studentsCount, setStudentsCount] = React.useState<number>(0)
   const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
+  const [deactivateConfirmation, setDeactivateConfirmation] = React.useState<{ open: boolean; studentId: string; studentName: string; studentEmail: string }>({ open: false, studentId: '', studentName: '', studentEmail: '' })
+  const [reactivateConfirmation, setReactivateConfirmation] = React.useState<{ open: boolean; studentId: string; studentName: string }>({ open: false, studentId: '', studentName: '' })
+  const [deleteConfirmation, setDeleteConfirmation] = React.useState<{ open: boolean; studentId: string; studentName: string; studentEmail: string }>({ open: false, studentId: '', studentName: '', studentEmail: '' })
+  const [deactivateEmailInput, setDeactivateEmailInput] = React.useState('')
+  const [deleteEmailInput, setDeleteEmailInput] = React.useState('')
   const itemsPerPage = 10
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
@@ -212,10 +223,17 @@ export default function StudentsPage() {
               certificationType: s.certificationType as string,
               graduationDate: s.graduationDate as string,
               parents: (s.parents || []) as Student['parents'],
-              contactPhone: (s.contactPhone || '') as string,
+              email: (s.email || undefined) as string | undefined,
+              phone: (s.phone || undefined) as string | undefined,
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
-              address: (s.address || '') as string,
+              currentLevel: s.currentLevel as string | undefined,
+              streetAddress: (s.streetAddress || undefined) as string | undefined,
+              city: (s.city || undefined) as string | undefined,
+              state: (s.state || undefined) as string | undefined,
+              country: (s.country || undefined) as string | undefined,
+              zipCode: (s.zipCode || undefined) as string | undefined,
+              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
             }
           })
 
@@ -278,10 +296,16 @@ export default function StudentsPage() {
             certificationType: s.certificationType as string,
             graduationDate: s.graduationDate as string,
             parents: (s.parents || []) as Student['parents'],
-            contactPhone: (s.contactPhone || '') as string,
+            email: (s.email || undefined) as string | undefined,
+            phone: (s.phone || undefined) as string | undefined,
             isLeveled: s.isLeveled as boolean,
             expectedLevel: s.expectedLevel as string | undefined,
-            address: (s.address || '') as string,
+            currentLevel: s.currentLevel as string | undefined,
+            streetAddress: (s.streetAddress || undefined) as string | undefined,
+            city: (s.city || undefined) as string | undefined,
+            state: (s.state || undefined) as string | undefined,
+            country: (s.country || undefined) as string | undefined,
+            zipCode: (s.zipCode || undefined) as string | undefined,
             isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
           }
 
@@ -314,6 +338,16 @@ export default function StudentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId])
 
+  // Calculate available graduation years from students
+  const availableGraduationYears = React.useMemo(() => {
+    const years = new Set<number>()
+    students.forEach(student => {
+      const year = new Date(student.graduationDate).getFullYear()
+      years.add(year)
+    })
+    return Array.from(years).sort((a, b) => a - b)
+  }, [students])
+
   // Filter, search, and sort logic
   const filteredAndSortedStudents = React.useMemo(() => {
     // Filter students
@@ -322,29 +356,41 @@ export default function StudentsPage() {
       const matchesSearch =
         includesIgnoreAccents(student.name, searchTerm) ||
         includesIgnoreAccents(student.certificationType, searchTerm) ||
-        student.contactPhone.includes(searchTerm) ||
-        includesIgnoreAccents(student.address, searchTerm)
+        (student.phone && student.phone.includes(searchTerm)) ||
+        (student.streetAddress && includesIgnoreAccents(student.streetAddress, searchTerm)) ||
+        (student.city && includesIgnoreAccents(student.city, searchTerm))
 
       // Certification type filter
       const matchesCertification =
-        !filters.certificationType || student.certificationType === filters.certificationType
+        !filters.certificationType ||
+        filters.certificationType === "all" ||
+        student.certificationType === filters.certificationType
 
       // Graduation year filter
       const matchesGraduationYear =
         !filters.graduationYear ||
+        filters.graduationYear === "all" ||
         new Date(student.graduationDate).getFullYear().toString() === filters.graduationYear
 
       // Leveling status filter
       const matchesLeveling =
         !filters.isLeveled ||
+        filters.isLeveled === "all" ||
         (filters.isLeveled === "true" && student.isLeveled) ||
         (filters.isLeveled === "false" && !student.isLeveled)
 
       // Group filter - this will be handled by fetching students from the group
       // For now, return true and we'll handle group filtering separately
-      const matchesGroup = !filters.groupId
+      const matchesGroup = !filters.groupId || filters.groupId === "all"
 
-      return matchesSearch && matchesCertification && matchesGraduationYear && matchesLeveling && matchesGroup
+      // Active/Inactive status filter
+      const matchesStatus =
+        !filters.isActive ||
+        filters.isActive === "all" ||
+        (filters.isActive === "true" && student.isActive) ||
+        (filters.isActive === "false" && !student.isActive)
+
+      return matchesSearch && matchesCertification && matchesGraduationYear && matchesLeveling && matchesGroup && matchesStatus
     })
 
     // Sort students
@@ -378,9 +424,9 @@ export default function StudentsPage() {
 
   // Fetch students from group when group filter is selected
   React.useEffect(() => {
-    if (!filters.groupId || !userInfo?.schoolId || studentId) {
+    if ((!filters.groupId || filters.groupId === "all") || !userInfo?.schoolId || studentId) {
       // If no group filter or viewing a student, refetch all students
-      if (!filters.groupId && !studentId && !isStudentOnly) {
+      if ((!filters.groupId || filters.groupId === "all") && !studentId && !isStudentOnly) {
         const fetchAllStudents = async () => {
           try {
             setIsLoading(true)
@@ -400,10 +446,17 @@ export default function StudentsPage() {
                 certificationType: s.certificationType as string,
                 graduationDate: s.graduationDate as string,
                 parents: (s.parents || []) as Student['parents'],
-                contactPhone: (s.contactPhone || '') as string,
+                email: (s.email || undefined) as string | undefined,
+                phone: (s.phone || undefined) as string | undefined,
                 isLeveled: s.isLeveled as boolean,
                 expectedLevel: s.expectedLevel as string | undefined,
-                address: (s.address || '') as string,
+                currentLevel: s.currentLevel as string | undefined,
+                streetAddress: (s.streetAddress || undefined) as string | undefined,
+                city: (s.city || undefined) as string | undefined,
+                state: (s.state || undefined) as string | undefined,
+                country: (s.country || undefined) as string | undefined,
+                zipCode: (s.zipCode || undefined) as string | undefined,
+                isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
               }
             })
             setStudents(transformedStudents)
@@ -462,10 +515,17 @@ export default function StudentsPage() {
               certificationType: s.certificationType as string,
               graduationDate: s.graduationDate as string,
               parents: (s.parents || []) as Student['parents'],
-              contactPhone: (s.contactPhone || '') as string,
+              email: (s.email || undefined) as string | undefined,
+              phone: (s.phone || undefined) as string | undefined,
               isLeveled: s.isLeveled as boolean,
               expectedLevel: s.expectedLevel as string | undefined,
-              address: (s.address || '') as string,
+              currentLevel: s.currentLevel as string | undefined,
+              streetAddress: (s.streetAddress || undefined) as string | undefined,
+              city: (s.city || undefined) as string | undefined,
+              state: (s.state || undefined) as string | undefined,
+              country: (s.country || undefined) as string | undefined,
+              zipCode: (s.zipCode || undefined) as string | undefined,
+              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
             }
           })
           setStudents(transformedStudents)
@@ -517,6 +577,199 @@ export default function StudentsPage() {
     }
   }
 
+  const handleDeactivateStudent = (student: Student) => {
+    setDeactivateConfirmation({
+      open: true,
+      studentId: student.id,
+      studentName: student.name,
+      studentEmail: student.email || ''
+    })
+    setDeactivateEmailInput('')
+  }
+
+  const confirmDeactivateStudent = async () => {
+    if (deactivateConfirmation.studentEmail && deactivateEmailInput !== deactivateConfirmation.studentEmail) {
+      setError(t("users.emailMismatchError"))
+      return
+    }
+
+    const studentId = deactivateConfirmation.studentId
+
+    // Optimistic update
+    setStudents(prevStudents => prevStudents.map(student =>
+      student.id === studentId ? { ...student, isActive: false } : student
+    ))
+    setDeactivateConfirmation({ open: false, studentId: '', studentName: '', studentEmail: '' })
+    setDeactivateEmailInput('')
+
+    try {
+      await api.students.deactivate(studentId)
+      toast.success(t("students.deactivateSuccess", { studentName: deactivateConfirmation.studentName }))
+      // Refresh to get actual state from server
+      const data = schoolId
+        ? await api.schools.getStudents(schoolId)
+        : await api.students.getAll()
+      const transformedStudents: Student[] = data.map((student: unknown) => {
+        const s = student as Record<string, unknown>
+        return {
+          id: s.id as string,
+          firstName: s.firstName as string,
+          lastName: s.lastName as string,
+          name: s.name as string,
+          age: s.age as number,
+          birthDate: s.birthDate as string,
+          certificationType: s.certificationType as string,
+          graduationDate: s.graduationDate as string,
+          parents: (s.parents || []) as Student['parents'],
+          contactPhone: (s.contactPhone || '') as string,
+          email: (s.email || undefined) as string | undefined,
+          isLeveled: s.isLeveled as boolean,
+          expectedLevel: s.expectedLevel as string | undefined,
+          currentLevel: s.currentLevel as string | undefined,
+          address: (s.address || undefined) as string | undefined,
+          streetAddress: (s.streetAddress || undefined) as string | undefined,
+          city: (s.city || undefined) as string | undefined,
+          state: (s.state || undefined) as string | undefined,
+          country: (s.country || undefined) as string | undefined,
+          zipCode: (s.zipCode || undefined) as string | undefined,
+          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
+        }
+      })
+      setStudents(transformedStudents)
+    } catch (err: unknown) {
+      // Revert optimistic update on error
+      setStudents(prevStudents => prevStudents.map(student =>
+        student.id === studentId ? { ...student, isActive: true } : student
+      ))
+      const errorMessage = err instanceof Error ? err.message : t("students.deactivateError")
+      setError(errorMessage)
+      toast.error(errorMessage)
+    }
+  }
+
+  const handleReactivateStudent = (student: Student) => {
+    setReactivateConfirmation({
+      open: true,
+      studentId: student.id,
+      studentName: student.name
+    })
+  }
+
+  const confirmReactivateStudent = async () => {
+    const studentId = reactivateConfirmation.studentId
+
+    try {
+      await api.students.reactivate(studentId)
+      toast.success(t("students.reactivateSuccess", { studentName: reactivateConfirmation.studentName }))
+      setReactivateConfirmation({ open: false, studentId: '', studentName: '' })
+
+      // Refresh student data
+      if (selectedStudent) {
+        const updatedStudent = await api.students.getById(studentId)
+        setSelectedStudent(updatedStudent as Student)
+      }
+
+      // Refresh students list
+      const data = schoolId
+        ? await api.schools.getStudents(schoolId)
+        : await api.students.getAll()
+      const transformedStudents: Student[] = data.map((student: unknown) => {
+        const s = student as Record<string, unknown>
+        return {
+          id: s.id as string,
+          firstName: s.firstName as string,
+          lastName: s.lastName as string,
+          name: s.name as string,
+          age: s.age as number,
+          birthDate: s.birthDate as string,
+          certificationType: s.certificationType as string,
+          graduationDate: s.graduationDate as string,
+          parents: (s.parents || []) as Student['parents'],
+          contactPhone: (s.contactPhone || '') as string,
+          email: (s.email || undefined) as string | undefined,
+          isLeveled: s.isLeveled as boolean,
+          expectedLevel: s.expectedLevel as string | undefined,
+          currentLevel: s.currentLevel as string | undefined,
+          address: (s.address || undefined) as string | undefined,
+          streetAddress: (s.streetAddress || undefined) as string | undefined,
+          city: (s.city || undefined) as string | undefined,
+          state: (s.state || undefined) as string | undefined,
+          country: (s.country || undefined) as string | undefined,
+          zipCode: (s.zipCode || undefined) as string | undefined,
+          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
+        }
+      })
+      setStudents(transformedStudents)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : t("students.reactivateError")
+      setError(errorMessage)
+      toast.error(errorMessage)
+    }
+  }
+
+  const handleDeleteStudent = (student: Student) => {
+    if (!student.email) {
+      toast.error(t("students.emailRequiredForDelete"))
+      return
+    }
+    setDeleteConfirmation({
+      open: true,
+      studentId: student.id,
+      studentName: student.name,
+      studentEmail: student.email
+    })
+    setDeleteEmailInput('')
+  }
+
+  const confirmDeleteStudent = async () => {
+    if (deleteEmailInput !== deleteConfirmation.studentEmail) {
+      setError(t("users.emailMismatchError"))
+      return
+    }
+
+    try {
+      await api.students.delete(deleteConfirmation.studentId)
+      toast.success(t("students.deleteSuccess", { studentName: deleteConfirmation.studentName }))
+      // Refresh students list
+      const data = schoolId
+        ? await api.schools.getStudents(schoolId)
+        : await api.students.getAll()
+      const transformedStudents: Student[] = data.map((student: unknown) => {
+        const s = student as Record<string, unknown>
+        return {
+          id: s.id as string,
+          firstName: s.firstName as string,
+          lastName: s.lastName as string,
+          name: s.name as string,
+          age: s.age as number,
+          birthDate: s.birthDate as string,
+          certificationType: s.certificationType as string,
+          graduationDate: s.graduationDate as string,
+          parents: (s.parents || []) as Student['parents'],
+          contactPhone: (s.contactPhone || '') as string,
+          email: (s.email || undefined) as string | undefined,
+          isLeveled: s.isLeveled as boolean,
+          expectedLevel: s.expectedLevel as string | undefined,
+          currentLevel: s.currentLevel as string | undefined,
+          address: (s.address || undefined) as string | undefined,
+          streetAddress: (s.streetAddress || undefined) as string | undefined,
+          city: (s.city || undefined) as string | undefined,
+          state: (s.state || undefined) as string | undefined,
+          country: (s.country || undefined) as string | undefined,
+          zipCode: (s.zipCode || undefined) as string | undefined,
+          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
+        }
+      })
+      setStudents(transformedStudents)
+      setDeleteConfirmation({ open: false, studentId: '', studentName: '', studentEmail: '' })
+      setDeleteEmailInput('')
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : t("students.deleteError")
+      setError(errorMessage)
+      toast.error(errorMessage)
+    }
+  }
+
   const handleCreateStudent = async (data: {
     firstName: string
     lastName: string
@@ -524,11 +777,10 @@ export default function StudentsPage() {
     birthDate: string
     certificationTypeId: string
     graduationDate: string
-    contactPhone?: string
+    phone?: string
     isLeveled?: boolean
     expectedLevel?: string
     currentLevel?: string
-    address?: string
     parents: Array<{
       firstName: string
       lastName: string
@@ -557,10 +809,17 @@ export default function StudentsPage() {
         certificationType: s.certificationType as string,
         graduationDate: s.graduationDate as string,
         parents: (s.parents || []) as Student['parents'],
-        contactPhone: (s.contactPhone || '') as string,
+        email: (s.email || undefined) as string | undefined,
+        phone: (s.phone || undefined) as string | undefined,
         isLeveled: s.isLeveled as boolean,
         expectedLevel: s.expectedLevel as string | undefined,
-        address: (s.address || '') as string,
+        currentLevel: s.currentLevel as string | undefined,
+        streetAddress: (s.streetAddress || undefined) as string | undefined,
+        city: (s.city || undefined) as string | undefined,
+        state: (s.state || undefined) as string | undefined,
+        country: (s.country || undefined) as string | undefined,
+        zipCode: (s.zipCode || undefined) as string | undefined,
+        isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
       }
     })
     setStudents(transformedStudents)
@@ -616,7 +875,142 @@ export default function StudentsPage() {
 
   // Show student profile if we have a selected student
   if (selectedStudent) {
-    return <StudentProfile student={selectedStudent} onBack={handleBackToList} isParentView={parentOnly} />
+    return (
+      <>
+        <StudentProfile
+          student={selectedStudent}
+          onBack={handleBackToList}
+          isParentView={parentOnly}
+          canManage={isSchoolAdmin}
+          onDeactivate={isSchoolAdmin ? handleDeactivateStudent : undefined}
+          onReactivate={isSchoolAdmin ? handleReactivateStudent : undefined}
+          onDelete={isSchoolAdmin ? handleDeleteStudent : undefined}
+        />
+
+        {/* Deactivate Confirmation Dialog */}
+        <Dialog open={deactivateConfirmation.open} onOpenChange={(open) => setDeactivateConfirmation({ ...deactivateConfirmation, open })}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">{t("students.deactivateConfirm")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                <p className="text-sm font-semibold text-orange-800 mb-2">{t("common.important")}</p>
+                <p className="text-sm text-orange-700">{t("students.deactivateWarning")}</p>
+              </div>
+              <p className="text-sm text-gray-700">
+                {t("students.deactivateConfirmMessage", { studentName: deactivateConfirmation.studentName })}
+              </p>
+              {deactivateConfirmation.studentEmail && (
+                <>
+                  <p className="text-sm text-gray-600">
+                    {t("students.typeEmailToConfirmDeactivate", { studentEmail: deactivateConfirmation.studentEmail })}
+                  </p>
+                  <div>
+                    <Label htmlFor="deactivate-email">{t("students.email")}</Label>
+                    <Input
+                      id="deactivate-email"
+                      type="email"
+                      value={deactivateEmailInput}
+                      onChange={(e) => setDeactivateEmailInput(e.target.value)}
+                      placeholder={t("students.deactivateEmailPlaceholder")}
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button variant="outline" onClick={() => setDeactivateConfirmation({ ...deactivateConfirmation, open: false })}>
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeactivateStudent}
+                  disabled={deactivateConfirmation.studentEmail ? deactivateEmailInput !== deactivateConfirmation.studentEmail : false}
+                >
+                  {t("students.deactivate")}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Reactivate Confirmation Dialog */}
+        <Dialog open={reactivateConfirmation.open} onOpenChange={(open) => setReactivateConfirmation({ ...reactivateConfirmation, open })}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-green-600">{t("students.reactivateConfirm")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                <p className="text-sm font-semibold text-green-800 mb-2">{t("common.important")}</p>
+                <p className="text-sm text-green-700">{t("students.reactivateWarning")}</p>
+              </div>
+              <p className="text-sm text-gray-700">
+                {t("students.reactivateConfirmMessage", { studentName: reactivateConfirmation.studentName })}
+              </p>
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button variant="outline" onClick={() => setReactivateConfirmation({ ...reactivateConfirmation, open: false })}>
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={confirmReactivateStudent}
+                >
+                  {t("students.reactivate")}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ ...deleteConfirmation, open })}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">{t("students.deleteConfirm")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm font-semibold text-red-800 mb-2">{t("common.important")}</p>
+                <p className="text-sm text-red-700">{t("students.deleteWarning")}</p>
+              </div>
+              <p className="text-sm text-gray-700">
+                {t("students.deleteConfirmMessage", { studentName: deleteConfirmation.studentName })}
+              </p>
+              <p className="text-sm text-gray-600">
+                {t("students.typeEmailToConfirm", { studentEmail: deleteConfirmation.studentEmail })}
+              </p>
+              <div>
+                <Label htmlFor="delete-email">{t("students.email")}</Label>
+                <Input
+                  id="delete-email"
+                  type="email"
+                  value={deleteEmailInput}
+                  onChange={(e) => setDeleteEmailInput(e.target.value)}
+                  placeholder={t("students.deleteEmailPlaceholder")}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirmation({ ...deleteConfirmation, open: false })}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDeleteStudent}
+                  disabled={deleteEmailInput !== deleteConfirmation.studentEmail}
+                >
+                  {t("students.delete")}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    )
   }
 
   // Show loading state for students list
@@ -714,47 +1108,34 @@ export default function StudentsPage() {
           totalStudents={students.length}
           filteredCount={filteredAndSortedStudents.length}
           groups={groups}
+          availableGraduationYears={availableGraduationYears}
         />
         <ViewToggle view={view} onViewChange={setView} />
       </div>
 
       {/* Students Content */}
-      {filteredAndSortedStudents.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">
-            {searchTerm || Object.values(filters).some(f => f !== "")
-              ? t("students.noResults")
-              : t("students.noStudents")
-            }
-          </p>
-        </div>
+      {view === "cards" ? (
+        <StudentsList
+          students={paginatedStudents}
+          onStudentSelect={handleStudentSelect}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredAndSortedStudents.length}
+          onPageChange={setCurrentPage}
+        />
       ) : (
-        <>
-          {view === "cards" ? (
-            <StudentsList
-              students={paginatedStudents}
-              onStudentSelect={handleStudentSelect}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredAndSortedStudents.length}
-              onPageChange={setCurrentPage}
-            />
-          ) : (
-            <StudentsTable
-              students={paginatedStudents}
-              onStudentSelect={handleStudentSelect}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredAndSortedStudents.length}
-              onPageChange={setCurrentPage}
-            />
-          )}
-        </>
-      )
-      }
+        <StudentsTable
+          students={paginatedStudents}
+          onStudentSelect={handleStudentSelect}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredAndSortedStudents.length}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {/* Student Form Dialog */}
       {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
@@ -786,6 +1167,129 @@ export default function StudentsPage() {
           </AlertDialogContent>
         </AlertDialog>
       )}
+
+      {/* Deactivate Confirmation Dialog */}
+      <Dialog open={deactivateConfirmation.open} onOpenChange={(open) => setDeactivateConfirmation({ ...deactivateConfirmation, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">{t("students.deactivateConfirm")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-orange-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-orange-700">{t("students.deactivateWarning")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("students.deactivateConfirmMessage", { studentName: deactivateConfirmation.studentName })}
+            </p>
+            {deactivateConfirmation.studentEmail && (
+              <>
+                <p className="text-sm text-gray-600">
+                  {t("students.typeEmailToConfirmDeactivate", { studentEmail: deactivateConfirmation.studentEmail })}
+                </p>
+                <div>
+                  <Label htmlFor="deactivate-email">{t("students.email")}</Label>
+                  <Input
+                    id="deactivate-email"
+                    type="email"
+                    value={deactivateEmailInput}
+                    onChange={(e) => setDeactivateEmailInput(e.target.value)}
+                    placeholder={t("students.deactivateEmailPlaceholder")}
+                    className="mt-1"
+                  />
+                </div>
+              </>
+            )}
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button variant="outline" onClick={() => setDeactivateConfirmation({ ...deactivateConfirmation, open: false })}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeactivateStudent}
+                disabled={deactivateConfirmation.studentEmail ? deactivateEmailInput !== deactivateConfirmation.studentEmail : false}
+              >
+                {t("students.deactivate")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ ...deleteConfirmation, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">{t("students.deleteConfirm")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-red-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-red-700">{t("students.deleteWarning")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("students.deleteConfirmMessage", { studentName: deleteConfirmation.studentName })}
+            </p>
+            <p className="text-sm text-gray-600">
+              {t("students.typeEmailToConfirm", { studentEmail: deleteConfirmation.studentEmail })}
+            </p>
+            <div>
+              <Label htmlFor="delete-email">{t("students.email")}</Label>
+              <Input
+                id="delete-email"
+                type="email"
+                value={deleteEmailInput}
+                onChange={(e) => setDeleteEmailInput(e.target.value)}
+                placeholder={t("students.deleteEmailPlaceholder")}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirmation({ ...deleteConfirmation, open: false })}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteStudent}
+                disabled={deleteEmailInput !== deleteConfirmation.studentEmail}
+              >
+                {t("students.delete")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reactivate Confirmation Dialog */}
+      <Dialog open={reactivateConfirmation.open} onOpenChange={(open) => setReactivateConfirmation({ ...reactivateConfirmation, open })}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-green-600">{t("students.reactivateConfirm")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-green-800 mb-2">{t("common.important")}</p>
+              <p className="text-sm text-green-700">{t("students.reactivateWarning")}</p>
+            </div>
+            <p className="text-sm text-gray-700">
+              {t("students.reactivateConfirmMessage", { studentName: reactivateConfirmation.studentName })}
+            </p>
+            <div className="flex justify-end space-x-2 pt-2">
+              <Button variant="outline" onClick={() => setReactivateConfirmation({ ...reactivateConfirmation, open: false })}>
+                {t("common.cancel")}
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={confirmReactivateStudent}
+              >
+                {t("students.reactivate")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div >
   )
 }

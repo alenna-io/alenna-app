@@ -41,11 +41,10 @@ interface StudentFormDialogProps {
     birthDate: string
     certificationTypeId: string
     graduationDate: string
-    contactPhone?: string
+    phone?: string
     isLeveled?: boolean
     expectedLevel?: string
     currentLevel?: string
-    address?: string
     streetAddress?: string
     city?: string
     state?: string
@@ -73,6 +72,7 @@ export function StudentFormDialog({
     birthDate?: string
     certificationTypeId?: string
     graduationDate?: string
+    phone?: string
     parents?: string
     parent1FirstName?: string
     parent1LastName?: string
@@ -97,11 +97,10 @@ export function StudentFormDialog({
     birthDate: string
     certificationTypeId: string
     graduationDate: string
-    contactPhone: string
+    phone: string
     isLeveled: boolean
     expectedLevel: string
     currentLevel: string
-    address: string
     streetAddress: string
     city: string
     state: string
@@ -125,11 +124,10 @@ export function StudentFormDialog({
     birthDate: "",
     certificationTypeId: "",
     graduationDate: "",
-    contactPhone: "",
+    phone: "",
     isLeveled: false,
     expectedLevel: "",
     currentLevel: "",
-    address: "",
     streetAddress: "",
     city: "",
     state: "",
@@ -178,11 +176,10 @@ export function StudentFormDialog({
         birthDate: "",
         certificationTypeId: "",
         graduationDate: "",
-        contactPhone: "",
+        phone: "",
         isLeveled: false,
         expectedLevel: "",
         currentLevel: "",
-        address: "",
         streetAddress: "",
         city: "",
         state: "",
@@ -212,15 +209,23 @@ export function StudentFormDialog({
       birthDate?: string
       certificationTypeId?: string
       graduationDate?: string
+      phone?: string
       parents?: string
       parent1FirstName?: string
       parent1LastName?: string
       parent1Email?: string
+      parent1Phone?: string
       parent1Relationship?: string
       parent2FirstName?: string
       parent2LastName?: string
       parent2Email?: string
+      parent2Phone?: string
       parent2Relationship?: string
+      streetAddress?: string
+      city?: string
+      state?: string
+      country?: string
+      zipCode?: string
     } = {}
 
     // Validate firstName
@@ -353,11 +358,10 @@ export function StudentFormDialog({
         birthDate: new Date(formData.birthDate).toISOString(),
         certificationTypeId: formData.certificationTypeId,
         graduationDate: new Date(formData.graduationDate).toISOString(),
-        contactPhone: formData.contactPhone.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
         isLeveled: formData.isLeveled || undefined,
         expectedLevel: formData.expectedLevel.trim() || undefined,
         currentLevel: formData.currentLevel.trim() || undefined,
-        address: formData.address.trim() || undefined,
         streetAddress: formData.streetAddress.trim() || undefined,
         city: formData.city.trim() || undefined,
         state: formData.state.trim() || undefined,
@@ -514,11 +518,11 @@ export function StudentFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="contactPhone">{t("students.contactPhone")}</FieldLabel>
+              <FieldLabel htmlFor="phone">{t("students.phone")}</FieldLabel>
               <Input
-                id="contactPhone"
-                value={formData.contactPhone}
-                onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+1 (555) 123-4567"
               />
             </Field>

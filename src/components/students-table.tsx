@@ -6,6 +6,7 @@ import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 import { Users, ChevronsUpDown, ChevronLeft, MoreVertical, Eye, Trash2 } from "lucide-react"
 import type { Student } from "@/types/student"
+import { StatusBadge } from "@/components/ui/status-badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTranslation } from "react-i18next"
+import { getSchoolGradeFromLevel } from "@/lib/level-to-grade"
 
 interface StudentsTableProps {
   students: Student[]
@@ -139,145 +141,155 @@ export function StudentsTable({
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => {
-                const renderCell = (columnKey: string) => {
-                  switch (columnKey) {
-                    case 'firstName':
-                      return (
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
-                            <AvatarFallback className="text-sm font-semibold">
-                              {getInitials(student.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
-                              {student.firstName}
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={COLUMNS.length} className="text-center py-12">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">{t("students.noResults")}</p>
+                  </td>
+                </tr>
+              ) : (
+                students.map((student) => {
+                  const renderCell = (columnKey: string) => {
+                    switch (columnKey) {
+                      case 'firstName':
+                        return (
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
+                              <AvatarFallback className="text-sm font-semibold">
+                                {getInitials(student.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <div className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">
+                                  {student.firstName}
+                                </div>
+                                {student && !student.isActive && (
+                                  <StatusBadge
+                                    isActive={false}
+                                    activeText={t("common.active")}
+                                    inactiveText={t("common.inactive")}
+                                  />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )
-                    case 'lastName':
-                      return (
-                        <div className="text-sm text-foreground">
-                          {student.lastName}
-                        </div>
-                      )
-                    case 'age':
-                      return <div className="text-sm font-medium">{t("students.ageYears", { age: student.age })}</div>
-                    case 'certification':
-                      return (
-                        <Badge
-                          variant={getCertificationBadgeVariant(student.certificationType)}
-                          className="font-medium"
-                        >
-                          {student.certificationType}
-                        </Badge>
-                      )
-                    case 'graduation':
-                      return (
-                        <div className="text-sm font-medium">
-                          {new Date(student.graduationDate).getFullYear()}
-                        </div>
-                      )
-                    case 'nivel':
-                      return (
-                        <div className="flex items-center gap-2">
-                          {student.currentLevel && (
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {student.currentLevel}
-                            </span>
-                          )}
-                          {!student.currentLevel && (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      )
-                    case 'gradoEscolar':
-                      return (
-                        <div className="flex items-center gap-2">
-                          {student.expectedLevel ? (
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {student.expectedLevel}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      )
-                    case 'actions':
-                      return (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                              }}
-                              className="h-8 w-8 p-0"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                onStudentSelect(student)
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              {t("common.view")}
-                            </DropdownMenuItem>
-                            {showRemoveFromGroup && onRemoveFromGroup && groupAssignmentMap?.has(student.id) && (
+                        )
+                      case 'lastName':
+                        return (
+                          <div className="text-sm text-foreground">
+                            {student.lastName}
+                          </div>
+                        )
+                      case 'age':
+                        return <div className="text-sm font-medium">{t("students.ageYears", { age: student.age })}</div>
+                      case 'certification':
+                        return (
+                          <Badge
+                            variant={getCertificationBadgeVariant(student.certificationType)}
+                            className="font-medium"
+                          >
+                            {student.certificationType}
+                          </Badge>
+                        )
+                      case 'graduation':
+                        return (
+                          <div className="text-sm font-medium">
+                            {new Date(student.graduationDate).getFullYear()}
+                          </div>
+                        )
+                      case 'nivel':
+                        return (
+                          <div className="flex items-center gap-2">
+                            {student.currentLevel ? (
+                              <span className="text-sm text-foreground">
+                                {student.currentLevel}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </div>
+                        )
+                      case 'gradoEscolar':
+                        return (
+                          <div className="flex items-center gap-2">
+                            {student.currentLevel ? (
+                              <span className="text-sm text-foreground">
+                                {getSchoolGradeFromLevel(student.currentLevel, t)}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </div>
+                        )
+                      case 'actions':
+                        return (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  const assignmentId = groupAssignmentMap.get(student.id)
-                                  if (assignmentId) {
-                                    onRemoveFromGroup(student, assignmentId)
-                                  }
+                                  onStudentSelect(student)
                                 }}
-                                className="cursor-pointer text-destructive"
+                                className="cursor-pointer"
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {t("groups.removeFromGroup")}
+                                <Eye className="h-4 w-4 mr-2" />
+                                {t("common.view")}
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )
-                    default:
-                      return null
+                              {showRemoveFromGroup && onRemoveFromGroup && groupAssignmentMap?.has(student.id) && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    const assignmentId = groupAssignmentMap.get(student.id)
+                                    if (assignmentId) {
+                                      onRemoveFromGroup(student, assignmentId)
+                                    }
+                                  }}
+                                  className="cursor-pointer text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t("groups.removeFromGroup")}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )
+                      default:
+                        return null
+                    }
                   }
-                }
 
-                return (
-                  <tr
-                    key={student.id}
-                    className="border-b transition-all duration-200 hover:bg-muted/30 cursor-pointer group"
-                    onClick={() => onStudentSelect(student)}
-                  >
-                    {COLUMNS.map((column) => (
-                      <td key={column.key} className={tdClass}>
-                        {renderCell(column.key)}
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })}
+                  return (
+                    <tr
+                      key={student.id}
+                      className="border-b transition-all duration-200 hover:bg-muted/30 cursor-pointer group"
+                      onClick={() => onStudentSelect(student)}
+                    >
+                      {COLUMNS.map((column) => (
+                        <td key={column.key} className={tdClass}>
+                          {renderCell(column.key)}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
-
-        {students.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay estudiantes para mostrar</p>
-          </div>
-        )}
       </CardContent>
 
       {/* Pagination - Always show */}
