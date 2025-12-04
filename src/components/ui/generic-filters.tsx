@@ -185,7 +185,10 @@ export function GenericFilters<T extends Record<string, string>>({
         <CardContent className="p-0 mt-4">
           <div className={`grid gap-6 ${fields.length === 1 ? 'md:grid-cols-1' : fields.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
             {fields.map((field) => {
-              const currentValue = filters[field.key as keyof T] || ""
+              const rawValue = filters[field.key as keyof T] || ""
+              // Normalize empty string to "all" for select fields that have an "all" option
+              const hasAllOption = field.options?.some(opt => opt.value === "all")
+              const currentValue = (rawValue === "" && hasAllOption && field.type === "select") ? "all" : rawValue
               const selectedOption = field.options?.find(opt => opt.value === currentValue)
               const isSearchable = field.searchable ?? (field.options && field.options.length > 10)
               const searchTerm = searchTerms[field.key] || ""
@@ -290,7 +293,7 @@ export function GenericFilters<T extends Record<string, string>>({
                           <SelectValue placeholder={field.placeholder || t("filters.select") || "Select..."} />
                         </SelectTrigger>
                         <SelectContent>
-                          {field.options?.map((option) => (
+                          {field.options?.filter(option => option.value !== "").map((option) => (
                             <SelectItem key={option.value} value={option.value} className="cursor-pointer">
                               {option.label}
                             </SelectItem>

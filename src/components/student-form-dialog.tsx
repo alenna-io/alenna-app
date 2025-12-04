@@ -26,6 +26,7 @@ interface ParentData {
   firstName: string
   lastName: string
   email: string
+  phone: string
   relationship: string
 }
 
@@ -40,11 +41,15 @@ interface StudentFormDialogProps {
     birthDate: string
     certificationTypeId: string
     graduationDate: string
-    contactPhone?: string
+    phone?: string
     isLeveled?: boolean
     expectedLevel?: string
     currentLevel?: string
-    address?: string
+    streetAddress?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
     parents: ParentData[]
   }) => Promise<void>
 }
@@ -67,15 +72,23 @@ export function StudentFormDialog({
     birthDate?: string
     certificationTypeId?: string
     graduationDate?: string
+    phone?: string
     parents?: string
     parent1FirstName?: string
     parent1LastName?: string
     parent1Email?: string
+    parent1Phone?: string
     parent1Relationship?: string
     parent2FirstName?: string
     parent2LastName?: string
     parent2Email?: string
+    parent2Phone?: string
     parent2Relationship?: string
+    streetAddress?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
   }>({})
   const [formData, setFormData] = React.useState<{
     firstName: string
@@ -84,18 +97,24 @@ export function StudentFormDialog({
     birthDate: string
     certificationTypeId: string
     graduationDate: string
-    contactPhone: string
+    phone: string
     isLeveled: boolean
     expectedLevel: string
     currentLevel: string
-    address: string
+    streetAddress: string
+    city: string
+    state: string
+    country: string
+    zipCode: string
     parent1FirstName: string
     parent1LastName: string
     parent1Email: string
+    parent1Phone: string
     parent1Relationship: string
     parent2FirstName: string
     parent2LastName: string
     parent2Email: string
+    parent2Phone: string
     parent2Relationship: string
     hasSecondParent: boolean
   }>({
@@ -105,18 +124,24 @@ export function StudentFormDialog({
     birthDate: "",
     certificationTypeId: "",
     graduationDate: "",
-    contactPhone: "",
+    phone: "",
     isLeveled: false,
     expectedLevel: "",
     currentLevel: "",
-    address: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    country: "",
+    zipCode: "",
     parent1FirstName: "",
     parent1LastName: "",
     parent1Email: "",
+    parent1Phone: "",
     parent1Relationship: "",
     parent2FirstName: "",
     parent2LastName: "",
     parent2Email: "",
+    parent2Phone: "",
     parent2Relationship: "",
     hasSecondParent: false,
   })
@@ -151,18 +176,24 @@ export function StudentFormDialog({
         birthDate: "",
         certificationTypeId: "",
         graduationDate: "",
-        contactPhone: "",
+        phone: "",
         isLeveled: false,
         expectedLevel: "",
         currentLevel: "",
-        address: "",
+        streetAddress: "",
+        city: "",
+        state: "",
+        country: "",
+        zipCode: "",
         parent1FirstName: "",
         parent1LastName: "",
         parent1Email: "",
+        parent1Phone: "",
         parent1Relationship: "",
         parent2FirstName: "",
         parent2LastName: "",
         parent2Email: "",
+        parent2Phone: "",
         parent2Relationship: "",
         hasSecondParent: false,
       })
@@ -178,15 +209,23 @@ export function StudentFormDialog({
       birthDate?: string
       certificationTypeId?: string
       graduationDate?: string
+      phone?: string
       parents?: string
       parent1FirstName?: string
       parent1LastName?: string
       parent1Email?: string
+      parent1Phone?: string
       parent1Relationship?: string
       parent2FirstName?: string
       parent2LastName?: string
       parent2Email?: string
+      parent2Phone?: string
       parent2Relationship?: string
+      streetAddress?: string
+      city?: string
+      state?: string
+      country?: string
+      zipCode?: string
     } = {}
 
     // Validate firstName
@@ -244,6 +283,9 @@ export function StudentFormDialog({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent1Email)) {
       newErrors.parent1Email = t("students.validation.emailInvalid")
     }
+    if (!formData.parent1Phone.trim()) {
+      newErrors.parent1Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
+    }
     if (!formData.parent1Relationship.trim()) {
       newErrors.parent1Relationship = t("students.validation.relationshipRequired")
     }
@@ -260,6 +302,9 @@ export function StudentFormDialog({
         newErrors.parent2Email = t("students.validation.parentEmailRequired")
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent2Email)) {
         newErrors.parent2Email = t("students.validation.emailInvalid")
+      }
+      if (!formData.parent2Phone.trim()) {
+        newErrors.parent2Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
       }
       if (!formData.parent2Relationship.trim()) {
         newErrors.parent2Relationship = t("students.validation.relationshipRequired")
@@ -290,6 +335,7 @@ export function StudentFormDialog({
           firstName: formData.parent1FirstName.trim(),
           lastName: formData.parent1LastName.trim(),
           email: formData.parent1Email.trim(),
+          phone: formData.parent1Phone.trim(),
           relationship: formData.parent1Relationship.trim(),
         }
       ]
@@ -300,6 +346,7 @@ export function StudentFormDialog({
           firstName: formData.parent2FirstName.trim(),
           lastName: formData.parent2LastName.trim(),
           email: formData.parent2Email.trim(),
+          phone: formData.parent2Phone.trim(),
           relationship: formData.parent2Relationship.trim(),
         })
       }
@@ -311,11 +358,15 @@ export function StudentFormDialog({
         birthDate: new Date(formData.birthDate).toISOString(),
         certificationTypeId: formData.certificationTypeId,
         graduationDate: new Date(formData.graduationDate).toISOString(),
-        contactPhone: formData.contactPhone.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
         isLeveled: formData.isLeveled || undefined,
         expectedLevel: formData.expectedLevel.trim() || undefined,
         currentLevel: formData.currentLevel.trim() || undefined,
-        address: formData.address.trim() || undefined,
+        streetAddress: formData.streetAddress.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        country: formData.country.trim() || undefined,
+        zipCode: formData.zipCode.trim() || undefined,
         parents,
       })
       onOpenChange(false)
@@ -466,25 +517,102 @@ export function StudentFormDialog({
               )}
             </Field>
 
+            <Field>
+              <FieldLabel htmlFor="phone">{t("students.phone")}</FieldLabel>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+1 (555) 123-4567"
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="streetAddress">{t("students.streetAddress")} <span className="text-destructive">*</span></FieldLabel>
+              <Input
+                id="streetAddress"
+                value={formData.streetAddress}
+                onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                placeholder={t("students.streetAddressPlaceholder")}
+                className={errors.streetAddress ? "border-destructive" : ""}
+              />
+              {errors.streetAddress && (
+                <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>{errors.streetAddress}</span>
+                </div>
+              )}
+            </Field>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="contactPhone">{t("students.contactPhone")}</FieldLabel>
+                <FieldLabel htmlFor="city">{t("students.city")} <span className="text-destructive">*</span></FieldLabel>
                 <Input
-                  id="contactPhone"
-                  value={formData.contactPhone}
-                  onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-                  placeholder="+1 (555) 123-4567"
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder={t("students.cityPlaceholder")}
+                  className={errors.city ? "border-destructive" : ""}
                 />
+                {errors.city && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.city}</span>
+                  </div>
+                )}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="address">{t("common.address")}</FieldLabel>
+                <FieldLabel htmlFor="state">{t("students.state")} <span className="text-destructive">*</span></FieldLabel>
                 <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder={t("students.fullAddress")}
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  placeholder={t("students.statePlaceholder")}
+                  className={errors.state ? "border-destructive" : ""}
                 />
+                {errors.state && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.state}</span>
+                  </div>
+                )}
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel htmlFor="country">{t("students.country")} <span className="text-destructive">*</span></FieldLabel>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  placeholder={t("students.countryPlaceholder")}
+                  className={errors.country ? "border-destructive" : ""}
+                />
+                {errors.country && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.country}</span>
+                  </div>
+                )}
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="zipCode">{t("students.zipCode")} <span className="text-destructive">*</span></FieldLabel>
+                <Input
+                  id="zipCode"
+                  value={formData.zipCode}
+                  onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                  placeholder={t("students.zipCodePlaceholder")}
+                  className={errors.zipCode ? "border-destructive" : ""}
+                />
+                {errors.zipCode && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.zipCode}</span>
+                  </div>
+                )}
               </Field>
             </div>
 
@@ -501,29 +629,27 @@ export function StudentFormDialog({
               </FieldLabel>
             </div>
 
-            {formData.isLeveled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
-                  <Input
-                    id="expectedLevel"
-                    value={formData.expectedLevel}
-                    onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
-                    placeholder={t("students.expectedLevelPlaceholder")}
-                  />
-                </Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
+                <Input
+                  id="expectedLevel"
+                  value={formData.expectedLevel}
+                  onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
+                  placeholder={t("students.expectedLevelPlaceholder")}
+                />
+              </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
-                  <Input
-                    id="currentLevel"
-                    value={formData.currentLevel}
-                    onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
-                    placeholder={t("students.currentLevelPlaceholder")}
-                  />
-                </Field>
-              </div>
-            )}
+              <Field>
+                <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
+                <Input
+                  id="currentLevel"
+                  value={formData.currentLevel}
+                  onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
+                  placeholder={t("students.currentLevelPlaceholder")}
+                />
+              </Field>
+            </div>
 
             {/* Parents Section */}
             <div className="border-t pt-6 mt-6">
@@ -596,6 +722,27 @@ export function StudentFormDialog({
                     )}
                   </Field>
 
+                  <Field>
+                    <FieldLabel htmlFor="parent1Phone">
+                      {t("students.phone")} <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="parent1Phone"
+                      type="tel"
+                      value={formData.parent1Phone}
+                      onChange={(e) => setFormData({ ...formData, parent1Phone: e.target.value })}
+                      placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                      className={errors.parent1Phone ? "border-destructive" : ""}
+                    />
+                    {errors.parent1Phone && (
+                      <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                        <AlertTriangle className="h-4 w-4" />
+                        <span>{errors.parent1Phone}</span>
+                      </div>
+                    )}
+                  </Field>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field>
                     <FieldLabel htmlFor="parent1Relationship">
                       {t("students.relationship")} <span className="text-destructive">*</span>
@@ -703,6 +850,27 @@ export function StudentFormDialog({
                         )}
                       </Field>
 
+                      <Field>
+                        <FieldLabel htmlFor="parent2Phone">
+                          {t("students.phone")} <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Input
+                          id="parent2Phone"
+                          type="tel"
+                          value={formData.parent2Phone}
+                          onChange={(e) => setFormData({ ...formData, parent2Phone: e.target.value })}
+                          placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                          className={errors.parent2Phone ? "border-destructive" : ""}
+                        />
+                        {errors.parent2Phone && (
+                          <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span>{errors.parent2Phone}</span>
+                          </div>
+                        )}
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Field>
                         <FieldLabel htmlFor="parent2Relationship">
                           {t("students.relationship")} <span className="text-destructive">*</span>

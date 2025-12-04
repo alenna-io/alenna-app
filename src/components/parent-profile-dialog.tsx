@@ -89,6 +89,14 @@ export function ParentProfileDialog({
                     <p className="text-sm mt-1 break-all">{parent.email}</p>
                   </div>
                 )}
+                {parent.phone && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Teléfono
+                    </label>
+                    <p className="text-sm mt-1">{parent.phone}</p>
+                  </div>
+                )}
                 {parent.relationship && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">

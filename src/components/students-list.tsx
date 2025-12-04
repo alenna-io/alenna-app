@@ -92,7 +92,7 @@ export function StudentsList({
                 )}
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Teléfono:</span>
-                  <span>{student.contactPhone}</span>
+                  <span>{student.phone || "-"}</span>
                 </div>
               </div>
             </CardContent>

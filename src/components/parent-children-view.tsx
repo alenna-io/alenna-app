@@ -72,17 +72,17 @@ export function ParentChildrenView({ students }: ParentChildrenViewProps) {
                 <span>Graduación: {new Date(student.graduationDate).toLocaleDateString('es-MX')}</span>
               </div>
 
-              {student.contactPhone && (
+              {student.phone && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Phone className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{student.contactPhone}</span>
+                  <span className="truncate">{student.phone}</span>
                 </div>
               )}
 
-              {student.address && (
+              {student.streetAddress && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{student.address}</span>
+                  <span className="truncate">{student.streetAddress}, {student.city}</span>
                 </div>
               )}
 

@@ -180,7 +180,16 @@ export default function DailyGoalsPage() {
         // Extract the category part (everything before the last space and level indicator)
         const match = subject.match(/^(.+?)\s+L\d+$/)
         if (match && match[1]) {
-          mapping.set(subject, match[1].trim())
+          const extractedName = match[1].trim()
+          // Map Spanish sub-subjects to "Spanish" category
+          if (extractedName.toLowerCase().includes('español') ||
+            extractedName.toLowerCase().includes('espanol') ||
+            extractedName.toLowerCase().includes('ortografía') ||
+            extractedName.toLowerCase().includes('ortografia')) {
+            mapping.set(subject, 'Spanish')
+          } else {
+            mapping.set(subject, extractedName)
+          }
         }
       })
     }
@@ -189,26 +198,30 @@ export default function DailyGoalsPage() {
 
   // Group daily goals by category
   const groupedGoalsData = React.useMemo(() => {
-    // Get all categories from projection first
-    const allCategories = new Set<string>()
+    // Get categories from projection if available, otherwise use categories from paces
+    const projectionCategories = projectionDetail?.categories || []
+    const categoriesFromPaces = new Set<string>()
+
     if (projectionDetail) {
       Object.values(projectionDetail.quarters).forEach(quarter => {
         Object.values(quarter).forEach(weekPaces => {
           const firstPace = weekPaces.find(p => p !== null)
           if (firstPace && firstPace.category) {
-            allCategories.add(firstPace.category)
+            categoriesFromPaces.add(firstPace.category)
           }
         })
       })
     }
 
-    // If no projection detail, return goalsData as-is (can't group without mapping)
-    if (!projectionDetail || allCategories.size === 0) {
+    // Use projection categories if available, otherwise use categories from paces
+    const allCategories = projectionCategories.length > 0
+      ? new Set(projectionCategories)
+      : new Set(categoriesFromPaces)
+
+    // If no projection detail, return goalsData as-is
+    if (!projectionDetail) {
       return goalsData
     }
-
-
-    // allCategories already populated above
 
     const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
@@ -218,20 +231,27 @@ export default function DailyGoalsPage() {
     })
 
     // Group subjects by category
+    // Only use categories that are in allCategories (projection categories)
     Object.keys(goalsData).forEach(subject => {
       const category = subjectToCategory.get(subject)
-      if (category) {
-        if (!categoryGroups.has(category)) {
-          categoryGroups.set(category, [])
-        }
+      if (category && allCategories.has(category)) {
+        // Only add if category is in allCategories (ensures we use projection category names)
         categoryGroups.get(category)!.push(subject)
+      } else if (category) {
+        // Category from mapping doesn't match projection categories
+        // This shouldn't happen, but log it for debugging
+        console.warn(`Category "${category}" from subject "${subject}" not in projection categories`)
       }
     })
 
     // Build grouped result
     const result: DailyGoalData = {}
 
-    categoryGroups.forEach((subjects, category) => {
+    // Only process categories that are in allCategories (projection categories)
+    // This ensures we never use sub-subject names as category keys
+    allCategories.forEach(category => {
+      const subjects = categoryGroups.get(category) || []
+
       // For each day (0-4), combine goals from all sub-subjects in this category
       const combinedGoals: DailyGoal[] = Array(5).fill(null).map(() => ({
         text: '',
@@ -292,6 +312,7 @@ export default function DailyGoalsPage() {
         }
       }
 
+      // Only add categories that are in allCategories (projection categories)
       result[category] = combinedGoals
     })
 
@@ -309,12 +330,9 @@ export default function DailyGoalsPage() {
       }
     })
 
-    // Add any subjects that don't have a category mapping (fallback)
-    Object.keys(goalsData).forEach(subject => {
-      if (!subjectToCategory.has(subject)) {
-        result[subject] = goalsData[subject]
-      }
-    })
+    // Don't add unmapped subjects - they should be mapped to categories
+    // If a subject isn't mapped, it means there's a data inconsistency
+    // We'll only show categories that are in the projection
 
     // Sort result keys by category order
     const sortedKeys = sortCategoriesByOrder(Object.keys(result))

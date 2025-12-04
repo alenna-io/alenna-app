@@ -16,5 +16,6 @@ export interface Teacher {
     name: string
     displayName: string
   }
+  isActive?: boolean
 }
 

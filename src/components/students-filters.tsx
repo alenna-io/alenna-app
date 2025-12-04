@@ -7,6 +7,7 @@ interface Filters extends Record<string, string> {
   graduationYear: string
   isLeveled: string
   groupId: string
+  isActive: string
 }
 
 interface StudentsFiltersProps {
@@ -15,9 +16,10 @@ interface StudentsFiltersProps {
   totalStudents: number
   filteredCount: number
   groups?: Array<{ id: string; name: string | null; teacherName: string }>
+  availableGraduationYears?: number[]
 }
 
-export function StudentsFilters({ filters, onFiltersChange, totalStudents, filteredCount, groups = [] }: StudentsFiltersProps) {
+export function StudentsFilters({ filters, onFiltersChange, totalStudents, filteredCount, groups = [], availableGraduationYears = [] }: StudentsFiltersProps) {
   const { t } = useTranslation()
 
   const filterFields: FilterField[] = [
@@ -28,7 +30,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
       color: "bg-orange-500",
       placeholder: t("filters.allGroups"),
       options: [
-        { value: "", label: t("filters.allGroups") },
+        { value: "all", label: t("filters.allGroups") },
         ...groups.map(g => ({
           value: g.id,
           label: g.name || `${t("groups.defaultGroupName")} - ${g.teacherName}`
@@ -42,6 +44,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
       color: "bg-blue-500",
       placeholder: t("filters.allCertifications"),
       options: [
+        { value: "all", label: t("filters.allCertifications") },
         { value: "INEA", label: "INEA" },
         { value: "Grace Christian", label: "Grace Christian" },
         { value: "Home Life", label: "Home Life" },
@@ -56,11 +59,13 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
       color: "bg-green-500",
       placeholder: t("filters.allYears"),
       options: [
-        { value: "2024", label: "2024" },
-        { value: "2025", label: "2025" },
-        { value: "2026", label: "2026" },
-        { value: "2027", label: "2027" },
-        { value: "2028", label: "2028" }
+        { value: "all", label: t("filters.allYears") },
+        ...availableGraduationYears
+          .sort((a, b) => a - b)
+          .map(year => ({
+            value: year.toString(),
+            label: year.toString()
+          }))
       ]
     },
     {
@@ -71,7 +76,18 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
       options: [
         { value: "true", label: t("filters.leveled") },
         { value: "false", label: t("filters.notLeveled") },
-        { value: "", label: t("filters.all") }
+        { value: "all", label: t("filters.all") }
+      ]
+    },
+    {
+      key: "isActive",
+      label: t("filters.status"),
+      type: "select" as const,
+      color: "bg-indigo-500",
+      options: [
+        { value: "true", label: t("common.active") },
+        { value: "false", label: t("common.inactive") },
+        { value: "all", label: t("filters.all") }
       ]
     }
   ]
@@ -80,7 +96,7 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
     const labels: string[] = []
     let fieldIndex = 0
     if (groups.length > 0) {
-      if (currentFilters.groupId) {
+      if (currentFilters.groupId && currentFilters.groupId !== "all") {
         const group = groups.find(g => g.id === currentFilters.groupId)
         if (group) {
           labels.push(`${filterFields[fieldIndex].label}: ${group.name || t("groups.defaultGroupName")}`)
@@ -88,18 +104,23 @@ export function StudentsFilters({ filters, onFiltersChange, totalStudents, filte
       }
       fieldIndex++
     }
-    if (currentFilters.certificationType) {
+    if (currentFilters.certificationType && currentFilters.certificationType !== "all") {
       const cert = filterFields[fieldIndex].options?.find(c => c.value === currentFilters.certificationType)
       labels.push(`${filterFields[fieldIndex].label}: ${cert?.label || currentFilters.certificationType}`)
     }
     fieldIndex++
-    if (currentFilters.graduationYear) {
+    if (currentFilters.graduationYear && currentFilters.graduationYear !== "all") {
       labels.push(`${filterFields[fieldIndex].label}: ${currentFilters.graduationYear}`)
     }
     fieldIndex++
-    if (currentFilters.isLeveled) {
+    if (currentFilters.isLeveled && currentFilters.isLeveled !== "all") {
       const level = filterFields[fieldIndex].options?.find(l => l.value === currentFilters.isLeveled)
       labels.push(`${filterFields[fieldIndex].label}: ${level?.label || currentFilters.isLeveled}`)
+    }
+    fieldIndex++
+    if (currentFilters.isActive && currentFilters.isActive !== "all") {
+      const status = filterFields[fieldIndex].options?.find(s => s.value === currentFilters.isActive)
+      labels.push(`${filterFields[fieldIndex].label}: ${status?.label || currentFilters.isActive}`)
     }
     return labels
   }

@@ -4,11 +4,13 @@ export interface Parent {
   email?: string
   firstName?: string
   lastName?: string
+  phone?: string
   relationship?: string
 }
 
 export interface Student {
   id: string
+  userId?: string
   firstName: string
   lastName: string
   name: string // Full name for display
@@ -17,11 +19,16 @@ export interface Student {
   certificationType: string // Dynamic from database - managed per school
   graduationDate: string
   parents: Parent[]
-  contactPhone: string
+  email?: string
+  phone?: string // Contact phone from User
   isLeveled: boolean
   expectedLevel?: string
   currentLevel?: string
-  address: string
+  streetAddress?: string // Address from User
+  city?: string
+  state?: string
+  country?: string
+  zipCode?: string
   isActive: boolean
 }
 

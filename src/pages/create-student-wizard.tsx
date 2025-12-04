@@ -2,10 +2,9 @@ import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DatePicker } from "@/components/ui/date-picker"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,6 +15,10 @@ import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { Loading } from "@/components/ui/loading"
 import { toast } from "sonner"
+import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { es, enUS } from "date-fns/locale"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +36,62 @@ interface CertificationType {
   name: string
   description?: string
   isActive?: boolean
+}
+
+interface SingleDatePickerProps {
+  value?: string
+  onChange?: (value: string) => void
+  placeholder?: string
+  min?: string
+  max?: string
+  hasError?: boolean
+}
+
+function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: SingleDatePickerProps) {
+  const { i18n } = useTranslation()
+  const parsedDate = value ? new Date(`${value}T00:00:00`) : undefined
+  const locale = i18n.language === 'es' ? es : enUS
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !value && "text-muted-foreground",
+            hasError && "border-destructive"
+          )}
+        >
+          <Calendar className="mr-2 h-4 w-4" />
+          {value ? format(new Date(`${value}T00:00:00`), "dd/MM/yyyy", { locale }) : placeholder}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 z-50" align="start">
+        <ShadcnCalendar
+          mode="single"
+          captionLayout="dropdown"
+          selected={parsedDate}
+          locale={locale}
+          onSelect={(date) => {
+            if (date && onChange) {
+              onChange(format(date, "yyyy-MM-dd"))
+            }
+          }}
+          disabled={(date) => {
+            if (!min && !max) return false
+            const minDate = min ? new Date(`${min}T00:00:00`) : null
+            const maxDate = max ? new Date(`${max}T00:00:00`) : null
+            if (minDate && date < minDate) return true
+            if (maxDate && date > maxDate) return true
+            return false
+          }}
+          fromYear={1900}
+          toYear={2100}
+        />
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 export default function CreateStudentWizardPage() {
@@ -61,8 +120,12 @@ export default function CreateStudentWizardPage() {
     lastName: "",
     email: "",
     birthDate: "",
-    contactPhone: "",
-    address: "",
+    phone: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    country: "",
+    zipCode: "",
     certificationTypeId: "",
     graduationDate: "",
     isLeveled: false,
@@ -71,11 +134,13 @@ export default function CreateStudentWizardPage() {
     parent1FirstName: "",
     parent1LastName: "",
     parent1Email: "",
+    parent1Phone: "",
     parent1Relationship: "",
     hasSecondParent: false,
     parent2FirstName: "",
     parent2LastName: "",
     parent2Email: "",
+    parent2Phone: "",
     parent2Relationship: "",
   })
 
@@ -128,7 +193,7 @@ export default function CreateStudentWizardPage() {
       if (!formData.lastName.trim()) newErrors.lastName = t("students.validation.lastNameRequired")
       if (!formData.email.trim()) {
         newErrors.email = t("students.validation.studentEmailRequired") || "El correo del estudiante es requerido"
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      } else if (!validateEmail(formData.email)) {
         newErrors.email = t("students.validation.emailInvalid") || "Email inválido"
       }
       if (!formData.birthDate) {
@@ -152,14 +217,47 @@ export default function CreateStudentWizardPage() {
           }
         }
       }
+      if (!formData.streetAddress.trim()) newErrors.streetAddress = t("students.validation.streetAddressRequired") || "Street address is required"
+      if (!formData.city.trim()) newErrors.city = t("students.validation.cityRequired") || "City is required"
+      if (!formData.state.trim()) newErrors.state = t("students.validation.stateRequired") || "State is required"
+      if (!formData.country.trim()) newErrors.country = t("students.validation.countryRequired") || "Country is required"
+      if (!formData.zipCode.trim()) newErrors.zipCode = t("students.validation.zipCodeRequired") || "Zip code is required"
+      if (!formData.phone.trim()) newErrors.phone = t("students.validation.phoneRequired") || "Phone is required"
     } else if (step === 2) {
       if (!formData.certificationTypeId) newErrors.certificationTypeId = t("students.validation.certificationTypeRequired")
       if (!formData.graduationDate) {
         newErrors.graduationDate = t("students.validation.graduationDateRequired")
-      } else if (formData.birthDate) {
-        const birth = new Date(formData.birthDate)
+      } else {
         const grad = new Date(formData.graduationDate)
-        if (grad <= birth) newErrors.graduationDate = t("students.validation.graduationDateBeforeBirth")
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        // Graduation date must always be in the future
+        if (grad <= today) {
+          newErrors.graduationDate = t("students.validation.graduationDateFuture") || "Graduation date must be in the future"
+        } else if (formData.birthDate) {
+          const birth = new Date(formData.birthDate)
+          if (grad <= birth) {
+            newErrors.graduationDate = t("students.validation.graduationDateBeforeBirth")
+          }
+        }
+      }
+      // Current level is always required
+      if (!formData.currentLevel.trim()) {
+        newErrors.currentLevel = t("students.validation.currentLevelRequired") || "Current level is required"
+      }
+      // Expected level is only required if student is not leveled (isLeveled = true)
+      if (formData.isLeveled) {
+        if (!formData.expectedLevel.trim()) {
+          newErrors.expectedLevel = t("students.validation.expectedLevelRequired") || "Expected level is required for not leveled students"
+        } else if (formData.currentLevel.trim()) {
+          // Current level must be smaller than expected level
+          const currentLevelNum = parseInt(formData.currentLevel.replace('L', ''))
+          const expectedLevelNum = parseInt(formData.expectedLevel.replace('L', ''))
+          if (currentLevelNum >= expectedLevelNum) {
+            newErrors.currentLevel = t("students.validation.currentLevelSmallerThanExpected") || "Current level must be smaller than expected level"
+            newErrors.expectedLevel = t("students.validation.expectedLevelGreaterThanCurrent") || "Expected level must be greater than current level"
+          }
+        }
       }
     } else if (step === 3) {
       // Parent 1
@@ -167,8 +265,11 @@ export default function CreateStudentWizardPage() {
       if (!formData.parent1LastName.trim()) newErrors.parent1LastName = t("students.validation.parentLastNameRequired")
       if (!formData.parent1Email.trim()) {
         newErrors.parent1Email = t("students.validation.parentEmailRequired")
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent1Email)) {
+      } else if (!validateEmail(formData.parent1Email)) {
         newErrors.parent1Email = t("students.validation.emailInvalid")
+      }
+      if (!formData.parent1Phone.trim()) {
+        newErrors.parent1Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
       }
       if (!formData.parent1Relationship) newErrors.parent1Relationship = t("students.validation.relationshipRequired")
 
@@ -178,8 +279,11 @@ export default function CreateStudentWizardPage() {
         if (!formData.parent2LastName.trim()) newErrors.parent2LastName = t("students.validation.parentLastNameRequired")
         if (!formData.parent2Email.trim()) {
           newErrors.parent2Email = t("students.validation.parentEmailRequired")
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parent2Email)) {
+        } else if (!validateEmail(formData.parent2Email)) {
           newErrors.parent2Email = t("students.validation.emailInvalid")
+        }
+        if (!formData.parent2Phone.trim()) {
+          newErrors.parent2Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
         }
         if (!formData.parent2Relationship) newErrors.parent2Relationship = t("students.validation.relationshipRequired")
 
@@ -193,11 +297,98 @@ export default function CreateStudentWizardPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => (prev + 1) as WizardStep)
-      window.scrollTo(0, 0)
+  // Helper function to validate email format (no accented characters allowed)
+  const validateEmail = (email: string): boolean => {
+    // Only allow ASCII characters: letters, numbers, dots, underscores, hyphens, plus signs
+    // No accented characters like ñ, á, é, í, ó, ú, etc.
+    return /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+  }
+
+  // Validate email on blur
+  const handleEmailBlur = (field: 'email' | 'parent1Email' | 'parent2Email', value: string) => {
+    const newErrors = { ...errors }
+
+    if (!value.trim()) {
+      if (field === 'email') {
+        newErrors.email = t("students.validation.studentEmailRequired")
+      } else {
+        newErrors[field] = t("students.validation.parentEmailRequired")
+      }
+    } else if (!validateEmail(value)) {
+      newErrors[field] = t("students.validation.emailInvalid")
+    } else {
+      // Clear error if email is valid
+      delete newErrors[field]
+
+      // Also check if parent emails are different
+      if (field === 'parent1Email' && formData.hasSecondParent && formData.parent2Email === value) {
+        newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
+      } else if (field === 'parent2Email' && formData.parent1Email === value) {
+        newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
+      } else if (field === 'parent2Email' && formData.parent1Email !== value) {
+        // Clear the error if emails are now different
+        delete newErrors.parent2Email
+      }
     }
+
+    setErrors(newErrors)
+  }
+
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      // Try to get all users and check if email exists
+      // This is a workaround since there's no dedicated check-email endpoint
+      const users = await api.getUsers()
+      if (Array.isArray(users)) {
+        return users.some((user: { email?: string }) => user.email?.toLowerCase() === email.toLowerCase())
+      }
+      return false
+    } catch (error) {
+      // If we can't check, assume it doesn't exist to allow proceeding
+      // The actual validation will happen on submit
+      console.error('Error checking email:', error)
+      return false
+    }
+  }
+
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) {
+      return
+    }
+
+    // Check email existence before proceeding
+    if (currentStep === 1 && formData.email.trim()) {
+      const emailExists = await checkEmailExists(formData.email)
+      if (emailExists) {
+        toast.error(t("students.validation.emailAlreadyExists") || "This email is already registered. Please use a different email.")
+        setErrors({ ...errors, email: t("students.validation.emailAlreadyExists") || "This email is already registered" })
+        return
+      }
+    }
+
+    if (currentStep === 3) {
+      // Check parent emails
+      if (formData.parent1Email.trim()) {
+        const parent1Exists = await checkEmailExists(formData.parent1Email)
+        if (parent1Exists) {
+          toast.error(t("students.validation.emailAlreadyExists") || "Parent 1 email is already registered. Please use a different email.")
+          setErrors({ ...errors, parent1Email: t("students.validation.emailAlreadyExists") || "This email is already registered" })
+          return
+        }
+      }
+
+      if (formData.hasSecondParent && formData.parent2Email.trim()) {
+        const parent2Exists = await checkEmailExists(formData.parent2Email)
+        if (parent2Exists) {
+          toast.error(t("students.validation.emailAlreadyExists") || "Parent 2 email is already registered. Please use a different email.")
+          setErrors({ ...errors, parent2Email: t("students.validation.emailAlreadyExists") || "This email is already registered" })
+          return
+        }
+      }
+    }
+
+    setCurrentStep((prev) => (prev + 1) as WizardStep)
+    window.scrollTo(0, 0)
   }
 
   const handleBack = () => {
@@ -318,6 +509,7 @@ export default function CreateStudentWizardPage() {
           firstName: formData.parent1FirstName.trim(),
           lastName: formData.parent1LastName.trim(),
           email: formData.parent1Email.trim(),
+          phone: formData.parent1Phone.trim(),
           relationship: formData.parent1Relationship,
         }
       ]
@@ -327,6 +519,7 @@ export default function CreateStudentWizardPage() {
           firstName: formData.parent2FirstName.trim(),
           lastName: formData.parent2LastName.trim(),
           email: formData.parent2Email.trim(),
+          phone: formData.parent2Phone.trim(),
           relationship: formData.parent2Relationship,
         })
       }
@@ -339,27 +532,119 @@ export default function CreateStudentWizardPage() {
         birthDate: new Date(formData.birthDate).toISOString(),
         certificationTypeId: formData.certificationTypeId,
         graduationDate: new Date(formData.graduationDate).toISOString(),
-        contactPhone: formData.contactPhone.trim() || undefined,
-        isLeveled: formData.isLeveled,
-        expectedLevel: formData.expectedLevel.trim() || undefined,
-        currentLevel: formData.currentLevel.trim() || undefined,
-        address: formData.address.trim() || undefined,
+        phone: formData.phone.trim(),
+        isLeveled: !formData.isLeveled, // Invert: checkbox "Not Leveled" checked = isLeveled false
+        expectedLevel: formData.isLeveled ? formData.expectedLevel.trim() : undefined,
+        currentLevel: formData.currentLevel.trim(),
+        streetAddress: formData.streetAddress.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        state: formData.state.trim() || undefined,
+        country: formData.country.trim() || undefined,
+        zipCode: formData.zipCode.trim() || undefined,
         parents,
       })
 
       toast.success(t("students.createSuccess"))
       navigate("/students")
     } catch (error: unknown) {
-      const err = error as Error
+      // Try to extract better error message from API response
+      let errorMessage = t("students.createError")
+
+      if (error instanceof Error) {
+        // Check if it's a ZodError or validation error
+        try {
+          const errorData = JSON.parse(error.message)
+          // Handle validation errors - could be in issues array or error array
+          const issuesArray = errorData.issues || (Array.isArray(errorData.error) ? errorData.error : null)
+
+          if (issuesArray && Array.isArray(issuesArray)) {
+            // Zod validation errors
+            const validationErrors = issuesArray.map((issue: { path?: string[]; message?: string; code?: string }) => {
+              const field = issue.path?.[0] || 'field'
+              const message = issue.message || 'Invalid value'
+              // Map common field names to user-friendly labels
+              const fieldLabels: Record<string, string> = {
+                'email': t("students.email"),
+                'firstName': t("students.firstName"),
+                'lastName': t("students.lastName"),
+                'birthDate': t("students.birthDate"),
+                'graduationDate': t("students.graduationDate"),
+                'phone': t("students.phone"),
+                'currentLevel': t("students.currentLevel"),
+                'expectedLevel': t("students.expectedLevel"),
+              }
+              const fieldLabel = fieldLabels[field] || field
+              return `${fieldLabel}: ${message}`
+            })
+            errorMessage = validationErrors.join(', ')
+          } else if (errorData.error) {
+            // If error is a string, use it directly
+            if (typeof errorData.error === 'string') {
+              errorMessage = errorData.error
+            } else if (Array.isArray(errorData.error)) {
+              // If error is an array, process it like issues
+              const validationErrors = errorData.error.map((issue: { path?: string[]; message?: string; code?: string }) => {
+                const field = issue.path?.[0] || 'field'
+                const message = issue.message || 'Invalid value'
+                const fieldLabels: Record<string, string> = {
+                  'email': t("students.email"),
+                  'firstName': t("students.firstName"),
+                  'lastName': t("students.lastName"),
+                  'birthDate': t("students.birthDate"),
+                  'graduationDate': t("students.graduationDate"),
+                  'phone': t("students.phone"),
+                  'currentLevel': t("students.currentLevel"),
+                  'expectedLevel': t("students.expectedLevel"),
+                }
+                const fieldLabel = fieldLabels[field] || field
+                return `${fieldLabel}: ${message}`
+              })
+              errorMessage = validationErrors.join(', ')
+            } else {
+              // If error is an object, try to stringify it safely
+              errorMessage = JSON.stringify(errorData.error)
+            }
+          } else if (error.message) {
+            errorMessage = error.message
+          }
+        } catch {
+          // If parsing fails, use the error message directly
+          if (error.message) {
+            // Check if error.message is already a JSON string that failed to parse
+            // or if it's a plain string
+            if (error.message.startsWith('{') || error.message.startsWith('[')) {
+              // It might be a stringified object, try to extract a readable message
+              try {
+                const parsed = JSON.parse(error.message)
+                if (parsed.error && typeof parsed.error === 'string') {
+                  errorMessage = parsed.error
+                } else {
+                  errorMessage = error.message
+                }
+              } catch {
+                errorMessage = error.message
+              }
+            } else {
+              errorMessage = error.message
+            }
+          }
+        }
+      }
+
+      // Ensure errorMessage is always a string (not an object)
+      if (typeof errorMessage !== 'string') {
+        errorMessage = String(errorMessage)
+      }
+
       // Check if error is about limit - show dialog instead of toast
-      if (err.message?.includes('límite') || err.message?.includes('limit')) {
+      if (errorMessage.includes('límite') || errorMessage.includes('limit')) {
         setLimitWarningDialog({
           open: true,
           title: t("students.limitReached"),
-          message: err.message || t("students.limitReachedMessage", { limit: 0 })
+          message: errorMessage || t("students.limitReachedMessage", { limit: 0 })
         })
       } else {
-        toast.error(err.message || t("students.createError"))
+        toast.error(errorMessage)
       }
     } finally {
       setIsSaving(false)
@@ -378,9 +663,12 @@ export default function CreateStudentWizardPage() {
   return (
     <div className="min-h-screen">
       <div className="w-full p-3 space-y-6">
-        <BackButton to="/students">
-          {t("students.backToStudents")}
-        </BackButton>
+        {/* Back button - only show on mobile */}
+        <div className="md:hidden">
+          <BackButton to="/students">
+            {t("students.backToStudents")}
+          </BackButton>
+        </div>
 
         <PageHeader
           title={t("students.createStudent")}
@@ -464,10 +752,12 @@ export default function CreateStudentWizardPage() {
 
                 <Field>
                   <FieldLabel htmlFor="birthDate">{t("students.birthDate")} <span className="text-destructive">*</span></FieldLabel>
-                  <DatePicker
+                  <SingleDatePicker
                     value={formData.birthDate}
                     onChange={(date) => setFormData({ ...formData, birthDate: date || "" })}
+                    placeholder={t("students.birthDatePlaceholder") || "dd/mm/yyyy"}
                     max={new Date().toISOString().split('T')[0]}
+                    hasError={!!errors.birthDate}
                   />
                   {errors.birthDate && <p className="text-sm text-destructive mt-1">{errors.birthDate}</p>}
                 </Field>
@@ -478,32 +768,100 @@ export default function CreateStudentWizardPage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setFormData({ ...formData, email: value })
+                        // Validate immediately on change
+                        const newErrors = { ...errors }
+                        if (value.trim() && !validateEmail(value)) {
+                          newErrors.email = t("students.validation.emailInvalid")
+                        } else {
+                          delete newErrors.email
+                        }
+                        setErrors(newErrors)
+                      }}
+                      onBlur={(e) => handleEmailBlur('email', e.target.value)}
                       placeholder={t("students.emailPlaceholder") || "student@email.com"}
                       className={errors.email ? "border-destructive" : ""}
                     />
                     {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="contactPhone">{t("students.contactPhone")}</FieldLabel>
+                    <FieldLabel htmlFor="phone">{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
                     <Input
-                      id="contactPhone"
-                      value={formData.contactPhone}
-                      onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+1 (555) 123-4567"
+                      className={errors.phone ? "border-destructive" : ""}
                     />
+                    {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
                   </Field>
                 </div>
 
                 <Field>
-                  <FieldLabel htmlFor="address">{t("common.address")}</FieldLabel>
+                  <FieldLabel htmlFor="streetAddress">{t("students.streetAddress")} <span className="text-destructive">*</span></FieldLabel>
                   <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder={t("students.fullAddress")}
+                    id="streetAddress"
+                    value={formData.streetAddress}
+                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                    placeholder={t("students.streetAddressPlaceholder")}
+                    className={errors.streetAddress ? "border-destructive" : ""}
                   />
+                  {errors.streetAddress && <p className="text-sm text-destructive mt-1">{errors.streetAddress}</p>}
                 </Field>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="city">{t("students.city")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder={t("students.cityPlaceholder")}
+                      className={errors.city ? "border-destructive" : ""}
+                    />
+                    {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="state">{t("students.state")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      placeholder={t("students.statePlaceholder")}
+                      className={errors.state ? "border-destructive" : ""}
+                    />
+                    {errors.state && <p className="text-sm text-destructive mt-1">{errors.state}</p>}
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="country">{t("students.country")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder={t("students.countryPlaceholder")}
+                      className={errors.country ? "border-destructive" : ""}
+                    />
+                    {errors.country && <p className="text-sm text-destructive mt-1">{errors.country}</p>}
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="zipCode">{t("students.zipCode")} <span className="text-destructive">*</span></FieldLabel>
+                    <Input
+                      id="zipCode"
+                      value={formData.zipCode}
+                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+                      placeholder={t("students.zipCodePlaceholder")}
+                      className={errors.zipCode ? "border-destructive" : ""}
+                    />
+                    {errors.zipCode && <p className="text-sm text-destructive mt-1">{errors.zipCode}</p>}
+                  </Field>
+                </div>
 
               </div>
             )}
@@ -576,10 +934,17 @@ export default function CreateStudentWizardPage() {
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="graduationDate">{t("students.graduationDate")} <span className="text-destructive">*</span></FieldLabel>
-                    <DatePicker
+                    <SingleDatePicker
                       value={formData.graduationDate}
                       onChange={(date) => setFormData({ ...formData, graduationDate: date || "" })}
-                      min={formData.birthDate || undefined}
+                      placeholder={t("students.graduationDatePlaceholder") || "dd/mm/yyyy"}
+                      min={(() => {
+                        // Min should be tomorrow (future date)
+                        const tomorrow = new Date()
+                        tomorrow.setDate(tomorrow.getDate() + 1)
+                        return tomorrow.toISOString().split('T')[0]
+                      })()}
+                      hasError={!!errors.graduationDate}
                     />
                     {errors.graduationDate && <p className="text-sm text-destructive mt-1">{errors.graduationDate}</p>}
                   </Field>
@@ -625,7 +990,16 @@ export default function CreateStudentWizardPage() {
                     type="checkbox"
                     id="isLeveled"
                     checked={formData.isLeveled}
-                    onChange={(e) => setFormData({ ...formData, isLeveled: e.target.checked })}
+                    onChange={(e) => {
+                      const newIsLeveled = e.target.checked
+                      // When checked (not leveled = true), show both fields
+                      // When unchecked (leveled = true), only show current level
+                      setFormData({
+                        ...formData,
+                        isLeveled: newIsLeveled,
+                        expectedLevel: newIsLeveled ? "" : formData.expectedLevel
+                      })
+                    }}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <FieldLabel htmlFor="isLeveled" className="cursor-pointer m-0">
@@ -633,27 +1007,63 @@ export default function CreateStudentWizardPage() {
                   </FieldLabel>
                 </div>
 
+                {/* Current Level - Always required */}
+                <Field>
+                  <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")} <span className="text-destructive">*</span></FieldLabel>
+                  <Select
+                    value={formData.currentLevel}
+                    onValueChange={(value) => {
+                      const newCurrentLevel = value
+                      const currentLevelNum = parseInt(newCurrentLevel.replace('L', ''))
+                      const expectedLevelNum = formData.expectedLevel ? parseInt(formData.expectedLevel.replace('L', '')) : 0
+                      // Clear expected level if it's not greater than new current level
+                      const newExpectedLevel = (expectedLevelNum > currentLevelNum) ? formData.expectedLevel : ""
+                      setFormData({ ...formData, currentLevel: newCurrentLevel, expectedLevel: newExpectedLevel })
+                    }}
+                  >
+                    <SelectTrigger className={errors.currentLevel ? "border-destructive" : ""}>
+                      <SelectValue placeholder={t("students.currentLevelPlaceholder") || "Select current level"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => `L${i + 1}`).map((level) => (
+                        <SelectItem key={level} value={level}>
+                          {level}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.currentLevel && <p className="text-sm text-destructive mt-1">{errors.currentLevel}</p>}
+                </Field>
+
+                {/* Expected Level - Only show if checked (not leveled) */}
                 {formData.isLeveled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <Field>
-                      <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")}</FieldLabel>
-                      <Input
-                        id="expectedLevel"
-                        value={formData.expectedLevel}
-                        onChange={(e) => setFormData({ ...formData, expectedLevel: e.target.value })}
-                        placeholder={t("students.expectedLevelPlaceholder")}
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
-                      <Input
-                        id="currentLevel"
-                        value={formData.currentLevel}
-                        onChange={(e) => setFormData({ ...formData, currentLevel: e.target.value })}
-                        placeholder={t("students.currentLevelPlaceholder")}
-                      />
-                    </Field>
-                  </div>
+                  <Field>
+                    <FieldLabel htmlFor="expectedLevel">{t("students.expectedLevel")} <span className="text-destructive">*</span></FieldLabel>
+                    <Select
+                      value={formData.expectedLevel}
+                      onValueChange={(value) => setFormData({ ...formData, expectedLevel: value })}
+                    >
+                      <SelectTrigger className={errors.expectedLevel ? "border-destructive" : ""}>
+                        <SelectValue placeholder={t("students.expectedLevelPlaceholder") || "Select expected level"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(() => {
+                          const currentLevelNum = formData.currentLevel ? parseInt(formData.currentLevel.replace('L', '')) : 0
+                          return Array.from({ length: 12 }, (_, i) => `L${i + 1}`)
+                            .filter((level) => {
+                              const levelNum = parseInt(level.replace('L', ''))
+                              return levelNum > currentLevelNum
+                            })
+                            .map((level) => (
+                              <SelectItem key={level} value={level}>
+                                {level}
+                              </SelectItem>
+                            ))
+                        })()}
+                      </SelectContent>
+                    </Select>
+                    {errors.expectedLevel && <p className="text-sm text-destructive mt-1">{errors.expectedLevel}</p>}
+                  </Field>
                 )}
               </div>
             )}
@@ -691,12 +1101,41 @@ export default function CreateStudentWizardPage() {
                       <Input
                         type="email"
                         value={formData.parent1Email}
-                        onChange={(e) => setFormData({ ...formData, parent1Email: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setFormData({ ...formData, parent1Email: value })
+                          // Validate immediately on change
+                          const newErrors = { ...errors }
+                          if (value.trim() && !validateEmail(value)) {
+                            newErrors.parent1Email = t("students.validation.emailInvalid")
+                          } else {
+                            delete newErrors.parent1Email
+                            // Also clear parent2Email error if emails are now different
+                            if (value !== formData.parent2Email) {
+                              delete newErrors.parent2Email
+                            }
+                          }
+                          setErrors(newErrors)
+                        }}
+                        onBlur={(e) => handleEmailBlur('parent1Email', e.target.value)}
                         placeholder={t("students.parentEmailPlaceholder")}
                         className={errors.parent1Email ? "border-destructive" : ""}
                       />
                       {errors.parent1Email && <p className="text-sm text-destructive mt-1">{errors.parent1Email}</p>}
                     </Field>
+                    <Field>
+                      <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                      <Input
+                        type="tel"
+                        value={formData.parent1Phone}
+                        onChange={(e) => setFormData({ ...formData, parent1Phone: e.target.value })}
+                        placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                        className={errors.parent1Phone ? "border-destructive" : ""}
+                      />
+                      {errors.parent1Phone && <p className="text-sm text-destructive mt-1">{errors.parent1Phone}</p>}
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <Field>
                       <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
                       <Select
@@ -762,12 +1201,41 @@ export default function CreateStudentWizardPage() {
                         <Input
                           type="email"
                           value={formData.parent2Email}
-                          onChange={(e) => setFormData({ ...formData, parent2Email: e.target.value })}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            setFormData({ ...formData, parent2Email: value })
+                            // Validate immediately on change
+                            const newErrors = { ...errors }
+                            if (value.trim() && !validateEmail(value)) {
+                              newErrors.parent2Email = t("students.validation.emailInvalid")
+                            } else {
+                              delete newErrors.parent2Email
+                              // Check if emails are different
+                              if (value === formData.parent1Email && value.trim()) {
+                                newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
+                              }
+                            }
+                            setErrors(newErrors)
+                          }}
+                          onBlur={(e) => handleEmailBlur('parent2Email', e.target.value)}
                           placeholder={t("students.secondParentEmailPlaceholder")}
                           className={errors.parent2Email ? "border-destructive" : ""}
                         />
                         {errors.parent2Email && <p className="text-sm text-destructive mt-1">{errors.parent2Email}</p>}
                       </Field>
+                      <Field>
+                        <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                        <Input
+                          type="tel"
+                          value={formData.parent2Phone}
+                          onChange={(e) => setFormData({ ...formData, parent2Phone: e.target.value })}
+                          placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                          className={errors.parent2Phone ? "border-destructive" : ""}
+                        />
+                        {errors.parent2Phone && <p className="text-sm text-destructive mt-1">{errors.parent2Phone}</p>}
+                      </Field>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <Field>
                         <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
                         <Select
@@ -799,10 +1267,16 @@ export default function CreateStudentWizardPage() {
                   <h3 className="text-lg font-medium">{t("students.personalInfo")}</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div><span className="text-muted-foreground">{t("common.name")}:</span> {formData.firstName} {formData.lastName}</div>
-                    <div><span className="text-muted-foreground">{t("students.birthDate")}:</span> {formData.birthDate}</div>
+                    <div><span className="text-muted-foreground">{t("students.birthDate")}:</span> {formData.birthDate ? format(new Date(`${formData.birthDate}T00:00:00`), "dd/MM/yyyy") : "-"}</div>
                     <div><span className="text-muted-foreground">{t("students.email")}:</span> {formData.email}</div>
-                    <div><span className="text-muted-foreground">{t("students.contactPhone")}:</span> {formData.contactPhone || "-"}</div>
-                    <div><span className="text-muted-foreground">{t("common.address")}:</span> {formData.address || "-"}</div>
+                    <div><span className="text-muted-foreground">{t("students.phone")}:</span> {formData.phone || "-"}</div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">{t("students.streetAddress")}:</span> {formData.streetAddress || "-"}
+                    </div>
+                    <div><span className="text-muted-foreground">{t("students.city")}:</span> {formData.city || "-"}</div>
+                    <div><span className="text-muted-foreground">{t("students.state")}:</span> {formData.state || "-"}</div>
+                    <div><span className="text-muted-foreground">{t("students.country")}:</span> {formData.country || "-"}</div>
+                    <div><span className="text-muted-foreground">{t("students.zipCode")}:</span> {formData.zipCode || "-"}</div>
                   </div>
                 </div>
                 <Separator />
@@ -813,12 +1287,10 @@ export default function CreateStudentWizardPage() {
                       <span className="text-muted-foreground">{t("students.certificationType")}:</span> {" "}
                       {certificationTypes.find(t => t.id === formData.certificationTypeId)?.name}
                     </div>
-                    <div><span className="text-muted-foreground">{t("students.graduationDate")}:</span> {formData.graduationDate}</div>
+                    <div><span className="text-muted-foreground">{t("students.graduationDate")}:</span> {formData.graduationDate ? format(new Date(`${formData.graduationDate}T00:00:00`), "dd/MM/yyyy") : "-"}</div>
+                    <div><span className="text-muted-foreground">{t("students.currentLevel")}:</span> {formData.currentLevel || "-"}</div>
                     {formData.isLeveled && (
-                      <>
-                        <div><span className="text-muted-foreground">{t("students.expectedLevel")}:</span> {formData.expectedLevel}</div>
-                        <div><span className="text-muted-foreground">{t("students.currentLevel")}:</span> {formData.currentLevel}</div>
-                      </>
+                      <div><span className="text-muted-foreground">{t("students.expectedLevel")}:</span> {formData.expectedLevel || "-"}</div>
                     )}
                   </div>
                 </div>

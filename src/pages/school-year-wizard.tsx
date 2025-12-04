@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import type { DateRange } from "react-day-picker"
 import { format } from "date-fns"
+import { es, enUS } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
 interface HolidayFormRange {
@@ -54,7 +55,9 @@ interface SingleDatePickerProps {
 }
 
 function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: SingleDatePickerProps) {
+  const { i18n } = useTranslation()
   const parsedDate = value ? new Date(`${value}T00:00:00`) : undefined
+  const locale = i18n.language === 'es' ? es : enUS
 
   return (
     <Popover>
@@ -68,7 +71,7 @@ function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: 
           )}
         >
           <Calendar className="mr-2 h-4 w-4" />
-          {value || placeholder}
+          {value ? format(new Date(`${value}T00:00:00`), "dd/MM/yyyy", { locale }) : placeholder}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 z-50" align="start">
@@ -76,6 +79,7 @@ function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: 
           mode="single"
           captionLayout="dropdown"
           selected={parsedDate}
+          locale={locale}
           onSelect={(date) => {
             if (date && onChange) {
               onChange(format(date, "yyyy-MM-dd"))
@@ -101,7 +105,7 @@ export default function SchoolYearWizardPage() {
   const navigate = useNavigate()
   const { schoolYearId } = useParams()
   const api = useApi()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
 
   const [loading, setLoading] = React.useState(!!schoolYearId)
   const [saving, setSaving] = React.useState(false)
@@ -816,6 +820,7 @@ export default function SchoolYearWizardPage() {
                       mode="range"
                       captionLayout="dropdown"
                       selected={holidayRange}
+                      locale={i18n.language === 'es' ? es : enUS}
                       onSelect={(range) => {
                         setHolidayRange(range || undefined)
                         if (!range) {

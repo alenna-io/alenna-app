@@ -117,6 +117,7 @@ export default function TeachersPage() {
               schoolId: t.schoolId as string,
               roles: (t.roles || []) as Teacher['roles'],
               primaryRole: t.primaryRole as Teacher['primaryRole'],
+              isActive: t.isActive !== undefined ? (t.isActive as boolean) : true,
             }
           })
 
@@ -244,6 +245,7 @@ export default function TeachersPage() {
         schoolId: t.schoolId as string,
         roles: (t.roles || []) as Teacher['roles'],
         primaryRole: t.primaryRole as Teacher['primaryRole'],
+        isActive: t.isActive !== undefined ? (t.isActive as boolean) : true,
       }
     })
     setTeachers(transformedTeachers)
