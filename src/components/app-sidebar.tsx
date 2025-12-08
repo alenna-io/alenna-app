@@ -336,7 +336,7 @@ export function AppSidebar() {
                       </span>
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                      <span className="font-semibold break-words leading-tight">
+                      <span className="font-semibold break-words leading-tight text-xs">
                         {isLoadingUser ? (
                           <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                         ) : schoolName ? (
