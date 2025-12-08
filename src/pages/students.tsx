@@ -1053,7 +1053,7 @@ export default function StudentsPage() {
         />
       )}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-4">
           <PageHeader
             title={schoolId ? t("students.titleForSchool") : t("students.title")}
             description={schoolId ? t("students.descriptionForSchool") : t("students.description")}

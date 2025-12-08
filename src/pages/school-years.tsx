@@ -170,7 +170,7 @@ export default function SchoolYearsPage() {
         </Button>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-4">
         <PageHeader
           title={t("schoolYears.title")}
           description={t("schoolYears.description")}
