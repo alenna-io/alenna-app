@@ -1,0 +1,21 @@
+# Branch name validation - must follow conventional commit format
+branch_name=$(git symbolic-ref --short HEAD)
+
+# Allow common protected branches
+if echo "$branch_name" | grep -qE '^(develop|staging|production|release|hotfix)$'; then
+  echo "✓ Branch name '$branch_name' is a protected branch"
+  exit 0
+fi
+
+# Require conventional commit format for feature branches
+if echo "$branch_name" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/.+'; then
+  echo "✓ Branch name '$branch_name' follows conventional commit format"
+  exit 0
+else
+  echo "✗ Branch name '$branch_name' does not follow conventional commit format"
+  echo "  Branch names must start with: feat/, fix/, docs/, style/, refactor/, perf/, test/, build/, ci/, chore/, or revert/"
+  echo "  Or be a protected branch: develop, staging, production, release, hotfix"
+  echo "  Example: feat/add-user-authentication"
+  exit 1
+fi
+

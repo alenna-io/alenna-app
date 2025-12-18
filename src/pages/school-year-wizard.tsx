@@ -33,6 +33,7 @@ interface PreviewWeek {
 }
 
 interface QuarterForm {
+  id?: string
   name: string
   displayName: string
   startDate: string
@@ -54,16 +55,35 @@ interface SingleDatePickerProps {
   hasError?: boolean
 }
 
-function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: SingleDatePickerProps) {
+const SingleDatePicker = React.memo(function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: SingleDatePickerProps) {
   const { i18n } = useTranslation()
-  const parsedDate = value ? new Date(`${value}T00:00:00`) : undefined
+  const [open, setOpen] = React.useState(false)
+  const parsedDate = React.useMemo(() => {
+    return value ? new Date(`${value}T00:00:00`) : undefined
+  }, [value])
   const locale = i18n.language === 'es' ? es : enUS
 
+  const minDate = React.useMemo(() => min ? new Date(`${min}T00:00:00`) : null, [min])
+  const maxDate = React.useMemo(() => max ? new Date(`${max}T00:00:00`) : null, [max])
+  const [currentMonth, setCurrentMonth] = React.useState(() => {
+    return parsedDate || minDate || new Date()
+  })
+
+  // Update currentMonth when value changes
+  React.useEffect(() => {
+    if (parsedDate) {
+      setCurrentMonth(parsedDate)
+    } else if (minDate) {
+      setCurrentMonth(minDate)
+    }
+  }, [parsedDate, minDate])
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          type="button"
           className={cn(
             "w-full justify-start text-left font-normal",
             !value && "text-muted-foreground",
@@ -74,7 +94,11 @@ function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: 
           {value ? format(new Date(`${value}T00:00:00`), "dd/MM/yyyy", { locale }) : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-50" align="start">
+      <PopoverContent
+        className="w-auto p-0 z-50"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <ShadcnCalendar
           mode="single"
           captionLayout="dropdown"
@@ -83,23 +107,48 @@ function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: 
           onSelect={(date) => {
             if (date && onChange) {
               onChange(format(date, "yyyy-MM-dd"))
+              setOpen(false)
             }
           }}
           disabled={(date) => {
-            if (!min && !max) return false
-            const minDate = min ? new Date(`${min}T00:00:00`) : null
-            const maxDate = max ? new Date(`${max}T00:00:00`) : null
-            if (minDate && date < minDate) return true
-            if (maxDate && date > maxDate) return true
-            return false
+            if (!minDate && !maxDate) {
+              return false
+            }
+            // Compare dates at midnight to avoid time issues
+            const dateAtMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+            const minAtMidnight = minDate ? new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()) : null
+            const maxAtMidnight = maxDate ? new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate()) : null
+            return (minAtMidnight !== null && dateAtMidnight < minAtMidnight) || (maxAtMidnight !== null && dateAtMidnight > maxAtMidnight)
           }}
-          fromYear={1900}
-          toYear={2100}
+          month={currentMonth}
+          onMonthChange={(month) => {
+            // Prevent navigation outside valid range
+            if (minDate && month < minDate) {
+              setCurrentMonth(minDate)
+              return
+            }
+            if (maxDate && month > maxDate) {
+              setCurrentMonth(maxDate)
+              return
+            }
+            setCurrentMonth(month)
+          }}
+          fromYear={minDate ? minDate.getFullYear() : 1900}
+          toYear={maxDate ? maxDate.getFullYear() : 2100}
         />
       </PopoverContent>
     </Popover>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.min === nextProps.min &&
+    prevProps.max === nextProps.max &&
+    prevProps.hasError === nextProps.hasError &&
+    prevProps.placeholder === nextProps.placeholder
+  )
+})
 
 export default function SchoolYearWizardPage() {
   const navigate = useNavigate()
@@ -112,6 +161,8 @@ export default function SchoolYearWizardPage() {
   const [currentStep, setCurrentStep] = React.useState<WizardStep>(1)
   const [error, setError] = React.useState<string | null>(null)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
+
+  const [originalIsActive, setOriginalIsActive] = React.useState<boolean>(false)
 
   const [formData, setFormData] = React.useState<{
     name: string
@@ -177,28 +228,60 @@ export default function SchoolYearWizardPage() {
         }
 
         // Map to form data
-        setFormData({
-          name: yearData.name,
-          quarters: (yearData.quarters || []).map((q: any) => ({
+        const mappedQuarters = (yearData.quarters || []).map((q: any) => {
+          const holidays = (q.holidays || q.quarterHolidays || [])
+          const weeks = (q.weeks || q.schoolWeeks || [])
+
+          return {
+            id: q.id,
             name: q.name,
             displayName: q.displayName,
             startDate: q.startDate.split("T")[0],
             endDate: q.endDate.split("T")[0],
             order: q.order,
             weeksCount: q.weeksCount,
-            holidays: (q.holidays || []).map((h: any) => ({
+            holidays: holidays.map((h: any) => ({
               id: h.id,
               startDate: h.startDate.split("T")[0],
               endDate: h.endDate.split("T")[0],
               label: h.label || "",
             })),
-            previewWeeks: (q.weeks || []).map((w: any) => ({
+            previewWeeks: weeks.map((w: any) => ({
               weekNumber: w.weekNumber,
               startDate: w.startDate.split("T")[0],
               endDate: w.endDate.split("T")[0],
             })).sort((a: any, b: any) => a.weekNumber - b.weekNumber),
-          })),
+          }
         })
+
+        // Automatically generate preview weeks for each quarter if they don't exist
+        const quartersWithPreviewWeeks = await Promise.all(
+          mappedQuarters.map(async (q: QuarterForm) => {
+            const hasWeeks = q.previewWeeks && q.previewWeeks.length > 0
+
+            if (q.startDate && q.endDate && q.weeksCount && !hasWeeks) {
+              try {
+                const weeks = (await api.schoolYears.previewWeeks({
+                  startDate: q.startDate,
+                  endDate: q.endDate,
+                  weeksCount: q.weeksCount,
+                  holidays: q.holidays.map((h: HolidayFormRange) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined })),
+                })) as PreviewWeek[]
+                return { ...q, previewWeeks: weeks }
+              } catch (err) {
+                console.error("Error generating preview weeks for quarter", q.order, err)
+                return q
+              }
+            }
+            return q
+          })
+        )
+
+        setFormData({
+          name: yearData.name,
+          quarters: quartersWithPreviewWeeks,
+        })
+        setOriginalIsActive(yearData.isActive || false)
       } catch (err) {
         console.error("Error fetching school year", err)
         toast.error("Error loading school year")
@@ -208,7 +291,8 @@ export default function SchoolYearWizardPage() {
     }
 
     fetchSchoolYear()
-  }, [schoolYearId, api, navigate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolYearId, navigate])
 
   const steps = [
     { number: 1, title: t("schoolYears.wizardStepYearTitle", "Año escolar"), description: t("schoolYears.wizardStepYearDesc", "Nombre e información general") },
@@ -417,11 +501,12 @@ export default function SchoolYearWizardPage() {
     return newWeeks
   }
 
-  async function handlePreviewWeeks(index: number, quarterOverride?: QuarterForm) {
-    const q = quarterOverride ?? formData.quarters[index]
+  async function handlePreviewWeeks(index: number, quarterData?: QuarterForm) {
+    const q = quarterData || formData.quarters[index]
     if (!q || !q.startDate || !q.endDate || !q.weeksCount) {
       return
     }
+
     try {
       const weeks = (await api.schoolYears.previewWeeks({
         startDate: q.startDate,
@@ -429,6 +514,7 @@ export default function SchoolYearWizardPage() {
         weeksCount: q.weeksCount,
         holidays: q.holidays.map((h) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined })),
       })) as PreviewWeek[]
+
       updateQuarter(index, (old) => ({ ...old, previewWeeks: weeks }))
     } catch (err) {
       console.error("Error previewing weeks", err)
@@ -548,30 +634,38 @@ export default function SchoolYearWizardPage() {
 
     setSaving(true)
     try {
-      const payload = {
-        name: formData.name,
-        startDate,
-        endDate,
-        isActive: false, // Keep existing status? Assuming inactive for new/edit via wizard usually
-        quarters: formData.quarters.map((q) => ({
+      const quartersPayload = formData.quarters.map((q) => {
+        const holidaysPayload = q.holidays.map((h) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined }))
+        const weeksPayload = q.previewWeeks.map((w) => {
+          // Ensure dates are in ISO format (YYYY-MM-DD or ISO string)
+          const startDate = w.startDate.includes('T') ? w.startDate : `${w.startDate}T00:00:00.000Z`
+          const endDate = w.endDate.includes('T') ? w.endDate : `${w.endDate}T00:00:00.000Z`
+          return {
+            weekNumber: w.weekNumber,
+            startDate,
+            endDate,
+          }
+        })
+
+        return {
+          id: q.id,
           name: q.name,
           displayName: q.displayName,
           startDate: q.startDate,
           endDate: q.endDate,
           order: q.order,
           weeksCount: q.weeksCount,
-          holidays: q.holidays.map((h) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined })),
-          weeks: q.previewWeeks.map((w) => {
-            // Ensure dates are in ISO format (YYYY-MM-DD or ISO string)
-            const startDate = w.startDate.includes('T') ? w.startDate : `${w.startDate}T00:00:00.000Z`
-            const endDate = w.endDate.includes('T') ? w.endDate : `${w.endDate}T00:00:00.000Z`
-            return {
-              weekNumber: w.weekNumber,
-              startDate,
-              endDate,
-            }
-          }),
-        })),
+          holidays: holidaysPayload,
+          weeks: weeksPayload,
+        }
+      })
+
+      const payload = {
+        name: formData.name,
+        startDate,
+        endDate,
+        isActive: schoolYearId ? originalIsActive : false,
+        quarters: quartersPayload,
       }
 
       if (schoolYearId) {
@@ -665,7 +759,13 @@ export default function SchoolYearWizardPage() {
       }
       updateQuarter(index, () => nextQuarter)
       resetHolidayDraft()
-      handlePreviewWeeks(index, nextQuarter)
+
+      // Regenerate weeks to account for the new holiday
+      // Pass the updated quarter data directly
+      if (nextQuarter.startDate && nextQuarter.endDate && nextQuarter.weeksCount) {
+        toast.info(t("schoolYears.regeneratingWeeks", "Regenerando semanas..."))
+        handlePreviewWeeks(index, nextQuarter)
+      }
     }
 
     const handleRemoveHoliday = (id: string) => {
@@ -674,7 +774,13 @@ export default function SchoolYearWizardPage() {
         holidays: q.holidays.filter((h) => h.id !== id),
       }
       updateQuarter(index, () => nextQuarter)
-      handlePreviewWeeks(index, nextQuarter)
+
+      // Regenerate weeks to account for the removed holiday
+      // Pass the updated quarter data directly
+      if (nextQuarter.startDate && nextQuarter.endDate && nextQuarter.weeksCount) {
+        toast.info(t("schoolYears.regeneratingWeeks", "Regenerando semanas..."))
+        handlePreviewWeeks(index, nextQuarter)
+      }
     }
 
     return (
@@ -699,15 +805,37 @@ export default function SchoolYearWizardPage() {
                 {t("schoolYears.quarterStart")}
               </Label>
               <SingleDatePicker
+                key={`${prefix}-start-${q.startDate}`}
                 value={q.startDate}
                 onChange={(date) => {
                   const nextQuarter: QuarterForm = { ...q, startDate: date }
                   updateQuarter(index, () => nextQuarter)
-                  handlePreviewWeeks(index, nextQuarter)
                 }}
                 placeholder={t("schoolYears.selectDate")}
-                min="2020-01-01"
-                max="2100-12-31"
+                min={(() => {
+                  // If there's a previous quarter, start date must be after its end date
+                  if (index > 0) {
+                    const prevQuarter = formData.quarters[index - 1]
+                    if (prevQuarter?.endDate) {
+                      const prevEnd = new Date(`${prevQuarter.endDate}T00:00:00`)
+                      prevEnd.setDate(prevEnd.getDate() + 1) // Add 1 day
+                      return prevEnd.toISOString().split('T')[0]
+                    }
+                  }
+                  return "2020-01-01"
+                })()}
+                max={(() => {
+                  // If there's a next quarter, start date must be before its start date
+                  if (index < formData.quarters.length - 1) {
+                    const nextQuarter = formData.quarters[index + 1]
+                    if (nextQuarter?.startDate) {
+                      const nextStart = new Date(`${nextQuarter.startDate}T00:00:00`)
+                      nextStart.setDate(nextStart.getDate() - 1) // Subtract 1 day
+                      return nextStart.toISOString().split('T')[0]
+                    }
+                  }
+                  return "2100-12-31"
+                })()}
                 hasError={!!errors[`${prefix}.startDate`]}
               />
               {errors[`${prefix}.startDate`] && (
@@ -722,15 +850,26 @@ export default function SchoolYearWizardPage() {
                 {t("schoolYears.quarterEnd")}
               </Label>
               <SingleDatePicker
+                key={`${prefix}-end-${q.endDate}`}
                 value={q.endDate}
                 onChange={(date) => {
                   const nextQuarter: QuarterForm = { ...q, endDate: date }
                   updateQuarter(index, () => nextQuarter)
-                  handlePreviewWeeks(index, nextQuarter)
                 }}
                 placeholder={t("schoolYears.selectDate")}
                 min={q.startDate || "2020-01-01"}
-                max="2100-12-31"
+                max={(() => {
+                  // If there's a next quarter, end date must be before its start date
+                  if (index < formData.quarters.length - 1) {
+                    const nextQuarter = formData.quarters[index + 1]
+                    if (nextQuarter?.startDate) {
+                      const nextStart = new Date(`${nextQuarter.startDate}T00:00:00`)
+                      nextStart.setDate(nextStart.getDate() - 1) // Subtract 1 day
+                      return nextStart.toISOString().split('T')[0]
+                    }
+                  }
+                  return "2100-12-31"
+                })()}
                 hasError={!!errors[`${prefix}.endDate`]}
               />
               {errors[`${prefix}.endDate`] && (
@@ -756,7 +895,6 @@ export default function SchoolYearWizardPage() {
                     weeksCount: Number.isNaN(value) ? 9 : value,
                   }
                   updateQuarter(index, () => nextQuarter)
-                  handlePreviewWeeks(index, nextQuarter)
                 }}
                 className={cn(
                   "h-11",
@@ -886,11 +1024,22 @@ export default function SchoolYearWizardPage() {
           </div>
 
           <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <Label className="font-semibold text-lg">
-                {t("schoolYears.weeksPreview")}
-              </Label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                <Label className="font-semibold text-lg">
+                  {t("schoolYears.weeksPreview")}
+                </Label>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handlePreviewWeeks(index)}
+                disabled={!q.startDate || !q.endDate || !q.weeksCount}
+              >
+                {t("schoolYears.generatePreview", "Generar Vista Previa")}
+              </Button>
             </div>
             {q.previewWeeks.length === 0 ? (
               <div className="bg-muted/30 rounded-lg p-6 text-center">
