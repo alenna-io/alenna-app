@@ -87,10 +87,12 @@ export default function GroupsPage() {
         }
 
         // Fetch teachers only if teachers module is enabled
+        let teachersList: Array<{ id: string; fullName: string }> = []
         if (hasTeachersModule) {
           try {
             const teachersData = await api.schools.getMyTeachers()
-            setTeachers(teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName })))
+            teachersList = teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName }))
+            setTeachers(teachersList)
           } catch (error) {
             console.warn('Could not fetch teachers (module may not be enabled):', error)
             // Continue without teachers - groups can still be displayed
@@ -113,7 +115,7 @@ export default function GroupsPage() {
         const grouped: GroupDisplay[] = allGroupsData
           .filter((group: GroupFromAPI) => !group.deletedAt)
           .map((group: GroupFromAPI) => {
-            const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
+            const teacher = teachersList.find((t: { id: string }) => t.id === group.teacherId)
             const schoolYear = schoolYearsData.find((sy: { id: string }) => sy.id === group.schoolYearId)
 
             // Allow groups even without teacher (when teachers module is disabled)
