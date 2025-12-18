@@ -1,0 +1,13 @@
+# Branch name validation - must follow conventional commit format
+branch_name=$(git symbolic-ref --short HEAD)
+
+if echo "$branch_name" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/.+'; then
+  echo "✓ Branch name '$branch_name' follows conventional commit format"
+  exit 0
+else
+  echo "✗ Branch name '$branch_name' does not follow conventional commit format"
+  echo "  Branch names must start with: feat/, fix/, docs/, style/, refactor/, perf/, test/, build/, ci/, chore/, or revert/"
+  echo "  Example: feat/add-user-authentication"
+  exit 1
+fi
+
