@@ -256,7 +256,7 @@ export default function SchoolYearWizardPage() {
 
         // Automatically generate preview weeks for each quarter if they don't exist
         const quartersWithPreviewWeeks = await Promise.all(
-          mappedQuarters.map(async (q) => {
+          mappedQuarters.map(async (q: QuarterForm) => {
             const hasWeeks = q.previewWeeks && q.previewWeeks.length > 0
 
             if (q.startDate && q.endDate && q.weeksCount && !hasWeeks) {
@@ -265,7 +265,7 @@ export default function SchoolYearWizardPage() {
                   startDate: q.startDate,
                   endDate: q.endDate,
                   weeksCount: q.weeksCount,
-                  holidays: q.holidays.map((h) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined })),
+                  holidays: q.holidays.map((h: HolidayFormRange) => ({ startDate: h.startDate, endDate: h.endDate, label: h.label || undefined })),
                 })) as PreviewWeek[]
                 return { ...q, previewWeeks: weeks }
               } catch (err) {
