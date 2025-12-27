@@ -24,7 +24,7 @@ interface QuarterlyTableProps {
   isReadOnly?: boolean // Read-only mode for parents
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
-  onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => void
+  onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
   onAddPace?: (quarter: string, subject: string, weekIndex: number, paceNumber: string) => void
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
@@ -45,7 +45,7 @@ export function ACEQuarterlyTable({
   currentWeek,
   isActive = false,
   isReadOnly = false,
-  subjectToCategory: _subjectToCategory,
+  subjectToCategory: _subjectToCategory, // eslint-disable-line @typescript-eslint/no-unused-vars
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -60,8 +60,6 @@ export function ACEQuarterlyTable({
   const touchDragPreviewRef = React.useRef<HTMLDivElement | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
-  const [commentInput, setCommentInput] = React.useState("")
-  const [gradePhase, setGradePhase] = React.useState<'grade' | 'comment' | null>(null)
   const [addingPace, setAddingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [paceNumberInput, setPaceNumberInput] = React.useState("")
   const [deleteDialog, setDeleteDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string } | null>(null)
@@ -142,55 +140,27 @@ export function ACEQuarterlyTable({
   }, [historyDialog])
 
   const handlePaceClick = (subject: string, weekIndex: number, pace: { number: string; grade: number | null; isCompleted: boolean }) => {
-    // Always open grade editor when clicking on a PACE, regardless of completion status
     setEditingPace({ subject, weekIndex })
     setGradeInput(pace.grade !== null ? pace.grade.toString() : "")
-    setGradePhase('grade')
-    setCommentInput("")
   }
 
   const handleEditGrade = (subject: string, weekIndex: number, currentGrade: number | null) => {
-    // Open grade editor regardless of completion status
     setEditingPace({ subject, weekIndex })
     setGradeInput(currentGrade !== null ? currentGrade.toString() : "")
-    setGradePhase('grade')
-    setCommentInput("")
   }
 
   const handleGradeSubmit = (subject: string, weekIndex: number) => {
     const grade = parseInt(gradeInput)
     if (grade >= 0 && grade <= 100) {
-      if (gradePhase === 'grade') {
-        // Move to comment phase
-        setGradePhase('comment')
-      } else if (gradePhase === 'comment') {
-        // Submit with comment
-        onPaceToggle?.(quarter, subject, weekIndex, grade, commentInput.trim() || undefined)
-        setEditingPace(null)
-        setGradeInput("")
-        setCommentInput("")
-        setGradePhase(null)
-      }
-    }
-  }
-
-  const handleGradeSkipComment = (subject: string, weekIndex: number) => {
-    const grade = parseInt(gradeInput)
-    if (grade >= 0 && grade <= 100) {
-      // Submit without comment
       onPaceToggle?.(quarter, subject, weekIndex, grade)
       setEditingPace(null)
       setGradeInput("")
-      setCommentInput("")
-      setGradePhase(null)
     }
   }
 
   const handleGradeCancel = () => {
     setEditingPace(null)
     setGradeInput("")
-    setCommentInput("")
-    setGradePhase(null)
   }
 
   const getGradeColor = (grade: number | null) => {
@@ -672,86 +642,41 @@ export function ACEQuarterlyTable({
                           {primaryPace ? (
                             editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
                               <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                                {gradePhase === 'grade' || gradePhase === null ? (
-                                  <>
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={gradeInput}
-                                      onChange={(e) => {
-                                        const val = parseInt(e.target.value)
-                                        if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                          setGradeInput(e.target.value)
-                                        }
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                        if (e.key === 'Escape') handleGradeCancel()
-                                      }}
-                                      placeholder="0-100"
-                                      className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Siguiente"
-                                      >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                        </svg>
-                                      </button>
-                                      <button
-                                        onClick={() => handleGradeSkipComment(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Guardar sin comentario"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={handleGradeCancel}
-                                        className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Cancelar"
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-xs text-center text-gray-600 mb-1">
-                                      Grado: <span className="font-semibold">{gradeInput}%</span>
-                                    </div>
-                                    <textarea
-                                      value={commentInput}
-                                      onChange={(e) => setCommentInput(e.target.value)}
-                                      placeholder="Comentario (opcional)..."
-                                      className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                                      rows={2}
-                                      autoFocus
-                                    />
-                                    <div className="flex gap-1">
-                                      <button
-                                        onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                        className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Guardar con comentario"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => setGradePhase('grade')}
-                                        className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
-                                        title="Volver"
-                                      >
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                        </svg>
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={gradeInput}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value)
+                                    if (e.target.value === '' || (val >= 0 && val <= 100)) {
+                                      setGradeInput(e.target.value)
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
+                                    if (e.key === 'Escape') handleGradeCancel()
+                                  }}
+                                  placeholder="0-100"
+                                  className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  autoFocus
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => handleGradeSubmit(subject, weekIndex)}
+                                    className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                    title="Guardar"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={handleGradeCancel}
+                                    className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                    title="Cancelar"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             ) : paces.length > 0 ? (
                               <div className="relative flex flex-col items-center gap-1 w-full group/pace">

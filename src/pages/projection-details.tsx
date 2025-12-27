@@ -370,7 +370,7 @@ export default function ACEProjectionPage() {
   }
 
   // Handle pace completion and grade - SAVES TO DATABASE (with optimistic update)
-  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
+  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number) => {
     if (!studentId || !projectionId) return
 
     const quarterData = projectionData[quarter as keyof typeof projectionData]
@@ -398,7 +398,7 @@ export default function ACEProjectionPage() {
         isFailed: isFailing,
         gradeHistory: [
           ...(pace.gradeHistory || []),
-          { grade, date: new Date().toISOString(), note: comment }
+          { grade, date: new Date().toISOString() }
         ]
       }
     } else {
@@ -420,7 +420,6 @@ export default function ACEProjectionPage() {
         // Update grade
         await api.projections.updatePaceGrade(studentId, projectionId, paceId, {
           grade,
-          note: comment,
         })
         toast.success(t("projections.lessonGradeSaved"))
       } else {
