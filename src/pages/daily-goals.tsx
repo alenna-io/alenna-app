@@ -1,9 +1,11 @@
 import * as React from "react"
-import { useParams, useLocation } from "react-router-dom"
+import { useParams, useLocation, useNavigate } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
 import { Loading } from "@/components/ui/loading"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { DailyGoalData, DailyGoal, NoteHistory } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
@@ -67,6 +69,7 @@ export default function DailyGoalsPage() {
   const { studentId, projectionId, quarter, week } = useParams()
   const location = useLocation()
   const locationState = location.state as LocationState | null
+  const navigate = useNavigate()
   const api = useApi()
   const { t } = useTranslation()
   const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
@@ -406,6 +409,7 @@ export default function DailyGoalsPage() {
       }
     })
 
+    // Update UI immediately
     setGoalsData(updatedGoalsData)
 
     try {
@@ -452,7 +456,7 @@ export default function DailyGoalsPage() {
         toast.success(t("dailyGoals.goalCreated"))
       }
 
-      // Refresh data to ensure consistency
+      // Refresh data to sync IDs and ensure consistency (but UI already shows the goal)
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
@@ -612,6 +616,43 @@ export default function DailyGoalsPage() {
     return quarterNames[quarter] || quarter
   }
 
+  const getPreviousWeek = (): { quarter: string; week: number } | null => {
+    if (!quarter || !week) return null
+    const currentWeekNum = parseInt(week)
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentQuarterIndex = quarters.indexOf(quarter)
+
+    if (currentWeekNum > 1) {
+      return { quarter, week: currentWeekNum - 1 }
+    } else if (currentQuarterIndex > 0) {
+      return { quarter: quarters[currentQuarterIndex - 1], week: 9 }
+    }
+    return null
+  }
+
+  const getNextWeek = (): { quarter: string; week: number } | null => {
+    if (!quarter || !week) return null
+    const currentWeekNum = parseInt(week)
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentQuarterIndex = quarters.indexOf(quarter)
+
+    if (currentWeekNum < 9) {
+      return { quarter, week: currentWeekNum + 1 }
+    } else if (currentQuarterIndex < 3) {
+      return { quarter: quarters[currentQuarterIndex + 1], week: 1 }
+    }
+    return null
+  }
+
+  const handleNavigateWeek = (targetQuarter: string, targetWeek: number) => {
+    if (!studentId || !projectionId) return
+    navigate(`/students/${studentId}/projections/${projectionId}/${targetQuarter}/week/${targetWeek}`, {
+      state: {
+        student: student || locationState?.student || null
+      }
+    })
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Mobile-only back button (desktop uses breadcrumb) */}
@@ -645,6 +686,41 @@ export default function DailyGoalsPage() {
         }}
         showBadge={false}
       />
+
+      {/* Week Navigation */}
+      {quarter && week && (
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const prev = getPreviousWeek()
+              if (prev) handleNavigateWeek(prev.quarter, prev.week)
+            }}
+            disabled={!getPreviousWeek()}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t("dailyGoals.previousWeek")}
+          </Button>
+          <div className="text-center">
+            <div className="text-sm font-medium">
+              {quarter ? getQuarterName(quarter) : ""} - {t("common.week")} {week}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const next = getNextWeek()
+              if (next) handleNavigateWeek(next.quarter, next.week)
+            }}
+            disabled={!getNextWeek()}
+            className="flex items-center gap-2"
+          >
+            {t("dailyGoals.nextWeek")}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading ? (

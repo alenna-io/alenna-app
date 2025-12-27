@@ -968,7 +968,9 @@
     "errorUpdatingGoalStatus": "Error updating goal status",
     "errorUpdatingNote": "Error updating note",
     "notePendingPlaceholder": "Pending note...",
-    "pending": "Pending"
+    "pending": "Pending",
+    "previousWeek": "Previous Week",
+    "nextWeek": "Next Week"
   },
   "groups": {
     "title": "Groups",

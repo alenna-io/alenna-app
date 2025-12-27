@@ -2,7 +2,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Calendar, BookOpen, Check, X, Edit2, History } from "lucide-react"
+import { BookOpen, Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { sortCategoriesByOrder } from "@/utils/category-order"
@@ -301,7 +301,6 @@ export function DailyGoalsTable({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-2 md:gap-3 flex-wrap">
             <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
-              <Calendar className="h-5 w-5 md:h-6 md:w-6 shrink-0" />
               <span className="truncate">{t("dailyGoals.title")}</span>
               <Badge variant="secondary" className="text-xs md:text-sm">
                 {quarterName} - {t("common.week")} {week}
