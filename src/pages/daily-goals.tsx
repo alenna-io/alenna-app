@@ -367,7 +367,9 @@ export default function DailyGoalsPage() {
     if (!studentId || !projectionId || !quarter || !week) return
 
     // Check if subject is a category (a category value) or a sub-subject (a key)
-    const isCategory = !subjectToCategory.has(subject) && Object.values(subjectToCategory).includes(subject)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
 
     // If it's a category, find all sub-subjects in that category
     const subjectsToUpdate: string[] = []
@@ -384,6 +386,8 @@ export default function DailyGoalsPage() {
     }
 
     // OPTIMISTIC UPDATE: Immediately update the goal in the UI for all relevant subjects
+
+    // Create the updated data structure first
     const updatedGoalsData = { ...goalsData }
 
     subjectsToUpdate.forEach(subSubjectToUpdate => {
@@ -409,7 +413,7 @@ export default function DailyGoalsPage() {
       }
     })
 
-    // Update UI immediately
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
