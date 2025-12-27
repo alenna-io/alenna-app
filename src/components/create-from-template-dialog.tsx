@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
 
 interface Student {
   id: string
@@ -51,6 +52,7 @@ export function CreateFromTemplateDialog({
 }: CreateFromTemplateDialogProps) {
   const api = useApi()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [students, setStudents] = React.useState<Student[]>([])
   const [templates, setTemplates] = React.useState<Template[]>([])
   const [loading, setLoading] = React.useState(false)
@@ -122,14 +124,16 @@ export function CreateFromTemplateDialog({
 
     setIsCreating(true)
     try {
+      let projection: { id: string; studentId: string }
+
       // Check if this is a default template (L1-L8)
       if (selectedTemplate?.isDefault) {
         // Use the special endpoint for default templates (fixed pairing)
-        await api.projections.generateFromDefaultTemplate({
+        projection = await api.projections.generateFromDefaultTemplate({
           studentId: formData.studentId,
           schoolYear: activeSchoolYear.name,
           templateId: formData.templateId,
-        })
+        }) as { id: string; studentId: string }
       } else {
         // Use the dynamic algorithm for custom templates
         const template = await api.projectionTemplates.getById(formData.templateId)
@@ -151,12 +155,13 @@ export function CreateFromTemplateDialog({
           })),
         }
 
-        await api.projections.generate(payload)
+        projection = await api.projections.generate(payload) as { id: string; studentId: string }
       }
 
       toast.success(t("projections.createdFromTemplateSuccess"))
       onSuccess()
       onOpenChange(false)
+      navigate(`/students/${projection.studentId}/projections/${projection.id}`)
     } catch (err) {
       console.error("Error creating projection from template:", err)
       setError(err instanceof Error ? err.message : "Error al crear la proyección desde la plantilla.")

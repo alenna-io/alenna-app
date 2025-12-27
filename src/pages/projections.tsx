@@ -252,18 +252,15 @@ export default function ProjectionsPage() {
 
   const handleCreateEmpty = async (data: { studentId: string; schoolYear: string }) => {
     try {
-      await api.projections.create(data.studentId, {
+      const projection = await api.projections.create(data.studentId, {
         schoolYear: data.schoolYear,
         startDate: new Date().toISOString(),
         endDate: new Date().toISOString(),
         isActive: true,
-      })
-      // Refresh projections
-      const year = filters.schoolYear || undefined
-      const updatedProjections = await api.projections.getAll(year) as ProjectionWithStudent[]
-      setProjections(updatedProjections)
+      }) as { id: string; studentId: string }
       setShowEmptyDialog(false)
       setShowCreateDialog(false)
+      navigate(`/students/${projection.studentId}/projections/${projection.id}`)
     } catch (error) {
       console.error("Error creating empty projection:", error)
       throw error
