@@ -18,6 +18,7 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { Loading } from "@/components/ui/loading"
+import { Progress } from "@/components/ui/progress"
 import { useUser } from "@/contexts/UserContext"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -634,6 +635,25 @@ export default function GenerateProjectionWizardPage() {
             <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
             <AlertDescription className="text-red-800 dark:text-red-200">{error}</AlertDescription>
           </Alert>
+        )}
+
+        {/* Loading Overlay */}
+        {isGenerating && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold mb-2">{t("wizard.generating")}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t("wizard.pleaseWait")}
+                    </p>
+                  </div>
+                  <Progress indeterminate className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Step Content */}
