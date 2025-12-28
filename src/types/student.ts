@@ -17,6 +17,7 @@ export interface Student {
   age: number
   birthDate: string
   certificationType: string // Dynamic from database - managed per school
+  certificationTypeId?: string // ID of the certification type for editing
   graduationDate: string
   parents: Parent[]
   email?: string

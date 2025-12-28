@@ -69,6 +69,7 @@ export default function StudentsPage() {
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
   const [currentPage, setCurrentPage] = React.useState(1)
   const [isStudentDialogOpen, setIsStudentDialogOpen] = React.useState(false)
+  const [editingStudent, setEditingStudent] = React.useState<Student | null>(null)
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
   const [studentsCount, setStudentsCount] = React.useState<number>(0)
   const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
@@ -221,6 +222,7 @@ export default function StudentsPage() {
               age: s.age as number,
               birthDate: s.birthDate as string,
               certificationType: s.certificationType as string,
+              certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
               graduationDate: s.graduationDate as string,
               parents: (s.parents || []) as Student['parents'],
               email: (s.email || undefined) as string | undefined,
@@ -294,6 +296,7 @@ export default function StudentsPage() {
             age: s.age as number,
             birthDate: s.birthDate as string,
             certificationType: s.certificationType as string,
+            certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
             graduationDate: s.graduationDate as string,
             parents: (s.parents || []) as Student['parents'],
             email: (s.email || undefined) as string | undefined,
@@ -513,6 +516,7 @@ export default function StudentsPage() {
               age: s.age as number,
               birthDate: s.birthDate as string,
               certificationType: s.certificationType as string,
+              certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
               graduationDate: s.graduationDate as string,
               parents: (s.parents || []) as Student['parents'],
               email: (s.email || undefined) as string | undefined,
@@ -827,6 +831,75 @@ export default function StudentsPage() {
     setStudentsCount(countData.count)
   }
 
+  const handleUpdateStudent = async (data: {
+    firstName: string
+    lastName: string
+    email: string
+    birthDate: string
+    certificationTypeId: string
+    graduationDate: string
+    phone?: string
+    isLeveled?: boolean
+    expectedLevel?: string
+    currentLevel?: string
+    streetAddress?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    parents: Array<{
+      firstName: string
+      lastName: string
+      email: string
+      relationship: string
+    }>
+  }) => {
+    if (!editingStudent) return
+
+    // Update student and get the updated response (which includes certificationTypeId)
+    const updatedStudentData = await api.students.update(editingStudent.id, data)
+    const s = updatedStudentData as Record<string, unknown>
+
+    // Transform the updated student data
+    const updatedStudent: Student = {
+      id: s.id as string,
+      firstName: s.firstName as string,
+      lastName: s.lastName as string,
+      name: s.name as string,
+      age: s.age as number,
+      birthDate: s.birthDate as string,
+      certificationType: s.certificationType as string,
+      certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
+      graduationDate: s.graduationDate as string,
+      parents: (s.parents || []) as Student['parents'],
+      email: (s.email || undefined) as string | undefined,
+      phone: (s.phone || undefined) as string | undefined,
+      isLeveled: s.isLeveled as boolean,
+      expectedLevel: s.expectedLevel as string | undefined,
+      currentLevel: s.currentLevel as string | undefined,
+      streetAddress: (s.streetAddress || undefined) as string | undefined,
+      city: (s.city || undefined) as string | undefined,
+      state: (s.state || undefined) as string | undefined,
+      country: (s.country || undefined) as string | undefined,
+      zipCode: (s.zipCode || undefined) as string | undefined,
+      isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
+    }
+
+    // Update the students list
+    setStudents(prevStudents =>
+      prevStudents.map(student =>
+        student.id === updatedStudent.id ? updatedStudent : student
+      )
+    )
+
+    // Update selected student if it's the one being edited
+    if (selectedStudent?.id === editingStudent.id) {
+      setSelectedStudent(updatedStudent)
+    }
+
+    setEditingStudent(null)
+  }
+
   // Check if user is a parent (only has PARENT role, no TEACHER/ADMIN)
   const parentOnly = isParentOnly
 
@@ -873,6 +946,10 @@ export default function StudentsPage() {
     return null
   }
 
+  // Check if user can edit students (based on permission, not role)
+  const canEditStudent = userInfo?.permissions.includes('students.update') ?? false
+  const canDeleteStudent = userInfo?.permissions.includes('students.delete') ?? false
+
   // Show student profile if we have a selected student
   if (selectedStudent) {
     return (
@@ -881,11 +958,53 @@ export default function StudentsPage() {
           student={selectedStudent}
           onBack={handleBackToList}
           isParentView={parentOnly}
-          canManage={isSchoolAdmin}
-          onDeactivate={isSchoolAdmin ? handleDeactivateStudent : undefined}
-          onReactivate={isSchoolAdmin ? handleReactivateStudent : undefined}
-          onDelete={isSchoolAdmin ? handleDeleteStudent : undefined}
+          canManage={canEditStudent || canDeleteStudent}
+          canEdit={canEditStudent}
+          onEdit={canEditStudent ? (student) => setEditingStudent(student) : undefined}
+          onDeactivate={canDeleteStudent ? handleDeactivateStudent : undefined}
+          onReactivate={canDeleteStudent ? handleReactivateStudent : undefined}
+          onDelete={canDeleteStudent ? handleDeleteStudent : undefined}
         />
+
+        {/* Student Form Dialog - Edit */}
+        {canEditStudent && editingStudent && (schoolId || userInfo?.schoolId) && (
+          <StudentFormDialog
+            open={!!editingStudent}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingStudent(null)
+              }
+            }}
+            schoolId={schoolId || userInfo?.schoolId || ''}
+            student={{
+              id: editingStudent.id,
+              firstName: editingStudent.firstName,
+              lastName: editingStudent.lastName,
+              email: editingStudent.email,
+              birthDate: editingStudent.birthDate,
+              certificationType: editingStudent.certificationType,
+              certificationTypeId: editingStudent.certificationTypeId,
+              graduationDate: editingStudent.graduationDate,
+              phone: editingStudent.phone,
+              isLeveled: editingStudent.isLeveled,
+              expectedLevel: editingStudent.expectedLevel,
+              currentLevel: editingStudent.currentLevel,
+              streetAddress: editingStudent.streetAddress,
+              city: editingStudent.city,
+              state: editingStudent.state,
+              country: editingStudent.country,
+              zipCode: editingStudent.zipCode,
+              parents: editingStudent.parents?.map(p => ({
+                firstName: p.firstName || '',
+                lastName: p.lastName || '',
+                email: p.email || '',
+                phone: p.phone || '',
+                relationship: p.relationship || '',
+              })) || [],
+            }}
+            onSave={handleUpdateStudent}
+          />
+        )}
 
         {/* Deactivate Confirmation Dialog */}
         <Dialog open={deactivateConfirmation.open} onOpenChange={(open) => setDeactivateConfirmation({ ...deactivateConfirmation, open })}>
@@ -1059,7 +1178,7 @@ export default function StudentsPage() {
             description={schoolId ? t("students.descriptionForSchool") : t("students.description")}
             className="flex-1"
           />
-          {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
+          {(userInfo?.permissions.includes('students.create') ?? false) && (schoolId || userInfo?.schoolId) && (
             <Button
               onClick={() => {
                 // Check if limit is reached
@@ -1082,7 +1201,7 @@ export default function StudentsPage() {
         </div>
 
         {/* Count and Limit Display - Compact inline */}
-        {isSchoolAdmin && school && school.userLimit && (
+        {(userInfo?.permissions.includes('students.create') ?? false) && school && school.userLimit && (
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             <span className="text-sm text-muted-foreground">{t("students.registered")}:</span>
@@ -1138,7 +1257,7 @@ export default function StudentsPage() {
       )}
 
       {/* Student Form Dialog */}
-      {isSchoolAdmin && (schoolId || userInfo?.schoolId) && (
+      {(userInfo?.permissions.includes('students.create') ?? false) && (schoolId || userInfo?.schoolId) && (
         <StudentFormDialog
           open={isStudentDialogOpen}
           onOpenChange={(open) => {
@@ -1146,6 +1265,46 @@ export default function StudentsPage() {
           }}
           schoolId={schoolId || userInfo?.schoolId || ''}
           onSave={handleCreateStudent}
+        />
+      )}
+
+      {/* Student Form Dialog - Edit */}
+      {canEditStudent && editingStudent && (schoolId || userInfo?.schoolId) && (
+        <StudentFormDialog
+          open={!!editingStudent}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingStudent(null)
+            }
+          }}
+          schoolId={schoolId || userInfo?.schoolId || ''}
+          student={{
+            id: editingStudent.id,
+            firstName: editingStudent.firstName,
+            lastName: editingStudent.lastName,
+            email: editingStudent.email,
+            birthDate: editingStudent.birthDate,
+            certificationType: editingStudent.certificationType,
+            certificationTypeId: editingStudent.certificationTypeId,
+            graduationDate: editingStudent.graduationDate,
+            phone: editingStudent.phone,
+            isLeveled: editingStudent.isLeveled,
+            expectedLevel: editingStudent.expectedLevel,
+            currentLevel: editingStudent.currentLevel,
+            streetAddress: editingStudent.streetAddress,
+            city: editingStudent.city,
+            state: editingStudent.state,
+            country: editingStudent.country,
+            zipCode: editingStudent.zipCode,
+            parents: editingStudent.parents?.map(p => ({
+              firstName: p.firstName || '',
+              lastName: p.lastName || '',
+              email: p.email || '',
+              phone: p.phone || '',
+              relationship: p.relationship || '',
+            })) || [],
+          }}
+          onSave={handleUpdateStudent}
         />
       )}
 

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { getInitials } from "@/lib/string-utils"
 import { LinkButton } from "@/components/ui/link-button"
 // BackButton replaced with shadcn Button
-import { Calendar, FileText } from "lucide-react"
+import { Calendar, FileText, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import type { Student } from "@/types/student"
@@ -19,12 +19,14 @@ interface StudentProfileProps {
   isParentView?: boolean
   isStudentView?: boolean
   canManage?: boolean
+  canEdit?: boolean
+  onEdit?: (student: Student) => void
   onDeactivate?: (student: Student) => void
   onReactivate?: (student: Student) => void
   onDelete?: (student: Student) => void
 }
 
-export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false, canManage = false, onDeactivate, onReactivate, onDelete }: StudentProfileProps) {
+export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false, canManage = false, canEdit = false, onEdit, onDeactivate, onReactivate, onDelete }: StudentProfileProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { hasModule } = useModuleAccess()
@@ -51,7 +53,19 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         </div>
       )}
 
-      <h1 className="text-xl font-bold">{t("students.title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold">{t("students.title")}</h1>
+        {canEdit && onEdit && (
+          <Button
+            variant="default"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => onEdit(student)}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            {t("students.edit")}
+          </Button>
+        )}
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Header */}
