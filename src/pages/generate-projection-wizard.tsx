@@ -467,12 +467,12 @@ export default function GenerateProjectionWizardPage() {
         }
       })
 
-      await api.projections.generate({
+      const projection = await api.projections.generate({
         studentId: formData.studentId,
         schoolYear: formData.schoolYear,
         subjects: subjectsWithDifficulty,
-      })
-      navigate("/projections")
+      }) as { id: string; studentId: string }
+      navigate(`/students/${projection.studentId}/projections/${projection.id}`)
     } catch (error) {
       console.error("Error generating projection:", error)
       const errorMessage = error instanceof Error ? error.message : "Error al generar la proyección. Por favor, inténtalo de nuevo."

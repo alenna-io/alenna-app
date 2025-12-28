@@ -912,6 +912,7 @@
     "annualProjection": "Annual Projection",
     "weeklyPlanningDescription": "Weekly planning by quarter for school year {{year}}",
     "viewReportCard": "View Report Card",
+    "viewCurrentWeekDailyGoals": "View Daily Goals",
     "add": "Add",
     "lessonMoved": "Lesson moved successfully",
     "lessonGradeSaved": "Lesson grade saved",
@@ -967,7 +968,9 @@
     "errorUpdatingGoalStatus": "Error updating goal status",
     "errorUpdatingNote": "Error updating note",
     "notePendingPlaceholder": "Pending note...",
-    "pending": "Pending"
+    "pending": "Pending",
+    "previousWeek": "Previous Week",
+    "nextWeek": "Next Week"
   },
   "groups": {
     "title": "Groups",

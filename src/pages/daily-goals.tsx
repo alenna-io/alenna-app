@@ -1,9 +1,11 @@
 import * as React from "react"
-import { useParams, useLocation } from "react-router-dom"
+import { useParams, useLocation, useNavigate } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
 import { Loading } from "@/components/ui/loading"
 import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { DailyGoalData, DailyGoal, NoteHistory } from "@/types/pace"
 import type { ProjectionDetail } from "@/types/projection-detail"
@@ -67,6 +69,7 @@ export default function DailyGoalsPage() {
   const { studentId, projectionId, quarter, week } = useParams()
   const location = useLocation()
   const locationState = location.state as LocationState | null
+  const navigate = useNavigate()
   const api = useApi()
   const { t } = useTranslation()
   const [goalsData, setGoalsData] = React.useState<DailyGoalData>({})
@@ -364,7 +367,9 @@ export default function DailyGoalsPage() {
     if (!studentId || !projectionId || !quarter || !week) return
 
     // Check if subject is a category (a category value) or a sub-subject (a key)
-    const isCategory = !subjectToCategory.has(subject) && Object.values(subjectToCategory).includes(subject)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
 
     // If it's a category, find all sub-subjects in that category
     const subjectsToUpdate: string[] = []
@@ -381,6 +386,8 @@ export default function DailyGoalsPage() {
     }
 
     // OPTIMISTIC UPDATE: Immediately update the goal in the UI for all relevant subjects
+
+    // Create the updated data structure first
     const updatedGoalsData = { ...goalsData }
 
     subjectsToUpdate.forEach(subSubjectToUpdate => {
@@ -406,6 +413,7 @@ export default function DailyGoalsPage() {
       }
     })
 
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
@@ -452,7 +460,7 @@ export default function DailyGoalsPage() {
         toast.success(t("dailyGoals.goalCreated"))
       }
 
-      // Refresh data to ensure consistency
+      // Refresh data to sync IDs and ensure consistency (but UI already shows the goal)
       const data = await api.dailyGoals.get(studentId, projectionId, quarter, parseInt(week))
       setGoalsData(data)
     } catch (err) {
@@ -475,43 +483,78 @@ export default function DailyGoalsPage() {
   const handleGoalToggle = async (subject: string, dayIndex: number) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    const currentGoal = goalsData[subject]?.[dayIndex]
+    // Check if subject is a category (a category value) or a sub-subject (a key)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
+
+    // If it's a category, find all sub-subjects in that category
+    const subjectsToUpdate: string[] = []
+    if (isCategory) {
+      // subject is a category, find all sub-subjects
+      subjectToCategory.forEach((category, subSubject) => {
+        if (category === subject) {
+          subjectsToUpdate.push(subSubject)
+        }
+      })
+    } else {
+      // subject is a sub-subject (or doesn't have a category)
+      subjectsToUpdate.push(subject)
+    }
+
+    // Get the first sub-subject to check if goal exists
+    const apiSubject = subjectsToUpdate[0] || subject
+    const currentGoal = goalsData[apiSubject]?.[dayIndex]
     if (!currentGoal?.id) return
 
     const newCompleted = !currentGoal.isCompleted
 
-    // OPTIMISTIC UPDATE: Immediately toggle completion in the UI
+    // OPTIMISTIC UPDATE: Immediately toggle completion in the UI for all relevant subjects
     const updatedGoalsData = { ...goalsData }
-    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
-    updatedGoalsData[subject][dayIndex] = {
-      ...currentGoal,
-      isCompleted: newCompleted,
-      // If completing and has pending notes, optimistically clear them
-      notes: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? undefined : currentGoal.notes,
-      notesCompleted: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? true : currentGoal.notesCompleted,
-      notesHistory: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted)
-        ? [...(currentGoal.notesHistory || []), { text: currentGoal.notes, completedDate: new Date().toISOString() }]
-        : currentGoal.notesHistory
-    }
+
+    subjectsToUpdate.forEach(subSubjectToUpdate => {
+      const subGoal = goalsData[subSubjectToUpdate]?.[dayIndex]
+      if (!subGoal?.id) return
+
+      updatedGoalsData[subSubjectToUpdate] = [...updatedGoalsData[subSubjectToUpdate]]
+      updatedGoalsData[subSubjectToUpdate][dayIndex] = {
+        ...subGoal,
+        isCompleted: newCompleted,
+        // If completing and has pending notes, optimistically clear them
+        notes: (newCompleted && subGoal.notes && !subGoal.notesCompleted) ? undefined : subGoal.notes,
+        notesCompleted: (newCompleted && subGoal.notes && !subGoal.notesCompleted) ? true : subGoal.notesCompleted,
+        notesHistory: (newCompleted && subGoal.notes && !subGoal.notesCompleted)
+          ? [...(subGoal.notesHistory || []), { text: subGoal.notes, completedDate: new Date().toISOString() }]
+          : subGoal.notesHistory
+      }
+    })
+
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
-      await api.dailyGoals.updateCompletion(studentId, projectionId, currentGoal.id, newCompleted)
+      // Update completion for all sub-subjects in category
+      await Promise.all(subjectsToUpdate.map(async (subSubject) => {
+        const subGoal = goalsData[subSubject]?.[dayIndex]
+        if (subGoal?.id) {
+          await api.dailyGoals.updateCompletion(studentId, projectionId, subGoal.id, newCompleted)
 
-      // If goal is being marked as completed and has pending notes, auto-complete them
-      if (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) {
-        try {
-          // Add note to history and clear current note
-          await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
-          await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
-            notes: undefined,
-            notesCompleted: true
-          })
-        } catch (notesErr) {
-          console.error('Error auto-completing notes:', notesErr)
-          // Don't fail the whole operation if notes completion fails
+          // If goal is being marked as completed and has pending notes, auto-complete them
+          if (newCompleted && subGoal.notes && !subGoal.notesCompleted) {
+            try {
+              // Add note to history and clear current note
+              await api.dailyGoals.addNoteToHistory(studentId, projectionId, subGoal.id, subGoal.notes)
+              await api.dailyGoals.updateNotes(studentId, projectionId, subGoal.id, {
+                notes: undefined,
+                notesCompleted: true
+              })
+            } catch (notesErr) {
+              console.error('Error auto-completing notes:', notesErr)
+              // Don't fail the whole operation if notes completion fails
+            }
+          }
         }
-      }
+      }))
 
       toast.success(newCompleted ? t("dailyGoals.goalCompleted") : t("dailyGoals.goalMarkedIncomplete"))
 
@@ -538,16 +581,22 @@ export default function DailyGoalsPage() {
   const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    // Check if subject is a category
-    const isCategory = Object.values(subjectToCategory).includes(subject)
+    // Check if subject is a category (a category value) or a sub-subject (a key)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
+
+    // If it's a category, find all sub-subjects in that category
     const subjectsToUpdate: string[] = []
     if (isCategory) {
+      // subject is a category, find all sub-subjects
       subjectToCategory.forEach((category, subSubject) => {
         if (category === subject) {
           subjectsToUpdate.push(subSubject)
         }
       })
     } else {
+      // subject is a sub-subject (or doesn't have a category)
       subjectsToUpdate.push(subject)
     }
 
@@ -566,6 +615,7 @@ export default function DailyGoalsPage() {
       }
     })
 
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
@@ -612,6 +662,43 @@ export default function DailyGoalsPage() {
     return quarterNames[quarter] || quarter
   }
 
+  const getPreviousWeek = (): { quarter: string; week: number } | null => {
+    if (!quarter || !week) return null
+    const currentWeekNum = parseInt(week)
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentQuarterIndex = quarters.indexOf(quarter)
+
+    if (currentWeekNum > 1) {
+      return { quarter, week: currentWeekNum - 1 }
+    } else if (currentQuarterIndex > 0) {
+      return { quarter: quarters[currentQuarterIndex - 1], week: 9 }
+    }
+    return null
+  }
+
+  const getNextWeek = (): { quarter: string; week: number } | null => {
+    if (!quarter || !week) return null
+    const currentWeekNum = parseInt(week)
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentQuarterIndex = quarters.indexOf(quarter)
+
+    if (currentWeekNum < 9) {
+      return { quarter, week: currentWeekNum + 1 }
+    } else if (currentQuarterIndex < 3) {
+      return { quarter: quarters[currentQuarterIndex + 1], week: 1 }
+    }
+    return null
+  }
+
+  const handleNavigateWeek = (targetQuarter: string, targetWeek: number) => {
+    if (!studentId || !projectionId) return
+    navigate(`/students/${studentId}/projections/${projectionId}/${targetQuarter}/week/${targetWeek}`, {
+      state: {
+        student: student || locationState?.student || null
+      }
+    })
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Mobile-only back button (desktop uses breadcrumb) */}
@@ -645,6 +732,41 @@ export default function DailyGoalsPage() {
         }}
         showBadge={false}
       />
+
+      {/* Week Navigation */}
+      {quarter && week && (
+        <div className="flex items-center justify-between gap-4">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const prev = getPreviousWeek()
+              if (prev) handleNavigateWeek(prev.quarter, prev.week)
+            }}
+            disabled={!getPreviousWeek()}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t("dailyGoals.previousWeek")}
+          </Button>
+          <div className="text-center">
+            <div className="text-sm font-medium">
+              {quarter ? getQuarterName(quarter) : ""} - {t("common.week")} {week}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const next = getNextWeek()
+              if (next) handleNavigateWeek(next.quarter, next.week)
+            }}
+            disabled={!getNextWeek()}
+            className="flex items-center gap-2"
+          >
+            {t("dailyGoals.nextWeek")}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading ? (

@@ -94,6 +94,18 @@ function SingleDatePicker({ value, onChange, placeholder, min, max, hasError }: 
   )
 }
 
+function calculateAge(birthDate: string): number | null {
+  if (!birthDate) return null
+  const birth = new Date(birthDate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  return age
+}
+
 export default function CreateStudentWizardPage() {
   const navigate = useNavigate()
   const api = useApi()
@@ -760,6 +772,11 @@ export default function CreateStudentWizardPage() {
                     hasError={!!errors.birthDate}
                   />
                   {errors.birthDate && <p className="text-sm text-destructive mt-1">{errors.birthDate}</p>}
+                  {formData.birthDate && calculateAge(formData.birthDate) !== null && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t("students.age")}: {t("students.ageYears", { age: calculateAge(formData.birthDate) })}
+                    </p>
+                  )}
                 </Field>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field>

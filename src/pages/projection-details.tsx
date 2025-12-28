@@ -18,7 +18,7 @@ import { ErrorDialog } from "@/components/ui/error-dialog"
 import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { FileText } from "lucide-react"
+import { FileText, BookOpen } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
 
@@ -370,7 +370,7 @@ export default function ACEProjectionPage() {
   }
 
   // Handle pace completion and grade - SAVES TO DATABASE (with optimistic update)
-  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number, comment?: string) => {
+  const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number) => {
     if (!studentId || !projectionId) return
 
     const quarterData = projectionData[quarter as keyof typeof projectionData]
@@ -398,7 +398,7 @@ export default function ACEProjectionPage() {
         isFailed: isFailing,
         gradeHistory: [
           ...(pace.gradeHistory || []),
-          { grade, date: new Date().toISOString(), note: comment }
+          { grade, date: new Date().toISOString() }
         ]
       }
     } else {
@@ -420,7 +420,6 @@ export default function ACEProjectionPage() {
         // Update grade
         await api.projections.updatePaceGrade(studentId, projectionId, paceId, {
           grade,
-          note: comment,
         })
         toast.success(t("projections.lessonGradeSaved"))
       } else {
@@ -726,16 +725,28 @@ export default function ACEProjectionPage() {
           title={t("projections.annualProjection")}
           description={t("projections.weeklyPlanningDescription", { year: student.schoolYear })}
         />
-        {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && (
-          <Button
-            variant="default"
-            onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
-            className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {t("projections.viewReportCard")}
-          </Button>
-        )}
+        <div className="flex gap-2 shrink-0">
+          {currentQuarter && currentWeekInQuarter !== null && (
+            <Button
+              variant="default"
+              onClick={() => handleWeekClick(currentQuarter, currentWeekInQuarter)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              {t("projections.viewCurrentWeekDailyGoals")}
+            </Button>
+          )}
+          {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && (
+            <Button
+              variant="default"
+              onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {t("projections.viewReportCard")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Student Info Card */}
