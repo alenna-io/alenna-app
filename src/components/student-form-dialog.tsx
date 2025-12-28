@@ -16,9 +16,19 @@ import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import countryStatesData from "@/data/country-states.json"
 
 interface CertificationType {
   id: string
@@ -153,6 +163,10 @@ export function StudentFormDialog({
   const [isSaving, setIsSaving] = React.useState(false)
   const [certificationTypes, setCertificationTypes] = React.useState<CertificationType[]>([])
   const [loadingCertTypes, setLoadingCertTypes] = React.useState(false)
+  const [countryOpen, setCountryOpen] = React.useState(false)
+  const [stateOpen, setStateOpen] = React.useState(false)
+  const [stateSearchTerm, setStateSearchTerm] = React.useState("")
+  const [countrySearchTerm, setCountrySearchTerm] = React.useState("")
   const [errors, setErrors] = React.useState<{
     firstName?: string
     lastName?: string
@@ -236,6 +250,8 @@ export function StudentFormDialog({
     hasSecondParent: false,
   })
 
+  const availableCountries = Object.keys(countryStatesData)
+
   // Fetch certification types when dialog opens
   React.useEffect(() => {
     if (open && schoolId) {
@@ -306,7 +322,7 @@ export function StudentFormDialog({
           streetAddress: "",
           city: "",
           state: "",
-          country: "",
+          country: "Mexico",
           zipCode: "",
           parent1FirstName: "",
           parent1LastName: "",
@@ -650,13 +666,63 @@ export function StudentFormDialog({
 
               <Field>
                 <FieldLabel htmlFor="state">{t("students.state")} <span className="text-destructive">*</span></FieldLabel>
-                <Input
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  placeholder={t("students.statePlaceholder")}
-                  className={errors.state ? "border-destructive" : ""}
-                />
+                <Popover open={stateOpen} onOpenChange={setStateOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={stateOpen}
+                      className={cn(
+                        "w-full justify-between",
+                        !formData.state && "text-muted-foreground",
+                        errors.state && "border-destructive"
+                      )}
+                    >
+                      {formData.state || t("students.statePlaceholder") || "Select state..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder={t("common.search") || "Search..."}
+                        value={stateSearchTerm}
+                        onValueChange={setStateSearchTerm}
+                      />
+                      <CommandList>
+                        <CommandEmpty>{t("common.noResults") || "No results found."}</CommandEmpty>
+                        <CommandGroup>
+                          {(formData.country ? (countryStatesData[formData.country as keyof typeof countryStatesData] || []) : [])
+                            .filter((state: string) =>
+                              stateSearchTerm
+                                ? state.toLowerCase().includes(stateSearchTerm.toLowerCase())
+                                : true
+                            )
+                            .map((state: string) => (
+                              <CommandItem
+                                key={state}
+                                value={state}
+                                onSelect={() => {
+                                  setFormData({ ...formData, state })
+                                  setStateOpen(false)
+                                  setStateSearchTerm("")
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.state === state ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {state}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {errors.state && (
                   <div className="flex items-center gap-2 text-sm text-destructive mt-1">
                     <AlertTriangle className="h-4 w-4" />
@@ -669,13 +735,64 @@ export function StudentFormDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
                 <FieldLabel htmlFor="country">{t("students.country")} <span className="text-destructive">*</span></FieldLabel>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder={t("students.countryPlaceholder")}
-                  className={errors.country ? "border-destructive" : ""}
-                />
+                <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={countryOpen}
+                      className={cn(
+                        "w-full justify-between",
+                        !formData.country && "text-muted-foreground",
+                        errors.country && "border-destructive"
+                      )}
+                    >
+                      {formData.country || "Mexico"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder={t("common.search") || "Search..."}
+                        value={countrySearchTerm}
+                        onValueChange={setCountrySearchTerm}
+                      />
+                      <CommandList>
+                        <CommandEmpty>{t("common.noResults") || "No results found."}</CommandEmpty>
+                        <CommandGroup>
+                          {availableCountries
+                            .filter((country) =>
+                              countrySearchTerm
+                                ? country.toLowerCase().includes(countrySearchTerm.toLowerCase())
+                                : true
+                            )
+                            .map((country) => (
+                              <CommandItem
+                                key={country}
+                                value={country}
+                                onSelect={() => {
+                                  setFormData({ ...formData, country, state: "" })
+                                  setCountryOpen(false)
+                                  setCountrySearchTerm("")
+                                  setStateSearchTerm("")
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.country === country ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {country}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {errors.country && (
                   <div className="flex items-center gap-2 text-sm text-destructive mt-1">
                     <AlertTriangle className="h-4 w-4" />
