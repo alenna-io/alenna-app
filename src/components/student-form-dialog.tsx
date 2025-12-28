@@ -560,103 +560,58 @@ export function StudentFormDialog({
               </Field>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="studentEmail">
-                {t("students.email")} <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                id="studentEmail"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder={t("students.emailPlaceholder") || "student@email.com"}
-                className={errors.email ? "border-destructive" : ""}
-              />
-              {errors.email && (
-                <div className="flex items-center gap-2 text-sm text-destructive mt-1">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>{errors.email}</span>
-                </div>
-              )}
-            </Field>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="birthDate">
-                  {t("students.birthDate")} <span className="text-destructive">*</span>
+                <FieldLabel htmlFor="studentEmail">
+                  {t("students.email")} <span className="text-destructive">*</span>
                 </FieldLabel>
-                <SingleDatePicker
-                  value={formData.birthDate}
-                  onChange={(date) => setFormData({ ...formData, birthDate: date || "" })}
-                  placeholder={t("students.birthDatePlaceholder") || "dd/mm/yyyy"}
-                  max={new Date().toISOString().split('T')[0]}
-                  hasError={!!errors.birthDate}
+                <Input
+                  id="studentEmail"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder={t("students.emailPlaceholder") || "student@email.com"}
+                  className={errors.email ? "border-destructive" : ""}
                 />
-                {errors.birthDate && (
+                {errors.email && (
                   <div className="flex items-center gap-2 text-sm text-destructive mt-1">
                     <AlertTriangle className="h-4 w-4" />
-                    <span>{errors.birthDate}</span>
+                    <span>{errors.email}</span>
                   </div>
                 )}
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="graduationDate">
-                  {t("students.graduationDate")} <span className="text-destructive">*</span>
-                </FieldLabel>
-                <SingleDatePicker
-                  value={formData.graduationDate}
-                  onChange={(date) => setFormData({ ...formData, graduationDate: date || "" })}
-                  placeholder={t("students.graduationDatePlaceholder") || "dd/mm/yyyy"}
-                  min={formData.birthDate || undefined}
-                  hasError={!!errors.graduationDate}
+                <FieldLabel htmlFor="phone">{t("students.phone")}</FieldLabel>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+1 (555) 123-4567"
                 />
-                {errors.graduationDate && (
-                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span>{errors.graduationDate}</span>
-                  </div>
-                )}
               </Field>
             </div>
-
             <Field>
-              <FieldLabel htmlFor="certificationTypeId">
-                {t("students.certificationType")} <span className="text-destructive">*</span>
+              <FieldLabel htmlFor="birthDate">
+                {t("students.birthDate")} <span className="text-destructive">*</span>
               </FieldLabel>
-              <Select
-                value={formData.certificationTypeId}
-                onValueChange={(value) => setFormData({ ...formData, certificationTypeId: value })}
-                disabled={loadingCertTypes}
-              >
-                <SelectTrigger className={errors.certificationTypeId ? "border-destructive" : ""}>
-                  <SelectValue placeholder={loadingCertTypes ? t("common.loading") : t("students.selectCertificationType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {certificationTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.certificationTypeId && (
+              <SingleDatePicker
+                value={formData.birthDate}
+                onChange={(date) => setFormData({ ...formData, birthDate: date || "" })}
+                placeholder={t("students.birthDatePlaceholder") || "dd/mm/yyyy"}
+                max={new Date().toISOString().split('T')[0]}
+                hasError={!!errors.birthDate}
+              />
+              {errors.birthDate && (
                 <div className="flex items-center gap-2 text-sm text-destructive mt-1">
                   <AlertTriangle className="h-4 w-4" />
-                  <span>{errors.certificationTypeId}</span>
+                  <span>{errors.birthDate}</span>
                 </div>
               )}
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="phone">{t("students.phone")}</FieldLabel>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-              />
-            </Field>
+
+
 
             <Field>
               <FieldLabel htmlFor="streetAddress">{t("students.streetAddress")} <span className="text-destructive">*</span></FieldLabel>
@@ -747,20 +702,58 @@ export function StudentFormDialog({
               </Field>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isLeveled"
-                checked={formData.isLeveled}
-                onChange={(e) => setFormData({ ...formData, isLeveled: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <FieldLabel htmlFor="isLeveled" className="cursor-pointer">
-                {t("students.notLeveledStudent")}
-              </FieldLabel>
-            </div>
+            <h3 className="text-lg font-semibold mb-4 mt-10">{t("students.academicInfo")}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field>
+                <FieldLabel htmlFor="certificationTypeId">
+                  {t("students.certificationType")} <span className="text-destructive">*</span>
+                </FieldLabel>
+                <Select
+                  value={formData.certificationTypeId}
+                  onValueChange={(value) => setFormData({ ...formData, certificationTypeId: value })}
+                  disabled={loadingCertTypes}
+                >
+                  <SelectTrigger className={errors.certificationTypeId ? "border-destructive" : ""}>
+                    <SelectValue placeholder={loadingCertTypes ? t("common.loading") : t("students.selectCertificationType")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {certificationTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.certificationTypeId && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.certificationTypeId}</span>
+                  </div>
+                )}
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="graduationDate">
+                  {t("students.graduationDate")} <span className="text-destructive">*</span>
+                </FieldLabel>
+                <SingleDatePicker
+                  value={formData.graduationDate}
+                  onChange={(date) => setFormData({ ...formData, graduationDate: date || "" })}
+                  placeholder={t("students.graduationDatePlaceholder") || "dd/mm/yyyy"}
+                  min={formData.birthDate || undefined}
+                  hasError={!!errors.graduationDate}
+                />
+                {errors.graduationDate && (
+                  <div className="flex items-center gap-2 text-sm text-destructive mt-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>{errors.graduationDate}</span>
+                  </div>
+                )}
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
               <Field>
                 <FieldLabel htmlFor="currentLevel">{t("students.currentLevel")}</FieldLabel>
                 <Select
@@ -792,6 +785,19 @@ export function StudentFormDialog({
                   </div>
                 )}
               </Field>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isLeveled"
+                  checked={formData.isLeveled}
+                  onChange={(e) => setFormData({ ...formData, isLeveled: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <FieldLabel htmlFor="isLeveled" className="cursor-pointer">
+                  {t("students.notLeveledStudent")}
+                </FieldLabel>
+              </div>
 
               {formData.isLeveled && (
                 <Field>
@@ -1097,7 +1103,7 @@ export function StudentFormDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   )
 }
 
