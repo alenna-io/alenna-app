@@ -93,6 +93,14 @@ export function TeacherFormDialog({
         try {
           setLoadingRoles(true)
           const rolesData = await api.getAvailableRoles()
+          console.log('Fetched roles:', rolesData)
+
+          if (!rolesData || !Array.isArray(rolesData)) {
+            console.error('Invalid roles data received:', rolesData)
+            setRoles([])
+            return
+          }
+
           setRoles(rolesData as Role[])
           // Find TEACHER role ID
           const teacherRole = (rolesData as Role[]).find(r => r.name === 'TEACHER')
@@ -102,6 +110,11 @@ export function TeacherFormDialog({
           }
         } catch (error) {
           console.error('Error fetching roles:', error)
+          // Log more details about the error
+          if (error instanceof Error) {
+            console.error('Error message:', error.message)
+            console.error('Error stack:', error.stack)
+          }
           setRoles([])
         } finally {
           setLoadingRoles(false)
@@ -291,13 +304,19 @@ export function TeacherFormDialog({
                   <SelectValue placeholder={loadingRoles ? t("common.loading") : t("users.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles
-                    .filter(role => role.name === 'TEACHER' || role.name === 'SCHOOL_ADMIN')
-                    .map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.displayName}
-                      </SelectItem>
-                    ))}
+                  {roles.length === 0 && !loadingRoles ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {t("users.noRolesAvailable") || "No roles available"}
+                    </div>
+                  ) : (
+                    roles
+                      .filter(role => role.name === 'TEACHER' || role.name === 'SCHOOL_ADMIN')
+                      .map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.displayName}
+                        </SelectItem>
+                      ))
+                  )}
                 </SelectContent>
               </Select>
               {errors.roleIds && (
