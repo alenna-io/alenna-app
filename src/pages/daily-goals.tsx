@@ -483,43 +483,78 @@ export default function DailyGoalsPage() {
   const handleGoalToggle = async (subject: string, dayIndex: number) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    const currentGoal = goalsData[subject]?.[dayIndex]
+    // Check if subject is a category (a category value) or a sub-subject (a key)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
+
+    // If it's a category, find all sub-subjects in that category
+    const subjectsToUpdate: string[] = []
+    if (isCategory) {
+      // subject is a category, find all sub-subjects
+      subjectToCategory.forEach((category, subSubject) => {
+        if (category === subject) {
+          subjectsToUpdate.push(subSubject)
+        }
+      })
+    } else {
+      // subject is a sub-subject (or doesn't have a category)
+      subjectsToUpdate.push(subject)
+    }
+
+    // Get the first sub-subject to check if goal exists
+    const apiSubject = subjectsToUpdate[0] || subject
+    const currentGoal = goalsData[apiSubject]?.[dayIndex]
     if (!currentGoal?.id) return
 
     const newCompleted = !currentGoal.isCompleted
 
-    // OPTIMISTIC UPDATE: Immediately toggle completion in the UI
+    // OPTIMISTIC UPDATE: Immediately toggle completion in the UI for all relevant subjects
     const updatedGoalsData = { ...goalsData }
-    updatedGoalsData[subject] = [...updatedGoalsData[subject]]
-    updatedGoalsData[subject][dayIndex] = {
-      ...currentGoal,
-      isCompleted: newCompleted,
-      // If completing and has pending notes, optimistically clear them
-      notes: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? undefined : currentGoal.notes,
-      notesCompleted: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) ? true : currentGoal.notesCompleted,
-      notesHistory: (newCompleted && currentGoal.notes && !currentGoal.notesCompleted)
-        ? [...(currentGoal.notesHistory || []), { text: currentGoal.notes, completedDate: new Date().toISOString() }]
-        : currentGoal.notesHistory
-    }
+
+    subjectsToUpdate.forEach(subSubjectToUpdate => {
+      const subGoal = goalsData[subSubjectToUpdate]?.[dayIndex]
+      if (!subGoal?.id) return
+
+      updatedGoalsData[subSubjectToUpdate] = [...updatedGoalsData[subSubjectToUpdate]]
+      updatedGoalsData[subSubjectToUpdate][dayIndex] = {
+        ...subGoal,
+        isCompleted: newCompleted,
+        // If completing and has pending notes, optimistically clear them
+        notes: (newCompleted && subGoal.notes && !subGoal.notesCompleted) ? undefined : subGoal.notes,
+        notesCompleted: (newCompleted && subGoal.notes && !subGoal.notesCompleted) ? true : subGoal.notesCompleted,
+        notesHistory: (newCompleted && subGoal.notes && !subGoal.notesCompleted)
+          ? [...(subGoal.notesHistory || []), { text: subGoal.notes, completedDate: new Date().toISOString() }]
+          : subGoal.notesHistory
+      }
+    })
+
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
-      await api.dailyGoals.updateCompletion(studentId, projectionId, currentGoal.id, newCompleted)
+      // Update completion for all sub-subjects in category
+      await Promise.all(subjectsToUpdate.map(async (subSubject) => {
+        const subGoal = goalsData[subSubject]?.[dayIndex]
+        if (subGoal?.id) {
+          await api.dailyGoals.updateCompletion(studentId, projectionId, subGoal.id, newCompleted)
 
-      // If goal is being marked as completed and has pending notes, auto-complete them
-      if (newCompleted && currentGoal.notes && !currentGoal.notesCompleted) {
-        try {
-          // Add note to history and clear current note
-          await api.dailyGoals.addNoteToHistory(studentId, projectionId, currentGoal.id, currentGoal.notes)
-          await api.dailyGoals.updateNotes(studentId, projectionId, currentGoal.id, {
-            notes: undefined,
-            notesCompleted: true
-          })
-        } catch (notesErr) {
-          console.error('Error auto-completing notes:', notesErr)
-          // Don't fail the whole operation if notes completion fails
+          // If goal is being marked as completed and has pending notes, auto-complete them
+          if (newCompleted && subGoal.notes && !subGoal.notesCompleted) {
+            try {
+              // Add note to history and clear current note
+              await api.dailyGoals.addNoteToHistory(studentId, projectionId, subGoal.id, subGoal.notes)
+              await api.dailyGoals.updateNotes(studentId, projectionId, subGoal.id, {
+                notes: undefined,
+                notesCompleted: true
+              })
+            } catch (notesErr) {
+              console.error('Error auto-completing notes:', notesErr)
+              // Don't fail the whole operation if notes completion fails
+            }
+          }
         }
-      }
+      }))
 
       toast.success(newCompleted ? t("dailyGoals.goalCompleted") : t("dailyGoals.goalMarkedIncomplete"))
 
@@ -546,16 +581,22 @@ export default function DailyGoalsPage() {
   const handleNotesUpdate = async (subject: string, dayIndex: number, notes: string) => {
     if (!studentId || !projectionId || !quarter || !week) return
 
-    // Check if subject is a category
-    const isCategory = Object.values(subjectToCategory).includes(subject)
+    // Check if subject is a category (a category value) or a sub-subject (a key)
+    // subjectToCategory is a Map, so we need to use Array.from to get values
+    const categoryValues = Array.from(subjectToCategory.values())
+    const isCategory = !subjectToCategory.has(subject) && categoryValues.includes(subject)
+
+    // If it's a category, find all sub-subjects in that category
     const subjectsToUpdate: string[] = []
     if (isCategory) {
+      // subject is a category, find all sub-subjects
       subjectToCategory.forEach((category, subSubject) => {
         if (category === subject) {
           subjectsToUpdate.push(subSubject)
         }
       })
     } else {
+      // subject is a sub-subject (or doesn't have a category)
       subjectsToUpdate.push(subject)
     }
 
@@ -574,6 +615,7 @@ export default function DailyGoalsPage() {
       }
     })
 
+    // Update UI immediately - this must happen synchronously before any async operations
     setGoalsData(updatedGoalsData)
 
     try {
