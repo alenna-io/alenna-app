@@ -785,7 +785,12 @@ export default function StudentsPage() {
     isLeveled?: boolean
     expectedLevel?: string
     currentLevel?: string
-    parents: Array<{
+    streetAddress?: string
+    city?: string
+    state?: string
+    country?: string
+    zipCode?: string
+    parents?: Array<{
       firstName: string
       lastName: string
       email: string
@@ -847,7 +852,7 @@ export default function StudentsPage() {
     state?: string
     country?: string
     zipCode?: string
-    parents: Array<{
+    parents?: Array<{
       firstName: string
       lastName: string
       email: string
