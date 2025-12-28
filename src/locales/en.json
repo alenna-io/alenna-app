@@ -769,6 +769,7 @@
     "back": "Back",
     "next": "Next",
     "generating": "Generating...",
+    "pleaseWait": "Please wait while we generate your projection...",
     "generateProjection": "Generate Projection",
     "preview": "Preview",
     "previewDescription": "Review the configuration",

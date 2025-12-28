@@ -769,6 +769,7 @@
     "back": "Atrás",
     "next": "Siguiente",
     "generating": "Generando...",
+    "pleaseWait": "Por favor espera mientras generamos tu proyección...",
     "generateProjection": "Generar Proyección",
     "preview": "Vista Previa",
     "previewDescription": "Revisa la configuración",
