@@ -53,7 +53,7 @@ export function ParentChildrenView({ students }: ParentChildrenViewProps) {
                       {student.certificationType}
                     </Badge>
                     {student.isLeveled && (
-                      <Badge className="text-xs bg-green-100 text-green-800 border-green-200">
+                      <Badge className="text-xs bg-mint-soft text-mint border-0">
                         Nivelado
                       </Badge>
                     )}

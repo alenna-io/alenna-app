@@ -227,7 +227,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
                 <td className="p-2 border border-gray-300">
                   {t("reportCards.lessonsAverage")} ({formatPercentage(quarter.pacePercentage)})
                 </td>
-                <td className="p-2 text-center border border-gray-300">
+                <td className="p-2 text-center border border-gray-300 tabular-nums">
                   {quarter.overallAverage !== null ? formatGrade(quarter.overallAverage) : "-"}
                 </td>
               </tr>
@@ -235,7 +235,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
                 <td className="p-2 border border-gray-300">
                   {t("reportCards.monthlyAssignmentsAverage")} ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
                 </td>
-                <td className="p-2 text-center border border-gray-300">
+                <td className="p-2 text-center border border-gray-300 tabular-nums">
                   {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "-"}
                 </td>
               </tr>
@@ -243,13 +243,13 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
                 <td className="p-2 border border-gray-300">
                   {t("reportCards.passedLessons")}
                 </td>
-                <td className="p-2 text-center border border-gray-300">
+                <td className="p-2 text-center border border-gray-300 tabular-nums">
                   {quarter.totalPassedPaces}
                 </td>
               </tr>
-              <tr className="bg-primary text-primary-foreground font-bold">
+              <tr className="bg-primary text-primary-foreground font-semibold">
                 <td className="p-3 border border-primary/20">{t("reportCards.finalGrade")}</td>
-                <td className="p-3 text-center border border-primary/20 text-lg">
+                <td className="p-3 text-center border border-primary/20 text-lg tabular-nums">
                   {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
                 </td>
               </tr>

@@ -91,12 +91,12 @@ export function SchoolYearsTable({
                       return (
                         <div>
                           {year.isActive ? (
-                            <Badge className="bg-green-600 text-white">
+                            <Badge className="bg-mint-soft text-mint border-0">
                               <CheckCircle className="mr-1 h-3 w-3" />
                               Activo
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Inactivo</Badge>
+                            <Badge variant="secondary" className="bg-amber-soft text-amber border-0">Inactivo</Badge>
                           )}
                         </div>
                       )

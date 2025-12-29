@@ -1,42 +1,136 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Space+Grotesk:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @theme {
-  /* Light Theme - Primary Colors */
-  --color-background: hsl(0 0% 96.1%); /* #f5f5f5 - Light gray background */
-  --color-foreground: hsl(222.2 84% 4.9%);
-  --color-card: hsl(0 0% 100%); /* Pure white for cards */
-  --color-card-foreground: hsl(222.2 84% 4.9%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222.2 84% 4.9%);
-  --color-primary: hsl(221.2 83.2% 53.3%);
-  --color-primary-foreground: hsl(210 40% 98%);
-  --color-secondary: hsl(210 40% 96.1%);
-  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
-  --color-accent: hsl(210 40% 96.1%);
-  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
-  --color-destructive: hsl(0 94.2% 45.2%);
-  --color-destructive-foreground: hsl(210 40% 98%);
-  --color-border: hsl(214.3 31.8% 91.4%);
-  --color-input: hsl(214.3 31.8% 91.4%);
-  --color-ring: hsl(221.2 83.2% 53.3%);
+  /* Alenna Design System - Warm, Joyful, Calm */
   
-  /* Sidebar Colors - Dark slate for better contrast */
-  --color-sidebar: hsl(215 25% 27%); /* Dark slate blue */
-  --color-sidebar-foreground: hsl(0 0% 95%); /* Light text */
-  --color-sidebar-primary: hsl(221.2 83.2% 53.3%);
-  --color-sidebar-primary-foreground: hsl(0 0% 100%);
-  --color-sidebar-accent: hsl(215 25% 35%); /* Slightly lighter slate for hover */
-  --color-sidebar-accent-foreground: hsl(0 0% 100%);
-  --color-sidebar-border: hsl(215 25% 20%); /* Darker border */
-  --color-sidebar-ring: hsl(221.2 83.2% 53.3%);
+  /* Background Colors - No pure white */
+  --color-background: #F6F7FB; /* Soft lavender-gray app background */
+  --color-surface: #EFF1F9; /* Soft surface color */
+  --color-card: rgba(255, 255, 255, 0.9); /* 90% white with softness */
+  --color-card-foreground: #2B2E4A; /* Deep indigo text */
+  --color-popover: rgba(255, 255, 255, 0.95);
+  --color-popover-foreground: #2B2E4A;
+  --color-overlay: rgba(125, 125, 255, 0.06);
+  
+  /* Text Colors - No pure black */
+  --color-foreground: #2B2E4A; /* Deep indigo, not black */
+  --color-muted-foreground: #9CA0B8; /* Muted text */
+  --color-secondary-foreground: #5C5F7A; /* Secondary text */
+  
+  /* Primary Brand Color */
+  --color-primary: #6C63FF; /* Joyful indigo */
+  --color-primary-foreground: #FFFFFF;
+  --color-primary-soft: rgba(108, 99, 255, 0.18);
+  
+  /* Secondary Colors */
+  --color-secondary: #EFF1F9;
+  --color-accent: rgba(108, 99, 255, 0.1);
+  --color-accent-foreground: #6C63FF;
+  
+  /* Accent Colors - Updated with new palette */
+  --color-lavender: #C4B5FD;
+  --color-lavender-soft: rgba(196, 181, 253, 0.18);
+  
+  /* Extended Accent Palette - WARM ACCENTS */
+  --color-peach: #FFB4A2;
+  --color-peach-soft: rgba(255, 180, 162, 0.20);
+  --color-coral: #FB7185;
+  --color-coral-soft: rgba(251, 113, 133, 0.22);
+  --color-soft-orange: #FDBA74;
+  --color-soft-orange-soft: rgba(253, 186, 116, 0.22);
+  --color-amber: #FACC15;
+  --color-amber-soft: rgba(250, 204, 21, 0.24);
+  
+  /* Extended Accent Palette - COOL ACCENTS */
+  --color-aqua: #67E8F9;
+  --color-aqua-soft: rgba(103, 232, 249, 0.22);
+  --color-teal: #2DD4BF;
+  --color-teal-soft: rgba(45, 212, 191, 0.22);
+  --color-sky: #38BDF8;
+  --color-sky-soft: rgba(56, 189, 248, 0.22);
+  --color-mint: #4ADE80;
+  --color-mint-soft: rgba(74, 222, 128, 0.22);
+  
+  /* NEUTRAL SOFTS */
+  --color-lilac-gray: #F6F7FB;
+  --color-cool-gray: #EFF1F9;
+  --color-lilac: #DDD6FE;
+  --color-lilac-soft: rgba(221, 214, 254, 0.18);
+  
+  /* 🎨 ALENNA COLOR SYSTEM - STRATEGIC COLOR ZONING (Fly.io Style - Extremely Subtle) */
+  
+  /* BRAND ANCHOR (Navigation Only) - Indigo → Lavender - Almost Imperceptible */
+  --gradient-brand: linear-gradient(135deg, rgba(108, 99, 255, 0.10) 0%, rgba(196, 181, 253, 0.08) 100%);
+  --gradient-brand-strong: linear-gradient(135deg, rgba(108, 99, 255, 0.16) 0%, rgba(196, 181, 253, 0.12) 100%);
+  
+  /* ZONE 2: WARM HIGHLIGHT GRADIENTS (Summary & Highlights) - Very Subtle */
+  --gradient-warm-coral-peach: linear-gradient(135deg, rgba(251, 113, 133, 0.12) 0%, rgba(255, 180, 162, 0.10) 100%);
+  --gradient-warm-amber-orange: linear-gradient(135deg, rgba(250, 204, 21, 0.12) 0%, rgba(253, 186, 116, 0.10) 100%);
+  --gradient-warm-strong: linear-gradient(135deg, rgba(251, 113, 133, 0.16) 0%, rgba(255, 180, 162, 0.14) 100%);
+  
+  /* ZONE 3: COOL PROGRESS GRADIENTS (Progress & Status) - Very Subtle */
+  --gradient-cool-mint-aqua: linear-gradient(135deg, rgba(74, 222, 128, 0.12) 0%, rgba(103, 232, 249, 0.10) 100%);
+  --gradient-cool-sky-teal: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(45, 212, 191, 0.10) 100%);
+  --gradient-cool-strong: linear-gradient(135deg, rgba(74, 222, 128, 0.16) 0%, rgba(103, 232, 249, 0.14) 100%);
+  
+  /* LEGACY SUPPORT (mapped to new system) */
+  --gradient-primary: var(--gradient-brand);
+  --gradient-primary-strong: var(--gradient-brand-strong);
+  --gradient-success: var(--gradient-cool-mint-aqua);
+  --gradient-success-strong: var(--gradient-cool-strong);
+  --gradient-warning: var(--gradient-warm-amber-orange);
+  --gradient-warning-strong: var(--gradient-warm-strong);
+  --gradient-danger: var(--gradient-warm-coral-peach);
+  --gradient-danger-strong: var(--gradient-warm-strong);
+  --gradient-coral-peach: var(--gradient-warm-coral-peach);
+  --gradient-amber-gold: var(--gradient-warm-amber-orange);
+  --gradient-mint-aqua: var(--gradient-cool-mint-aqua);
+  --gradient-sky-aqua: var(--gradient-cool-sky-teal);
+  
+  /* Legacy support */
+  --gradient-indigo-lavender: var(--gradient-primary);
+  --gradient-sky-mint: var(--gradient-success);
+  --gradient-coral-peach: var(--gradient-danger);
+  --gradient-amber-gold: var(--gradient-warning);
+  
+  /* Destructive */
+  --color-destructive: #FF7A7A;
+  --color-destructive-foreground: #FFFFFF;
+  
+  /* Borders & Inputs */
+  --color-border: rgba(92, 95, 122, 0.15);
+  --color-input: rgba(255, 255, 255, 0.9);
+  --color-ring: #6C63FF;
+  
+  /* Sidebar - Blends with app background */
+  --color-sidebar: #F6F7FB; /* Same as app background */
+  --color-sidebar-foreground: #5C5F7A; /* Secondary text */
+  --color-sidebar-primary: #6C63FF;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: rgba(108, 99, 255, 0.12); /* Soft active state */
+  --color-sidebar-accent-foreground: #6C63FF;
+  --color-sidebar-border: rgba(92, 95, 122, 0.1);
+  --color-sidebar-ring: #6C63FF;
 
-  /* Border Radius */
-  --radius-lg: 0.5rem;
-  --radius-md: calc(0.5rem - 2px);
-  --radius-sm: calc(0.5rem - 4px);
+  /* Border Radius - Friendly & Rounded */
+  --radius-xs: 10px;
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  
+  /* Legacy radius support */
+  --radius: var(--radius-md);
+  
+  /* 🎥 MOTION TOKENS - Timing */
+  --motion-micro: 160ms;
+  --motion-short: 220ms;
+  --motion-medium: 300ms;
+  
+  /* 🎥 MOTION TOKENS - Easing */
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-premium: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Dark theme removed - app uses light theme only */
@@ -49,11 +143,140 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-display: swap;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Typography Enhancements - Plus Jakarta Sans (Premium & Soft) */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.02em;
+    font-weight: 600; /* SemiBold for headings */
+    line-height: 1.2;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 600; /* SemiBold, not 700 */
+    letter-spacing: -0.025em;
+  }
+  
+  h2 {
+    font-size: 1.875rem;
+    font-weight: 600; /* SemiBold */
+    letter-spacing: -0.02em;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600; /* SemiBold */
+    letter-spacing: -0.015em;
+  }
+  
+  p, body {
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    font-weight: 400; /* Regular for body */
+  }
+  
+  /* Medium weight for emphasis in body text */
+  p strong, body strong {
+    font-weight: 500;
+  }
+  
+  button, .button {
+    letter-spacing: -0.01em;
+    font-weight: 500; /* Medium for buttons */
+  }
+  
+  small, .text-sm {
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  
+  /* Tabular numbers for metrics, dashboards, and data */
+  .tabular-nums,
+  [data-metric],
+  [data-number],
+  .metric,
+  .number {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+  
+  /* Apply tabular-nums to common number contexts */
+  table td,
+  .stat-value,
+  .badge,
+  .badge-numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
   body {
     min-height: 100vh;
+  }
+  
+  /* Prevent scroll glitches - optimize scroll containers */
+  [data-sidebar="inset"] > div[class*="overflow-y-auto"],
+  .overflow-y-auto {
+    /* Enable hardware acceleration for smooth scrolling */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: scroll-position;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent repaints during scroll */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Prevent transform animations from interfering with scroll */
+  .overflow-y-auto * {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Smooth transitions for all interactive elements - using motion tokens */
+  button:not([data-sidebar="menu-button"]):not(.press-scale), 
+  a:not([data-sidebar="menu-button"]), 
+  [role="button"]:not([data-sidebar="menu-button"]):not(.press-scale) {
+    transition: all var(--motion-short) var(--easing-default);
+  }
+  
+  /* Gentle hover lift effect - only for non-sidebar buttons */
+  @media (hover: hover) {
+    button:not([data-sidebar="menu-button"]):not(.press-scale):hover, 
+    a:not([data-sidebar="menu-button"]):hover, 
+    [role="button"]:not([data-sidebar="menu-button"]):not(.press-scale):hover {
+      transform: translateY(-0.5px);
+    }
+    button:not([data-sidebar="menu-button"]):not(.press-scale):active, 
+    a:not([data-sidebar="menu-button"]):active, 
+    [role="button"]:not([data-sidebar="menu-button"]):not(.press-scale):active {
+      transform: translateY(0) scale(0.98);
+    }
+  }
+  
+  /* Card entrance animation - softer, more premium */
+  @keyframes card-entrance {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-card-entrance {
+    animation: card-entrance 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
   
   /* Prevent #root from creating stacking context isolation */
@@ -111,8 +334,11 @@
   
   [data-sidebar="sidebar"] {
     position: relative !important;
-    height: 100vh !important;
     flex-shrink: 0 !important;
+  }
+  
+  .sidebar-glass {
+    height: auto !important;
   }
   
   /* Prevent sidebar inset from taking full width */
@@ -120,12 +346,402 @@
     left: 0 !important;
   }
   
-  /* Slow down sidebar collapse/expand transition */
+  /* Smooth sidebar transitions - refined */
   [data-sidebar="sidebar"] {
-    transition-duration: 400ms !important;
+    transition-duration: 280ms !important;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
   
   [data-sidebar="sidebar"] * {
-    transition-duration: 400ms !important;
+    transition-duration: 280ms !important;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  
+  /* Card styling - PREMIUM DEPTH & MATERIALITY */
+  /* Reduced backdrop-filter blur to prevent scroll glitches */
+  .card-soft {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.92) 100%);
+    border-radius: var(--radius-lg);
+    /* Layered shadows for depth */
+    box-shadow: 
+      0 1px 2px rgba(43, 46, 74, 0.03),
+      0 2px 8px rgba(43, 46, 74, 0.06),
+      0 4px 16px rgba(43, 46, 74, 0.04);
+    backdrop-filter: blur(8px);
+    border: none;
+    position: relative;
+    /* Enable hardware acceleration for smooth scrolling */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  .card-soft::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-lg);
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* Card with optional gradient wash - BRAND GRADIENT (Navigation zone only) - Fly.io Style */
+  .card-gradient-wash {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-gradient-wash::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: -30px;
+    right: -30px;
+    height: 60%;
+    background: var(--gradient-brand);
+    filter: blur(60px);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .card-gradient-wash > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* 🎥 MOTION PRESETS - Reusable animations */
+  
+  /* fadeInSoft - Cards, Sections, Modals - STABLE MOTION */
+  @keyframes fadeInSoft {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-soft {
+    animation: fadeInSoft var(--motion-medium) var(--easing-default) forwards;
+    /* Removed will-change to prevent scroll glitches */
+  }
+  
+  /* Disable animations during data updates */
+  .no-animate {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  /* hoverLift - Cards, Buttons, Clickable surfaces - STABLE MOTION */
+  /* Removed will-change to prevent scroll glitches */
+  .hover-lift {
+    transition: transform var(--motion-short) var(--easing-default),
+                box-shadow var(--motion-short) var(--easing-default);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      0 2px 4px rgba(43, 46, 74, 0.04),
+      0 4px 12px rgba(43, 46, 74, 0.08),
+      0 8px 24px rgba(43, 46, 74, 0.06);
+  }
+  
+  /* pressScale - Buttons, Interactive pills - STABLE MOTION */
+  /* Removed will-change to prevent scroll glitches */
+  .press-scale {
+    transition: transform var(--motion-micro) var(--easing-default);
+  }
+  
+  .press-scale:active {
+    transform: scale(0.98);
+  }
+  
+  /* COLOR ZONES - Strategic Color Application */
+  
+  /* ZONE 1: NAVIGATION (Brand Anchor - Purple/Indigo ONLY) */
+  .color-zone-navigation {
+    background: var(--gradient-brand);
+  }
+  
+  /* ZONE 2: SUMMARY & HIGHLIGHTS (Warm Gradients) */
+  .color-zone-summary {
+    background: var(--gradient-warm-coral-peach);
+  }
+  
+  .color-zone-highlight {
+    background: var(--gradient-warm-amber-orange);
+  }
+  
+  /* ZONE 3: PROGRESS & STATUS (Cool Gradients) */
+  .color-zone-progress {
+    background: var(--gradient-cool-mint-aqua);
+  }
+  
+  .color-zone-status {
+    background: var(--gradient-cool-sky-teal);
+  }
+  
+  /* ZONE 4: CONTENT SURFACES (Neutral with subtle accents) */
+  .color-zone-content {
+    background: transparent;
+  }
+  
+  /* Gradient accent layers for cards */
+  .card-gradient-warm {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-gradient-warm::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: -30px;
+    right: -30px;
+    height: 60%;
+    background: var(--gradient-warm-coral-peach);
+    filter: blur(60px);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .card-gradient-warm > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .card-gradient-cool {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .card-gradient-cool::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: -30px;
+    right: -30px;
+    height: 60%;
+    background: var(--gradient-cool-mint-aqua);
+    filter: blur(60px);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .card-gradient-cool > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Multi-color icon system - FORCE COLOR VARIETY */
+  
+  /* Navigation icons - Indigo + Sky + Mint */
+  .icon-navigation {
+    color: var(--color-primary);
+  }
+  
+  .icon-navigation svg {
+    fill: url(#gradient-nav);
+    stroke: var(--color-primary);
+  }
+  
+  /* Summary icons - Coral + Peach + Amber */
+  .icon-summary {
+    color: var(--color-coral);
+  }
+  
+  .icon-summary svg {
+    fill: url(#gradient-summary);
+    stroke: var(--color-coral);
+  }
+  
+  /* Progress icons - Mint + Aqua */
+  .icon-progress {
+    color: var(--color-mint);
+  }
+  
+  .icon-progress svg {
+    fill: url(#gradient-progress);
+    stroke: var(--color-mint);
+  }
+  
+  /* Warning icons - Amber + Coral */
+  .icon-warning {
+    color: var(--color-amber);
+  }
+  
+  .icon-warning svg {
+    fill: url(#gradient-warning);
+    stroke: var(--color-amber);
+  }
+  
+  /* Icon containers with gradient backgrounds */
+  .icon-container-warm {
+    background: var(--gradient-warm-coral-peach);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .icon-container-cool {
+    background: var(--gradient-cool-mint-aqua);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .icon-container-brand {
+    background: var(--gradient-brand);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Default icon styling - colorful by default, not gray */
+  [data-icon-zone="navigation"] svg {
+    color: var(--color-primary);
+    opacity: 0.8;
+  }
+  
+  [data-icon-zone="summary"] svg {
+    color: var(--color-coral);
+    opacity: 0.8;
+  }
+  
+  [data-icon-zone="progress"] svg {
+    color: var(--color-mint);
+    opacity: 0.8;
+  }
+  
+  [data-icon-zone="warning"] svg {
+    color: var(--color-amber);
+    opacity: 0.8;
+  }
+  
+  /* Active icons - fully saturated */
+  [data-icon-zone="navigation"][data-active="true"] svg,
+  .data-[active=true] [data-icon-zone="navigation"] svg {
+    color: var(--color-primary);
+    opacity: 1;
+  }
+  
+  [data-icon-zone="summary"][data-active="true"] svg,
+  .data-[active=true] [data-icon-zone="summary"] svg {
+    color: var(--color-coral);
+    opacity: 1;
+  }
+  
+  [data-icon-zone="progress"][data-active="true"] svg,
+  .data-[active=true] [data-icon-zone="progress"] svg {
+    color: var(--color-mint);
+    opacity: 1;
+  }
+  
+  /* tabSlide - Tabs, View switching */
+  @keyframes tabSlide {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .animate-tab-slide {
+    animation: tabSlide var(--motion-short) var(--easing-default) forwards;
+  }
+  
+  /* progressReveal - Progress bars, Rings, Status indicators */
+  @keyframes progressReveal {
+    from {
+      width: 0;
+    }
+  }
+  
+  .animate-progress-reveal {
+    animation: progressReveal var(--motion-medium) var(--easing-default) forwards;
+  }
+  
+  /* Pill button base - refined */
+  .pill-button {
+    border-radius: 9999px;
+    transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .pill-button:hover {
+    transform: translateY(-0.5px);
+    box-shadow: 0 3px 10px rgba(108, 99, 255, 0.15);
+  }
+  
+  .pill-button:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 3px rgba(108, 99, 255, 0.1);
+  }
+  
+  /* Multi-color icon container */
+  .icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .icon-container-soft {
+    background: var(--color-primary-soft);
+  }
+  
+  .icon-container-active {
+    background: var(--gradient-indigo-lavender);
+  }
+  
+  /* Badge/Pill refinement */
+  .badge-soft {
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: none;
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  /* Fly.io Style Background Gradient Wash - Extremely Subtle */
+  .bg-gradient-wash-subtle {
+    position: relative;
+  }
+  
+  .bg-gradient-wash-subtle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top left, rgba(108, 99, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(196, 181, 253, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .bg-gradient-wash-subtle > * {
+    position: relative;
+    z-index: 1;
   }
 }

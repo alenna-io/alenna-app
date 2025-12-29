@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -128,12 +127,12 @@ export function GenericFilters<T extends Record<string, string>>({
   }
 
   return (
-    <Card className="w-full" style={{ border: "none", boxShadow: "none", backgroundColor: "transparent" }}>
-      <CardHeader className='p-0'>
+    <div className="w-full">
+      <div className='p-0'>
         <div className="flex items-center justify-start gap-3 mb-2">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">{t("filters.title")}</CardTitle>
+            <h3 className="text-lg font-normal leading-tight tracking-tight">{t("filters.title")}</h3>
             <Badge variant="secondary" className="ml-2">
               {filteredCount} {t("filters.of")} {totalItems}
             </Badge>
@@ -179,10 +178,10 @@ export function GenericFilters<T extends Record<string, string>>({
             ))}
           </div>
         )}
-      </CardHeader>
+      </div>
 
       {showFilters && (
-        <CardContent className="p-0 mt-4">
+        <div className="p-0 mt-4">
           <div className={`grid gap-6 ${fields.length === 1 ? 'md:grid-cols-1' : fields.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
             {fields.map((field) => {
               const rawValue = filters[field.key as keyof T] || ""
@@ -322,9 +321,9 @@ export function GenericFilters<T extends Record<string, string>>({
               )
             })}
           </div>
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </div>
   )
 }
 

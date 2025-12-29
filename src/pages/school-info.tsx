@@ -198,7 +198,7 @@ export default function SchoolInfoPage() {
                           {loadingStudentsCount ? (
                             <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
                           ) : (
-                            <span className="text-base font-semibold text-blue-600">
+                            <span className="text-base font-semibold text-blue-600 tabular-nums">
                               {school?.userLimit ? `${studentsCount}/${school.userLimit}` : studentsCount}
                             </span>
                           )}
@@ -212,7 +212,7 @@ export default function SchoolInfoPage() {
                           {loadingTeachersCount ? (
                             <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
                           ) : (
-                            <span className="text-base font-semibold text-green-600">
+                            <span className="text-base font-semibold text-green-600 tabular-nums">
                               {school?.teacherLimit ? `${teachersCount}/${school.teacherLimit}` : teachersCount}
                             </span>
                           )}

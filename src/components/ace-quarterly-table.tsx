@@ -167,7 +167,7 @@ export function ACEQuarterlyTable({
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return "text-muted-foreground"
-    if (grade >= 90) return "text-green-600 font-bold"
+    if (grade >= 90) return "text-green-600 font-semibold"
     if (grade >= 80) return "text-blue-600 font-semibold"
     return "text-red-600 font-semibold" // Below 80 is failing
   }
@@ -365,19 +365,19 @@ export function ACEQuarterlyTable({
                   {quarter}
                 </Badge>
                 {isQuarterClosed && (
-                  <Badge className="bg-red-100 text-red-800 border-red-500 text-xs md:text-sm flex items-center gap-1">
+                  <Badge className="bg-coral-soft text-coral border-0 text-xs md:text-sm flex items-center gap-1">
                     <Lock className="h-3 w-3" />
                     {t("quarters.closed")}
                   </Badge>
                 )}
                 {isActive && !isQuarterClosed && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200 text-xs md:text-sm">
+                  <Badge className="bg-mint-soft text-mint border-0 text-xs md:text-sm">
                     {t("projections.current")}
                   </Badge>
                 )}
               </CardTitle>
               {isQuarterOverloaded && (
-                <Badge className="bg-red-100 text-red-800 border-red-500 text-xs md:text-sm">
+                <Badge className="bg-coral-soft text-coral border-0 text-xs md:text-sm">
                   {t("projections.quarterOverload")} ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
                 </Badge>
               )}
@@ -448,7 +448,7 @@ export function ACEQuarterlyTable({
                       className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
                     >
                       <div className="flex flex-col">
-                        <span className="text-base font-bold">
+                        <span className="text-base font-semibold">
                           {subject}
                         </span>
                       </div>
@@ -702,13 +702,13 @@ export function ACEQuarterlyTable({
                                   >
                                     <Badge
                                       variant="outline"
-                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all ${pace.isUnfinished && pace.originalQuarter === quarter
-                                        ? "bg-orange-50 text-orange-800 border-orange-500 border-2 border-dashed"
+                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all border-2 ${pace.isUnfinished && pace.originalQuarter === quarter
+                                        ? "bg-amber-soft text-amber border-amber border-dashed"
                                         : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                          ? "bg-red-100 text-red-800 border-red-500 border-2"
+                                          ? "bg-coral-soft text-coral border-coral"
                                           : pace.isCompleted
-                                            ? "bg-green-100 text-green-800 border-green-500 border-2"
-                                            : "bg-white text-gray-800 border-gray-300 border-2"
+                                            ? "bg-mint-soft text-mint border-mint"
+                                            : "bg-card text-foreground border-border"
                                         }`}
                                       title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
                                     >
@@ -808,28 +808,28 @@ export function ACEQuarterlyTable({
           {/* Summary */}
           <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-              <div className="text-center p-2 md:p-3 rounded-lg bg-muted/50">
-                <p className="text-lg md:text-2xl font-bold text-primary">{quarterStats.expected}</p>
+              <div className="text-center p-2 md:p-3 rounded-xl bg-muted/50">
+                <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.expected}</p>
                 <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.scheduled")}</p>
               </div>
-              <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
-                <p className="text-lg md:text-2xl font-bold text-green-600">{quarterStats.completed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.completed")}</p>
+              <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+                <p className="text-lg md:text-2xl font-semibold text-mint relative z-10 tabular-nums">{quarterStats.completed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.completed")}</p>
               </div>
-              <div className="text-center p-2 md:p-3 rounded-lg bg-orange-50">
-                <p className="text-lg md:text-2xl font-bold text-orange-600">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.pending")}</p>
+              <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+                <p className="text-lg md:text-2xl font-semibold text-amber relative z-10 tabular-nums">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.pending")}</p>
               </div>
-              <div className="text-center p-2 md:p-3 rounded-lg bg-red-50">
-                <p className="text-lg md:text-2xl font-bold text-red-600">{quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.failed")}</p>
+              <div className="text-center p-2 md:p-3 rounded-xl color-zone-summary relative overflow-hidden">
+                <p className="text-lg md:text-2xl font-semibold text-coral relative z-10 tabular-nums">{quarterStats.failed}</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.failed")}</p>
               </div>
               <button
                 onClick={() => setFailedAttemptsDialog(true)}
                 disabled={quarterStats.totalFailed === 0}
-                className="text-center p-2 md:p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-center p-2 md:p-3 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <p className="text-lg md:text-2xl font-bold text-purple-600">{quarterStats.totalFailed}</p>
+                <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.totalFailed}</p>
                 <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
                   {t("projections.totalFailedAttemptsLabel")}
                   <Info className="h-3 w-3 inline" />
@@ -962,7 +962,7 @@ export function ACEQuarterlyTable({
               <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
                 }`}>
                 <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
+                  <span className={`text-2xl font-semibold tabular-nums ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
                     }`}>{entry.grade}%</span>
                   <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
                 </div>
@@ -1050,7 +1050,7 @@ export function ACEQuarterlyTable({
                   <div className="space-y-2">
                     {attempt.failedGrades.map((grade, gradeIndex) => (
                       <div key={gradeIndex} className="flex items-center justify-between bg-white p-2 rounded border border-red-300">
-                        <span className="text-xl font-bold text-red-600">{grade.grade}%</span>
+                        <span className="text-xl font-semibold text-red-600 tabular-nums">{grade.grade}%</span>
                         <span className="text-xs text-gray-500">{new Date(grade.date).toLocaleDateString()}</span>
                       </div>
                     ))}
@@ -1061,7 +1061,7 @@ export function ACEQuarterlyTable({
           </div>
           <div className="flex justify-between items-center pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              {t("projections.totalFailedAttempts")} <span className="font-bold text-red-600">{quarterStats.totalFailed}</span>
+              {t("projections.totalFailedAttempts")} <span className="font-semibold text-red-600 tabular-nums">{quarterStats.totalFailed}</span>
             </p>
             <Button
               variant="outline"

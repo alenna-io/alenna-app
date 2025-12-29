@@ -299,9 +299,9 @@ export function AppSidebar() {
           <div className="flex flex-col gap-2 items-center">
             <SidebarMenu className="w-full">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
-                  <Link to="/">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <SidebarMenuButton size="lg" asChild className="justify-center">
+                  <Link to="/" className="flex justify-center">
+                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                       <span className="text-lg font-bold">
                         {isLoadingUser ? (
                           <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
@@ -326,7 +326,7 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton size="lg" asChild>
                   <Link to="/">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
                       <span className="text-lg font-bold">
                         {isLoadingUser ? (
                           <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
@@ -388,7 +388,7 @@ export function AppSidebar() {
                   asChild
                   isActive={isActive}
                   tooltip={item.title}
-                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
+                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground [&>svg]:!text-primary-foreground" : ""}`}
                 >
                   <Link
                     to={item.url}
@@ -399,7 +399,7 @@ export function AppSidebar() {
                     }}
                     className="flex items-center gap-2 min-w-0"
                   >
-                    <item.icon className="flex-shrink-0" />
+                    <item.icon className={`flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground"}`} />
                     <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -482,7 +482,7 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground" : ""}`}
+                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground [&>svg]:!text-primary-foreground" : ""}`}
                       >
                         <Link
                           to={item.url}
@@ -507,35 +507,41 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
+      <SidebarFooter className={`${isCollapsed ? "!p-0 !pb-3" : ""}`}>
+        <SidebarMenu className={`${isCollapsed ? "justify-center items-center" : ""}`}>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <div className="flex items-center gap-2 cursor-pointer">
-                <UserButton />
-                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <span className="truncate font-semibold">
-                    {isLoadingUser ? (
-                      <LoadingSpinner size="sm" />
-                    ) : userInfo?.fullName ? (
-                      userInfo.fullName
-                    ) : userInfo?.email ? (
-                      userInfo.email
-                    ) : (
-                      'Usuario'
-                    )}
-                  </span>
-                  <span className="truncate text-xs text-sidebar-foreground/70">
-                    {isLoadingUser ? (
-                      '...'
-                    ) : userInfo?.email ? (
-                      userInfo.email
-                    ) : (
-                      'Cargando...'
-                    )}
-                  </span>
+            <SidebarMenuButton size="lg" asChild className={isCollapsed ? "justify-center" : ""}>
+              {isCollapsed ? (
+                <div className="flex justify-center w-full !p-0">
+                  <UserButton />
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <UserButton />
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                    <span className="truncate font-semibold">
+                      {isLoadingUser ? (
+                        <LoadingSpinner size="sm" />
+                      ) : userInfo?.fullName ? (
+                        userInfo.fullName
+                      ) : userInfo?.email ? (
+                        userInfo.email
+                      ) : (
+                        'Usuario'
+                      )}
+                    </span>
+                    <span className="truncate text-xs text-sidebar-foreground/70">
+                      {isLoadingUser ? (
+                        '...'
+                      ) : userInfo?.email ? (
+                        userInfo.email
+                      ) : (
+                        'Cargando...'
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

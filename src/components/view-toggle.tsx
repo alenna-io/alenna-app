@@ -12,7 +12,7 @@ export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   const { t } = useTranslation()
 
   return (
-    <Card style={{ border: "none", boxShadow: "none", backgroundColor: "transparent" }}>
+    <Card className="bg-transparent border-0 shadow-none">
       <CardContent className="p-0">
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">{t("common.viewLabel")}</span>

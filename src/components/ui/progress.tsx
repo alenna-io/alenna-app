@@ -21,10 +21,10 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
         {...props}
       >
         {indeterminate ? (
-          <div className="h-full w-1/3 bg-primary animate-progress-indeterminate rounded-full" />
+          <div className="h-full w-1/3 bg-gradient-cool-mint-aqua animate-progress-indeterminate rounded-full" />
         ) : (
           <div
-            className="h-full bg-primary transition-all duration-300 ease-in-out"
+            className="h-full bg-gradient-cool-mint-aqua transition-all duration-300 ease-in-out"
             style={{ width: `${percentage}%` }}
           />
         )}
