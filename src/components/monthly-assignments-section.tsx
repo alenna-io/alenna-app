@@ -13,6 +13,7 @@ interface MonthlyAssignmentsSectionProps {
   quarter: string
   assignments: MonthlyAssignment[]
   isReadOnly?: boolean
+  isQuarterClosed?: boolean
   onRefresh?: () => Promise<void>
   onGradeAssignment: (assignmentId: string, grade: number, note?: string) => Promise<void>
 }
@@ -21,6 +22,7 @@ export function MonthlyAssignmentsSection({
   quarter,
   assignments,
   isReadOnly = false,
+  isQuarterClosed = false,
   onGradeAssignment,
 }: MonthlyAssignmentsSectionProps) {
   const { t } = useTranslation()
@@ -113,7 +115,7 @@ export function MonthlyAssignmentsSection({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {!isReadOnly && (
+                    {!isReadOnly && !isQuarterClosed && (
                       <Button
                         size="sm"
                         variant="outline"

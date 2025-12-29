@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/page-header";
-import { Building2, Calendar, ChevronRight, Lock, GraduationCap } from "lucide-react";
+import { Building2, Calendar, ChevronRight, Lock, GraduationCap, Clock } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { ModuleData } from "@/services/api";
 import { useUser } from "@/contexts/UserContext";
@@ -67,6 +67,15 @@ export default function SchoolSettingsPage() {
       path: "/school-settings/certification-types",
       readPermission: "schoolInfo.read",
       writePermission: "schoolInfo.update",
+    },
+    {
+      id: "quarters",
+      title: t("quarters.title") || "Quarter Management",
+      description: t("quarters.description") || "Manage quarter closing and status",
+      icon: Clock,
+      path: "/school-settings/quarters",
+      readPermission: "quarters.read",
+      writePermission: "quarters.close",
     },
   ], [t]);
 

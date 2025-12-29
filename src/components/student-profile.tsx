@@ -121,6 +121,14 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                 <p className="text-sm">{student.email}</p>
               </div>
             )}
+            {student.phone && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t("students.phone")}
+                </label>
+                <p className="text-sm">{student.phone}</p>
+              </div>
+            )}
             {(student.streetAddress || student.city || student.state || student.country || student.zipCode) ? (
               <>
                 {student.streetAddress && (
@@ -174,12 +182,6 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                 <p className="text-sm text-muted-foreground">-</p>
               </div>
             )}
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                {t("students.phone")}
-              </label>
-              <p className="text-sm">{student.phone || "-"}</p>
-            </div>
           </CardContent>
         </Card>
 

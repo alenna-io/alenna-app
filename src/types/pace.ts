@@ -10,6 +10,9 @@ export interface PaceData {
   grade: number | null // Grade score 0-100, null if not graded yet
   isCompleted: boolean
   isFailed?: boolean // True if the PACE was failed (grade < 80 typically)
+  isUnfinished?: boolean // True if the PACE was unfinished when quarter closed
+  originalQuarter?: string // Original quarter where unfinished pace was located
+  originalWeek?: number // Original week where unfinished pace was located
   gradeHistory?: GradeHistory[] // History of all grades for this PACE
 }
 

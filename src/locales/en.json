@@ -63,6 +63,8 @@
     "groups": "Groups",
     "schoolYear": "School Year",
     "schoolYears": "School Years",
+    "startDate": "Start Date",
+    "endDate": "End Date",
     "parent": "Parent",
     "parents": "Parents",
     "admin": "Admin",
@@ -70,8 +72,7 @@
     "pageNotFound": "Page not found",
     "pageNotFoundDescription": "The page you are looking for does not exist or is not available.",
     "pageNotFoundContactAdmin": "If you believe this is an error, contact your administrator.",
-    "pageNotFoundBackToHome": "Back to Home",
-    "inactive": "Inactive"
+    "pageNotFoundBackToHome": "Back to Home"
   },
   "configuration": {
     "title": "Settings",
@@ -185,6 +186,9 @@
     "secondParentLastNamePlaceholder": "Second parent's last name",
     "parentEmailPlaceholder": "parent@email.com",
     "secondParentEmailPlaceholder": "parent2@email.com",
+    "selectExistingParent": "Select existing parent",
+    "selectParent": "Select Parent",
+    "selectParentPlaceholder": "Select a parent...",
     "relationship": "Relationship",
     "selectRelationship": "Select relationship",
     "father": "Father",
@@ -609,7 +613,8 @@
     "quartersSummary": "Quarters summary",
     "holidaysCount": "Holidays defined: {{n}}",
     "previewWeeksCount": "Previewed weeks: {{n}}",
-    "updateSchoolYear": "Update school year"
+    "updateSchoolYear": "Update school year",
+    "deletedSuccess": "School year deleted successfully"
   },
   "monthlyAssignments": {
     "title": "Monthly Assignments",
@@ -723,6 +728,8 @@
     "lectures": "Lectures",
     "monthlyAssignments": "Monthly Assignments",
     "schoolSettings": "School",
+    "quarters": "Quarters",
+    "certificationTypes": "Certification Types",
     "teachers": "Teachers",
     "documents": "Documents",
     "settings": "Settings",
@@ -933,7 +940,29 @@
     "errorDeletingLesson": "Error deleting lesson",
     "errorDeletingLessonTitle": "Error Deleting Lecture",
     "createdFromTemplateSuccess": "Projection created successfully from template",
-    "noProjectionsDescription": "No projections have been created for this student"
+    "noProjectionsDescription": "No projections have been created for this student",
+    "unfinishedPace": "Unfinished pace (originally from {{originalQuarter}})",
+    "cannotEditClosedQuarter": "Cannot edit grades for closed quarter",
+    "cannotMoveFromClosedQuarter": "Cannot move paces from closed quarter",
+    "cannotMoveToClosedQuarter": "Cannot move paces to closed quarter",
+    "overflowPacesTitle": "Overflow Paces",
+    "overflowPacesDescription": "The following paces could not be redistributed to any remaining quarter",
+    "cannotMovePaceSequentialOrder": "Cannot move Lecture: This action would break the sequential order of lectures.",
+    "cannotAddPaceSequentialOrder": "Cannot add Lecture: This action would break the sequential order of lectures."
+  },
+  "quarters": {
+    "title": "Quarter Management",
+    "description": "Manage quarter closing and status",
+    "closed": "Closed",
+    "gracePeriod": "Grace Period",
+    "open": "Open",
+    "closeQuarter": "Close Quarter",
+    "closeConfirmation": "Are you sure you want to close this quarter? This will redistribute unfinished paces and prevent further editing.",
+    "redistributingPaces": "Redistributing unfinished paces...",
+    "redistributionComplete": "Quarter closed and unfinished paces redistributed successfully",
+    "closedAt": "Closed at",
+    "closedMessage": "This quarter is closed. No further edits are allowed.",
+    "errorClosing": "Error closing quarter"
   },
   "dailyGoals": {
     "title": "Daily Goals",

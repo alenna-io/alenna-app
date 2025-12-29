@@ -213,6 +213,8 @@ export function BreadcrumbNav() {
       'lectures': t("breadcrumbs.lectures"),
       'monthly-assignments': t("breadcrumbs.monthlyAssignments"),
       'school-settings': t("breadcrumbs.schoolSettings"),
+      'quarters': t("breadcrumbs.quarters"),
+      'certification-types': t("breadcrumbs.certificationTypes"),
       'teachers': t("breadcrumbs.teachers"),
       'documents': t("breadcrumbs.documents"),
       'settings': t("breadcrumbs.settings"),

@@ -140,6 +140,20 @@ export default function CreateStudentWizardPage() {
   const [stateOpen, setStateOpen] = React.useState(false)
   const [stateSearchTerm, setStateSearchTerm] = React.useState("")
   const [countrySearchTerm, setCountrySearchTerm] = React.useState("")
+  const [parents, setParents] = React.useState<Array<{
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    phone?: string
+    fullName: string
+  }>>([])
+  const [parent1UseDropdown, setParent1UseDropdown] = React.useState(false)
+  const [parent2UseDropdown, setParent2UseDropdown] = React.useState(false)
+  const [parent1DropdownOpen, setParent1DropdownOpen] = React.useState(false)
+  const [parent2DropdownOpen, setParent2DropdownOpen] = React.useState(false)
+  const [parent1SearchTerm, setParent1SearchTerm] = React.useState("")
+  const [parent2SearchTerm, setParent2SearchTerm] = React.useState("")
 
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -197,6 +211,23 @@ export default function CreateStudentWizardPage() {
 
         const types = await api.schools.getCertificationTypes(userInfo.schoolId)
         setCertificationTypes(types as CertificationType[])
+
+        // Fetch parents from school
+        try {
+          const parentsData = await api.schools.getParents(userInfo.schoolId)
+          const parentsArray = parentsData as Array<{
+            id: string
+            email: string
+            firstName: string
+            lastName: string
+            phone?: string
+            fullName: string
+          }>
+          setParents(parentsArray)
+        } catch (error) {
+          console.error('Error fetching parents:', error)
+          // Continue without parents - user can still manually enter
+        }
       } catch (error) {
         console.error('Error fetching wizard data:', error)
         toast.error(t("students.createError") || "Error loading data")
@@ -287,32 +318,71 @@ export default function CreateStudentWizardPage() {
       }
     } else if (step === 3) {
       // Parent 1
-      if (!formData.parent1FirstName.trim()) newErrors.parent1FirstName = t("students.validation.parentNameRequired")
-      if (!formData.parent1LastName.trim()) newErrors.parent1LastName = t("students.validation.parentLastNameRequired")
-      if (!formData.parent1Email.trim()) {
-        newErrors.parent1Email = t("students.validation.parentEmailRequired")
-      } else if (!validateEmail(formData.parent1Email)) {
-        newErrors.parent1Email = t("students.validation.emailInvalid")
+      if (parent1UseDropdown) {
+        // Using dropdown - validate that a parent was selected (email is required)
+        if (!formData.parent1Email.trim()) {
+          newErrors.parent1Email = t("students.validation.parentEmailRequired") || "Please select a parent"
+        } else if (!validateEmail(formData.parent1Email)) {
+          newErrors.parent1Email = t("students.validation.emailInvalid")
+        }
+        // Phone should come from the selected parent - if missing, it means the parent doesn't have one in DB
+        // Backend requires phone, so we need to validate it exists
+        if (!formData.parent1Phone || !formData.parent1Phone.trim()) {
+          newErrors.parent1Email = t("students.validation.parentPhoneMissing") || "Selected parent does not have a phone number. Please use manual input to add one."
+        }
+        // Relationship is still required even when using dropdown
+        if (!formData.parent1Relationship) {
+          newErrors.parent1Relationship = t("students.validation.relationshipRequired")
+        }
+      } else {
+        // Manual input - validate all fields
+        if (!formData.parent1FirstName.trim()) newErrors.parent1FirstName = t("students.validation.parentNameRequired")
+        if (!formData.parent1LastName.trim()) newErrors.parent1LastName = t("students.validation.parentLastNameRequired")
+        if (!formData.parent1Email.trim()) {
+          newErrors.parent1Email = t("students.validation.parentEmailRequired")
+        } else if (!validateEmail(formData.parent1Email)) {
+          newErrors.parent1Email = t("students.validation.emailInvalid")
+        }
+        if (!formData.parent1Phone.trim()) {
+          newErrors.parent1Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
+        }
+        if (!formData.parent1Relationship) newErrors.parent1Relationship = t("students.validation.relationshipRequired")
       }
-      if (!formData.parent1Phone.trim()) {
-        newErrors.parent1Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
-      }
-      if (!formData.parent1Relationship) newErrors.parent1Relationship = t("students.validation.relationshipRequired")
 
       // Parent 2
       if (formData.hasSecondParent) {
-        if (!formData.parent2FirstName.trim()) newErrors.parent2FirstName = t("students.validation.parentNameRequired")
-        if (!formData.parent2LastName.trim()) newErrors.parent2LastName = t("students.validation.parentLastNameRequired")
-        if (!formData.parent2Email.trim()) {
-          newErrors.parent2Email = t("students.validation.parentEmailRequired")
-        } else if (!validateEmail(formData.parent2Email)) {
-          newErrors.parent2Email = t("students.validation.emailInvalid")
+        if (parent2UseDropdown) {
+          // Using dropdown - validate that a parent was selected (email is required)
+          if (!formData.parent2Email.trim()) {
+            newErrors.parent2Email = t("students.validation.parentEmailRequired") || "Please select a parent"
+          } else if (!validateEmail(formData.parent2Email)) {
+            newErrors.parent2Email = t("students.validation.emailInvalid")
+          }
+          // Phone should come from the selected parent - if missing, it means the parent doesn't have one in DB
+          // Backend requires phone, so we need to validate it exists
+          if (!formData.parent2Phone || !formData.parent2Phone.trim()) {
+            newErrors.parent2Email = t("students.validation.parentPhoneMissing") || "Selected parent does not have a phone number. Please use manual input to add one."
+          }
+          // Relationship is still required even when using dropdown
+          if (!formData.parent2Relationship) {
+            newErrors.parent2Relationship = t("students.validation.relationshipRequired")
+          }
+        } else {
+          // Manual input - validate all fields
+          if (!formData.parent2FirstName.trim()) newErrors.parent2FirstName = t("students.validation.parentNameRequired")
+          if (!formData.parent2LastName.trim()) newErrors.parent2LastName = t("students.validation.parentLastNameRequired")
+          if (!formData.parent2Email.trim()) {
+            newErrors.parent2Email = t("students.validation.parentEmailRequired")
+          } else if (!validateEmail(formData.parent2Email)) {
+            newErrors.parent2Email = t("students.validation.emailInvalid")
+          }
+          if (!formData.parent2Phone.trim()) {
+            newErrors.parent2Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
+          }
+          if (!formData.parent2Relationship) newErrors.parent2Relationship = t("students.validation.relationshipRequired")
         }
-        if (!formData.parent2Phone.trim()) {
-          newErrors.parent2Phone = t("students.validation.parentPhoneRequired") || "Parent phone number is required"
-        }
-        if (!formData.parent2Relationship) newErrors.parent2Relationship = t("students.validation.relationshipRequired")
 
+        // Validate that parent emails are different (regardless of input method)
         if (formData.parent1Email === formData.parent2Email && formData.parent1Email) {
           newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
         }
@@ -1204,89 +1274,212 @@ export default function CreateStudentWizardPage() {
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-medium mb-4">{t("students.parent1")} <span className="text-destructive">*</span></h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Field>
-                      <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
-                      <Input
-                        value={formData.parent1FirstName}
-                        onChange={(e) => setFormData({ ...formData, parent1FirstName: e.target.value })}
-                        placeholder={t("students.parentNamePlaceholder")}
-                        className={errors.parent1FirstName ? "border-destructive" : ""}
-                      />
-                      {errors.parent1FirstName && <p className="text-sm text-destructive mt-1">{errors.parent1FirstName}</p>}
-                    </Field>
-                    <Field>
-                      <FieldLabel>{t("common.lastName")} <span className="text-destructive">*</span></FieldLabel>
-                      <Input
-                        value={formData.parent1LastName}
-                        onChange={(e) => setFormData({ ...formData, parent1LastName: e.target.value })}
-                        placeholder={t("students.parentLastNamePlaceholder")}
-                        className={errors.parent1LastName ? "border-destructive" : ""}
-                      />
-                      {errors.parent1LastName && <p className="text-sm text-destructive mt-1">{errors.parent1LastName}</p>}
-                    </Field>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <Field>
-                      <FieldLabel>{t("common.email")} <span className="text-destructive">*</span></FieldLabel>
-                      <Input
-                        type="email"
-                        value={formData.parent1Email}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">{t("students.parent1")} <span className="text-destructive">*</span></h3>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="parent1UseDropdown"
+                        checked={parent1UseDropdown}
                         onChange={(e) => {
-                          const value = e.target.value
-                          setFormData({ ...formData, parent1Email: value })
-                          // Validate immediately on change
-                          const newErrors = { ...errors }
-                          if (value.trim() && !validateEmail(value)) {
-                            newErrors.parent1Email = t("students.validation.emailInvalid")
-                          } else {
-                            delete newErrors.parent1Email
-                            // Also clear parent2Email error if emails are now different
-                            if (value !== formData.parent2Email) {
-                              delete newErrors.parent2Email
-                            }
+                          setParent1UseDropdown(e.target.checked)
+                          if (!e.target.checked) {
+                            // Clear parent data when switching to manual
+                            setFormData({
+                              ...formData,
+                              parent1FirstName: "",
+                              parent1LastName: "",
+                              parent1Email: "",
+                              parent1Phone: "",
+                              parent1Relationship: "",
+                            })
                           }
-                          setErrors(newErrors)
                         }}
-                        onBlur={(e) => handleEmailBlur('parent1Email', e.target.value)}
-                        placeholder={t("students.parentEmailPlaceholder")}
-                        className={errors.parent1Email ? "border-destructive" : ""}
+                        className="h-4 w-4 rounded border-gray-300"
                       />
+                      <FieldLabel htmlFor="parent1UseDropdown" className="cursor-pointer m-0 text-sm">
+                        {t("students.selectExistingParent") || "Select existing parent"}
+                      </FieldLabel>
+                    </div>
+                  </div>
+
+                  {parent1UseDropdown ? (
+                    <Field>
+                      <FieldLabel>{t("students.selectParent") || "Select Parent"} <span className="text-destructive">*</span></FieldLabel>
+                      <Popover open={parent1DropdownOpen} onOpenChange={setParent1DropdownOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={parent1DropdownOpen}
+                            className={cn(
+                              "w-full justify-between",
+                              !formData.parent1Email && "text-muted-foreground",
+                              errors.parent1Email && "border-destructive"
+                            )}
+                          >
+                            {formData.parent1Email
+                              ? `${formData.parent1FirstName} ${formData.parent1LastName} (${formData.parent1Email})`
+                              : t("students.selectParentPlaceholder") || "Select a parent..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder={t("common.search") || "Search..."}
+                              value={parent1SearchTerm}
+                              onValueChange={setParent1SearchTerm}
+                            />
+                            <CommandList>
+                              <CommandEmpty>{t("common.noResults") || "No results found."}</CommandEmpty>
+                              <CommandGroup>
+                                {parents
+                                  .filter((parent) =>
+                                    parent1SearchTerm
+                                      ? `${parent.firstName} ${parent.lastName} ${parent.email}`.toLowerCase().includes(parent1SearchTerm.toLowerCase())
+                                      : true
+                                  )
+                                  .map((parent) => (
+                                    <CommandItem
+                                      key={parent.id}
+                                      value={parent.id}
+                                      onSelect={() => {
+                                        setFormData({
+                                          ...formData,
+                                          parent1FirstName: parent.firstName,
+                                          parent1LastName: parent.lastName,
+                                          parent1Email: parent.email,
+                                          parent1Phone: parent.phone || "",
+                                          parent1Relationship: "Parent",
+                                        })
+                                        setParent1DropdownOpen(false)
+                                        setParent1SearchTerm("")
+                                      }}
+                                      className="cursor-pointer"
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          formData.parent1Email === parent.email ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      {parent.firstName} {parent.lastName} ({parent.email})
+                                    </CommandItem>
+                                  ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {errors.parent1Email && <p className="text-sm text-destructive mt-1">{errors.parent1Email}</p>}
+                      {formData.parent1Email && (
+                        <Field className="mt-2">
+                          <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
+                          <Select
+                            value={formData.parent1Relationship}
+                            onValueChange={(value) => setFormData({ ...formData, parent1Relationship: value })}
+                          >
+                            <SelectTrigger className={errors.parent1Relationship ? "border-destructive" : ""}>
+                              <SelectValue placeholder={t("students.selectRelationship")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Father">{t("students.father")}</SelectItem>
+                              <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                              <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                              <SelectItem value="Parent">{t("students.parent")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.parent1Relationship && <p className="text-sm text-destructive mt-1">{errors.parent1Relationship}</p>}
+                        </Field>
+                      )}
                     </Field>
-                    <Field>
-                      <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
-                      <Input
-                        type="tel"
-                        value={formData.parent1Phone}
-                        onChange={(e) => setFormData({ ...formData, parent1Phone: e.target.value })}
-                        placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
-                        className={errors.parent1Phone ? "border-destructive" : ""}
-                      />
-                      {errors.parent1Phone && <p className="text-sm text-destructive mt-1">{errors.parent1Phone}</p>}
-                    </Field>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <Field>
-                      <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
-                      <Select
-                        value={formData.parent1Relationship}
-                        onValueChange={(value) => setFormData({ ...formData, parent1Relationship: value })}
-                      >
-                        <SelectTrigger className={errors.parent1Relationship ? "border-destructive" : ""}>
-                          <SelectValue placeholder={t("students.selectRelationship")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Father">{t("students.father")}</SelectItem>
-                          <SelectItem value="Mother">{t("students.mother")}</SelectItem>
-                          <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
-                          <SelectItem value="Parent">{t("students.parent")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.parent1Relationship && <p className="text-sm text-destructive mt-1">{errors.parent1Relationship}</p>}
-                    </Field>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Field>
+                          <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
+                          <Input
+                            value={formData.parent1FirstName}
+                            onChange={(e) => setFormData({ ...formData, parent1FirstName: e.target.value })}
+                            placeholder={t("students.parentNamePlaceholder")}
+                            className={errors.parent1FirstName ? "border-destructive" : ""}
+                          />
+                          {errors.parent1FirstName && <p className="text-sm text-destructive mt-1">{errors.parent1FirstName}</p>}
+                        </Field>
+                        <Field>
+                          <FieldLabel>{t("common.lastName")} <span className="text-destructive">*</span></FieldLabel>
+                          <Input
+                            value={formData.parent1LastName}
+                            onChange={(e) => setFormData({ ...formData, parent1LastName: e.target.value })}
+                            placeholder={t("students.parentLastNamePlaceholder")}
+                            className={errors.parent1LastName ? "border-destructive" : ""}
+                          />
+                          {errors.parent1LastName && <p className="text-sm text-destructive mt-1">{errors.parent1LastName}</p>}
+                        </Field>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <Field>
+                          <FieldLabel>{t("common.email")} <span className="text-destructive">*</span></FieldLabel>
+                          <Input
+                            type="email"
+                            value={formData.parent1Email}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setFormData({ ...formData, parent1Email: value })
+                              // Validate immediately on change
+                              const newErrors = { ...errors }
+                              if (value.trim() && !validateEmail(value)) {
+                                newErrors.parent1Email = t("students.validation.emailInvalid")
+                              } else {
+                                delete newErrors.parent1Email
+                                // Also clear parent2Email error if emails are now different
+                                if (value !== formData.parent2Email) {
+                                  delete newErrors.parent2Email
+                                }
+                              }
+                              setErrors(newErrors)
+                            }}
+                            onBlur={(e) => handleEmailBlur('parent1Email', e.target.value)}
+                            placeholder={t("students.parentEmailPlaceholder")}
+                            className={errors.parent1Email ? "border-destructive" : ""}
+                          />
+                          {errors.parent1Email && <p className="text-sm text-destructive mt-1">{errors.parent1Email}</p>}
+                        </Field>
+                        <Field>
+                          <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                          <Input
+                            type="tel"
+                            value={formData.parent1Phone}
+                            onChange={(e) => setFormData({ ...formData, parent1Phone: e.target.value })}
+                            placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                            className={errors.parent1Phone ? "border-destructive" : ""}
+                          />
+                          {errors.parent1Phone && <p className="text-sm text-destructive mt-1">{errors.parent1Phone}</p>}
+                        </Field>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <Field>
+                          <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
+                          <Select
+                            value={formData.parent1Relationship}
+                            onValueChange={(value) => setFormData({ ...formData, parent1Relationship: value })}
+                          >
+                            <SelectTrigger className={errors.parent1Relationship ? "border-destructive" : ""}>
+                              <SelectValue placeholder={t("students.selectRelationship")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Father">{t("students.father")}</SelectItem>
+                              <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                              <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                              <SelectItem value="Parent">{t("students.parent")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.parent1Relationship && <p className="text-sm text-destructive mt-1">{errors.parent1Relationship}</p>}
+                        </Field>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">
@@ -1304,89 +1497,213 @@ export default function CreateStudentWizardPage() {
 
                 {formData.hasSecondParent && (
                   <div className="mt-10">
-                    <h3 className="font-medium mb-4">{t("students.parent2")}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Field>
-                        <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
-                        <Input
-                          value={formData.parent2FirstName}
-                          onChange={(e) => setFormData({ ...formData, parent2FirstName: e.target.value })}
-                          placeholder={t("students.secondParentNamePlaceholder")}
-                          className={errors.parent2FirstName ? "border-destructive" : ""}
-                        />
-                        {errors.parent2FirstName && <p className="text-sm text-destructive mt-1">{errors.parent2FirstName}</p>}
-                      </Field>
-                      <Field>
-                        <FieldLabel>{t("common.lastName")} <span className="text-destructive">*</span></FieldLabel>
-                        <Input
-                          value={formData.parent2LastName}
-                          onChange={(e) => setFormData({ ...formData, parent2LastName: e.target.value })}
-                          placeholder={t("students.secondParentLastNamePlaceholder")}
-                          className={errors.parent2LastName ? "border-destructive" : ""}
-                        />
-                        {errors.parent2LastName && <p className="text-sm text-destructive mt-1">{errors.parent2LastName}</p>}
-                      </Field>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <Field>
-                        <FieldLabel>{t("common.email")} <span className="text-destructive">*</span></FieldLabel>
-                        <Input
-                          type="email"
-                          value={formData.parent2Email}
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium">{t("students.parent2")}</h3>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="parent2UseDropdown"
+                          checked={parent2UseDropdown}
                           onChange={(e) => {
-                            const value = e.target.value
-                            setFormData({ ...formData, parent2Email: value })
-                            // Validate immediately on change
-                            const newErrors = { ...errors }
-                            if (value.trim() && !validateEmail(value)) {
-                              newErrors.parent2Email = t("students.validation.emailInvalid")
-                            } else {
-                              delete newErrors.parent2Email
-                              // Check if emails are different
-                              if (value === formData.parent1Email && value.trim()) {
-                                newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
-                              }
+                            setParent2UseDropdown(e.target.checked)
+                            if (!e.target.checked) {
+                              // Clear parent data when switching to manual
+                              setFormData({
+                                ...formData,
+                                parent2FirstName: "",
+                                parent2LastName: "",
+                                parent2Email: "",
+                                parent2Phone: "",
+                                parent2Relationship: "",
+                              })
                             }
-                            setErrors(newErrors)
                           }}
-                          onBlur={(e) => handleEmailBlur('parent2Email', e.target.value)}
-                          placeholder={t("students.secondParentEmailPlaceholder")}
-                          className={errors.parent2Email ? "border-destructive" : ""}
+                          className="h-4 w-4 rounded border-gray-300"
                         />
+                        <FieldLabel htmlFor="parent2UseDropdown" className="cursor-pointer m-0 text-sm">
+                          {t("students.selectExistingParent") || "Select existing parent"}
+                        </FieldLabel>
+                      </div>
+                    </div>
+
+                    {parent2UseDropdown ? (
+                      <Field>
+                        <FieldLabel>{t("students.selectParent") || "Select Parent"} <span className="text-destructive">*</span></FieldLabel>
+                        <Popover open={parent2DropdownOpen} onOpenChange={setParent2DropdownOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={parent2DropdownOpen}
+                              className={cn(
+                                "w-full justify-between",
+                                !formData.parent2Email && "text-muted-foreground",
+                                errors.parent2Email && "border-destructive"
+                              )}
+                            >
+                              {formData.parent2Email
+                                ? `${formData.parent2FirstName} ${formData.parent2LastName} (${formData.parent2Email})`
+                                : t("students.selectParentPlaceholder") || "Select a parent..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                            <Command shouldFilter={false}>
+                              <CommandInput
+                                placeholder={t("common.search") || "Search..."}
+                                value={parent2SearchTerm}
+                                onValueChange={setParent2SearchTerm}
+                              />
+                              <CommandList>
+                                <CommandEmpty>{t("common.noResults") || "No results found."}</CommandEmpty>
+                                <CommandGroup>
+                                  {parents
+                                    .filter((parent) =>
+                                      parent2SearchTerm
+                                        ? `${parent.firstName} ${parent.lastName} ${parent.email}`.toLowerCase().includes(parent2SearchTerm.toLowerCase())
+                                        : true
+                                    )
+                                    .filter((parent) => parent.email !== formData.parent1Email)
+                                    .map((parent) => (
+                                      <CommandItem
+                                        key={parent.id}
+                                        value={parent.id}
+                                        onSelect={() => {
+                                          setFormData({
+                                            ...formData,
+                                            parent2FirstName: parent.firstName,
+                                            parent2LastName: parent.lastName,
+                                            parent2Email: parent.email,
+                                            parent2Phone: parent.phone || "",
+                                            parent2Relationship: "Parent",
+                                          })
+                                          setParent2DropdownOpen(false)
+                                          setParent2SearchTerm("")
+                                        }}
+                                        className="cursor-pointer"
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            formData.parent2Email === parent.email ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {parent.firstName} {parent.lastName} ({parent.email})
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                         {errors.parent2Email && <p className="text-sm text-destructive mt-1">{errors.parent2Email}</p>}
+                        {formData.parent2Email && (
+                          <Field className="mt-2">
+                            <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
+                            <Select
+                              value={formData.parent2Relationship}
+                              onValueChange={(value) => setFormData({ ...formData, parent2Relationship: value })}
+                            >
+                              <SelectTrigger className={errors.parent2Relationship ? "border-destructive" : ""}>
+                                <SelectValue placeholder={t("students.selectRelationship")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Father">{t("students.father")}</SelectItem>
+                                <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                                <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                                <SelectItem value="Parent">{t("students.parent")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {errors.parent2Relationship && <p className="text-sm text-destructive mt-1">{errors.parent2Relationship}</p>}
+                          </Field>
+                        )}
                       </Field>
-                      <Field>
-                        <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
-                        <Input
-                          type="tel"
-                          value={formData.parent2Phone}
-                          onChange={(e) => setFormData({ ...formData, parent2Phone: e.target.value })}
-                          placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
-                          className={errors.parent2Phone ? "border-destructive" : ""}
-                        />
-                        {errors.parent2Phone && <p className="text-sm text-destructive mt-1">{errors.parent2Phone}</p>}
-                      </Field>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <Field>
-                        <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
-                        <Select
-                          value={formData.parent2Relationship}
-                          onValueChange={(value) => setFormData({ ...formData, parent2Relationship: value })}
-                        >
-                          <SelectTrigger className={errors.parent2Relationship ? "border-destructive" : ""}>
-                            <SelectValue placeholder={t("students.selectRelationship")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Father">{t("students.father")}</SelectItem>
-                            <SelectItem value="Mother">{t("students.mother")}</SelectItem>
-                            <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
-                            <SelectItem value="Parent">{t("students.parent")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.parent2Relationship && <p className="text-sm text-destructive mt-1">{errors.parent2Relationship}</p>}
-                      </Field>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Field>
+                            <FieldLabel>{t("common.name")} <span className="text-destructive">*</span></FieldLabel>
+                            <Input
+                              value={formData.parent2FirstName}
+                              onChange={(e) => setFormData({ ...formData, parent2FirstName: e.target.value })}
+                              placeholder={t("students.secondParentNamePlaceholder")}
+                              className={errors.parent2FirstName ? "border-destructive" : ""}
+                            />
+                            {errors.parent2FirstName && <p className="text-sm text-destructive mt-1">{errors.parent2FirstName}</p>}
+                          </Field>
+                          <Field>
+                            <FieldLabel>{t("common.lastName")} <span className="text-destructive">*</span></FieldLabel>
+                            <Input
+                              value={formData.parent2LastName}
+                              onChange={(e) => setFormData({ ...formData, parent2LastName: e.target.value })}
+                              placeholder={t("students.secondParentLastNamePlaceholder")}
+                              className={errors.parent2LastName ? "border-destructive" : ""}
+                            />
+                            {errors.parent2LastName && <p className="text-sm text-destructive mt-1">{errors.parent2LastName}</p>}
+                          </Field>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <Field>
+                            <FieldLabel>{t("common.email")} <span className="text-destructive">*</span></FieldLabel>
+                            <Input
+                              type="email"
+                              value={formData.parent2Email}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setFormData({ ...formData, parent2Email: value })
+                                // Validate immediately on change
+                                const newErrors = { ...errors }
+                                if (value.trim() && !validateEmail(value)) {
+                                  newErrors.parent2Email = t("students.validation.emailInvalid")
+                                } else {
+                                  delete newErrors.parent2Email
+                                  // Check if emails are different
+                                  if (value === formData.parent1Email && value.trim()) {
+                                    newErrors.parent2Email = t("students.validation.parentEmailsMustBeDifferent")
+                                  }
+                                }
+                                setErrors(newErrors)
+                              }}
+                              onBlur={(e) => handleEmailBlur('parent2Email', e.target.value)}
+                              placeholder={t("students.secondParentEmailPlaceholder")}
+                              className={errors.parent2Email ? "border-destructive" : ""}
+                            />
+                            {errors.parent2Email && <p className="text-sm text-destructive mt-1">{errors.parent2Email}</p>}
+                          </Field>
+                          <Field>
+                            <FieldLabel>{t("students.phone")} <span className="text-destructive">*</span></FieldLabel>
+                            <Input
+                              type="tel"
+                              value={formData.parent2Phone}
+                              onChange={(e) => setFormData({ ...formData, parent2Phone: e.target.value })}
+                              placeholder={t("students.phonePlaceholder") || "+1 (555) 123-4567"}
+                              className={errors.parent2Phone ? "border-destructive" : ""}
+                            />
+                            {errors.parent2Phone && <p className="text-sm text-destructive mt-1">{errors.parent2Phone}</p>}
+                          </Field>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                          <Field>
+                            <FieldLabel>{t("students.relationship")} <span className="text-destructive">*</span></FieldLabel>
+                            <Select
+                              value={formData.parent2Relationship}
+                              onValueChange={(value) => setFormData({ ...formData, parent2Relationship: value })}
+                            >
+                              <SelectTrigger className={errors.parent2Relationship ? "border-destructive" : ""}>
+                                <SelectValue placeholder={t("students.selectRelationship")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Father">{t("students.father")}</SelectItem>
+                                <SelectItem value="Mother">{t("students.mother")}</SelectItem>
+                                <SelectItem value="Guardian">{t("students.guardian")}</SelectItem>
+                                <SelectItem value="Parent">{t("students.parent")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {errors.parent2Relationship && <p className="text-sm text-destructive mt-1">{errors.parent2Relationship}</p>}
+                          </Field>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -63,6 +63,8 @@
     "groups": "Grupos",
     "schoolYear": "Año Escolar",
     "schoolYears": "Años Escolares",
+    "startDate": "Fecha de Inicio",
+    "endDate": "Fecha de Fin",
     "parent": "Padre/Madre",
     "parents": "Padres",
     "admin": "Administrador",
@@ -70,9 +72,7 @@
     "pageNotFound": "Página no encontrada",
     "pageNotFoundDescription": "La página que buscas no existe o no está disponible.",
     "pageNotFoundContactAdmin": "Si crees que esto es un error, contacta a tu administrador.",
-    "pageNotFoundBackToHome": "Volver al Inicio",
-    "inactive": "Inactivo"
-
+    "pageNotFoundBackToHome": "Volver al Inicio"
   },
   "configuration": {
     "title": "Configuración",
@@ -163,6 +163,9 @@
     "secondParentLastNamePlaceholder": "Apellido del segundo padre/madre",
     "parentEmailPlaceholder": "padre@email.com",
     "secondParentEmailPlaceholder": "padre2@email.com",
+    "selectExistingParent": "Seleccionar padre existente",
+    "selectParent": "Seleccionar Padre",
+    "selectParentPlaceholder": "Seleccionar un padre...",
     "relationship": "Relación",
     "selectRelationship": "Seleccionar relación",
     "father": "Padre",
@@ -588,7 +591,8 @@
     "quartersSummary": "Resumen de trimestres",
     "holidaysCount": "Vacaciones definidas: {{n}}",
     "previewWeeksCount": "Semanas previsualizadas: {{n}}",
-    "updateSchoolYear": "Actualizar año escolar"
+    "updateSchoolYear": "Actualizar año escolar",
+    "deletedSuccess": "Año escolar eliminado exitosamente"
   },
   "monthlyAssignments": {
     "title": "Asignaciones Mensuales",
@@ -706,6 +710,8 @@
     "lectures": "Lecciones",
     "monthlyAssignments": "Asignaciones Mensuales",
     "schoolSettings": "Escuela",
+    "quarters": "Gestión de Bloques",
+    "certificationTypes": "Tipo de Certificación",
     "teachers": "Maestros",
     "documents": "Documentos",
     "settings": "Configuración",
@@ -935,7 +941,29 @@
     "errorDeletingLesson": "Error al eliminar Lección",
     "errorDeletingLessonTitle": "Error eliminando Lección",
     "createdFromTemplateSuccess": "Proyección creada exitosamente desde la plantilla",
-    "noProjectionsDescription": "No se han creado proyecciones para este estudiante"
+    "noProjectionsDescription": "No se han creado proyecciones para este estudiante",
+    "unfinishedPace": "PACE incompleto (originalmente de {{originalQuarter}})",
+    "cannotEditClosedQuarter": "No se pueden editar calificaciones para un bloque cerrado",
+    "cannotMoveFromClosedQuarter": "No se pueden mover PACEs desde un bloque cerrado",
+    "cannotMoveToClosedQuarter": "No se pueden mover PACEs a un bloque cerrado",
+    "overflowPacesTitle": "PACEs en Exceso",
+    "overflowPacesDescription": "Los siguientes PACEs no pudieron ser redistribuidos a ningún bloque restante",
+    "cannotMovePaceSequentialOrder": "No se puede mover la Lección: Esta acción rompería el orden secuencial de las lecciones.",
+    "cannotAddPaceSequentialOrder": "No se puede agregar la Lección: Esta acción rompería el orden secuencial de las lecciones."
+  },
+  "quarters": {
+    "title": "Gestión de Bloques",
+    "description": "Gestiona el cierre y estado de los bloques",
+    "closed": "Cerrado",
+    "gracePeriod": "Período de Gracia",
+    "open": "Abierto",
+    "closeQuarter": "Cerrar Bloque",
+    "closeConfirmation": "¿Estás seguro de que deseas cerrar este bloque? Esto redistribuirá los PACEs incompletos y evitará ediciones futuras.",
+    "redistributingPaces": "Redistribuyendo PACEs incompletos...",
+    "redistributionComplete": "Bloque cerrado y PACEs incompletos redistribuidos exitosamente",
+    "closedAt": "Cerrado el",
+    "closedMessage": "Este bloque está cerrado. No se permiten más ediciones.",
+    "errorClosing": "Error al cerrar bloque"
   },
   "dailyGoals": {
     "title": "Metas Diarias",
