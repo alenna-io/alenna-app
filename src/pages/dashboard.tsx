@@ -14,7 +14,11 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const location = useLocation()
 
-  if (isLoadingUser || isLoadingModules) {
+  // Only show loading if we're actually on the dashboard route
+  // This prevents showing dashboard loader when navigating to other routes
+  const isDashboardRoute = location.pathname === '/dashboard'
+  
+  if (isDashboardRoute && (isLoadingUser || isLoadingModules)) {
     return <Loading />
   }
 
@@ -152,9 +156,9 @@ export function DashboardPage() {
 
             return (
               <Link key={module.moduleKey} to={module.url}>
-                <Card className={`h-full transition-all hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] cursor-pointer border-2 ${isActive ? 'ring-2 ring-primary border-primary shadow-lg' : 'border-transparent hover:border-primary/20'}`}>
+                <Card className={`h-full transition-all hover:shadow-xl hover:shadow-primary/10 cursor-pointer border-2 ${isActive ? 'ring-2 ring-primary border-primary shadow-lg' : 'border-transparent hover:border-primary/20'}`}>
                   <CardContent className="p-6 flex flex-col items-center justify-center gap-4 min-h-[200px]">
-                    <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center transition-transform hover:scale-110 duration-300">
+                    <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                       <IconComponent className="h-8 w-8 text-[#8B5CF6]" />
                     </div>
                     <div className="text-center">

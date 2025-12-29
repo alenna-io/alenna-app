@@ -44,29 +44,35 @@ interface AlennaLoaderProps {
 /**
  * PAGE variant - Full page skeleton
  * Use for initial page loads
+ * Enhanced to fill full space and match common layouts
  */
 function PageLoader({ className, children, disableAnimation }: AlennaLoaderProps) {
   if (children) {
     return (
-      <div className={cn("space-y-6", className)}>
+      <div className={cn("w-full", className)}>
         {children}
       </div>
     )
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
-      {/* Header skeleton */}
-      <div className="space-y-4">
-        <AlennaSkeleton height={40} width="30%" disableAnimation={disableAnimation} />
-        <AlennaSkeleton height={20} width="60%" variant="text" disableAnimation={disableAnimation} />
+    <div className={cn("space-y-8 w-full", className)}>
+      {/* Welcome Section Skeleton */}
+      <div className="space-y-3">
+        <AlennaSkeleton height={48} width="40%" disableAnimation={disableAnimation} className="max-w-md" />
+        <AlennaSkeleton height={24} width="70%" variant="text" disableAnimation={disableAnimation} className="max-w-2xl" />
       </div>
 
-      {/* Cards skeleton */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <CardLoader key={i} disableAnimation={disableAnimation} />
-        ))}
+      {/* Section Title Skeleton */}
+      <div className="space-y-4">
+        <AlennaSkeleton height={28} width="20%" disableAnimation={disableAnimation} className="max-w-xs" />
+
+        {/* Cards skeleton - full width grid matching home page */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ModuleCardLoader key={i} disableAnimation={disableAnimation} />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -95,7 +101,7 @@ function SectionLoader({ className, disableAnimation }: AlennaLoaderProps) {
 }
 
 /**
- * CARD variant - Card skeleton
+ * CARD variant - Card skeleton (generic card)
  * Use for individual card loading
  */
 function CardLoader({ className, disableAnimation }: AlennaLoaderProps) {
@@ -127,6 +133,29 @@ function CardLoader({ className, disableAnimation }: AlennaLoaderProps) {
 }
 
 /**
+ * Module Card Loader - Matches home page module cards
+ * Center-aligned icon and title
+ */
+function ModuleCardLoader({ className, disableAnimation }: AlennaLoaderProps) {
+  return (
+    <Card className={cn("overflow-hidden h-full", className)}>
+      <CardContent className="p-6 flex flex-col items-center justify-center gap-4 min-h-[200px]">
+        {/* Icon container skeleton */}
+        <AlennaSkeleton
+          height={64}
+          width={64}
+          variant="rectangular"
+          disableAnimation={disableAnimation}
+          className="rounded-xl"
+        />
+        {/* Title skeleton */}
+        <AlennaSkeleton height={24} width="80%" variant="text" disableAnimation={disableAnimation} className="max-w-[120px]" />
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
  * INLINE variant - Small inline skeleton
  * Use for small sections or inline loading
  */
@@ -141,13 +170,14 @@ function InlineLoader({ className, disableAnimation }: AlennaLoaderProps) {
 
 /**
  * BUTTON variant - Button loading state
- * Uses small spinner (only exception to no-spinner rule)
+ * Uses spinner (only exception to no-spinner rule)
+ * Enhanced with smoother animation and better sizing
  */
 function ButtonLoader({ size = "sm", className, disableAnimation }: AlennaLoaderProps) {
   const sizeClasses = {
     sm: "h-4 w-4",
-    md: "h-5 w-5",
-    lg: "h-6 w-6"
+    md: "h-6 w-6",
+    lg: "h-8 w-8"
   }
 
   // For reduced motion, show static dot instead
@@ -156,9 +186,10 @@ function ButtonLoader({ size = "sm", className, disableAnimation }: AlennaLoader
       <div
         className={cn("rounded-full", className)}
         style={{
-          width: size === "sm" ? "0.75rem" : size === "md" ? "1rem" : "1.25rem",
-          height: size === "sm" ? "0.75rem" : size === "md" ? "1rem" : "1.25rem",
-          backgroundColor: "var(--color-primary)"
+          width: size === "sm" ? "1rem" : size === "md" ? "1.5rem" : "2rem",
+          height: size === "sm" ? "1rem" : size === "md" ? "1.5rem" : "2rem",
+          backgroundColor: "var(--color-primary)",
+          opacity: 0.8
         }}
         aria-label="Loading"
       />
@@ -170,9 +201,14 @@ function ButtonLoader({ size = "sm", className, disableAnimation }: AlennaLoader
       className={cn(
         "animate-spin",
         sizeClasses[size],
+        "text-primary",
+        size === "lg" && "drop-shadow-sm",
         className
       )}
-      style={{ color: "var(--color-primary)" }}
+      style={{
+        color: "var(--color-primary)",
+        filter: size === "lg" ? "drop-shadow(0 1px 2px rgba(139, 92, 246, 0.3))" : undefined
+      }}
       aria-label="Loading"
     />
   )

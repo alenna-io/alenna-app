@@ -52,9 +52,9 @@ export function AlennaSkeleton({
     text: "rounded"
   }
 
-  // Base skeleton color (neutral soft surface)
+  // Base skeleton color - more visible gray (softer but visible)
   const baseStyle: React.CSSProperties = {
-    backgroundColor: "var(--color-surface, #EFF1F9)",
+    backgroundColor: "#E5E7EB", // More visible gray (#E5E7EB instead of #EFF1F9)
     width: width,
     height: height,
     ...style
@@ -78,9 +78,9 @@ export function AlennaSkeleton({
             background: `linear-gradient(
               90deg,
               transparent 0%,
-              rgba(108, 99, 255, 0.08) 20%,
-              rgba(196, 181, 253, 0.12) 50%,
-              rgba(108, 99, 255, 0.08) 80%,
+              rgba(108, 99, 255, 0.15) 20%,
+              rgba(196, 181, 253, 0.20) 50%,
+              rgba(108, 99, 255, 0.15) 80%,
               transparent 100%
             )`,
           }}

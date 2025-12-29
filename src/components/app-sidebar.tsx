@@ -55,9 +55,6 @@ export function AppSidebar() {
   const roleNames = React.useMemo(() => {
     const roles = userInfo?.roles?.map(role => role.name) ?? []
     // Log roles for debugging on mobile devices
-    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && roles.length > 0) {
-      console.log('[AppSidebar] User roles detected:', roles, 'from userInfo:', userInfo)
-    }
     return roles
   }, [userInfo])
 
@@ -65,25 +62,7 @@ export function AppSidebar() {
 
   const isSuperAdmin = hasRole('SUPERADMIN')
   const isSchoolAdmin = hasRole('SCHOOL_ADMIN')
-  const isTeacherOnly = hasRole('TEACHER') && !isSuperAdmin && !isSchoolAdmin
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
-  const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('SCHOOL_ADMIN')
-
-  // Log role checks for debugging on mobile
-  React.useEffect(() => {
-    if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && userInfo) {
-      console.log('[AppSidebar] Role checks:', {
-        roleNames,
-        isSuperAdmin,
-        isSchoolAdmin,
-        isTeacherOnly,
-        isTeacherOrAdmin,
-        schoolName: userInfo.schoolName,
-        fullName: userInfo.fullName,
-        email: userInfo.email,
-      })
-    }
-  }, [roleNames, isSuperAdmin, isSchoolAdmin, isTeacherOnly, isTeacherOrAdmin, userInfo])
 
   // Build menu items from modules - filter based on module access
   const filteredModules = modules.filter(module => {

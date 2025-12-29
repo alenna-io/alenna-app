@@ -141,7 +141,7 @@
   }
   html,
   body {
-    background-color: var(--color-background);
+    background-color: transparent;
     color: var(--color-foreground);
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -249,17 +249,12 @@
     transition: all var(--motion-short) var(--easing-default);
   }
   
-  /* Gentle hover lift effect - only for non-sidebar buttons */
+  /* Active state for buttons - only scale, no translate */
   @media (hover: hover) {
-    button:not([data-sidebar="menu-button"]):not(.press-scale):hover, 
-    a:not([data-sidebar="menu-button"]):hover, 
-    [role="button"]:not([data-sidebar="menu-button"]):not(.press-scale):hover {
-      transform: translateY(-0.5px);
-    }
     button:not([data-sidebar="menu-button"]):not(.press-scale):active, 
     a:not([data-sidebar="menu-button"]):active, 
     [role="button"]:not([data-sidebar="menu-button"]):not(.press-scale):active {
-      transform: translateY(0) scale(0.98);
+      transform: scale(0.98);
     }
   }
   
@@ -360,19 +355,27 @@
   /* Card styling - PREMIUM DEPTH & MATERIALITY */
   /* Reduced backdrop-filter blur to prevent scroll glitches */
   .card-soft {
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.92) 100%);
+    background: rgba(255, 255, 255, 0.75);
     border-radius: var(--radius-lg);
     /* Layered shadows for depth */
     box-shadow: 
-      0 1px 2px rgba(43, 46, 74, 0.03),
-      0 2px 8px rgba(43, 46, 74, 0.06),
-      0 4px 16px rgba(43, 46, 74, 0.04);
-    backdrop-filter: blur(8px);
-    border: none;
+      0 1px 3px rgba(43, 46, 74, 0.04),
+      0 4px 12px rgba(43, 46, 74, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     position: relative;
     /* Enable hardware acceleration for smooth scrolling */
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+    transition: background 200ms ease, box-shadow 200ms ease;
+  }
+  
+  .card-soft:hover {
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 
+      0 2px 4px rgba(43, 46, 74, 0.06),
+      0 8px 16px rgba(43, 46, 74, 0.08);
   }
   
   .card-soft::before {
@@ -442,13 +445,12 @@
   
   /* hoverLift - Cards, Buttons, Clickable surfaces - STABLE MOTION */
   /* Removed will-change to prevent scroll glitches */
+  /* Removed translateY to eliminate hover lift animation */
   .hover-lift {
-    transition: transform var(--motion-short) var(--easing-default),
-                box-shadow var(--motion-short) var(--easing-default);
+    transition: box-shadow var(--motion-short) var(--easing-default);
   }
   
   .hover-lift:hover {
-    transform: translateY(-1px);
     box-shadow: 
       0 2px 4px rgba(43, 46, 74, 0.04),
       0 4px 12px rgba(43, 46, 74, 0.08),
@@ -700,6 +702,29 @@
     .animate-shimmer {
       animation: none;
     }
+    .animate-background-drift {
+      animation: none;
+    }
+  }
+
+  /* Alenna Background Drift Animation */
+  @keyframes background-drift {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(-1%, 1%) scale(1.01);
+    }
+    66% {
+      transform: translate(1%, -1%) scale(0.99);
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+  
+  .animate-background-drift {
+    animation: background-drift 90s linear infinite;
   }
   
   /* Pill button base - refined */

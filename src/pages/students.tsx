@@ -925,7 +925,7 @@ export default function StudentsPage() {
 
   // Show loading state when fetching student profile
   if (isLoadingStudent) {
-    return <Loading variant="profile" />
+    return <Loading variant="card" />
   }
 
   // Show error state for student profile
@@ -1137,9 +1137,9 @@ export default function StudentsPage() {
     )
   }
 
-  // Show loading state for students list
+  // PAGE LOADING: Show skeleton table when loading students data
   if (isLoading) {
-    return <Loading variant="table" />
+    return <Loading variant="section" />
   }
 
   // Show parent-specific view

@@ -2,7 +2,7 @@ import packageJson from '../../package.json'
 
 export function Footer() {
   return (
-    <footer className="border-t bg-background mt-auto">
+    <footer className="border-t bg-none mt-auto">
       <div className="w-full py-2 md:py-3 pr-3 md:pr-6">
         <div className="flex items-center justify-end gap-2 text-xs md:text-sm text-muted-foreground">
           <span className="font-regular text-foreground">alenna</span>

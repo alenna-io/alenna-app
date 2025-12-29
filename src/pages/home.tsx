@@ -3,6 +3,7 @@ import { useUser } from "@/contexts/UserContext"
 import { Loading } from "@/components/ui/loading"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { Card, CardContent } from "@/components/ui/card"
+import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { useTranslation } from "react-i18next"
 import { GraduationCap, BookOpen, Library, Calendar, Award, Users2, UserCog, Settings, Users, Building, Sliders } from "lucide-react"
 
@@ -14,8 +15,51 @@ export function HomePage() {
   const { t } = useTranslation()
   const location = useLocation()
 
-  if (isLoadingUser || isLoadingModules) {
-    return <Loading />
+  // STRICT: Only render if we're actually on the home/dashboard route
+  // Return null immediately if not on home route to prevent skeleton cards from showing
+  const isHomeRoute = location.pathname === '/' || location.pathname === '/dashboard'
+
+  if (!isHomeRoute) {
+    return null
+  }
+
+  // MAIN LOADING: Show spinner when userInfo is loading (authentication phase)
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <Loading variant="button" size="lg" />
+      </div>
+    )
+  }
+
+  // PAGE LOADING: Show skeleton cards when modules are loading (after userInfo loaded)
+  if (isLoadingModules) {
+    return (
+      <Loading variant="page">
+        <div className="space-y-8 w-full">
+          {/* Welcome Section Skeleton */}
+          <div className="space-y-3">
+            <AlennaSkeleton height={48} width="40%" className="max-w-md" />
+            <AlennaSkeleton height={24} width="70%" variant="text" className="max-w-2xl" />
+          </div>
+
+          {/* Modules Section */}
+          <div className="space-y-4">
+            <AlennaSkeleton height={28} width="15%" className="max-w-xs" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Card key={i} className="h-full">
+                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 min-h-[200px]">
+                    <AlennaSkeleton height={64} width={64} variant="rectangular" className="rounded-xl" />
+                    <AlennaSkeleton height={24} width="80%" variant="text" className="max-w-[120px]" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Loading>
+    )
   }
 
   if (!userInfo) {
@@ -152,9 +196,9 @@ export function HomePage() {
 
             return (
               <Link key={module.moduleKey} to={module.url}>
-                <Card className={`h-full transition-all hover:shadow-xl hover:shadow-primary/10 hover:scale-[1.02] cursor-pointer border-2 ${isActive ? 'ring-2 ring-primary border-primary shadow-lg' : 'border-transparent hover:border-primary/20'}`}>
+                <Card className={`h-full transition-all hover:shadow-xl hover:shadow-primary/10 cursor-pointer border-2 ${isActive ? 'ring-2 ring-primary border-primary shadow-lg' : 'border-transparent hover:border-primary/20'}`}>
                   <CardContent className="p-6 flex flex-col items-center justify-center gap-4 min-h-[200px]">
-                    <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center transition-transform hover:scale-110 duration-300">
+                    <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                       <IconComponent className="h-8 w-8 text-[#8B5CF6]" />
                     </div>
                     <div className="text-center">
