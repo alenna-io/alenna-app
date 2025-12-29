@@ -680,6 +680,27 @@
   .animate-progress-reveal {
     animation: progressReveal var(--motion-medium) var(--easing-default) forwards;
   }
+
+  /* Alenna Skeleton Shimmer Animation */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+  
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-shimmer {
+      animation: none;
+    }
+  }
   
   /* Pill button base - refined */
   .pill-button {

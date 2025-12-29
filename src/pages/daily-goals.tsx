@@ -794,7 +794,7 @@ export default function DailyGoalsPage() {
 
       {/* Loading State */}
       {loading ? (
-        <Loading variant="spinner" message={t("dailyGoals.loading")} />
+        <Loading variant="section" />
       ) : (
         /* Daily Goals Table */
         <DailyGoalsTable

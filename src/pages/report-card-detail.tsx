@@ -197,7 +197,7 @@ export default function ReportCardDetailPage() {
             {t("common.back")}
           </BackButton>
         </div>
-        <Loading variant="spinner" message={t("reportCards.loadingReportCard")} />
+        <Loading variant="card" />
       </div>
     )
   }

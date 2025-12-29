@@ -837,7 +837,7 @@ export default function ACEProjectionPage() {
             {t("common.back")}
           </BackButton>
         </div>
-        <Loading variant="spinner" message={t("projections.loadingProjection")} />
+        <Loading variant="section" />
       </div>
     )
   }
