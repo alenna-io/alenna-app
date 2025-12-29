@@ -65,33 +65,33 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
 export const studentsApi = {
   getAll: (token: string | null) => apiFetch('/students', token),
   getById: (id: string, token: string | null) => apiFetch(`/students/${id}`, token),
-  create: (data: Record<string, unknown>, token: string | null) => 
+  create: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/students', token, { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: Record<string, unknown>, token: string | null) => 
+  update: (id: string, data: Record<string, unknown>, token: string | null) =>
     apiFetch(`/students/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: string, token: string | null) => 
+  delete: (id: string, token: string | null) =>
     apiFetch(`/students/${id}`, token, { method: 'DELETE' }),
-  deactivate: (id: string, token: string | null) => 
+  deactivate: (id: string, token: string | null) =>
     apiFetch(`/students/${id}/deactivate`, token, { method: 'POST' }),
-  reactivate: (id: string, token: string | null) => 
+  reactivate: (id: string, token: string | null) =>
     apiFetch(`/students/${id}/reactivate`, token, { method: 'POST' }),
 };
 
 // Projections API
 export const projectionsApi = {
-  getAll: (token: string | null, year?: string) => 
+  getAll: (token: string | null, year?: string) =>
     apiFetch(`/projections${year ? `?year=${year}` : ''}`, token),
-  getByStudentId: (studentId: string, token: string | null) => 
+  getByStudentId: (studentId: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections`, token),
-  getById: (studentId: string, id: string, token: string | null) => 
+  getById: (studentId: string, id: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${id}`, token),
-  getDetail: (studentId: string, id: string, token: string | null) => 
+  getDetail: (studentId: string, id: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${id}/detail`, token),
-  create: (studentId: string, data: Record<string, unknown>, token: string | null) => 
+  create: (studentId: string, data: Record<string, unknown>, token: string | null) =>
     apiFetch(`/students/${studentId}/projections`, token, { method: 'POST', body: JSON.stringify(data) }),
-  update: (studentId: string, id: string, data: Record<string, unknown>, token: string | null) => 
+  update: (studentId: string, id: string, data: Record<string, unknown>, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (studentId: string, id: string, token: string | null) => 
+  delete: (studentId: string, id: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${id}`, token, { method: 'DELETE' }),
   addPace: (studentId: string, projectionId: string, data: { paceCatalogId: string, quarter: string, week: number }, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/paces`, token, { method: 'POST', body: JSON.stringify(data) }),
@@ -237,17 +237,17 @@ export const authApi = {
 export const usersApi = {
   getUsers: (token: string | null) => apiFetch('/users', token),
   getAvailableRoles: (token: string | null) => apiFetch('/users/roles', token),
-  createUser: (data: Record<string, unknown>, token: string | null) => 
+  createUser: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/users', token, { method: 'POST', body: JSON.stringify(data) }),
-  updateUser: (id: string, data: Record<string, unknown>, token: string | null) => 
+  updateUser: (id: string, data: Record<string, unknown>, token: string | null) =>
     apiFetch(`/users/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   updateMyProfile: (data: Record<string, unknown>, token: string | null) =>
     apiFetch('/users/me', token, { method: 'PUT', body: JSON.stringify(data) }),
-  deactivateUser: (id: string, token: string | null) => 
+  deactivateUser: (id: string, token: string | null) =>
     apiFetch(`/users/${id}/deactivate`, token, { method: 'POST' }),
-  reactivateUser: (id: string, token: string | null) => 
+  reactivateUser: (id: string, token: string | null) =>
     apiFetch(`/users/${id}/reactivate`, token, { method: 'POST' }),
-  deleteUser: (id: string, token: string | null) => 
+  deleteUser: (id: string, token: string | null) =>
     apiFetch(`/users/${id}`, token, { method: 'DELETE' }),
 };
 
@@ -303,10 +303,10 @@ export const dailyGoalsApi = {
     isCompleted?: boolean;
     notes?: string;
     notesCompleted?: boolean;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals`, token, { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals`, token, {
+      method: 'POST',
+      body: JSON.stringify(data)
     }),
   update: (studentId: string, projectionId: string, goalId: string, data: {
     subject?: string;
@@ -317,67 +317,67 @@ export const dailyGoalsApi = {
     isCompleted?: boolean;
     notes?: string;
     notesCompleted?: boolean;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, { 
-      method: 'PUT', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     }),
-  updateCompletion: (studentId: string, projectionId: string, goalId: string, isCompleted: boolean, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/completion`, token, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ isCompleted }) 
+  updateCompletion: (studentId: string, projectionId: string, goalId: string, isCompleted: boolean, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/completion`, token, {
+      method: 'PATCH',
+      body: JSON.stringify({ isCompleted })
     }),
   updateNotes: (studentId: string, projectionId: string, goalId: string, data: {
     notes?: string;
     notesCompleted?: boolean;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, { 
-      method: 'PATCH', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
     }),
-  addNoteToHistory: (studentId: string, projectionId: string, goalId: string, text: string, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, { 
-      method: 'POST', 
-      body: JSON.stringify({ text }) 
+  addNoteToHistory: (studentId: string, projectionId: string, goalId: string, text: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token, {
+      method: 'POST',
+      body: JSON.stringify({ text })
     }),
-  getNoteHistory: (studentId: string, projectionId: string, goalId: string, token: string | null) => 
+  getNoteHistory: (studentId: string, projectionId: string, goalId: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}/notes`, token),
-  delete: (studentId: string, projectionId: string, goalId: string, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, { 
-      method: 'DELETE' 
+  delete: (studentId: string, projectionId: string, goalId: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/daily-goals/${goalId}`, token, {
+      method: 'DELETE'
     }),
 };
 
 // Monthly Assignments API
 export const monthlyAssignmentsApi = {
-  get: (studentId: string, projectionId: string, token: string | null) => 
+  get: (studentId: string, projectionId: string, token: string | null) =>
     apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments`, token),
   create: (studentId: string, projectionId: string, data: {
     name: string;
     quarter: string;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments`, token, { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments`, token, {
+      method: 'POST',
+      body: JSON.stringify(data)
     }),
   update: (studentId: string, projectionId: string, assignmentId: string, data: {
     name: string;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, { 
-      method: 'PUT', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(data)
     }),
   grade: (studentId: string, projectionId: string, assignmentId: string, data: {
     grade: number;
     note?: string;
-  }, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}/grade`, token, { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
+  }, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}/grade`, token, {
+      method: 'POST',
+      body: JSON.stringify(data)
     }),
-  delete: (studentId: string, projectionId: string, assignmentId: string, token: string | null) => 
-    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, { 
-      method: 'DELETE' 
+  delete: (studentId: string, projectionId: string, assignmentId: string, token: string | null) =>
+    apiFetch(`/students/${studentId}/projections/${projectionId}/monthly-assignments/${assignmentId}`, token, {
+      method: 'DELETE'
     }),
 };
 
@@ -436,6 +436,7 @@ export const schoolsApi = {
   getTeachers: (id: string, token: string | null) => apiFetch(`/schools/${id}/teachers`, token),
   getMyTeachers: (token: string | null) => apiFetch('/schools/me/teachers', token),
   getMyTeachersCount: (token: string | null) => apiFetch('/schools/me/teachers/count', token),
+  getParents: (id: string, token: string | null) => apiFetch(`/schools/${id}/parents`, token),
   getCertificationTypes: (id: string, token: string | null) => apiFetch(`/schools/${id}/certification-types`, token),
   createCertificationType: (id: string, data: { name: string; description?: string; isActive?: boolean }, token: string | null) =>
     apiFetch(`/schools/${id}/certification-types`, token, { method: 'POST', body: JSON.stringify(data) }),
@@ -697,6 +698,10 @@ export function useApi() {
         const token = await getToken();
         return schoolsApi.getMyTeachersCount(token);
       },
+      getParents: async (id: string) => {
+        const token = await getToken();
+        return schoolsApi.getParents(id, token);
+      },
       getCertificationTypes: async (id: string) => {
         const token = await getToken();
         return schoolsApi.getCertificationTypes(id, token);
@@ -882,15 +887,15 @@ export function useApi() {
       const token = await getToken();
       return usersApi.getAvailableRoles(token);
     },
-    createUser: async (userData: any) => {
+    createUser: async (userData: Record<string, unknown>) => {
       const token = await getToken();
       return usersApi.createUser(userData, token);
     },
-    updateUser: async (userId: string, userData: any) => {
+    updateUser: async (userId: string, userData: Record<string, unknown>) => {
       const token = await getToken();
       return usersApi.updateUser(userId, userData, token);
     },
-    updateMyProfile: async (userData: any) => {
+    updateMyProfile: async (userData: Record<string, unknown>) => {
       const token = await getToken();
       return usersApi.updateMyProfile(userData, token);
     },
