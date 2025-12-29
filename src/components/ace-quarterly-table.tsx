@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info, Lock } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 
@@ -22,6 +22,7 @@ interface QuarterlyTableProps {
   currentWeek?: number // 1-9 for the current week in this quarter, undefined if not current
   isActive?: boolean // Whether this quarter contains the current week
   isReadOnly?: boolean // Read-only mode for parents
+  isQuarterClosed?: boolean // Whether this quarter is closed
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
@@ -45,6 +46,7 @@ export function ACEQuarterlyTable({
   currentWeek,
   isActive = false,
   isReadOnly = false,
+  isQuarterClosed = false,
   subjectToCategory: _subjectToCategory, // eslint-disable-line @typescript-eslint/no-unused-vars
   onPaceDrop,
   onPaceToggle,
@@ -362,7 +364,13 @@ export function ACEQuarterlyTable({
                 <Badge variant="secondary" className="text-xs md:text-sm">
                   {quarter}
                 </Badge>
-                {isActive && (
+                {isQuarterClosed && (
+                  <Badge className="bg-red-100 text-red-800 border-red-500 text-xs md:text-sm flex items-center gap-1">
+                    <Lock className="h-3 w-3" />
+                    {t("quarters.closed")}
+                  </Badge>
+                )}
+                {isActive && !isQuarterClosed && (
                   <Badge className="bg-green-100 text-green-800 border-green-200 text-xs md:text-sm">
                     {t("projections.current")}
                   </Badge>
@@ -457,9 +465,9 @@ export function ACEQuarterlyTable({
                           data-week-index={weekIndex}
                           data-subject={subject}
                           className="py-1.5 px-2 text-center align-middle border border-gray-300"
-                          draggable={!isReadOnly && !!primaryPace && !isArray}
+                          draggable={!isReadOnly && !isQuarterClosed && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray) {
+                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               setDraggedPace({ subject, weekIndex })
 
                               // Create a custom drag image
@@ -551,7 +559,7 @@ export function ACEQuarterlyTable({
                           }}
                           // Touch handlers for mobile/iPad
                           onTouchStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray) {
+                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               const touch = e.touches[0]
                               setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
                               // Create drag preview for touch devices
@@ -683,24 +691,31 @@ export function ACEQuarterlyTable({
                                 {paces.map((pace, paceIdx) => (
                                   <div
                                     key={paceIdx}
-                                    className={`inline-flex flex-col items-center ${!isReadOnly && !isArray ? 'cursor-pointer' : ''}`}
+                                    className={`inline-flex flex-col items-center ${!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''}`}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!isReadOnly && !isArray) {
+                                      // Don't allow editing unfinished copies in their original quarter
+                                      if (!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
                                         handlePaceClick(subject, weekIndex, pace)
                                       }
                                     }}
                                   >
                                     <Badge
                                       variant="outline"
-                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all ${pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                        ? "bg-red-100 text-red-800 border-red-500 border-2"
-                                        : pace.isCompleted
-                                          ? "bg-green-100 text-green-800 border-green-500 border-2"
-                                          : "bg-white text-gray-800 border-gray-300 border-2"
+                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all ${pace.isUnfinished && pace.originalQuarter === quarter
+                                        ? "bg-orange-50 text-orange-800 border-orange-500 border-2 border-dashed"
+                                        : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                          ? "bg-red-100 text-red-800 border-red-500 border-2"
+                                          : pace.isCompleted
+                                            ? "bg-green-100 text-green-800 border-green-500 border-2"
+                                            : "bg-white text-gray-800 border-gray-300 border-2"
                                         }`}
+                                      title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
                                     >
-                                      {(pace.isFailed || pace.isCompleted) && (
+                                      {pace.isUnfinished && pace.originalQuarter === quarter && (
+                                        <Info className="h-2.5 w-2.5 absolute -top-0.5 -left-0.5 text-orange-600 fill-orange-100" />
+                                      )}
+                                      {(pace.isFailed || pace.isCompleted) && !(pace.isUnfinished && pace.originalQuarter === quarter) && (
                                         pace.isFailed || isPaceFailing(pace.grade) ? (
                                           <XCircle className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-red-600 fill-red-100" />
                                         ) : (
@@ -716,7 +731,7 @@ export function ACEQuarterlyTable({
                                     )}
                                   </div>
                                 ))}
-                                {!isReadOnly && !isArray && primaryPace && (
+                                {!isReadOnly && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()

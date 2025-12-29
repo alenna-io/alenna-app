@@ -16,6 +16,7 @@ import ConfigurationLanguagePage from '@/pages/configuration-language'
 import SchoolSettingsPage from '@/pages/school-settings'
 import SchoolYearsPage from '@/pages/school-years'
 import SchoolYearWizardPage from '@/pages/school-year-wizard'
+import QuartersManagementPage from '@/pages/quarters-management'
 import SchoolInfoPage from '@/pages/school-info'
 import CertificationTypesPage from '@/pages/certification-types'
 import BillingPage from '@/pages/billing'
@@ -120,6 +121,7 @@ export default function App() {
           <Route path="school-settings/school-years" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearsPage /></ModuleRouteGuard>} />
           <Route path="school-settings/school-years/wizard/:schoolYearId" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
           <Route path="school-settings/school-years/wizard" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/quarters" element={<ModuleRouteGuard requiredModule="school_admin"><QuartersManagementPage /></ModuleRouteGuard>} />
           <Route path="school-settings/certification-types" element={<ModuleRouteGuard requiredModule="school_admin"><CertificationTypesPage /></ModuleRouteGuard>} />
           <Route path="configuration/billing" element={<BillingPage />} />
           <Route path="users" element={<ModuleRouteGuard requiredModule="users"><UsersPage /></ModuleRouteGuard>} />

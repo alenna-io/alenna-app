@@ -56,6 +56,7 @@ export default function ReportCardsPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [schoolYears, setSchoolYears] = React.useState<Array<{ id: string; name: string }>>([])
+  const [schoolYearClosedQuarters, setSchoolYearClosedQuarters] = React.useState<Map<string, boolean>>(new Map())
   const [searchTerm, setSearchTerm] = React.useState("")
   const [filters, setFilters] = React.useState<{ schoolYear: string }>({
     schoolYear: ""
@@ -84,7 +85,7 @@ export default function ReportCardsPage() {
 
   const currentSchoolYear = getCurrentSchoolYear()
 
-  // Fetch school years
+  // Fetch school years and check for closed quarters
   React.useEffect(() => {
     const fetchSchoolYears = async () => {
       try {
@@ -99,6 +100,20 @@ export default function ReportCardsPage() {
           // If current year not found, use first available
           setFilters({ schoolYear: data[0].name })
         }
+
+        // Check for closed quarters for each school year
+        const closedQuartersMap = new Map<string, boolean>()
+        for (const schoolYear of data) {
+          try {
+            const quarters = await api.quarters.getStatus(schoolYear.id) as Array<{ name: string; isClosed: boolean }>
+            const hasClosedQuarter = quarters.some(q => q.isClosed)
+            closedQuartersMap.set(schoolYear.name, hasClosedQuarter)
+          } catch (err) {
+            console.warn(`Error fetching quarter status for ${schoolYear.name}:`, err)
+            closedQuartersMap.set(schoolYear.name, false)
+          }
+        }
+        setSchoolYearClosedQuarters(closedQuartersMap)
       } catch (err) {
         console.error('Error fetching school years:', err)
       }
@@ -151,8 +166,12 @@ export default function ReportCardsPage() {
   ]
 
   // Filter and sort projections - MUST be before any conditional returns
+  // Only show projections with at least one closed quarter
   const filteredProjections = React.useMemo(() => {
-    let filtered = [...projections]
+    let filtered = projections.filter(projection => {
+      const hasClosedQuarter = schoolYearClosedQuarters.get(projection.schoolYear) ?? false
+      return hasClosedQuarter
+    })
 
     // Apply search filter
     if (searchTerm) {
@@ -171,7 +190,7 @@ export default function ReportCardsPage() {
     })
 
     return filtered
-  }, [projections, searchTerm, sortDirection])
+  }, [projections, searchTerm, sortDirection, schoolYearClosedQuarters])
 
   // Pagination - MUST be before any conditional returns
   const totalPages = Math.ceil(filteredProjections.length / itemsPerPage)

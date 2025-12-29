@@ -23,6 +23,7 @@ export default function ReportCardsListPage() {
 
   const [student, setStudent] = React.useState<Student | null>(null)
   const [projections, setProjections] = React.useState<Projection[]>([])
+  const [schoolYearClosedQuarters, setSchoolYearClosedQuarters] = React.useState<Map<string, boolean>>(new Map())
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
@@ -48,6 +49,25 @@ export default function ReportCardsListPage() {
         if (isMounted) {
           setStudent(studentData as unknown as Student)
           setProjections(projectionsData as unknown as Projection[])
+
+          // Fetch school years and check for closed quarters
+          try {
+            const schoolYears = await api.schoolYears.getAll() as Array<{ id: string; name: string }>
+            const closedQuartersMap = new Map<string, boolean>()
+            for (const schoolYear of schoolYears) {
+              try {
+                const quarters = await api.quarters.getStatus(schoolYear.id) as Array<{ name: string; isClosed: boolean }>
+                const hasClosedQuarter = quarters.some(q => q.isClosed)
+                closedQuartersMap.set(schoolYear.name, hasClosedQuarter)
+              } catch (err) {
+                console.warn(`Error fetching quarter status for ${schoolYear.name}:`, err)
+                closedQuartersMap.set(schoolYear.name, false)
+              }
+            }
+            setSchoolYearClosedQuarters(closedQuartersMap)
+          } catch (err) {
+            console.warn('Error fetching school years for closed quarters:', err)
+          }
         }
       } catch (err) {
         const error = err as Error
@@ -117,52 +137,60 @@ export default function ReportCardsListPage() {
       />
 
       {/* Projections List */}
-      {projections.length > 0 ? (
-        <div className="space-y-4">
-          {projections.map((projection) => (
-            <Card
-              key={projection.id}
-              className="hover:shadow-md transition-all cursor-pointer group"
-              onClick={() => navigate(`/students/${studentId}/report-cards/${projection.id}`)}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        {t("projections.schoolYear")} {projection.schoolYear}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(projection.startDate).toLocaleDateString()} - {new Date(projection.endDate).toLocaleDateString()}
-                      </p>
+      {(() => {
+        // Filter projections to only show those with at least one closed quarter
+        const filteredProjections = projections.filter(projection => {
+          const hasClosedQuarter = schoolYearClosedQuarters.get(projection.schoolYear) ?? false
+          return hasClosedQuarter
+        })
+
+        return filteredProjections.length > 0 ? (
+          <div className="space-y-4">
+            {filteredProjections.map((projection) => (
+              <Card
+                key={projection.id}
+                className="hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => navigate(`/students/${studentId}/report-cards/${projection.id}`)}
+              >
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                          {t("projections.schoolYear")} {projection.schoolYear}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(projection.startDate).toLocaleDateString()} - {new Date(projection.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <StatusBadge isActive={projection.isActive} />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge isActive={projection.isActive} />
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </div>
-              </CardHeader>
-              {projection.notes && (
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{projection.notes}</p>
-                </CardContent>
-              )}
-            </Card>
-          ))}
-        </div>
-      ) : (
-        /* Empty State */
-        <Card>
-          <CardContent className="p-12 text-center">
-            <EmptyState
-              icon={FileText}
-              title={t("reportCards.noReportCards")}
-              description={t("reportCards.noProjectionsYet")}
-            />
-          </CardContent>
-        </Card>
-      )}
+                </CardHeader>
+                {projection.notes && (
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{projection.notes}</p>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
+          <Card>
+            <CardContent className="p-12 text-center">
+              <EmptyState
+                icon={FileText}
+                title={t("reportCards.noReportCards")}
+                description={t("reportCards.noProjectionsYet")}
+              />
+            </CardContent>
+          </Card>
+        )
+      })()}
     </div>
   )
 }

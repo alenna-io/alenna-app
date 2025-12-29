@@ -18,6 +18,9 @@ export interface PaceDetail {
   grade: number | null
   isCompleted: boolean
   isFailed: boolean
+  isUnfinished?: boolean
+  originalQuarter?: string
+  originalWeek?: number
   comments?: string
   gradeHistory: GradeHistory[]
   createdAt: string

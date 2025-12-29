@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button"
 import { FileText, BookOpen } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
+import { useQuarterStatus } from "@/hooks/useQuarterStatus"
 
 
 // Helper to create empty quarter data structure
@@ -79,6 +80,21 @@ export default function ACEProjectionPage() {
     message: string
   }>({ open: false, message: "" })
   const [monthlyAssignments, setMonthlyAssignments] = React.useState<MonthlyAssignment[]>([])
+  const [schoolYearId, setSchoolYearId] = React.useState<string | null>(null)
+
+  // Get quarter status using the hook
+  const { isQuarterClosed: isQuarterClosedHook, quarters: quarterStatuses } = useQuarterStatus(schoolYearId)
+
+  // Helper function to check if a quarter is closed (with fallback)
+  const isQuarterClosed = React.useCallback((quarter: string): boolean => {
+    if (!isQuarterClosedHook) return false
+    return isQuarterClosedHook(quarter)
+  }, [isQuarterClosedHook])
+
+  // Check if at least one quarter is closed
+  const hasAtLeastOneClosedQuarter = React.useMemo(() => {
+    return quarterStatuses.some(q => q.status === 'closed')
+  }, [quarterStatuses])
 
   // Compute existing pace catalog IDs (for preventing re-adding deleted paces)
   const existingPaceCatalogIds = React.useMemo(() => {
@@ -136,6 +152,17 @@ export default function ACEProjectionPage() {
         setError(null)
         const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
         setProjectionDetail(detail)
+
+        // Look up schoolYearId by name to use with useQuarterStatus hook
+        try {
+          const schoolYears = await api.schoolYears.getAll()
+          const matchingSchoolYear = schoolYears.find((sy: { name: string; id: string }) => sy.name === detail.schoolYear)
+          if (matchingSchoolYear) {
+            setSchoolYearId(matchingSchoolYear.id)
+          }
+        } catch (err) {
+          console.warn('Could not fetch school years for quarter status:', err)
+        }
 
         // Convert API data to the format expected by ACEQuarterlyTable
         // Pass categories to ensure all projection categories are shown in all quarters
@@ -236,6 +263,9 @@ export default function ACEProjectionPage() {
               grade: pace.grade,
               isCompleted: pace.isCompleted,
               isFailed: pace.isFailed,
+              isUnfinished: pace.isUnfinished,
+              originalQuarter: pace.originalQuarter,
+              originalWeek: pace.originalWeek,
               gradeHistory: pace.gradeHistory.map(gh => ({
                 grade: gh.grade,
                 date: gh.date,
@@ -300,6 +330,63 @@ export default function ACEProjectionPage() {
     if (!fromPace || !fromPace.id) {
       console.error('Cannot drag: source pace is invalid or an array')
       return
+    }
+
+    // Validate sequential order before allowing the move
+    // Rule: Paces must always be in sequential order (e.g., 1087 must come before 1088)
+    const fromPaceNumber = parseInt(fromPace.number) || 0
+    const toPaceNumber = toPace ? (parseInt(toPace.number) || 0) : 0
+
+    // Simple check: if we're swapping paces, ensure the lower-numbered pace doesn't end up after the higher-numbered one
+    if (toPace && toPaceNumber > 0) {
+      // We're swapping two paces
+      // After swap: fromPace (lower number) goes to toWeek, toPace (higher number) goes to fromWeek
+      // This is valid only if fromWeek < toWeek (lower number in earlier week)
+      // But if fromPaceNumber < toPaceNumber and fromWeek > toWeek, that breaks order
+      // Actually, the rule is simpler: lower-numbered paces must come before higher-numbered paces
+      // So if fromPaceNumber < toPaceNumber, then fromWeek must be <= toWeek
+      if (fromPaceNumber < toPaceNumber && fromWeek > toWeek) {
+        // Lower-numbered pace is being moved to a later week than higher-numbered pace - invalid
+        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move PACE: This action would break the sequential order of paces.")
+        return
+      }
+      if (fromPaceNumber > toPaceNumber && fromWeek < toWeek) {
+        // Higher-numbered pace is being moved to an earlier week than lower-numbered pace - invalid
+        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move PACE: This action would break the sequential order of paces.")
+        return
+      }
+    } else {
+      // Moving to an empty cell - check if this would break sequential order with other paces
+      const allPacesInSubject = quarterData[subject]
+        .map((pace, idx) => {
+          if (!pace || Array.isArray(pace) || idx === fromWeek) return null
+          const paceNum = parseInt(pace.number) || 0
+          return { paceNum, weekIndex: idx }
+        })
+        .filter((item): item is { paceNum: number, weekIndex: number } => item !== null)
+
+      // Check if moving to toWeek would place fromPace after a higher-numbered pace
+      const targetWeekPace = allPacesInSubject.find(item => item.weekIndex === toWeek)
+      if (targetWeekPace && targetWeekPace.paceNum > fromPaceNumber) {
+        // Cannot place lower-numbered pace after higher-numbered pace
+        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move PACE: This action would break the sequential order of paces.")
+        return
+      }
+
+      // Check if there are consecutive paces that would be broken
+      const sortedPaces = [...allPacesInSubject, { paceNum: fromPaceNumber, weekIndex: toWeek }]
+        .sort((a, b) => a.paceNum - b.paceNum)
+
+      for (let i = 0; i < sortedPaces.length - 1; i++) {
+        const current = sortedPaces[i]
+        const next = sortedPaces[i + 1]
+
+        // If two consecutive pace numbers are in non-sequential weeks, that's a problem
+        if (next.paceNum - current.paceNum === 1 && current.weekIndex > next.weekIndex) {
+          toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move PACE: This action would break the sequential order of paces.")
+          return
+        }
+      }
     }
 
     // OPTIMISTIC UPDATE: Immediately swap the PACEs in the UI
@@ -372,6 +459,11 @@ export default function ACEProjectionPage() {
   // Handle pace completion and grade - SAVES TO DATABASE (with optimistic update)
   const handlePaceToggle = async (quarter: string, subject: string, weekIndex: number, grade?: number) => {
     if (!studentId || !projectionId) return
+
+    if (isQuarterClosed(quarter)) {
+      toast.error(t("projections.cannotEditClosedQuarter") || "Cannot edit grades for closed quarter")
+      return
+    }
 
     const quarterData = projectionData[quarter as keyof typeof projectionData]
     const pace = quarterData[subject][weekIndex]
@@ -494,6 +586,79 @@ export default function ACEProjectionPage() {
 
     const { quarter, subject, weekIndex } = pacePickerContext
 
+    // Validate sequential order before allowing the addition
+    const newPaceNumber = parseInt(paceCode) || 0
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+
+    // Get all paces in the same subject and quarter
+    const allPacesInSubject = quarterData[subject]
+      .map((pace, idx) => {
+        if (!pace || Array.isArray(pace)) return null
+        const paceNum = parseInt(pace.number) || 0
+        return { paceNum, weekIndex: idx }
+      })
+      .filter((item): item is { paceNum: number, weekIndex: number } => item !== null)
+
+    // Find the pace that should come immediately before and after the new pace in sequential order
+    let beforePace: { paceNum: number, weekIndex: number } | null = null
+    let afterPace: { paceNum: number, weekIndex: number } | null = null
+
+    for (const item of allPacesInSubject) {
+      if (item.paceNum < newPaceNumber) {
+        if (!beforePace || item.paceNum > beforePace.paceNum) {
+          beforePace = { paceNum: item.paceNum, weekIndex: item.weekIndex }
+        }
+      } else if (item.paceNum > newPaceNumber) {
+        if (!afterPace || item.paceNum < afterPace.paceNum) {
+          afterPace = { paceNum: item.paceNum, weekIndex: item.weekIndex }
+        }
+      }
+    }
+
+    // Case 1: If there's an afterPace but no beforePace, the new pace must come before the afterPace
+    // (e.g., adding 1009 when 1088 exists - 1009 must be in an earlier week than 1088)
+    if (!beforePace && afterPace) {
+      if (weekIndex >= afterPace.weekIndex) {
+        toast.error(t("projections.cannotAddPaceSequentialOrder") || "Cannot add Lecture: This action would break the sequential order of lectures.")
+        return
+      }
+    }
+
+    // Case 2: If there's a beforePace but no afterPace, the new pace must come after the beforePace
+    // (e.g., adding 1100 when 1088 exists - 1100 must be in a later week than 1088)
+    if (beforePace && !afterPace) {
+      if (weekIndex <= beforePace.weekIndex) {
+        toast.error(t("projections.cannotAddPaceSequentialOrder") || "Cannot add Lecture: This action would break the sequential order of lectures.")
+        return
+      }
+    }
+
+    // Case 3: If there's a pace before and after, check if they're consecutive
+    // If they are consecutive (e.g., 1087 and 1088), we cannot insert between them
+    if (beforePace && afterPace) {
+      const beforeNum = beforePace.paceNum
+      const afterNum = afterPace.paceNum
+
+      // If before and after are consecutive (e.g., 1087 and 1088), cannot insert between them
+      if (afterNum - beforeNum === 1) {
+        toast.error(t("projections.cannotAddPaceSequentialOrder") || "Cannot add Lecture: This action would break the sequential order of lectures.")
+        return
+      }
+
+      // Check if adding to targetWeek would place the new pace after a higher-numbered pace
+      // or before a lower-numbered pace in a way that breaks order
+      if (afterPace.weekIndex < weekIndex && afterNum > newPaceNumber) {
+        // Higher-numbered pace is in an earlier week - invalid
+        toast.error(t("projections.cannotAddPaceSequentialOrder") || "Cannot add Lecture: This action would break the sequential order of lectures.")
+        return
+      }
+      if (beforePace.weekIndex > weekIndex && beforeNum < newPaceNumber) {
+        // Lower-numbered pace is in a later week - invalid
+        toast.error(t("projections.cannotAddPaceSequentialOrder") || "Cannot add Lecture: This action would break the sequential order of lectures.")
+        return
+      }
+    }
+
     // OPTIMISTIC UPDATE: Immediately add the PACE to the UI
     const optimisticPace = {
       id: `temp-${Date.now()}`, // Temporary ID
@@ -505,7 +670,6 @@ export default function ACEProjectionPage() {
     }
 
     const updatedProjectionData = { ...projectionData }
-    const quarterData = updatedProjectionData[quarter as keyof typeof projectionData]
     const updatedQuarterData = { ...quarterData }
     const updatedWeekPaces = [...quarterData[subject]]
     updatedWeekPaces[weekIndex] = optimisticPace
@@ -736,7 +900,7 @@ export default function ACEProjectionPage() {
               {t("projections.viewCurrentWeekDailyGoals")}
             </Button>
           )}
-          {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && (
+          {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && hasAtLeastOneClosedQuarter && (
             <Button
               variant="default"
               onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
@@ -786,18 +950,20 @@ export default function ACEProjectionPage() {
             isActive={currentQuarter === "Q1"}
             currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
             subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onPaceDrop={isParentOnly || isQuarterClosed("Q1") ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly || isQuarterClosed("Q1") ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly ? undefined : handleAddPace}
-            onDeletePace={isParentOnly ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly}
+            onAddPace={isParentOnly || isQuarterClosed("Q1") ? undefined : handleAddPace}
+            onDeletePace={isParentOnly || isQuarterClosed("Q1") ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly || isQuarterClosed("Q1")}
+            isQuarterClosed={isQuarterClosed("Q1")}
           />
           {hasModule('monthlyAssignments') && (
             <MonthlyAssignmentsSection
               quarter="Q1"
               assignments={monthlyAssignments}
               isReadOnly={isParentOnly}
+              isQuarterClosed={isQuarterClosed("Q1")}
               onGradeAssignment={handleGradeMonthlyAssignment}
             />
           )}
@@ -811,18 +977,20 @@ export default function ACEProjectionPage() {
             isActive={currentQuarter === "Q2"}
             currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
             subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onPaceDrop={isParentOnly || isQuarterClosed("Q2") ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly || isQuarterClosed("Q2") ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly ? undefined : handleAddPace}
-            onDeletePace={isParentOnly ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly}
+            onAddPace={isParentOnly || isQuarterClosed("Q2") ? undefined : handleAddPace}
+            onDeletePace={isParentOnly || isQuarterClosed("Q2") ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly || isQuarterClosed("Q2")}
+            isQuarterClosed={isQuarterClosed("Q2")}
           />
           {hasModule('monthlyAssignments') && (
             <MonthlyAssignmentsSection
               quarter="Q2"
               assignments={monthlyAssignments}
               isReadOnly={isParentOnly}
+              isQuarterClosed={isQuarterClosed("Q2")}
               onGradeAssignment={handleGradeMonthlyAssignment}
             />
           )}
@@ -836,18 +1004,20 @@ export default function ACEProjectionPage() {
             isActive={currentQuarter === "Q3"}
             currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
             subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onPaceDrop={isParentOnly || isQuarterClosed("Q3") ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly || isQuarterClosed("Q3") ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly ? undefined : handleAddPace}
-            onDeletePace={isParentOnly ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly}
+            onAddPace={isParentOnly || isQuarterClosed("Q3") ? undefined : handleAddPace}
+            onDeletePace={isParentOnly || isQuarterClosed("Q3") ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly || isQuarterClosed("Q3")}
+            isQuarterClosed={isQuarterClosed("Q3")}
           />
           {hasModule('monthlyAssignments') && (
             <MonthlyAssignmentsSection
               quarter="Q3"
               assignments={monthlyAssignments}
               isReadOnly={isParentOnly}
+              isQuarterClosed={isQuarterClosed("Q3")}
               onGradeAssignment={handleGradeMonthlyAssignment}
             />
           )}
@@ -861,12 +1031,13 @@ export default function ACEProjectionPage() {
             isActive={currentQuarter === "Q4"}
             currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
             subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly ? undefined : handlePaceToggle}
+            onPaceDrop={isParentOnly || isQuarterClosed("Q4") ? undefined : handlePaceDrop}
+            onPaceToggle={isParentOnly || isQuarterClosed("Q4") ? undefined : handlePaceToggle}
             onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly ? undefined : handleAddPace}
-            onDeletePace={isParentOnly ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly}
+            onAddPace={isParentOnly || isQuarterClosed("Q4") ? undefined : handleAddPace}
+            onDeletePace={isParentOnly || isQuarterClosed("Q4") ? undefined : handleDeletePace}
+            isReadOnly={isParentOnly || isQuarterClosed("Q4")}
+            isQuarterClosed={isQuarterClosed("Q4")}
           />
 
           {hasModule('monthlyAssignments') && (
@@ -874,6 +1045,7 @@ export default function ACEProjectionPage() {
               quarter="Q4"
               assignments={monthlyAssignments}
               isReadOnly={isParentOnly}
+              isQuarterClosed={isQuarterClosed("Q4")}
               onGradeAssignment={handleGradeMonthlyAssignment}
             />
           )}

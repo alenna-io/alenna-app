@@ -157,6 +157,11 @@ export interface Quarter {
   endDate: string;
   order: number;
   weeksCount: number;
+  isClosed?: boolean;
+  closedAt?: string;
+  closedBy?: string;
+  status?: 'open' | 'gracePeriod' | 'closed';
+  canClose?: boolean;
 }
 
 export interface SchoolYear {
@@ -186,6 +191,11 @@ export const schoolYearsApi = {
   delete: (id: string, token: string | null) => apiFetch(`/school-years/${id}`, token, { method: 'DELETE' }),
   setActive: (id: string, token: string | null) => apiFetch(`/school-years/${id}/activate`, token, { method: 'POST' }),
   previewWeeks: (data: Record<string, unknown>, token: string | null) => apiFetch('/school-years/preview-weeks', token, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const quartersApi = {
+  close: (id: string, token: string | null) => apiFetch(`/quarters/${id}/close`, token, { method: 'POST' }),
+  getStatus: (schoolYearId: string, token: string | null) => apiFetch(`/quarters/status?schoolYearId=${schoolYearId}`, token),
 };
 
 // Auth API
@@ -759,6 +769,16 @@ export function useApi() {
       previewWeeks: async (data: Record<string, unknown>) => {
         const token = await getToken();
         return schoolYearsApi.previewWeeks(data, token);
+      },
+    },
+    quarters: {
+      close: async (id: string) => {
+        const token = await getToken();
+        return quartersApi.close(id, token);
+      },
+      getStatus: async (schoolYearId: string) => {
+        const token = await getToken();
+        return quartersApi.getStatus(schoolYearId, token);
       },
     },
     schoolMonthlyAssignments: {
