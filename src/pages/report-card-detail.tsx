@@ -244,7 +244,7 @@ export default function ReportCardDetailPage() {
           <Button
             onClick={handleExport}
             disabled={isExporting}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
           >
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? t("reportCards.exporting") : t("reportCards.export")}

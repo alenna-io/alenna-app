@@ -265,7 +265,7 @@ export function PacePickerDialog({
                       disabled={isAlreadyAdded}
                       className={`cursor-pointer ${isAlreadyAdded
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white'
                         }`}
                     >
                       <Plus className="h-4 w-4" />

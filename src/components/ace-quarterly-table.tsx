@@ -769,7 +769,7 @@ export function ACEQuarterlyTable({
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors cursor-pointer shadow-sm"
+                                  className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white rounded-md hover:bg-[#7C3AED] transition-colors cursor-pointer shadow-sm"
                                   title={t("projections.add")}
                                 >
                                   <Check className="h-4 w-4" />

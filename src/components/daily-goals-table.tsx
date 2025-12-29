@@ -429,7 +429,7 @@ export function DailyGoalsTable({
                           <div className="flex gap-1">
                             <button
                               onClick={handleNotesSubmit}
-                              className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors cursor-pointer"
+                              className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white rounded hover:bg-[#7C3AED] transition-colors cursor-pointer"
                               title={t("common.save")}
                             >
                               <Check className="h-4 w-4" />

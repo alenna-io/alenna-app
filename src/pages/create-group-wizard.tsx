@@ -318,7 +318,7 @@ export default function CreateGroupWizardPage() {
                       currentStep > step.number
                         ? "bg-green-500 text-white"
                         : currentStep === step.number
-                          ? "bg-blue-500 text-white"
+                          ? "bg-[#8B5CF6] text-white"
                           : "bg-gray-200 text-gray-600"
                     )}
                   >
@@ -551,6 +551,19 @@ export default function CreateGroupWizardPage() {
             variant="outline"
             onClick={handleBack}
             disabled={isSaving}
+            className="transition-colors"
+            style={{ 
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)'
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.filter = 'brightness(0.95)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             {t("common.back")}
@@ -559,8 +572,22 @@ export default function CreateGroupWizardPage() {
             {currentStep < 3 ? (
               <Button
                 type="button"
+                variant="outline"
                 onClick={handleNext}
                 disabled={!canProceed || isSaving}
+                className="transition-colors"
+                style={{ 
+                  color: 'var(--color-primary)',
+                  backgroundColor: 'var(--color-primary-soft)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.filter = 'brightness(0.95)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = ''
+                }}
               >
                 {t("common.next")}
                 <ChevronRight className="h-4 w-4 ml-2" />

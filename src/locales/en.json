@@ -738,6 +738,14 @@
     "createGroup": "Create Group",
     "generateProjection": "Generate Projection"
   },
+  "dashboard": {
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "welcomeMessage": "Welcome to your dashboard. Select a module to get started.",
+    "modules": "Modules",
+    "noModulesAvailable": "No modules are available at this time."
+  },
   "wizard": {
     "title": "Generate Projection",
     "description": "Create an automatic academic projection step by step",

@@ -720,6 +720,14 @@
     "createGroup": "Crear Grupo",
     "generateProjection": "Generar Proyección"
   },
+  "dashboard": {
+    "goodMorning": "Buenos días",
+    "goodAfternoon": "Buenas tardes",
+    "goodEvening": "Buenas noches",
+    "welcomeMessage": "Bienvenido a tu panel de control. Selecciona un módulo para comenzar.",
+    "modules": "Módulos",
+    "noModulesAvailable": "No hay módulos disponibles en este momento."
+  },
   "sidebar": {
     "students": "Estudiantes",
     "users": "Usuarios",

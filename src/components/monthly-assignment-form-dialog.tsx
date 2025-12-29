@@ -194,7 +194,7 @@ export function MonthlyAssignmentFormDialog({
           <Button
             onClick={handleSave}
             disabled={isSaving || !formData.name.trim() || (!assignment && !formData.quarter)}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
           >
             {isSaving ? t("common.saving") : assignment ? t("common.save") : t("monthlyAssignments.newAssignment")}
           </Button>

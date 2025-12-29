@@ -1,0 +1,31 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <title>Lecciones Icon</title>
+  <defs>
+    <linearGradient id="grad-le" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+    <filter id="shadow-le" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#grad-le)" filter="url(#shadow-le)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 22H36V42H20V22Z"/>
+    <path d="M24 18H40V38H24V18Z"/>
+    <path d="M26 26H34"/>
+    <path d="M26 30H34"/>
+    <path d="M26 34H30"/>
+    <path d="M28 26H36"/>
+    <path d="M28 30H36"/>
+    <path d="M28 34H32"/>
+  </g>
+</svg>

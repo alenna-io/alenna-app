@@ -278,7 +278,7 @@ export function SchoolYearFormDialog({
           {/* School Year Basic Info */}
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-[#8B5CF6] rounded-full"></div>
               {t("forms.basicInfo")}
             </h3>
             <FieldGroup>
@@ -440,7 +440,7 @@ export function SchoolYearFormDialog({
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
           >
             {isSaving ? t("common.saving") : schoolYear ? t("common.save") : t("schoolYears.createSchoolYear")}
           </Button>

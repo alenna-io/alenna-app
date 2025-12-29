@@ -743,7 +743,19 @@ export default function DailyGoalsPage() {
               if (prev) handleNavigateWeek(prev.quarter, prev.week)
             }}
             disabled={!getPreviousWeek()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 transition-colors"
+            style={{
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)'
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.filter = 'brightness(0.95)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
             {t("dailyGoals.previousWeek")}
@@ -760,7 +772,19 @@ export default function DailyGoalsPage() {
               if (next) handleNavigateWeek(next.quarter, next.week)
             }}
             disabled={!getNextWeek()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 transition-colors"
+            style={{
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)'
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.filter = 'brightness(0.95)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             {t("dailyGoals.nextWeek")}
             <ChevronRight className="h-4 w-4" />

@@ -1,0 +1,30 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <title>Maestros Icon</title>
+  <defs>
+    <linearGradient id="grad-ma" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#DB2777"/>
+    </linearGradient>
+    <filter id="shadow-ma" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1"/>
+      <feOffset dx="0" dy="1" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.2"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#grad-ma)" filter="url(#shadow-ma)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="24" r="6"/>
+    <path d="M20 40C20 36 25.4 32 32 32C38.6 32 44 36 44 40"/>
+    <circle cx="28" cy="24" r="1.5" fill="#FFFFFF"/>
+    <circle cx="36" cy="24" r="1.5" fill="#FFFFFF"/>
+    <path d="M30 28C30 27.5 30.5 27 31 27C31.5 27 32 27.5 32 28C32 28.5 31.5 29 31 29C30.5 29 30 28.5 30 28Z" fill="#FFFFFF"/>
+    <circle cx="32" cy="36" r="2" fill="#FFFFFF" opacity="0.5"/>
+    <path d="M28 36C28 35 29 34 30 34C31 34 32 35 32 36C32 37 33 38 34 38C35 38 36 37 36 36"/>
+  </g>
+</svg>
