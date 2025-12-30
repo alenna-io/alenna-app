@@ -754,7 +754,7 @@ export default function CreateStudentWizardPage() {
     { number: 4, title: t("groups.preview"), description: t("students.step4Description") },
   ]
 
-  if (isLoadingUser || isLoading) return <Loading />
+  if (isLoadingUser || isLoading) return <Loading variant='button' />
 
   return (
     <div className="min-h-screen">
@@ -1772,7 +1772,7 @@ export default function CreateStudentWizardPage() {
             onClick={handleBack}
             disabled={isSaving}
             className="transition-colors"
-            style={{ 
+            style={{
               color: 'var(--color-primary)',
               backgroundColor: 'var(--color-primary-soft)'
             }}
@@ -1795,7 +1795,7 @@ export default function CreateStudentWizardPage() {
                 variant="outline"
                 onClick={handleNext}
                 className="transition-colors"
-                style={{ 
+                style={{
                   color: 'var(--color-primary)',
                   backgroundColor: 'var(--color-primary-soft)'
                 }}

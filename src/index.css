@@ -39,7 +39,7 @@
   --color-coral-soft: rgba(251, 113, 133, 0.22);
   --color-soft-orange: #FDBA74;
   --color-soft-orange-soft: rgba(253, 186, 116, 0.22);
-  --color-amber: #FACC15;
+  --color-amber: #d3b333;
   --color-amber-soft: rgba(250, 204, 21, 0.24);
   
   /* Extended Accent Palette - COOL ACCENTS */
@@ -477,19 +477,28 @@
   /* ZONE 2: SUMMARY & HIGHLIGHTS (Warm Gradients) */
   .color-zone-summary {
     background: var(--gradient-warm-coral-peach);
+    border: 1px solid var(--color-coral);
   }
   
   .color-zone-highlight {
     background: var(--gradient-warm-amber-orange);
+    border: 1px solid var(--color-amber);
   }
   
   /* ZONE 3: PROGRESS & STATUS (Cool Gradients) */
   .color-zone-progress {
     background: var(--gradient-cool-mint-aqua);
+    border: 1px solid var(--color-mint);
   }
   
   .color-zone-status {
     background: var(--gradient-cool-sky-teal);
+    border: 1px solid var(--color-sky);
+  }
+
+  .color-zone-primary {
+    background: var(--gradient-brand);
+    border: 1px solid var(--color-primary);
   }
   
   /* ZONE 4: CONTENT SURFACES (Neutral with subtle accents) */
@@ -705,6 +714,128 @@
     .animate-background-drift {
       animation: none;
     }
+    .animate-in {
+      animation: none;
+    }
+    .fade-in {
+      animation: none;
+    }
+    .slide-in-from-top-2,
+    .slide-in-from-bottom-2,
+    .slide-in-from-left-2 {
+      animation: none;
+    }
+  }
+
+  /* Animation utilities for filters and page transitions */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-in {
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .slide-in-from-top-2 {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+
+  .slide-in-from-bottom-2 {
+    animation: slideInFromBottom 0.3s ease-out;
+  }
+
+  .slide-in-from-left-2 {
+    animation: slideInFromLeft 0.3s ease-out;
+  }
+
+  /* Page entrance animation */
+  @keyframes pageEntrance {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-page-entrance {
+    animation: pageEntrance 0.4s var(--easing-premium) forwards;
+  }
+
+  /* Tab content transition */
+  @keyframes tabContentTransition {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-tab-content {
+    animation: tabContentTransition 0.35s var(--easing-premium) forwards;
+  }
+
+  /* Staggered fade-in */
+  @keyframes staggeredFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-staggered {
+    animation: staggeredFadeIn 0.4s var(--easing-premium) forwards;
   }
 
   /* Alenna Background Drift Animation */

@@ -129,47 +129,56 @@ export function GenericFilters<T extends Record<string, string>>({
   return (
     <div className="w-full">
       <div className='p-0'>
-        <div className="flex items-center justify-start gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-normal leading-tight tracking-tight">{t("filters.title")}</h3>
-            <Badge variant="secondary" className="ml-2">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" />
+              <h3 className="text-base font-medium leading-tight tracking-tight">{t("filters.title")}</h3>
+            </div>
+            <Badge variant="secondary" className="text-xs font-medium">
               {filteredCount} {t("filters.of")} {totalItems}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-1 cursor-pointer"
-            >
-              {showFilters ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  {t("filters.hide")}
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  {t("filters.show")}
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-1.5 h-8 px-3 text-sm transition-all duration-200 hover:bg-primary-soft"
+          >
+            {showFilters ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5 transition-transform duration-200" />
+                {t("filters.hide")}
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200" />
+                {t("filters.show")}
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Active Filters Display */}
+        {/* Active Filters Display - Pill-based */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="text-sm text-black">{t("filters.activeFilters")}</span>
-            {getActiveFilters().map(({ key, label }) => (
-              <Badge key={key} variant="default" className="text-xs flex items-center gap-1 pr-1">
-                {label}
+          <div className="flex flex-wrap items-center gap-2 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <span className="text-sm font-medium text-muted-foreground">{t("filters.activeFilters")}:</span>
+            {getActiveFilters().map(({ key, label }, index) => (
+              <Badge
+                key={key}
+                className="text-xs font-medium px-3 py-1.5 rounded-full transition-all duration-200 animate-in fade-in slide-in-from-left-2"
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  backgroundColor: 'var(--color-primary-soft)',
+                  color: 'var(--color-primary)',
+                  border: 'none'
+                }}
+              >
+                <span className="pr-1.5">{label}</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveFilter(key as keyof T)}
-                  className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 p-0.5 transition-colors cursor-pointer"
+                  className="ml-0.5 rounded-full outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 p-0.5 transition-all duration-150 hover:bg-primary/20 cursor-pointer"
                   aria-label={`Remove ${label} filter`}
                 >
                   <X className="h-3 w-3" />
@@ -181,9 +190,9 @@ export function GenericFilters<T extends Record<string, string>>({
       </div>
 
       {showFilters && (
-        <div className="p-0 mt-4">
-          <div className={`grid gap-6 ${fields.length === 1 ? 'md:grid-cols-1' : fields.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-            {fields.map((field) => {
+        <div className="p-0 mt-2 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+          <div className={`grid gap-4 ${fields.length === 1 ? 'md:grid-cols-1' : fields.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            {fields.map((field, index) => {
               const rawValue = filters[field.key as keyof T] || ""
               // Normalize empty string to "all" for select fields that have an "all" option
               const hasAllOption = field.options?.some(opt => opt.value === "all")
@@ -192,6 +201,7 @@ export function GenericFilters<T extends Record<string, string>>({
               const isSearchable = field.searchable ?? (field.options && field.options.length > 10)
               const searchTerm = searchTerms[field.key] || ""
               const isPopoverOpen = openPopovers[field.key] || false
+              const isFilterActive = currentValue && currentValue !== "all" && currentValue !== ""
 
               // Filter options based on search term (computed inline, no useMemo in map)
               // Always include "all" option if it exists
@@ -214,8 +224,12 @@ export function GenericFilters<T extends Record<string, string>>({
               const filteredOptions = getFilteredOptions()
 
               return (
-                <div key={field.key} className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
+                <div
+                  key={field.key}
+                  className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
                     {field.label}
                   </label>
                   {field.type === "select" ? (
@@ -234,15 +248,18 @@ export function GenericFilters<T extends Record<string, string>>({
                           <Button
                             variant="secondary"
                             role="combobox"
-                            className="w-full justify-between cursor-pointer h-10 px-3 py-2 text-sm font-normal bg-white border border-input rounded-md"
+                            className={cn(
+                              "w-full justify-between cursor-pointer h-10 px-3 py-2 text-sm font-normal bg-white border border-input rounded-lg transition-all duration-200 hover:border-primary/50 hover:shadow-sm",
+                              isFilterActive && "border-primary/30 bg-primary-soft/30"
+                            )}
                           >
                             <span className="truncate">
                               {selectedOption?.label || field.placeholder || t("filters.select") || "Select..."}
                             </span>
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 transition-transform duration-200" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 shadow-lg border-border" align="start">
                           <Command>
                             <CommandInput
                               placeholder={t("filters.search") || "Search..."}
@@ -265,11 +282,11 @@ export function GenericFilters<T extends Record<string, string>>({
                                         setOpenPopovers(prev => ({ ...prev, [field.key]: false }))
                                         setSearchTerms(prev => ({ ...prev, [field.key]: "" }))
                                       }}
-                                      className="cursor-pointer"
+                                      className="cursor-pointer transition-colors duration-150"
                                     >
                                       <Check
                                         className={cn(
-                                          "mr-2 h-4 w-4",
+                                          "mr-2 h-4 w-4 transition-opacity duration-150",
                                           isSelected ? "opacity-100" : "opacity-0"
                                         )}
                                       />
@@ -288,12 +305,15 @@ export function GenericFilters<T extends Record<string, string>>({
                         value={currentValue || undefined}
                         onValueChange={(value) => handleFilterChange(field.key as keyof T, value)}
                       >
-                        <SelectTrigger className="w-full cursor-pointer h-10 bg-white">
+                        <SelectTrigger className={cn(
+                          "w-full cursor-pointer h-10 bg-white border-input rounded-lg transition-all duration-200 hover:border-primary/50 hover:shadow-sm",
+                          isFilterActive && "border-primary/30 bg-primary-soft/30"
+                        )}>
                           <SelectValue placeholder={field.placeholder || t("filters.select") || "Select..."} />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="shadow-lg border-border">
                           {field.options?.filter(option => option.value !== "").map((option) => (
-                            <SelectItem key={option.value} value={option.value} className="cursor-pointer">
+                            <SelectItem key={option.value} value={option.value} className="cursor-pointer transition-colors duration-150">
                               {option.label}
                             </SelectItem>
                           ))}
@@ -306,7 +326,10 @@ export function GenericFilters<T extends Record<string, string>>({
                       value={currentValue || ""}
                       onChange={(e) => handleFilterChange(field.key as keyof T, e.target.value)}
                       placeholder={field.placeholder}
-                      className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors cursor-text"
+                      className={cn(
+                        "w-full h-10 px-3 py-2 border border-input bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-200 cursor-text hover:border-primary/50",
+                        isFilterActive && "border-primary/30 bg-primary-soft/30"
+                      )}
                     />
                   ) : (
                     <input
@@ -314,7 +337,10 @@ export function GenericFilters<T extends Record<string, string>>({
                       value={currentValue || ""}
                       onChange={(e) => handleFilterChange(field.key as keyof T, e.target.value)}
                       placeholder={field.placeholder}
-                      className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors cursor-text"
+                      className={cn(
+                        "w-full h-10 px-3 py-2 border border-input bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-200 cursor-text hover:border-primary/50",
+                        isFilterActive && "border-primary/30 bg-primary-soft/30"
+                      )}
                     />
                   )}
                 </div>

@@ -87,34 +87,34 @@ export function MonthlyAssignmentsSection({
 
   return (
     <>
-      <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="text-base md:text-lg">{t("monthlyAssignments.sectionTitle", { quarter })}</CardTitle>
+      <Card className="border-border/50">
+        <CardHeader className="p-5 md:p-6 border-b border-border/30">
+          <CardTitle className="text-lg md:text-xl font-semibold">{t("monthlyAssignments.sectionTitle", { quarter })}</CardTitle>
         </CardHeader>
-        <CardContent className="p-4 md:p-6 pt-0">
+        <CardContent className="p-5 md:p-6">
           {quarterAssignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-muted-foreground text-center py-8">
               {t("monthlyAssignments.noAssignmentsForQuarter")}
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {quarterAssignments.map((assignment) => (
                 <div
                   key={assignment.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-border/50 rounded-xl hover:border-primary/30 hover:bg-primary-soft/10 transition-all duration-200"
                 >
-                  <div className="flex-1">
-                    <p className="font-medium">{assignment.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground mb-1.5">{assignment.name}</p>
                     {assignment.grade !== null && (
                       <Badge
-                        variant={assignment.grade >= 80 ? "default" : "destructive"}
+                        variant={assignment.grade >= 80 ? "status-completed" : "status-failed"}
                         className="mt-1"
                       >
                         {assignment.grade}%
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
                     {!isReadOnly && !isQuarterClosed && (
                       <Button
                         size="sm"
@@ -123,7 +123,7 @@ export function MonthlyAssignmentsSection({
                           setGradingAssignment(assignment.id)
                           setGradeInput(assignment.grade?.toString() || "")
                         }}
-                        className="cursor-pointer"
+                        className="cursor-pointer transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
                       >
                         {t("monthlyAssignments.gradeAssignment")}
                       </Button>
@@ -133,7 +133,7 @@ export function MonthlyAssignmentsSection({
                         size="sm"
                         variant="outline"
                         onClick={() => setHistoryDialog(assignment)}
-                        className="cursor-pointer"
+                        className="cursor-pointer transition-all duration-200 hover:bg-primary hover:text-primary-foreground"
                       >
                         <History className="h-4 w-4" />
                       </Button>
@@ -214,15 +214,16 @@ export function MonthlyAssignmentsSection({
           </DialogHeader>
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {historyDialog?.gradeHistory.map((entry, index) => (
-              <div key={index} className={`p-3 rounded-lg border-2 ${entry.grade >= 80 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              <div key={index} className={`p-4 rounded-xl border transition-all duration-200 ${entry.grade >= 80 ? 'bg-mint-soft/30 border-mint/30' : 'bg-coral-soft/30 border-coral/30'
                 }`}>
-                <div className="flex items-center justify-between">
-                  <span className={`text-2xl font-bold ${entry.grade >= 90 ? 'text-green-600' : entry.grade >= 80 ? 'text-blue-600' : 'text-red-600'
-                    }`}>{entry.grade}%</span>
-                  <span className="text-xs text-gray-500">{new Date(entry.date).toLocaleDateString()}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant={entry.grade >= 80 ? "status-completed" : "status-failed"} className="text-lg font-bold">
+                    {entry.grade}%
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(entry.date).toLocaleDateString()}</span>
                 </div>
                 {entry.note && (
-                  <p className="text-sm mt-2 text-gray-700">{entry.note}</p>
+                  <p className="text-sm mt-2 text-foreground">{entry.note}</p>
                 )}
               </div>
             ))}

@@ -571,7 +571,7 @@ export default function GenerateProjectionWizardPage() {
   }
 
   if (isLoadingUser || loading) {
-    return <Loading />
+    return <Loading variant='button' />
   }
 
   const steps = [
@@ -1359,7 +1359,7 @@ export default function GenerateProjectionWizardPage() {
             onClick={currentStep === 1 ? () => navigate("/projections") : handleBack}
             disabled={isGenerating}
             className="transition-colors"
-            style={{ 
+            style={{
               color: 'var(--color-primary)',
               backgroundColor: 'var(--color-primary-soft)'
             }}
@@ -1383,7 +1383,7 @@ export default function GenerateProjectionWizardPage() {
                 onClick={handleNext}
                 disabled={isGenerating}
                 className="transition-colors"
-                style={{ 
+                style={{
                   color: 'var(--color-primary)',
                   backgroundColor: 'var(--color-primary-soft)'
                 }}

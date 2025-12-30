@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info, Lock } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 
@@ -167,9 +167,9 @@ export function ACEQuarterlyTable({
 
   const getGradeColor = (grade: number | null) => {
     if (grade === null) return "text-muted-foreground"
-    if (grade >= 90) return "text-green-600 font-semibold"
-    if (grade >= 80) return "text-blue-600 font-semibold"
-    return "text-red-600 font-semibold" // Below 80 is failing
+    if (grade >= 90) return "text-[#059669] font-semibold" // Darker green for contrast
+    if (grade >= 80) return "text-[#0284C7] font-semibold" // Darker blue for contrast
+    return "text-[#E11D48] font-semibold" // Darker red for contrast (Below 80 is failing)
   }
 
   const isPaceFailing = (grade: number | null) => {
@@ -355,8 +355,8 @@ export function ACEQuarterlyTable({
 
   return (
     <>
-      <Card className={isActive ? "border-primary" : ""}>
-        <CardHeader className="p-4 md:p-6">
+      <Card className={`${isActive ? "border-primary border-2" : "border-border/50"} transition-all duration-200`}>
+        <CardHeader className="p-5 md:p-6 border-b border-border/30">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
               <CardTitle className="flex items-center gap-2 md:gap-3 text-lg">
@@ -365,19 +365,18 @@ export function ACEQuarterlyTable({
                   {quarter}
                 </Badge>
                 {isQuarterClosed && (
-                  <Badge className="bg-coral-soft text-coral border-0 text-xs md:text-sm flex items-center gap-1">
-                    <Lock className="h-3 w-3" />
+                  <Badge variant="status-closed" className="text-xs md:text-sm">
                     {t("quarters.closed")}
                   </Badge>
                 )}
                 {isActive && !isQuarterClosed && (
-                  <Badge className="bg-mint-soft text-mint border-0 text-xs md:text-sm">
+                  <Badge variant="status-active" className="text-xs md:text-sm">
                     {t("projections.current")}
                   </Badge>
                 )}
               </CardTitle>
               {isQuarterOverloaded && (
-                <Badge className="bg-coral-soft text-coral border-0 text-xs md:text-sm">
+                <Badge variant="status-failed" className="text-xs md:text-sm">
                   {t("projections.quarterOverload")} ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
                 </Badge>
               )}
@@ -404,12 +403,12 @@ export function ACEQuarterlyTable({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-3 md:p-6">
-          <div className="overflow-x-auto -mx-3 md:mx-0 border border-gray-300 rounded-md overflow-hidden">
-            <table className="w-full border-collapse">
+        <CardContent className="p-0! md:p-6">
+          <div className="overflow-x-auto -mx-3 md:mx-0 border border-border overflow-hidden bg-card rounded-b-xl">
+            <table className="w-full">
               <thead>
-                <tr>
-                  <th className="text-left py-1.5 px-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300 text-sm">
+                <tr className="bg-muted/30">
+                  <th className="text-left py-3 px-4 font-semibold bg-card sticky left-0 z-10 min-w-[140px] border-b border-r border-border text-sm">
                     {t("projections.subject")}
                   </th>
                   {weeks.map((week, weekIdx) => {
@@ -418,18 +417,18 @@ export function ACEQuarterlyTable({
                     return (
                       <th
                         key={week}
-                        className={`text-center py-1.5 px-2 font-semibold min-w-[90px] cursor-pointer hover:bg-muted transition-colors border border-gray-300 ${currentWeek === week
-                          ? "bg-green-100"
-                          : "bg-muted/50"
+                        className={`text-center py-3 px-3 font-semibold min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${currentWeek === week
+                          ? "bg-mint-soft/50 border-b-3 border-l-0 border-mint"
+                          : "hover:bg-muted/40"
                           }`}
                         onClick={() => onWeekClick?.(quarter, week)}
                       >
-                        <div className="flex flex-col items-center">
-                          <span className={`text-sm font-semibold ${currentWeek === week ? "text-green-700" : ""}`}>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
                             {t("projections.week")} {week}
                             {currentWeek === week && " ✓"}
                           </span>
-                          <span className="text-[10px] text-muted-foreground mt-0.5">
+                          <span className="text-[10px] text-muted-foreground">
                             {weekPaceCount} {t("projections.lessons")}
                           </span>
                         </div>
@@ -442,13 +441,13 @@ export function ACEQuarterlyTable({
                 {subjects.map((subject, subjectIndex) => (
                   <tr
                     key={subject}
-                    className="transition-colors hover:bg-blue-50 group"
+                    className="transition-colors hover:bg-primary-soft/20 group border-b border-border last:border-b-0"
                   >
                     <td
-                      className={`py-1.5 px-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-blue-50`}
+                      className={`py-3 px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-primary-soft/20`}
                     >
                       <div className="flex flex-col">
-                        <span className="text-base font-semibold">
+                        <span className="text-sm font-semibold">
                           {subject}
                         </span>
                       </div>
@@ -464,7 +463,7 @@ export function ACEQuarterlyTable({
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className="py-1.5 px-2 text-center align-middle border border-gray-300"
+                          className={`py-2 px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
                           draggable={!isReadOnly && !isQuarterClosed && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
                             if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
@@ -701,27 +700,18 @@ export function ACEQuarterlyTable({
                                     }}
                                   >
                                     <Badge
-                                      variant="outline"
-                                      className={`font-mono text-xs px-2 py-0.5 relative cursor-pointer transition-all border-2 ${pace.isUnfinished && pace.originalQuarter === quarter
-                                        ? "bg-amber-soft text-amber border-amber border-dashed"
-                                        : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                          ? "bg-coral-soft text-coral border-coral"
-                                          : pace.isCompleted
-                                            ? "bg-mint-soft text-mint border-mint"
-                                            : "bg-card text-foreground border-border"
-                                        }`}
+                                      variant={
+                                        pace.isUnfinished && pace.originalQuarter === quarter
+                                          ? "status-unfinished"
+                                          : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                            ? "status-failed"
+                                            : pace.isCompleted
+                                              ? "status-completed"
+                                              : "outline"
+                                      }
+                                      className="font-mono text-xs px-2 py-0.5 cursor-pointer transition-all"
                                       title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
                                     >
-                                      {pace.isUnfinished && pace.originalQuarter === quarter && (
-                                        <Info className="h-2.5 w-2.5 absolute -top-0.5 -left-0.5 text-orange-600 fill-orange-100" />
-                                      )}
-                                      {(pace.isFailed || pace.isCompleted) && !(pace.isUnfinished && pace.originalQuarter === quarter) && (
-                                        pace.isFailed || isPaceFailing(pace.grade) ? (
-                                          <XCircle className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-red-600 fill-red-100" />
-                                        ) : (
-                                          <CheckCircle2 className="h-2.5 w-2.5 absolute -top-0.5 -right-0.5 text-green-600 fill-green-100" />
-                                        )
-                                      )}
                                       {pace.number}
                                     </Badge>
                                     {paceIdx === 0 && (
@@ -805,40 +795,42 @@ export function ACEQuarterlyTable({
             </table>
           </div>
 
-          {/* Summary */}
-          <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-              <div className="text-center p-2 md:p-3 rounded-xl bg-muted/50">
-                <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.expected}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{t("projections.scheduled")}</p>
-              </div>
-              <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
-                <p className="text-lg md:text-2xl font-semibold text-mint relative z-10 tabular-nums">{quarterStats.completed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.completed")}</p>
-              </div>
-              <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
-                <p className="text-lg md:text-2xl font-semibold text-amber relative z-10 tabular-nums">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.pending")}</p>
-              </div>
-              <div className="text-center p-2 md:p-3 rounded-xl color-zone-summary relative overflow-hidden">
-                <p className="text-lg md:text-2xl font-semibold text-coral relative z-10 tabular-nums">{quarterStats.failed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground relative z-10">{t("projections.failed")}</p>
-              </div>
-              <button
-                onClick={() => setFailedAttemptsDialog(true)}
-                disabled={quarterStats.totalFailed === 0}
-                className="text-center p-2 md:p-3 rounded-xl bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.totalFailed}</p>
-                <p className="text-[10px] md:text-xs text-muted-foreground flex items-center justify-center gap-1">
-                  {t("projections.totalFailedAttemptsLabel")}
-                  <Info className="h-3 w-3 inline" />
-                </p>
-              </button>
-            </div>
-          </div>
+
         </CardContent>
       </Card>
+
+      {/* Summary */}
+      <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
+          <div className="text-center p-2 md:p-3 rounded-xl color-zone-primary bg-muted/50 overflow-hidden">
+            <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.expected}</p>
+            <p className="text-[10px] md:text-xs text-muted">{t("projections.scheduled")}</p>
+          </div>
+          <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+            <p className="text-lg md:text-2xl font-semibold text-[#059669] relative z-10 tabular-nums">{quarterStats.completed}</p>
+            <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.completed")}</p>
+          </div>
+          <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+            <p className="text-lg md:text-2xl font-semibold text-[#D97706] relative z-10 tabular-nums">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
+            <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.pending")}</p>
+          </div>
+          <div className="text-center p-2 md:p-3 rounded-xl color-zone-summary relative overflow-hidden">
+            <p className="text-lg md:text-2xl font-semibold text-[#E11D48] relative z-10 tabular-nums">{quarterStats.failed}</p>
+            <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.failed")}</p>
+          </div>
+          <button
+            onClick={() => setFailedAttemptsDialog(true)}
+            disabled={quarterStats.totalFailed === 0}
+            className="text-center p-2 md:p-3 rounded-xl color-zone-status bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <p className="text-lg md:text-2xl font-semibold text-sky-800 tabular-nums">{quarterStats.totalFailed}</p>
+            <p className="text-[10px] md:text-xs text-muted flex items-center justify-center gap-1">
+              {t("projections.totalFailedAttemptsLabel")}
+              <Info className="h-3 w-3 inline" />
+            </p>
+          </button>
+        </div>
+      </div>
 
       {/* Options Menu Popup */}
       {optionsMenu && (

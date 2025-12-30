@@ -1275,7 +1275,7 @@ export default function SchoolYearWizardPage() {
   }
 
   if (loading) {
-    return <Loading />
+    return <Loading variant='button' />
   }
 
   return (
@@ -1357,7 +1357,7 @@ export default function SchoolYearWizardPage() {
             onClick={currentStep === 1 ? () => navigate("/school-settings/school-years") : handleBack}
             disabled={saving}
             className="transition-colors"
-            style={{ 
+            style={{
               color: 'var(--color-primary)',
               backgroundColor: 'var(--color-primary-soft)'
             }}
@@ -1381,7 +1381,7 @@ export default function SchoolYearWizardPage() {
                 onClick={handleNext}
                 disabled={saving}
                 className="transition-colors"
-                style={{ 
+                style={{
                   color: 'var(--color-primary)',
                   backgroundColor: 'var(--color-primary-soft)'
                 }}

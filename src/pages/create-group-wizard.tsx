@@ -291,7 +291,7 @@ export default function CreateGroupWizardPage() {
   ]
 
   if (isLoadingUser || isLoading) {
-    return <Loading />
+    return <Loading variant='button' />
   }
 
   return (
@@ -552,7 +552,7 @@ export default function CreateGroupWizardPage() {
             onClick={handleBack}
             disabled={isSaving}
             className="transition-colors"
-            style={{ 
+            style={{
               color: 'var(--color-primary)',
               backgroundColor: 'var(--color-primary-soft)'
             }}
@@ -576,7 +576,7 @@ export default function CreateGroupWizardPage() {
                 onClick={handleNext}
                 disabled={!canProceed || isSaving}
                 className="transition-colors"
-                style={{ 
+                style={{
                   color: 'var(--color-primary)',
                   backgroundColor: 'var(--color-primary-soft)'
                 }}

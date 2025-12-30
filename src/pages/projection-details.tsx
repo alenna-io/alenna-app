@@ -3,8 +3,6 @@ import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
 import { BackButton } from "@/components/ui/back-button"
-import { StudentInfoCard } from "@/components/ui/student-info-card"
-import { SectionHeader } from "@/components/ui/section-header"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import { MonthlyAssignmentsSection } from "@/components/monthly-assignments-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
@@ -817,6 +815,33 @@ export default function ACEProjectionPage() {
   const isParentOnly = userInfo?.roles.some(r => r.name === 'PARENT') &&
     !userInfo?.roles.some(r => r.name === 'TEACHER' || r.name === 'ADMIN')
 
+  // Use projection detail for student data
+  const student = projectionDetail ? {
+    id: projectionDetail.studentId,
+    name: projectionDetail.student.fullName,
+    currentGrade: projectionDetail.student.currentLevel || 'N/A',
+    schoolYear: projectionDetail.schoolYear,
+  } : {
+    id: '',
+    name: t("common.loading"),
+    currentGrade: '',
+    schoolYear: ''
+  }
+
+  // Calculate total paces for summary (must be before early returns)
+  const totalPaces = React.useMemo(() => {
+    if (!projectionDetail) return 0
+    let count = 0
+    Object.values(projectionDetail.quarters).forEach(quarter => {
+      Object.values(quarter).forEach(weekPaces => {
+        weekPaces.forEach(pace => {
+          if (pace !== null) count++
+        })
+      })
+    })
+    return count
+  }, [projectionDetail])
+
   // Redirect super admins - they should not access projection detail page
   if (isSuperAdmin) {
     return <Navigate to="/users" replace />
@@ -861,21 +886,44 @@ export default function ACEProjectionPage() {
     )
   }
 
-  // Use projection detail for student data
-  const student = projectionDetail ? {
-    id: projectionDetail.studentId,
-    name: projectionDetail.student.fullName,
-    currentGrade: projectionDetail.student.currentLevel || 'N/A',
-    schoolYear: projectionDetail.schoolYear,
-  } : {
-    id: '',
-    name: t("common.loading"),
-    currentGrade: '',
-    schoolYear: ''
+  // Helper function to render quarter content (reduces code duplication)
+  const renderQuarterContent = (quarter: "Q1" | "Q2" | "Q3" | "Q4", quarterName: string) => {
+    const isClosed = isQuarterClosed(quarter)
+    const isReadOnlyQuarter = isParentOnly || isClosed
+    return (
+      <div className="space-y-5 md:space-y-6 animate-tab-content">
+        <ACEQuarterlyTable
+          quarter={quarter}
+          quarterName={quarterName}
+          data={projectionData[quarter]}
+          isActive={currentQuarter === quarter}
+          currentWeek={currentQuarter === quarter ? currentWeekInQuarter ?? undefined : undefined}
+          subjectToCategory={subjectToCategory}
+          onPaceDrop={isReadOnlyQuarter ? undefined : handlePaceDrop}
+          onPaceToggle={isReadOnlyQuarter ? undefined : handlePaceToggle}
+          onWeekClick={handleWeekClick}
+          onAddPace={isReadOnlyQuarter ? undefined : handleAddPace}
+          onDeletePace={isReadOnlyQuarter ? undefined : handleDeletePace}
+          isReadOnly={isReadOnlyQuarter}
+          isQuarterClosed={isClosed}
+        />
+        {hasModule('monthlyAssignments') && (
+          <div className="animate-staggered" style={{ animationDelay: '100ms' }}>
+            <MonthlyAssignmentsSection
+              quarter={quarter}
+              assignments={monthlyAssignments}
+              isReadOnly={isParentOnly}
+              isQuarterClosed={isClosed}
+              onGradeAssignment={handleGradeMonthlyAssignment}
+            />
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-5 md:space-y-6 animate-page-entrance">
       {/* Mobile back button */}
       <div className="md:hidden">
         <BackButton to={`/students/${studentId}/projections`}>
@@ -883,38 +931,60 @@ export default function ACEProjectionPage() {
         </BackButton>
       </div>
 
-      {/* Title with Ver Boleta button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <SectionHeader
-          title={t("projections.annualProjection")}
-          description={t("projections.weeklyPlanningDescription", { year: student.schoolYear })}
-        />
-        <div className="flex gap-2 shrink-0">
-          {currentQuarter && currentWeekInQuarter !== null && (
-            <Button
-              variant="default"
-              onClick={() => handleWeekClick(currentQuarter, currentWeekInQuarter)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <BookOpen className="h-4 w-4 mr-2" />
-              {t("projections.viewCurrentWeekDailyGoals")}
-            </Button>
-          )}
-          {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && hasAtLeastOneClosedQuarter && (
-            <Button
-              variant="default"
-              onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              {t("projections.viewReportCard")}
-            </Button>
-          )}
+      {/* Simplified Header */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold">{t("projections.annualProjection")}</h1>
+            {/* Minimal Student Info */}
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{student.name}</span>
+              <span>•</span>
+              <span>{student.currentGrade}</span>
+              <span>•</span>
+              <span>{student.schoolYear}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {projectionDetail && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-soft text-primary">
+                <span className="text-sm font-medium">{t("projections.totalLessonsYear")}:</span>
+                <span className="text-lg font-semibold">{totalPaces}</span>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {currentQuarter && currentWeekInQuarter !== null && (
+                <Button
+                  variant="default"
+                  onClick={() => handleWeekClick(currentQuarter, currentWeekInQuarter)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 hover:shadow-md"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  {t("projections.viewCurrentWeekDailyGoals")}
+                </Button>
+              )}
+              {userInfo && (userInfo.permissions.includes('reportCards.read') || userInfo.permissions.includes('reportCards.readOwn')) && hasAtLeastOneClosedQuarter && (
+                <Button
+                  variant="default"
+                  onClick={() => navigate(`/students/${studentId}/report-cards/${projectionId}`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 hover:shadow-md"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t("projections.viewReportCard")}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Student Info Card */}
-      <StudentInfoCard student={student} showBadge={false} />
+        {/* Mobile Total Paces */}
+        {projectionDetail && (
+          <div className="sm:hidden flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-soft text-primary animate-staggered" style={{ animationDelay: '75ms' }}>
+            <span className="text-sm font-medium">{t("projections.totalLessonsYear")}:</span>
+            <span className="text-lg font-semibold">{totalPaces}</span>
+          </div>
+        )}
+      </div>
 
       {/* PACE Picker Dialog */}
       {pacePickerContext && (
@@ -931,152 +1001,53 @@ export default function ACEProjectionPage() {
         />
       )}
 
-      {/* Quarterly Tabs: show one quarter at a time (PACEs + Monthly Assignments) */}
-      <Tabs defaultValue={currentQuarter || "Q1"} className="space-y-4 md:space-y-6">
-        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-          <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
-            <TabsTrigger value="Q1" className="shrink-0">{t("monthlyAssignments.quarterLabelQ1")}</TabsTrigger>
-            <TabsTrigger value="Q2" className="shrink-0">{t("monthlyAssignments.quarterLabelQ2")}</TabsTrigger>
-            <TabsTrigger value="Q3" className="shrink-0">{t("monthlyAssignments.quarterLabelQ3")}</TabsTrigger>
-            <TabsTrigger value="Q4" className="shrink-0">{t("monthlyAssignments.quarterLabelQ4")}</TabsTrigger>
+      {/* Quarterly Tabs: Enhanced premium design */}
+      <Tabs defaultValue={currentQuarter || "Q1"} className="w-full">
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 mb-6">
+          <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0 h-12 bg-secondary/30 p-1.5 rounded-xl border border-border/50">
+            <TabsTrigger
+              value="Q1"
+              className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10"
+            >
+              {t("monthlyAssignments.quarterLabelQ1")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="Q2"
+              className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10"
+            >
+              {t("monthlyAssignments.quarterLabelQ2")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="Q3"
+              className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10"
+            >
+              {t("monthlyAssignments.quarterLabelQ3")}
+            </TabsTrigger>
+            <TabsTrigger
+              value="Q4"
+              className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10"
+            >
+              {t("monthlyAssignments.quarterLabelQ4")}
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="Q1" className="space-y-4 md:space-y-6">
-          <ACEQuarterlyTable
-            quarter="Q1"
-            quarterName={t("monthlyAssignments.quarterLabelQ1")}
-            data={projectionData.Q1}
-            isActive={currentQuarter === "Q1"}
-            currentWeek={currentQuarter === "Q1" ? currentWeekInQuarter ?? undefined : undefined}
-            subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly || isQuarterClosed("Q1") ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly || isQuarterClosed("Q1") ? undefined : handlePaceToggle}
-            onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly || isQuarterClosed("Q1") ? undefined : handleAddPace}
-            onDeletePace={isParentOnly || isQuarterClosed("Q1") ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly || isQuarterClosed("Q1")}
-            isQuarterClosed={isQuarterClosed("Q1")}
-          />
-          {hasModule('monthlyAssignments') && (
-            <MonthlyAssignmentsSection
-              quarter="Q1"
-              assignments={monthlyAssignments}
-              isReadOnly={isParentOnly}
-              isQuarterClosed={isQuarterClosed("Q1")}
-              onGradeAssignment={handleGradeMonthlyAssignment}
-            />
-          )}
+        <TabsContent value="Q1" className="mt-0">
+          {renderQuarterContent("Q1", t("monthlyAssignments.quarterLabelQ1"))}
         </TabsContent>
 
-        <TabsContent value="Q2" className="space-y-4 md:space-y-6">
-          <ACEQuarterlyTable
-            quarter="Q2"
-            quarterName={t("monthlyAssignments.quarterLabelQ2")}
-            data={projectionData.Q2}
-            isActive={currentQuarter === "Q2"}
-            currentWeek={currentQuarter === "Q2" ? currentWeekInQuarter ?? undefined : undefined}
-            subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly || isQuarterClosed("Q2") ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly || isQuarterClosed("Q2") ? undefined : handlePaceToggle}
-            onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly || isQuarterClosed("Q2") ? undefined : handleAddPace}
-            onDeletePace={isParentOnly || isQuarterClosed("Q2") ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly || isQuarterClosed("Q2")}
-            isQuarterClosed={isQuarterClosed("Q2")}
-          />
-          {hasModule('monthlyAssignments') && (
-            <MonthlyAssignmentsSection
-              quarter="Q2"
-              assignments={monthlyAssignments}
-              isReadOnly={isParentOnly}
-              isQuarterClosed={isQuarterClosed("Q2")}
-              onGradeAssignment={handleGradeMonthlyAssignment}
-            />
-          )}
+        <TabsContent value="Q2" className="mt-0">
+          {renderQuarterContent("Q2", t("monthlyAssignments.quarterLabelQ2"))}
         </TabsContent>
 
-        <TabsContent value="Q3" className="space-y-4 md:space-y-6">
-          <ACEQuarterlyTable
-            quarter="Q3"
-            quarterName={t("monthlyAssignments.quarterLabelQ3")}
-            data={projectionData.Q3}
-            isActive={currentQuarter === "Q3"}
-            currentWeek={currentQuarter === "Q3" ? currentWeekInQuarter ?? undefined : undefined}
-            subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly || isQuarterClosed("Q3") ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly || isQuarterClosed("Q3") ? undefined : handlePaceToggle}
-            onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly || isQuarterClosed("Q3") ? undefined : handleAddPace}
-            onDeletePace={isParentOnly || isQuarterClosed("Q3") ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly || isQuarterClosed("Q3")}
-            isQuarterClosed={isQuarterClosed("Q3")}
-          />
-          {hasModule('monthlyAssignments') && (
-            <MonthlyAssignmentsSection
-              quarter="Q3"
-              assignments={monthlyAssignments}
-              isReadOnly={isParentOnly}
-              isQuarterClosed={isQuarterClosed("Q3")}
-              onGradeAssignment={handleGradeMonthlyAssignment}
-            />
-          )}
+        <TabsContent value="Q3" className="mt-0">
+          {renderQuarterContent("Q3", t("monthlyAssignments.quarterLabelQ3"))}
         </TabsContent>
 
-        <TabsContent value="Q4" className="space-y-4 md:space-y-6">
-          <ACEQuarterlyTable
-            quarter="Q4"
-            quarterName={t("monthlyAssignments.quarterLabelQ4")}
-            data={projectionData.Q4}
-            isActive={currentQuarter === "Q4"}
-            currentWeek={currentQuarter === "Q4" ? currentWeekInQuarter ?? undefined : undefined}
-            subjectToCategory={subjectToCategory}
-            onPaceDrop={isParentOnly || isQuarterClosed("Q4") ? undefined : handlePaceDrop}
-            onPaceToggle={isParentOnly || isQuarterClosed("Q4") ? undefined : handlePaceToggle}
-            onWeekClick={handleWeekClick}
-            onAddPace={isParentOnly || isQuarterClosed("Q4") ? undefined : handleAddPace}
-            onDeletePace={isParentOnly || isQuarterClosed("Q4") ? undefined : handleDeletePace}
-            isReadOnly={isParentOnly || isQuarterClosed("Q4")}
-            isQuarterClosed={isQuarterClosed("Q4")}
-          />
-
-          {hasModule('monthlyAssignments') && (
-            <MonthlyAssignmentsSection
-              quarter="Q4"
-              assignments={monthlyAssignments}
-              isReadOnly={isParentOnly}
-              isQuarterClosed={isQuarterClosed("Q4")}
-              onGradeAssignment={handleGradeMonthlyAssignment}
-            />
-          )}
+        <TabsContent value="Q4" className="mt-0">
+          {renderQuarterContent("Q4", t("monthlyAssignments.quarterLabelQ4"))}
         </TabsContent>
       </Tabs>
-
-      {/* Total Paces Summary */}
-      {projectionDetail && (() => {
-        // Calculate total paces across all quarters
-        let totalPaces = 0
-        Object.values(projectionDetail.quarters).forEach(quarter => {
-          Object.values(quarter).forEach(weekPaces => {
-            weekPaces.forEach(pace => {
-              if (pace !== null) {
-                totalPaces++
-              }
-            })
-          })
-        })
-
-        return (
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-medium text-blue-900">{t("projections.totalLessonsYear")}</span>
-                <span className="text-2xl font-bold text-blue-700">{totalPaces}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })()}
 
       {/* Error Dialog */}
       <ErrorDialog

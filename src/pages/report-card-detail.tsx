@@ -233,12 +233,14 @@ export default function ReportCardDetailPage() {
       </div>
 
       {/* Header with actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold">{t("reportCards.detailTitle")}</h1>
-          <p className="text-muted-foreground">
-            {reportCard.studentName} - {t("reportCards.schoolYearLabel")} {reportCard.schoolYear}
-          </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden animate-page-entrance">
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold">{t("reportCards.detailTitle")}</h1>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{reportCard.studentName}</span>
+            <span>•</span>
+            <span>{t("reportCards.schoolYearLabel")} {reportCard.schoolYear}</span>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button
@@ -260,18 +262,18 @@ export default function ReportCardDetailPage() {
           onValueChange={setActiveQuarter}
           className="space-y-4 md:space-y-6"
         >
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 print:hidden">
-            <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0">
-              <TabsTrigger value="Q1" className="shrink-0">
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 print:hidden mb-6">
+            <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0 h-12 bg-secondary/30 p-1.5 rounded-xl border border-border/50">
+              <TabsTrigger value="Q1" className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10">
                 {t("monthlyAssignments.quarterLabelQ1")}
               </TabsTrigger>
-              <TabsTrigger value="Q2" className="shrink-0">
+              <TabsTrigger value="Q2" className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10">
                 {t("monthlyAssignments.quarterLabelQ2")}
               </TabsTrigger>
-              <TabsTrigger value="Q3" className="shrink-0">
+              <TabsTrigger value="Q3" className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10">
                 {t("monthlyAssignments.quarterLabelQ3")}
               </TabsTrigger>
-              <TabsTrigger value="Q4" className="shrink-0">
+              <TabsTrigger value="Q4" className="shrink-0 transition-all duration-300 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:scale-[1.02] hover:bg-primary/10">
                 {t("monthlyAssignments.quarterLabelQ4")}
               </TabsTrigger>
             </TabsList>
@@ -283,7 +285,7 @@ export default function ReportCardDetailPage() {
               <TabsContent
                 key={quarter}
                 value={quarter}
-                className="space-y-4 md:space-y-6"
+                className="space-y-4 md:space-y-6 animate-tab-content"
               >
                 <div data-quarter={quarter}>
                   <ReportCardTable
