@@ -256,7 +256,7 @@ export default function CreateSchoolWizardPage() {
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${currentStep > step.number
                       ? "bg-green-500 text-white"
                       : currentStep === step.number
-                        ? "bg-blue-500 text-white"
+                        ? "bg-[#8B5CF6] text-white"
                         : "bg-gray-200 text-gray-600"
                       }`}
                   >
@@ -633,6 +633,19 @@ export default function CreateSchoolWizardPage() {
             variant="outline"
             onClick={currentStep === 1 ? () => navigate("/schools") : handleBack}
             disabled={isCreating}
+            className="transition-colors"
+            style={{ 
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)'
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.filter = 'brightness(0.95)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             {currentStep === 1 ? t("common.cancel") : t("common.previous")}
@@ -641,9 +654,22 @@ export default function CreateSchoolWizardPage() {
           <div className="flex gap-2">
             {currentStep < 5 ? (
               <Button
+                variant="outline"
                 onClick={handleNext}
                 disabled={isCreating}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="transition-colors"
+                style={{ 
+                  color: 'var(--color-primary)',
+                  backgroundColor: 'var(--color-primary-soft)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.filter = 'brightness(0.95)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = ''
+                }}
               >
                 {t("common.next")}
                 <ChevronRight className="h-4 w-4 ml-2" />

@@ -36,11 +36,11 @@ export function AuthSync({ children }: AuthSyncProps) {
     syncUser();
   }, [isSignedIn, api.auth]);
 
-  // Loading state
+  // Loading state - use spinner, not full-screen skeleton
   if (syncStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loading />
+        <Loading variant="button" size="lg" />
       </div>
     );
   }

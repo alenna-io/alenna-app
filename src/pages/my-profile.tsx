@@ -84,7 +84,7 @@ export default function MyProfilePage() {
   }, [userInfo])
 
   if (isLoadingUser || status === 'loading') {
-    return <Loading variant="profile" />
+    return <Loading variant="card" />
   }
 
   if (status === 'error') {

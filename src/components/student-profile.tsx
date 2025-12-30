@@ -58,7 +58,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         {canEdit && onEdit && (
           <Button
             variant="default"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
             onClick={() => onEdit(student)}
           >
             <Pencil className="h-4 w-4 mr-2" />

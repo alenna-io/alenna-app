@@ -1,7 +1,6 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 
-// Define styles for the PDF
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -20,9 +19,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     marginBottom: 3,
+    color: "#6b7280",
   },
   quarterTitle: {
-    fontSize: 11,
+    fontSize: 14,
+    fontWeight: "bold",
     marginBottom: 15,
   },
   section: {
@@ -33,6 +34,52 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
   },
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 15,
+    gap: 8,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: "23%",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 4,
+    padding: 10,
+  },
+  statLabel: {
+    fontSize: 8,
+    color: "#6b7280",
+    marginBottom: 4,
+    fontWeight: "medium",
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  statValueLarge: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  statBadge: {
+    fontSize: 8,
+    padding: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    textAlign: "center",
+  },
+  badgeSuccess: {
+    backgroundColor: "#d1fae5",
+    color: "#059669",
+  },
+  badgeFailed: {
+    backgroundColor: "#fee2e2",
+    color: "#e11d48",
+  },
   table: {
     width: "100%",
     marginBottom: 15,
@@ -40,60 +87,102 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#d1d5db",
+    borderBottomColor: "#e5e7eb",
     borderBottomStyle: "solid",
   },
   tableHeader: {
-    backgroundColor: "#3b82f6",
-    color: "#ffffff",
-    fontWeight: "bold",
-    padding: 6,
-    fontSize: 9,
+    backgroundColor: "#f3f4f6",
+    borderBottomWidth: 2,
+    borderBottomColor: "#8b5cf6",
+    opacity: 0.5,
   },
   tableCell: {
-    padding: 6,
+    padding: 8,
     fontSize: 9,
     borderRightWidth: 1,
-    borderRightColor: "#d1d5db",
+    borderRightColor: "#e5e7eb",
     borderRightStyle: "solid",
   },
   tableCellLast: {
-    padding: 6,
+    padding: 8,
     fontSize: 9,
   },
-  subjectRow: {
-    backgroundColor: "#e0e7ff",
+  subjectCell: {
+    backgroundColor: "#f5f3ff",
+    fontWeight: "bold",
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+  },
+  averageCell: {
+    backgroundColor: "#f5f3ff",
     fontWeight: "bold",
   },
-  percentageRow: {
-    backgroundColor: "#ffffff",
+  lessonCell: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 2,
   },
-  paceRow: {
-    backgroundColor: "#ffffff",
+  lessonCode: {
+    fontFamily: "Courier",
+    fontSize: 7,
+    color: "#111827",
+  },
+  lessonGrade: {
+    fontSize: 8,
+    fontWeight: "bold",
+  },
+  gradePassed: {
+    color: "#059669",
+  },
+  gradeFailed: {
+    color: "#e11d48",
   },
   emptyRow: {
     padding: 12,
     textAlign: "center",
     color: "#6b7280",
   },
-  statusRow: {
-    backgroundColor: "#10b981",
-    color: "#ffffff",
-    fontWeight: "bold",
-  },
-  statusRowFailed: {
-    backgroundColor: "#ef4444",
-    color: "#ffffff",
-    fontWeight: "bold",
-  },
-  summaryRow: {
+  monthlyHeader: {
     backgroundColor: "#f3f4f6",
+    borderBottomWidth: 2,
+    borderBottomColor: "#8b5cf6",
+    opacity: 0.5,
+  },
+  monthlyAverageRow: {
+    backgroundColor: "#f5f3ff",
     fontWeight: "bold",
   },
-  finalRow: {
-    backgroundColor: "#3b82f6",
-    color: "#ffffff",
+  summaryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  summaryCard: {
+    flex: 1,
+    minWidth: "31%",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 4,
+    padding: 10,
+  },
+  finalGradeCard: {
+    flex: 1,
+    minWidth: "31%",
+    backgroundColor: "#8b5cf6",
+    borderRadius: 4,
+    padding: 12,
+  },
+  finalGradeLabel: {
+    fontSize: 9,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 4,
+  },
+  finalGradeValue: {
+    fontSize: 24,
     fontWeight: "bold",
+    color: "#ffffff",
   },
   textCenter: {
     textAlign: "center",
@@ -176,6 +265,7 @@ interface ReportCardPDFProps {
     lessonsAverage: string
     monthlyAssignmentsAverage: string
     passedLessons: string
+    totalLessons: string
     finalGrade: string
     noLessonsAssigned: string
     noMonthlyAssignments: string
@@ -189,6 +279,12 @@ const formatGrade = (grade: number | null): string => {
 
 const formatPercentage = (percentage: number): string => {
   return `${percentage}%`
+}
+
+const getCategoryOrder = (category: string): number => {
+  const categoryOrder = ['Math', 'English', 'Word Building', 'Science', 'Social Studies', 'Spanish', 'Electives']
+  const index = categoryOrder.indexOf(category)
+  return index === -1 ? 999 : index
 }
 
 export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
@@ -208,10 +304,32 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
     <Document>
       {(["Q1", "Q2", "Q3", "Q4"] as const).map((quarterKey) => {
         const quarter = quarters[quarterKey]
+
+        // Sort subjects by category order and sort paces within each subject by code (numeric)
+        const sortedSubjects = [...quarter.subjects]
+          .sort((a, b) => getCategoryOrder(a.subject) - getCategoryOrder(b.subject))
+          .map(subject => ({
+            ...subject,
+            paces: [...subject.paces].sort((a, b) => {
+              const codeA = parseInt(a.code) || 0
+              const codeB = parseInt(b.code) || 0
+              return codeA - codeB
+            })
+          }))
+
         const maxPacesPerSubject = Math.max(
-          ...quarter.subjects.map((s) => s.paces.length),
+          ...sortedSubjects.map((s) => s.paces.length),
           1
         )
+
+        // Calculate total lessons
+        const totalLessons = sortedSubjects.reduce((sum, subject) => sum + subject.paces.length, 0)
+
+        // Get grade status helper
+        const getGradeStatus = (grade: number | null) => {
+          if (grade === null) return null
+          return grade >= 70 ? "passed" : "failed"
+        }
 
         return (
           <Page key={quarterKey} size="A4" style={styles.page}>
@@ -219,11 +337,40 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
             <View style={styles.header}>
               <Text style={styles.title}>{translations.detailTitle}</Text>
               <Text style={styles.subtitle}>
-                {studentName} - {translations.schoolYearLabel} {schoolYear}
+                {studentName} • {translations.schoolYearLabel} {schoolYear}
               </Text>
               <Text style={styles.quarterTitle}>
                 {quarterNames[quarterKey]}
               </Text>
+            </View>
+
+            {/* Stats Summary Cards */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>{translations.finalGrade}</Text>
+                <Text style={styles.statValueLarge}>
+                  {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
+                </Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>{translations.totalLessons}</Text>
+                <Text style={styles.statValue}>{totalLessons}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>{translations.passedLessons}</Text>
+                <Text style={styles.statValue}>{quarter.totalPassedPaces}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>{translations.academicProjectionCompleted}</Text>
+                <View style={[
+                  styles.statBadge,
+                  quarter.academicProjectionCompleted ? styles.badgeSuccess : styles.badgeFailed
+                ]}>
+                  <Text>
+                    {quarter.academicProjectionCompleted ? translations.yes : translations.no}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             {/* PACEs Section */}
@@ -234,8 +381,8 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
               <View style={styles.table}>
                 {/* Header */}
                 <View style={[styles.tableRow, styles.tableHeader]}>
-                  <View style={[styles.tableCell, { width: "25%" }]}>
-                    <Text>{translations.subject}</Text>
+                  <View style={[styles.tableCell, { width: "20%" }]}>
+                    <Text style={styles.bold}>{translations.subject}</Text>
                   </View>
                   {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
                     <View
@@ -245,118 +392,58 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                         { width: `${60 / maxPacesPerSubject}%` },
                       ]}
                     >
-                      <Text style={styles.textCenter}>{translations.lesson}</Text>
+                      <Text style={[styles.textCenter, styles.bold]}>{translations.lesson}</Text>
                     </View>
                   ))}
-                  <View style={[styles.tableCellLast, { width: "15%" }]}>
-                    <Text style={styles.textCenter}>{translations.average}</Text>
+                  <View style={[styles.tableCellLast, { width: "20%" }]}>
+                    <Text style={[styles.textCenter, styles.bold]}>{translations.average}</Text>
                   </View>
                 </View>
 
-                {/* Subjects */}
-                {quarter.subjects.length > 0 ? (
-                  quarter.subjects.map((subject) => (
-                    <React.Fragment key={subject.subject}>
-                      {/* Subject name row */}
-                      <View style={[styles.tableRow, styles.subjectRow]}>
-                        <View
-                          style={[
-                            styles.tableCellLast,
-                            { width: "100%" },
-                          ]}
-                        >
-                          <Text>{subject.subject}</Text>
-                        </View>
+                {/* Subjects - Single row format */}
+                {sortedSubjects.length > 0 ? (
+                  sortedSubjects.map((subject) => (
+                    <View key={subject.subject} style={styles.tableRow}>
+                      <View style={[styles.tableCell, styles.subjectCell, { width: "20%" }]}>
+                        <Text>{subject.subject}</Text>
                       </View>
-                      {/* Percentage row */}
-                      <View style={[styles.tableRow, styles.percentageRow]}>
-                        <View
-                          style={[
-                            styles.tableCell,
-                            { width: "25%" },
-                            styles.textRight,
-                          ]}
-                        >
-                          <Text style={{ fontSize: 8 }}>%</Text>
-                        </View>
-                        {Array.from({ length: maxPacesPerSubject }).map(
-                          (_, i) => (
-                            <View
-                              key={i}
-                              style={[
-                                styles.tableCell,
-                                { width: `${60 / maxPacesPerSubject}%` },
-                                styles.textCenter,
-                              ]}
-                            >
-                              {i < subject.paces.length &&
-                                subject.paces[i].grade !== null ? (
-                                <Text style={{ fontSize: 8 }}>
-                                  {formatGrade(subject.paces[i].grade!)}
-                                </Text>
-                              ) : (
-                                <Text>-</Text>
-                              )}
-                            </View>
-                          )
-                        )}
-                        <View
-                          style={[
-                            styles.tableCellLast,
-                            { width: "15%" },
-                            styles.textCenter,
-                            styles.bold,
-                          ]}
-                        >
-                          <Text>
-                            {subject.average !== null
-                              ? formatGrade(subject.average)
-                              : "-"}
-                          </Text>
-                        </View>
+                      {Array.from({ length: maxPacesPerSubject }).map((_, i) => {
+                        const pace = i < subject.paces.length ? subject.paces[i] : null
+                        const status = pace ? getGradeStatus(pace.grade) : null
+
+                        return (
+                          <View
+                            key={i}
+                            style={[
+                              styles.tableCell,
+                              styles.lessonCell,
+                              { width: `${60 / maxPacesPerSubject}%` },
+                            ]}
+                          >
+                            {pace ? (
+                              <>
+                                <Text style={styles.lessonCode}>{pace.code}</Text>
+                                {pace.grade !== null && (
+                                  <Text style={[
+                                    styles.lessonGrade,
+                                    status === "passed" ? styles.gradePassed : status === "failed" ? styles.gradeFailed : {}
+                                  ]}>
+                                    {formatGrade(pace.grade)}
+                                  </Text>
+                                )}
+                              </>
+                            ) : (
+                              <Text style={{ fontSize: 8, color: "#9ca3af" }}>-</Text>
+                            )}
+                          </View>
+                        )
+                      })}
+                      <View style={[styles.tableCellLast, styles.averageCell, { width: "20%" }]}>
+                        <Text style={[styles.textCenter, styles.bold]}>
+                          {subject.average !== null ? formatGrade(subject.average) : "-"}
+                        </Text>
                       </View>
-                      {/* PACE row */}
-                      <View style={[styles.tableRow, styles.paceRow]}>
-                        <View
-                          style={[
-                            styles.tableCell,
-                            { width: "25%" },
-                            styles.textRight,
-                          ]}
-                        >
-                          <Text style={{ fontSize: 8 }}>{translations.lesson}</Text>
-                        </View>
-                        {Array.from({ length: maxPacesPerSubject }).map(
-                          (_, i) => (
-                            <View
-                              key={i}
-                              style={[
-                                styles.tableCell,
-                                { width: `${60 / maxPacesPerSubject}%` },
-                                styles.textCenter,
-                              ]}
-                            >
-                              {i < subject.paces.length ? (
-                                <Text style={[styles.mono, { fontSize: 7 }]}>
-                                  {subject.paces[i].code}
-                                </Text>
-                              ) : (
-                                <Text>-</Text>
-                              )}
-                            </View>
-                          )
-                        )}
-                        <View
-                          style={[
-                            styles.tableCellLast,
-                            { width: "15%" },
-                            styles.textCenter,
-                          ]}
-                        >
-                          <Text>{subject.passedCount}</Text>
-                        </View>
-                      </View>
-                    </React.Fragment>
+                    </View>
                   ))
                 ) : (
                   <View style={styles.tableRow}>
@@ -367,64 +454,31 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                         { width: "100%" },
                       ]}
                     >
-                      <Text>
-                        {translations.noLessonsAssigned}
-                      </Text>
+                      <Text>{translations.noLessonsAssigned}</Text>
                     </View>
                   </View>
                 )}
               </View>
             </View>
 
-            {/* Academic Projection Status */}
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View
-                  style={[
-                    styles.tableRow,
-                    quarter.academicProjectionCompleted
-                      ? styles.statusRow
-                      : styles.statusRowFailed,
-                  ]}
-                >
-                  <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>{translations.academicProjectionCompleted}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.tableCellLast,
-                      { width: "25%" },
-                      styles.textCenter,
-                    ]}
-                  >
-                    <Text>
-                      {quarter.academicProjectionCompleted ? translations.yes : translations.no}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
             {/* Monthly Assignments Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                {translations.monthlyAssignments} (
-                {formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
+                {translations.monthlyAssignments} ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
               </Text>
               <View style={styles.table}>
                 {/* Header */}
-                <View style={[styles.tableRow, styles.tableHeader]}>
+                <View style={[styles.tableRow, styles.monthlyHeader]}>
                   <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>{translations.assignment}</Text>
+                    <Text style={styles.bold}>{translations.assignment}</Text>
                   </View>
                   <View
                     style={[
                       styles.tableCellLast,
                       { width: "25%" },
-                      styles.textCenter,
                     ]}
                   >
-                    <Text>{translations.grade}</Text>
+                    <Text style={[styles.textCenter, styles.bold]}>{translations.grade}</Text>
                   </View>
                 </View>
 
@@ -440,30 +494,26 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                           style={[
                             styles.tableCellLast,
                             { width: "25%" },
-                            styles.textCenter,
                           ]}
                         >
-                          <Text>
-                            {assignment.grade !== null
-                              ? formatGrade(assignment.grade)
-                              : "-"}
+                          <Text style={[styles.textCenter, styles.bold]}>
+                            {assignment.grade !== null ? formatGrade(assignment.grade) : "-"}
                           </Text>
                         </View>
                       </View>
                     ))}
                     {/* Average row */}
-                    <View style={[styles.tableRow, styles.tableHeader]}>
+                    <View style={[styles.tableRow, styles.monthlyAverageRow]}>
                       <View style={[styles.tableCell, { width: "75%" }]}>
-                        <Text>{translations.averageLabel}</Text>
+                        <Text style={styles.bold}>{translations.averageLabel}</Text>
                       </View>
                       <View
                         style={[
                           styles.tableCellLast,
                           { width: "25%" },
-                          styles.textCenter,
                         ]}
                       >
-                        <Text>
+                        <Text style={[styles.textCenter, styles.bold]}>
                           {quarter.monthlyAssignmentAverage !== null
                             ? formatGrade(quarter.monthlyAssignmentAverage)
                             : "0.00"}
@@ -480,91 +530,39 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
                         { width: "100%" },
                       ]}
                     >
-                      <Text>
-                        {translations.noMonthlyAssignments}
-                      </Text>
+                      <Text>{translations.noMonthlyAssignments}</Text>
                     </View>
                   </View>
                 )}
               </View>
             </View>
 
-            {/* Summary Section */}
+            {/* Summary Section - Grid Layout */}
             <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={[styles.tableRow, styles.summaryRow]}>
-                  <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>
-                      {translations.lessonsAverage} (
-                      {formatPercentage(quarter.pacePercentage)})
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.tableCellLast,
-                      { width: "25%" },
-                      styles.textCenter,
-                    ]}
-                  >
-                    <Text>
-                      {quarter.overallAverage !== null
-                        ? formatGrade(quarter.overallAverage)
-                        : "-"}
-                    </Text>
-                  </View>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.statLabel}>{translations.lessonsAverage}</Text>
+                  <Text style={{ fontSize: 7, color: "#6b7280", marginBottom: 4 }}>
+                    {formatPercentage(quarter.pacePercentage)}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {quarter.overallAverage !== null ? formatGrade(quarter.overallAverage) : "-"}
+                  </Text>
                 </View>
-                <View style={[styles.tableRow, styles.summaryRow]}>
-                  <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>
-                      {translations.monthlyAssignmentsAverage} (
-                      {formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.tableCellLast,
-                      { width: "25%" },
-                      styles.textCenter,
-                    ]}
-                  >
-                    <Text>
-                      {quarter.monthlyAssignmentAverage !== null
-                        ? formatGrade(quarter.monthlyAssignmentAverage)
-                        : "-"}
-                    </Text>
-                  </View>
+                <View style={styles.summaryCard}>
+                  <Text style={styles.statLabel}>{translations.monthlyAssignmentsAverage}</Text>
+                  <Text style={{ fontSize: 7, color: "#6b7280", marginBottom: 4 }}>
+                    {formatPercentage(quarter.monthlyAssignmentPercentage || 0)}
+                  </Text>
+                  <Text style={styles.statValue}>
+                    {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "-"}
+                  </Text>
                 </View>
-                <View style={[styles.tableRow, styles.summaryRow]}>
-                  <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>{translations.passedLessons}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.tableCellLast,
-                      { width: "25%" },
-                      styles.textCenter,
-                    ]}
-                  >
-                    <Text>{quarter.totalPassedPaces}</Text>
-                  </View>
-                </View>
-                <View style={[styles.tableRow, styles.finalRow]}>
-                  <View style={[styles.tableCell, { width: "75%" }]}>
-                    <Text>{translations.finalGrade}</Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.tableCellLast,
-                      { width: "25%" },
-                      styles.textCenter,
-                    ]}
-                  >
-                    <Text style={{ fontSize: 12 }}>
-                      {quarter.finalGrade !== null
-                        ? formatGrade(quarter.finalGrade)
-                        : "-"}
-                    </Text>
-                  </View>
+                <View style={styles.finalGradeCard}>
+                  <Text style={styles.finalGradeLabel}>{translations.finalGrade}</Text>
+                  <Text style={styles.finalGradeValue}>
+                    {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -574,4 +572,3 @@ export const ReportCardPDF: React.FC<ReportCardPDFProps> = ({
     </Document>
   )
 }
-

@@ -13,14 +13,10 @@ export function StatusBadge({
   inactiveText = "Inactivo",
   className
 }: StatusBadgeProps) {
-  const statusColor = isActive
-    ? "bg-green-100 text-green-800 border border-green-300"
-    : "bg-orange-100 text-orange-800 border border-orange-300"
-
   return (
     <Badge
-      variant={isActive ? "default" : "secondary"}
-      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColor} ${className || ""}`}
+      variant={isActive ? "status-active" : "status-inactive"}
+      className={className}
     >
       {isActive ? activeText : inactiveText}
     </Badge>

@@ -1,8 +1,8 @@
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { BookOpen, Check, X, Edit2, History } from "lucide-react"
+import { Check, X, Edit2, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { sortCategoriesByOrder } from "@/utils/category-order"
@@ -25,13 +25,11 @@ interface DailyGoalsTableProps {
 // Color system for subjects (matching projections)
 const getSubjectColor = (index: number) => {
   return index % 2 === 0
-    ? { bg: "bg-blue-100 border-blue-200", text: "text-blue-700" }
-    : { bg: "bg-gray-100 border-gray-200", text: "text-gray-700" }
+    ? { bg: "bg-primary/10 border-primary/10", text: "text-primary", textAlign: "left" }
+    : { bg: "bg-primary/10 border-primary/10", text: "text-primary", textAlign: "left" }
 }
 
 export function DailyGoalsTable({
-  quarterName,
-  week,
   data,
   subjects,
   subjectToCategory,
@@ -296,49 +294,28 @@ export function DailyGoalsTable({
   }, [groupedData])
 
   return (
-    <Card>
-      <CardHeader className="p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-            <CardTitle className="flex items-center gap-2 md:gap-3 text-lg md:text-xl">
-              <span className="truncate">{t("dailyGoals.title")}</span>
-              <Badge variant="secondary" className="text-xs md:text-sm">
-                {quarterName} - {t("common.week")} {week}
-              </Badge>
-            </CardTitle>
-          </div>
-          <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="flex items-center gap-2 text-xs md:text-sm">
-              <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-blue-600" />
-              <span className="font-medium">
-                {groupedData.categories.length} {groupedData.categories.length === 1 ? t("dailyGoals.subjectSingular") : t("dailyGoals.subjectPlural")}
-              </span>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-3 md:p-6">
-        <div className="overflow-x-auto -mx-3 md:mx-0 border border-gray-300 rounded-md overflow-hidden">
+    <Card className="border-none bg-transparent">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto -mx-3 md:mx-0 border border-border rounded-xl overflow-hidden bg-transparent">
           <table className="w-full border-collapse">
             <thead>
-              <tr>
-                <th className="text-left p-2 font-semibold bg-background sticky left-0 z-10 min-w-[120px] border border-gray-300">
+              <tr className="bg-muted/30">
+                <th className="text-center p-3 font-semibold bg-primary/10 sticky left-0 z-10 min-w-[120px] border-b border-r border-border border-b-primary/50">
                   {t("dailyGoals.day")}
                 </th>
                 {groupedData.categories.map((category) => (
                   <th
                     key={category}
-                    className="text-center p-2 font-semibold min-w-[100px] border border-gray-300"
+                    className="text-center p-3 font-semibold min-w-[100px] border-b border-l border-r border-border border-b-primary/50"
                   >
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold">
+                      <span className="text-sm font-semibold">
                         {category}
                       </span>
                     </div>
                   </th>
                 ))}
-                <th className="text-center p-2 font-semibold w-20 border border-gray-300 bg-blue-100">
+                <th className="text-center p-3 font-semibold w-20 border-b border-l border-border border-b-primary/50 bg-primary/10">
                   Total
                 </th>
               </tr>
@@ -347,19 +324,19 @@ export function DailyGoalsTable({
               {days.map((day, dayIndex) => (
                 <tr
                   key={day}
-                  className={`transition-colors hover:bg-muted/30 ${dayIndex % 2 === 0 ? "bg-muted/10" : ""}`}
+                  className={`transition-colors hover:bg-primary-soft/20 border-b border-border`}
                 >
                   <td
-                    className={`p-2 font-semibold sticky left-0 z-10 border border-gray-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${getSubjectColor(dayIndex).bg} ${getSubjectColor(dayIndex).text}`}
+                    className={`p-3 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-primary/10 ${getSubjectColor(dayIndex).text}`}
                   >
                     <div className="flex flex-col items-center">
-                      <span className="text-sm font-bold">{days[dayIndex]}</span>
+                      <span className="text-sm font-semibold">{days[dayIndex]}</span>
                     </div>
                   </td>
                   {groupedData.categories.map((category) => (
                     <td
                       key={category}
-                      className="p-1 text-center align-middle border border-gray-300"
+                      className="p-2 text-center align-middle border-l border-border"
                     >
                       {editingCell?.subject === category && editingCell?.dayIndex === dayIndex ? (
                         <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
@@ -401,7 +378,7 @@ export function DailyGoalsTable({
                           <div className="flex gap-1">
                             <button
                               onClick={handleGoalSubmit}
-                              className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                              className="flex items-center justify-center w-8 h-8 bg-green-700 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
                               title={t("common.save")}
                             >
                               <Check className="h-4 w-4" />
@@ -422,14 +399,14 @@ export function DailyGoalsTable({
                             onChange={(e) => setNotesValue(e.target.value)}
                             onKeyDown={handleNotesKeyDown}
                             placeholder={t("dailyGoals.notePendingPlaceholder")}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-400 resize-none"
+                            className="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-card text-foreground placeholder-muted-foreground resize-none"
                             rows={2}
                             autoFocus
                           />
                           <div className="flex gap-1">
                             <button
                               onClick={handleNotesSubmit}
-                              className="flex items-center justify-center w-8 h-8 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors cursor-pointer"
+                              className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white rounded hover:bg-[#7C3AED] transition-colors cursor-pointer"
                               title={t("common.save")}
                             >
                               <Check className="h-4 w-4" />
@@ -456,7 +433,7 @@ export function DailyGoalsTable({
                                 }}
                                 className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${groupedData.data[category]?.[dayIndex]?.isCompleted
                                   ? "bg-green-500 border-green-500"
-                                  : "bg-white border-gray-300 hover:border-green-400"
+                                  : "bg-white border-border hover:border-green-400"
                                   }`}
                                 title={groupedData.data[category]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
                                 disabled={!canToggleGoal}
@@ -467,7 +444,7 @@ export function DailyGoalsTable({
                               </button>
                             )}
                             {groupedData.data[category]?.[dayIndex]?.text && !canToggleGoal && groupedData.data[category]?.[dayIndex]?.isCompleted && (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">
+                              <Badge variant="status-completed">
                                 <Check className="h-3 w-3" />
                               </Badge>
                             )}
@@ -537,8 +514,8 @@ export function DailyGoalsTable({
                       )}
                     </td>
                   ))}
-                  <td className="p-1 text-center align-middle border border-gray-300 bg-blue-50">
-                    <span className="w-full h-8 flex items-center justify-center text-sm font-medium text-gray-700">
+                  <td className="p-2 text-center align-middle border-l border-border bg-primary/10">
+                    <span className="w-full h-8 flex items-center justify-center text-sm font-medium text-foreground tabular-nums">
                       {dayTotals?.[dayIndex] || "0"}
                     </span>
                   </td>
@@ -551,23 +528,23 @@ export function DailyGoalsTable({
         {/* Summary */}
         <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-            <div className="text-center p-2 md:p-3 rounded-lg bg-green-50">
-              <p className="text-lg md:text-2xl font-bold text-green-600">
+            <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+              <p className="text-lg md:text-2xl font-semibold text-mint relative z-10 tabular-nums">
                 {completedGoals}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.completedGoals")}</p>
+              <p className="text-[10px] md:text-xs text-foreground relative z-10 font-medium">{t("dailyGoals.completedGoals")}</p>
             </div>
-            <div className="text-center p-2 md:p-3 rounded-lg bg-blue-50">
-              <p className="text-lg md:text-2xl font-bold text-blue-600">
+            <div className="text-center p-2 md:p-3 rounded-xl color-zone-status relative overflow-hidden">
+              <p className="text-lg md:text-2xl font-semibold text-sky relative z-10 tabular-nums">
                 {groupedData.categories.length * 5}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.totalGoals")}</p>
+              <p className="text-[10px] md:text-xs text-foreground relative z-10 font-medium">{t("dailyGoals.totalGoals")}</p>
             </div>
-            <div className="text-center p-2 md:p-3 rounded-lg bg-purple-50">
-              <p className="text-lg md:text-2xl font-bold text-purple-600">
+            <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+              <p className="text-lg md:text-2xl font-semibold text-amber relative z-10 tabular-nums">
                 {groupedData.categories.length}
               </p>
-              <p className="text-[10px] md:text-xs text-muted-foreground">{t("dailyGoals.subjects")}</p>
+              <p className="text-[10px] md:text-xs text-foreground relative z-10 font-medium">{t("dailyGoals.subjects")}</p>
             </div>
           </div>
         </div>

@@ -27,7 +27,7 @@ import {
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "200px"
-const SIDEBAR_WIDTH_COLLAPSED = "3rem"
+const SIDEBAR_WIDTH_COLLAPSED = "4rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -234,13 +234,13 @@ const Sidebar = React.forwardRef<
 
     const gapWidth = state === "collapsed" && collapsible === "icon"
       ? (variant === "floating" || variant === "inset"
-        ? "calc(3rem + 1rem)" // 1rem = theme(spacing.4)
-        : SIDEBAR_WIDTH_COLLAPSED)
-      : SIDEBAR_WIDTH
+        ? "calc(4rem + 1rem)" // collapsed width + gap
+        : "calc(4rem + 1rem)") // For sidebar variant: collapsed width + gap
+      : side === "left" ? `calc(${SIDEBAR_WIDTH} + 1rem)` : SIDEBAR_WIDTH
 
     const actualSidebarWidth = variant === "floating" || variant === "inset"
       ? state === "collapsed" && collapsible === "icon"
-        ? "calc(3rem + 1rem + 2px)" // 1rem = theme(spacing.4)
+        ? "calc(4rem + 1rem + 2px)" // collapsed width + gap + border
         : sidebarWidth
       : sidebarWidth
 
@@ -256,34 +256,38 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap on desktop - always show for offcanvas on desktop */}
         <div
           className={cn(
-            "relative bg-transparent transition-[width] duration-200 ease-linear",
+            "relative bg-transparent transition-[width] duration-220 ease-out shrink-0",
             "group-data-[side=right]:rotate-180"
           )}
           style={{
             width: gapWidth,
+            minWidth: 0,
           } as React.CSSProperties}
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
+            "fixed z-10 hidden transition-[left,right,width,top,bottom] duration-220 ease-out md:flex",
             side === "left"
-              ? "left-0"
-              : "right-0",
-            // Adjust the padding for floating and inset variants.
-            variant === "floating" || variant === "inset"
-              ? "p-2"
-              : "group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "left-4"
+              : "right-4",
             className
           )}
           style={{
             width: actualSidebarWidth,
+            top: "1rem",
+            bottom: "1.5rem",
             ...props.style,
           } as React.CSSProperties}
           {...props}
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className="flex w-full flex-col rounded-2xl shadow-lg border border-sidebar-border/30 overflow-hidden sidebar-glass"
+            style={{
+              background: 'rgba(246, 247, 251, 0.8)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            }}
           >
             {children}
           </div>
@@ -393,7 +397,7 @@ const SidebarHeader = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn("flex flex-col gap-3 p-3", className)}
       {...props}
     />
   )
@@ -408,7 +412,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2", className)}
+      className={cn("flex flex-col gap-3 px-3 pt-4 pb-3 mt-auto shrink-0", className)}
       {...props}
     />
   )
@@ -439,7 +443,7 @@ const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overflow-x-hidden group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}
@@ -456,7 +460,7 @@ const SidebarGroup = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="group"
-      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+      className={cn("relative flex w-full min-w-0 flex-col p-3", className)}
       {...props}
     />
   )
@@ -474,7 +478,7 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider outline-none transition-[margin,opacity] duration-220 ease-out focus-visible:ring-2 focus-visible:ring-primary/30 [&>svg]:size-3.5 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}
@@ -527,7 +531,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1.5", className)}
     {...props}
   />
 ))
@@ -547,18 +551,18 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-full p-2.5 text-left text-sm outline-none transition-colors duration-[var(--motion-short)] ease-[var(--easing-default)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:transform-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar press-scale disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-gradient-to-br data-[active=true]:from-primary/10 data-[active=true]:to-lavender/8 data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-sm data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-2.5 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!justify-center [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:transition-colors [&>svg]:text-sidebar-foreground/70 data-[active=true]:[&>svg]:text-primary",
   {
     variants: {
       variant: {
         default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "bg-card/60 backdrop-blur-sm shadow-[0_0_0_1px_rgba(92,95,122,0.1)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_rgba(108,99,255,0.2)]",
       },
       size: {
-        default: "h-8 text-sm",
-        sm: "h-7 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
+        default: "h-10 text-sm",
+        sm: "h-9 text-xs",
+        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-3",
       },
     },
     defaultVariants: {
@@ -757,9 +761,9 @@ const SidebarMenuSubButton = React.forwardRef<
       data-size={size}
       data-active={isActive}
       className={cn(
-        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
-        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground",
-        size === "sm" && "text-xs",
+        "flex h-8 min-w-0 items-center gap-2 overflow-hidden rounded-full px-3 text-sidebar-foreground outline-none transition-all duration-200 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-primary/30 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+        "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-medium",
+        size === "sm" && "text-xs h-7",
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",
         className

@@ -3,12 +3,19 @@ import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "default" | "gradient-wash" | "gradient-warm" | "gradient-cool"
+  }
+>(({ className, variant = "default", ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground",
+      "rounded-xl text-card-foreground",
+      !className?.includes("bg-transparent") && "card-soft",
+      !className?.includes("bg-transparent") && "hover-lift",
+      variant === "gradient-wash" && "card-gradient-wash",
+      variant === "gradient-warm" && "card-gradient-warm",
+      variant === "gradient-cool" && "card-gradient-cool",
       className
     )}
     {...props}
@@ -22,7 +29,7 @@ const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col space-y-2 p-6", className)}
     {...props}
   />
 ))
@@ -35,7 +42,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
+      "text-lg font-normal leading-tight tracking-tight",
       className
     )}
     {...props}

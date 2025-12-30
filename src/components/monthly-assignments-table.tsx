@@ -42,8 +42,8 @@ export function MonthlyAssignmentsTable({
   canDelete = false,
 }: MonthlyAssignmentsTableProps) {
   const { t } = useTranslation()
-  const thClass = "h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm [&:last-child]:w-16"
-  const tdClass = "p-4 align-middle first:px-6 first:py-3 [&:last-child]:w-16"
+  const thClass = "h-12 px-4 text-left align-middle font-semibold text-foreground first:pl-6 text-sm border-b-2 border-b-primary/50 border-r border-border last:border-r-0"
+  const tdClass = "p-4 align-middle first:pl-6 border-b border-border border-r border-border last:border-r-0"
 
   const QUARTER_LABELS: Record<string, string> = {
     Q1: t("monthlyAssignments.quarterLabelQ1"),
@@ -60,117 +60,118 @@ export function MonthlyAssignmentsTable({
   ]
 
   return (
-    <Card>
+    <Card className="card-soft overflow-hidden">
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                {COLUMNS.map((column) => (
-                  <th key={column.key} className={thClass}>
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {assignments.map((assignment) => {
-                const renderCell = (columnKey: string) => {
-                  switch (columnKey) {
-                    case 'name':
-                      return (
-                        <div className="font-medium">{assignment.name}</div>
-                      )
-                    case 'quarter':
-                      return (
-                        <Badge variant="outline" className="text-xs">
-                          {QUARTER_LABELS[assignment.quarter] || assignment.quarter}
-                        </Badge>
-                      )
-                    case 'status':
-                      return (
-                        assignment.hasGrades ? (
-                          <Badge variant="secondary" className="text-xs">
-                            {t("monthlyAssignments.withGrades")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            {t("monthlyAssignments.withoutGrades")}
+        {assignments.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-muted/30">
+                  {COLUMNS.map((column) => (
+                    <th key={column.key} className={thClass}>
+                      {column.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map((assignment) => {
+                  const renderCell = (columnKey: string) => {
+                    switch (columnKey) {
+                      case 'name':
+                        return (
+                          <div className="font-medium text-foreground">{assignment.name}</div>
+                        )
+                      case 'quarter':
+                        return (
+                          <Badge variant="primary-soft" className="text-xs">
+                            {QUARTER_LABELS[assignment.quarter] || assignment.quarter}
                           </Badge>
                         )
-                      )
-                    case 'actions':
-                      return (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                              }}
-                              className="h-8 w-8 p-0 cursor-pointer"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                            {canEdit && onEdit && (
-                              <DropdownMenuItem
+                      case 'status':
+                        return (
+                          assignment.hasGrades ? (
+                            <Badge variant="status-completed" className="text-xs">
+                              {t("monthlyAssignments.withGrades")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="status-inactive" className="text-xs">
+                              {t("monthlyAssignments.withoutGrades")}
+                            </Badge>
+                          )
+                        )
+                      case 'actions':
+                        return (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  onEdit(assignment)
                                 }}
-                                className="cursor-pointer"
+                                className="h-8 w-8 p-0 cursor-pointer hover:bg-muted/50"
                               >
-                                <Edit className="h-4 w-4 mr-2" />
-                                {t("monthlyAssignments.edit")}
-                              </DropdownMenuItem>
-                            )}
-                            {canDelete && onDelete && !assignment.hasGrades && (
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onDelete(assignment)
-                                }}
-                                className="text-red-600 focus:text-red-600 cursor-pointer"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {t("monthlyAssignments.delete")}
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )
-                    default:
-                      return null
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                              {canEdit && onEdit && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onEdit(assignment)
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  {t("monthlyAssignments.edit")}
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && onDelete && !assignment.hasGrades && (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    onDelete(assignment)
+                                  }}
+                                  className="text-red-600 focus:text-red-600 cursor-pointer focus:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  {t("monthlyAssignments.delete")}
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )
+                      default:
+                        return null
+                    }
                   }
-                }
 
-                return (
-                  <tr
-                    key={assignment.id}
-                    className="border-b transition-all duration-200 hover:bg-muted/30 group"
-                  >
-                    {COLUMNS.map((column) => (
-                      <td key={column.key} className={tdClass}>
-                        {renderCell(column.key)}
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                  return (
+                    <tr
+                      key={assignment.id}
+                      className="bg-card transition-colors duration-200 hover:bg-muted/20 group"
+                    >
+                      {COLUMNS.map((column) => (
+                        <td key={column.key} className={tdClass}>
+                          {renderCell(column.key)}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="py-16 text-center animate-fade-in-soft">
+            <FileText className="h-14 w-14 text-muted-foreground mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold mb-2 text-foreground">{t("monthlyAssignments.noAssignments")}</h3>
+            <p className="text-sm text-muted-foreground">{t("monthlyAssignments.createFirst")}</p>
+          </div>
+        )}
       </CardContent>
-      {assignments.length === 0 && (
-        <CardContent className="py-12 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">{t("monthlyAssignments.noAssignments")}</h3>
-          <p className="text-muted-foreground">{t("monthlyAssignments.createFirst")}</p>
-        </CardContent>
-      )}
     </Card>
   )
 }

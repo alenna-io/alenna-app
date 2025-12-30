@@ -22,7 +22,22 @@ export default function UserDetailPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
-  const [targetUser, setTargetUser] = React.useState<any>(null)
+  type UserApiResponse = {
+    id: string
+    clerkId?: string
+    email: string
+    firstName?: string
+    lastName?: string
+    schoolId?: string
+    isActive?: boolean
+    roles?: Array<{
+      id: string
+      name: string
+      displayName: string
+    }>
+  }
+
+  const [targetUser, setTargetUser] = React.useState<UserApiResponse | null>(null)
   const [deactivateConfirmation, setDeactivateConfirmation] = React.useState<{
     open: boolean
     userId: string
@@ -114,7 +129,7 @@ export default function UserDetailPage() {
 
   // Show loading state
   if (loading) {
-    return <Loading variant="profile" />
+    return <Loading variant="card" />
   }
 
   // Show permission error if user doesn't have access
@@ -134,7 +149,7 @@ export default function UserDetailPage() {
     )
   }
 
-  const handleDeactivateUser = (user: any) => {
+  const handleDeactivateUser = (user: UserApiResponse) => {
     setDeactivateConfirmation({
       open: true,
       userId: user.id,
@@ -160,13 +175,13 @@ export default function UserDetailPage() {
       // Reload target user
       if (userId) {
         try {
-          const users = await api.getUsers()
-          const updatedUser = users.find((u: any) => u.id === userId)
+          const users = await api.getUsers() as UserApiResponse[]
+          const updatedUser = users.find((u) => u.id === userId)
           if (updatedUser) {
             setTargetUser(updatedUser)
           }
-        } catch (err) {
-          console.error('Error refreshing user:', err)
+        } catch {
+          console.error('Error refreshing user')
         }
       }
     } catch (err: unknown) {
@@ -176,7 +191,7 @@ export default function UserDetailPage() {
     }
   }
 
-  const handleReactivateUser = (user: any) => {
+  const handleReactivateUser = (user: UserApiResponse) => {
     setReactivateConfirmation({
       open: true,
       userId: user.id,
@@ -197,30 +212,27 @@ export default function UserDetailPage() {
           const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') &&
             !userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
 
-          let updatedUser: { id: string;[key: string]: unknown } | undefined = undefined
+          let updatedUser: UserApiResponse | undefined = undefined
           if (isSchoolAdmin) {
             try {
-              const teachers = await api.schools.getMyTeachers()
-              updatedUser = teachers.find((t: { id: string }) => t.id === userId)
+              const teachers = await api.schools.getMyTeachers() as UserApiResponse[]
+              updatedUser = teachers.find((t) => t.id === userId)
             } catch {
               // Fall back to getUsers if /me/teachers fails
               try {
-                const users = await api.getUsers()
-                updatedUser = users.find((u: { id: string }) => u.id === userId)
-              } catch (usersErr) {
-                console.error('Error refreshing user:', usersErr)
+                const users = await api.getUsers() as UserApiResponse[]
+                updatedUser = users.find((u) => u.id === userId)
+              } catch {
+                console.error('Error refreshing user')
               }
             }
           } else {
-            const users = await api.getUsers()
-            updatedUser = users.find((u: { id: string }) => u.id === userId)
+            const users = await api.getUsers() as UserApiResponse[]
+            updatedUser = users.find((u) => u.id === userId)
           }
 
           if (updatedUser) {
-            setTargetUser({
-              ...updatedUser,
-              isActive: updatedUser.isActive !== undefined ? updatedUser.isActive : true
-            })
+            setTargetUser(updatedUser)
           }
         } catch (err) {
           console.error('Error refreshing user:', err)
@@ -233,7 +245,7 @@ export default function UserDetailPage() {
     }
   }
 
-  const handleDeleteUser = (user: any) => {
+  const handleDeleteUser = (user: UserApiResponse) => {
     setDeleteConfirmation({
       open: true,
       userId: user.id,
@@ -281,7 +293,18 @@ export default function UserDetailPage() {
           key={refreshTrigger}
           userId={userId}
           onBack={handleBackToList}
-          user={targetUser}
+          user={targetUser ? {
+            id: targetUser.id,
+            clerkId: targetUser.clerkId || '',
+            email: targetUser.email,
+            firstName: targetUser.firstName,
+            lastName: targetUser.lastName,
+            schoolId: targetUser.schoolId,
+            isActive: targetUser.isActive ?? true,
+            roles: targetUser.roles || [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          } : null}
           onDeactivate={canDeactivate ? handleDeactivateUser : undefined}
           onReactivate={canReactivate ? handleReactivateUser : undefined}
           onDelete={canDelete ? handleDeleteUser : undefined}

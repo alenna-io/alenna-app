@@ -369,7 +369,7 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
   };
 
   if (loading) {
-    return <Loading variant="spinner" />;
+    return <Loading variant="button" />;
   }
 
   if (modules.length === 0) {

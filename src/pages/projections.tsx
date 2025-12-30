@@ -274,7 +274,7 @@ export default function ProjectionsPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <Loading variant="table" />
+    return <Loading variant="section" />
   }
 
   if (!isTeacherOrAdmin) {
@@ -320,7 +320,7 @@ export default function ProjectionsPage() {
         />
         <Button
           onClick={() => setShowCreateDialog(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
+          className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
           {t("projections.createProjection")}
