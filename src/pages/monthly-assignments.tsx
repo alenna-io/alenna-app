@@ -1,11 +1,10 @@
 import * as React from "react"
 import { Navigate } from "react-router-dom"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
-import { PageHeader } from "@/components/ui/page-header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Percent } from "lucide-react"
 import { useApi } from "@/services/api"
@@ -200,7 +199,7 @@ export default function MonthlyAssignmentsPage() {
   }
 
   if (isLoadingUser || (loading && !selectedSchoolYearId)) {
-    return <Loading message={t("monthlyAssignments.loading")} />
+    return <Loading variant='card' />
   }
 
   // Check if user has permission (teachers and school admins only)
@@ -209,96 +208,110 @@ export default function MonthlyAssignmentsPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Header with School Year Selector - Compact */}
-      <div className="flex flex-col gap-4">
-        <PageHeader
-          title={t("monthlyAssignments.title")}
-          description={t("monthlyAssignments.description")}
-        />
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium text-black">{t("common.schoolYear")}:</h2>
-          <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
-            <SelectTrigger className="w-full sm:w-[200px] cursor-pointer">
-              <SelectValue placeholder={t("projections.selectSchoolYear")}>
-                {selectedSchoolYear ? (
-                  <span className="flex items-center gap-2 truncate">
-                    <span className="truncate">{selectedSchoolYear.name}</span>
-                    {selectedSchoolYear.isActive && (
-                      <Badge variant="default" className="shrink-0 text-xs">{t("projections.active")}</Badge>
-                    )}
-                  </span>
-                ) : null}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {schoolYears.map(year => (
-                <SelectItem key={year.id} value={year.id}>
-                  {year.name} {year.isActive && <Badge className="ml-2">{t("projections.active")}</Badge>}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-4 md:space-y-6 animate-page-entrance">
+      {/* Header Section */}
+      <Card className="card-soft p-4 md:p-6 animate-fade-in-soft">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-2 flex-1">
+            <h1 className="text-xl font-bold text-foreground">{t("monthlyAssignments.title")}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t("monthlyAssignments.description")}
+            </p>
+            <div className="flex items-center gap-3 mt-3">
+              <span className="text-sm font-medium text-muted-foreground">{t("common.schoolYear")}:</span>
+              <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
+                <SelectTrigger className="w-full sm:w-[220px] cursor-pointer h-9 bg-card border border-input">
+                  <SelectValue placeholder={t("projections.selectSchoolYear")}>
+                    {selectedSchoolYear ? (
+                      <span className="flex items-center gap-2 truncate">
+                        <span className="truncate">{selectedSchoolYear.name}</span>
+                        {selectedSchoolYear.isActive && (
+                          <Badge variant="status-active" className="shrink-0 text-xs">{t("projections.active")}</Badge>
+                        )}
+                      </span>
+                    ) : null}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {schoolYears.map(year => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.name} {year.isActive && <Badge variant="status-active" className="ml-2">{t("projections.active")}</Badge>}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {selectedSchoolYearId && (
         <>
-          {/* Grade Percentages Section - Compact Horizontal Design */}
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex flex-col xl:flex-row xl:items-center gap-4 xl:gap-6">
-                <div className="shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Percent className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t("monthlyAssignments.gradePercentageTitle")}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 hidden xl:block">
-                    {t("monthlyAssignments.gradePercentageDescription")}
-                  </p>
-                </div>
-                <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {QUARTERS.map(quarter => (
-                    <div key={quarter.value} className="flex flex-col gap-2">
-                      <label className="text-xs font-medium text-muted-foreground">
-                        {getQuarterLabel(quarter.value)}:
-                      </label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={gradePercentages[quarter.value] || 0}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 0
-                            setGradePercentages(prev => ({ ...prev, [quarter.value]: value }))
-                          }}
-                          onBlur={(e) => {
-                            const value = parseInt(e.target.value) || 0
-                            handleUpdatePercentage(quarter.value, value)
-                          }}
-                          className="h-8 w-full w-max-20 text-center px-2"
-                        />
-                        <span className="text-sm text-muted-foreground shrink-0">%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* Grade Percentages Card */}
+          <Card className="card-soft p-5 md:p-6 animate-fade-in-soft">
+            <div className="flex items-center gap-2 mb-6">
+              <Percent className="h-5 w-5 text-primary shrink-0" />
+              <div>
+                <h3 className="text-base font-semibold text-foreground">
+                  {t("monthlyAssignments.gradePercentageTitle")}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {t("monthlyAssignments.gradePercentageDescription")}
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-3 xl:hidden">
-                {t("monthlyAssignments.gradePercentageDescription")}
-              </p>
-            </CardContent>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {QUARTERS.map(quarter => {
+                const percentage = gradePercentages[quarter.value] || 0
+                return (
+                  <div
+                    key={quarter.value}
+                    className="relative bg-primary/5 border-2 border-primary/20 rounded-lg p-4 space-y-3 hover:border-primary/30 transition-colors"
+                  >
+                    <label className="block text-sm font-semibold text-foreground">
+                      {getQuarterLabel(quarter.value)}
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={percentage}
+                        onChange={(e) => {
+                          const value = parseInt(e.target.value) || 0
+                          setGradePercentages(prev => ({ ...prev, [quarter.value]: value }))
+                        }}
+                        onBlur={(e) => {
+                          const value = parseInt(e.target.value) || 0
+                          handleUpdatePercentage(quarter.value, value)
+                        }}
+                        className="h-14 w-full text-center px-4 text-lg font-bold bg-white border-2 border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary-soft focus:bg-white text-foreground tabular-nums"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground pointer-events-none">
+                        %
+                      </span>
+                    </div>
+                    {percentage > 0 && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        {percentage}% of total grade
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </Card>
 
-          {/* Assignments Table */}
-          <div className="space-y-4">
+          {/* Assignments Section */}
+          <div className="space-y-4 animate-fade-in-soft">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-              </div>
-              <Button onClick={handleCreate} className="cursor-pointer w-full sm:w-auto shrink-0">
+              <h2 className="text-lg font-semibold text-foreground">
+                {t("monthlyAssignments.tableTitle")}
+              </h2>
+              <Button
+                onClick={handleCreate}
+                className="cursor-pointer w-full sm:w-auto shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 {t("monthlyAssignments.newAssignment")}
               </Button>

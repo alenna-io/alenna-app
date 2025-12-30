@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -107,29 +108,29 @@ export function MonthlyAssignmentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-lg animate-page-entrance">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <FileText className="h-5 w-5 text-primary" />
             {assignment ? t("monthlyAssignments.editAssignment") : t("monthlyAssignments.createAssignment")}
           </DialogTitle>
-          <DialogDescription>
-            {assignment
-              ? t("forms.editAssignment")
-              : t("forms.createAssignment", { schoolYear: schoolYearName || '' })}
-          </DialogDescription>
+          {schoolYearName && (
+            <DialogDescription className="text-sm text-muted-foreground">
+              {t("monthlyAssignments.manageForYear", { year: schoolYearName })}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-5 py-4">
           {!assignment && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="bg-amber-soft border border-amber-200 rounded-lg p-4 animate-fade-in-soft">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-yellow-800 mb-1">
+                  <p className="text-sm font-medium text-amber-800 mb-1">
                     {t("common.important")}
                   </p>
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-amber-700">
                     {t("forms.assignmentAutoCreate")}
                   </p>
                 </div>
@@ -137,17 +138,22 @@ export function MonthlyAssignmentFormDialog({
             </div>
           )}
 
-          <FieldGroup>
+          <FieldGroup className="space-y-5">
             {!assignment && (
               <Field>
-                <FieldLabel htmlFor="quarter">{t("monthlyAssignments.quarter")}</FieldLabel>
+                <FieldLabel htmlFor="quarter" className="text-sm font-medium text-foreground mb-2">
+                  {t("monthlyAssignments.quarter")}
+                </FieldLabel>
                 <Select value={formData.quarter} onValueChange={(value) => setFormData({ ...formData, quarter: value })}>
-                  <SelectTrigger id="quarter">
+                  <SelectTrigger 
+                    id="quarter" 
+                    className="h-10 bg-card border border-input focus:border-primary focus:ring-2 focus:ring-primary-soft"
+                  >
                     <SelectValue placeholder={t("monthlyAssignments.selectQuarter")} />
                   </SelectTrigger>
                   <SelectContent>
                     {QUARTERS.map(q => (
-                      <SelectItem key={q.value} value={q.value}>
+                      <SelectItem key={q.value} value={q.value} className="cursor-pointer">
                         {q.label}
                       </SelectItem>
                     ))}
@@ -157,44 +163,63 @@ export function MonthlyAssignmentFormDialog({
             )}
             {assignment && (
               <Field>
-                <FieldLabel>{t("monthlyAssignments.quarter")}</FieldLabel>
-                <div className="text-sm text-muted-foreground">
-                  {getQuarterLabel(formData.quarter)}
+                <FieldLabel className="text-sm font-medium text-foreground mb-2">
+                  {t("monthlyAssignments.quarter")}
+                </FieldLabel>
+                <div className="px-3 py-2 rounded-md bg-muted/30 border border-border">
+                  <Badge variant="primary-soft" className="text-sm">
+                    {getQuarterLabel(formData.quarter)}
+                  </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-2">
                   {t("forms.quarterCannotBeModified")}
                 </p>
               </Field>
             )}
             <Field>
-              <FieldLabel htmlFor="assignment-name">{t("monthlyAssignments.assignmentName")}</FieldLabel>
+              <FieldLabel htmlFor="assignment-name" className="text-sm font-medium text-foreground mb-2">
+                {t("monthlyAssignments.assignmentName")}
+              </FieldLabel>
               <Input
                 id="assignment-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t("monthlyAssignments.namePlaceholder")}
+                className="h-10 bg-card border border-input focus:border-primary focus:ring-2 focus:ring-primary-soft"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !isSaving) {
                     handleSave()
                   }
                 }}
+                autoFocus
               />
             </Field>
           </FieldGroup>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
+            className="transition-colors hover:opacity-90"
+            style={{
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)',
+            } as React.CSSProperties}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.filter = 'brightness(0.95)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving || !formData.name.trim() || (!assignment && !formData.quarter)}
-            className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
           >
             {isSaving ? t("common.saving") : assignment ? t("common.save") : t("monthlyAssignments.newAssignment")}
           </Button>
