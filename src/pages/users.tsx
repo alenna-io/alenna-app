@@ -436,7 +436,7 @@ export default function UsersPage() {
   }
 
   if (isLoading) {
-    return <Loading variant="section" />
+    return <Loading variant="list-page" showCreateButton={false} view="table" showFilters={true} />
   }
 
   if (error) {

@@ -7,7 +7,7 @@ import { Header } from "@/components/header"
 function HeaderWithGradient() {
   return (
     <header
-      className="flex h-14 md:h-16 shrink-0 items-center gap-2 px-4 md:px-6 border-b border-border/30 backdrop-blur-sm z-20 relative transition-[background] duration-220 ease-out"
+      className="flex h-[60px]! w-[97%] mx-auto shrink-0 items-center gap-2 px-4 md:px-6 z-20 relative top-3 rounded-4xl bg-background/50 backdrop-blur-xs border border-border/50 shadow-lg"
     >
       <Header />
     </header>
@@ -27,7 +27,7 @@ export function DashboardLayout() {
           <HeaderWithGradient />
 
           {/* Content area - only this section scrolls */}
-          <div className="flex flex-col flex-1 overflow-y-auto pt-0 scroll-smooth" style={{ transform: 'translateZ(0)', WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex flex-col flex-1 overflow-y-auto pt-5 scroll-smooth" style={{ transform: 'translateZ(0)', WebkitOverflowScrolling: 'touch' }}>
             <div className="flex-1 p-4 md:p-6">
               <Outlet />
             </div>

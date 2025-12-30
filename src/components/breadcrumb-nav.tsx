@@ -194,6 +194,17 @@ export function BreadcrumbNav() {
       return
     }
 
+    // Special case: Daily goals page - extract projection detail path for quarter/week breadcrumbs
+    // Path: /students/:studentId/projections/:projectionId/:quarter/week/:week
+    let projectionDetailPath: string | null = null
+    if (studentsIndex !== -1 && projectionsIndex !== -1 && projectionsIndex === studentsIndex + 2) {
+      const studentId = pathSegments[studentsIndex + 1]
+      const projectionId = pathSegments[projectionsIndex + 1]
+      if (studentId && projectionId) {
+        projectionDetailPath = `/students/${studentId}/projections/${projectionId}`
+      }
+    }
+
     const items: BreadcrumbItem[] = []
 
     // Map routes to breadcrumb labels with translations
@@ -245,9 +256,18 @@ export function BreadcrumbNav() {
         }
       }
 
-      // Skip UUIDs and numeric IDs in breadcrumbs display
-      if (segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) ||
-        segment.match(/^\d+$/)) {
+      // Check if segment is an ID (UUID, Prisma ID, or numeric)
+      // UUID format: 8-4-4-4-12 hex with dashes
+      // Prisma ID format: alphanumeric string (e.g., cmjppw4if0001ib8czsdnyiud)
+      // Numeric ID: pure numbers
+      const isUUID = segment.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      const isNumeric = segment.match(/^\d+$/)
+      // Prisma ID: typically starts with letters and contains alphanumeric, usually 20+ chars
+      // More lenient: any alphanumeric string that's not a known route and is reasonably long
+      const isPrismaId = !isUUID && !isNumeric && segment.length >= 15 && segment.match(/^[a-z0-9]+$/i) && !routeMap[segment]
+      const isId = isUUID || isNumeric || isPrismaId
+
+      if (isId) {
         // Check what comes before and after this ID to determine the label
         if (prevSegment === 'students' && nextSegment === 'report-cards') {
           // Skip student ID when it's followed by report-cards
@@ -256,17 +276,29 @@ export function BreadcrumbNav() {
           // Show "Boleta" for projection ID after report-cards
           items.push({ label: t("breadcrumbs.reportCard"), path: currentPath })
         } else if (prevSegment === 'students') {
-          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
+          // Check if this is a student ID followed by projections
+          if (nextSegment === 'projections') {
+            // This is a student ID before projections - show "Detail" and link to student detail
+            items.push({ label: t("breadcrumbs.detail"), path: currentPath })
+          } else {
+            // Regular student detail page
+            items.push({ label: t("breadcrumbs.detail"), path: currentPath })
+          }
         } else if (prevSegment === 'users') {
           // Use user name if available, otherwise use "Detail"
           items.push({ label: userName || t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'schools') {
           items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         } else if (prevSegment === 'projections') {
+          // This is a projection ID - link to projection detail page
           items.push({ label: t("breadcrumbs.projection"), path: currentPath })
         } else if (prevSegment === 'groups') {
           // This is a group ID in groups path (groups/:groupId)
           items.push({ label: userName || t("breadcrumbs.detail"), path: currentPath })
+        } else if (prevSegment && isId) {
+          // Generic ID handling - if we have a previous segment, treat it as a detail page
+          // This catches cases where ID format might not match expected patterns
+          items.push({ label: t("breadcrumbs.detail"), path: currentPath })
         }
         continue
       }
@@ -274,14 +306,24 @@ export function BreadcrumbNav() {
       // Handle special cases
       if (segment === 'week') {
         const weekNum = pathSegments[i + 1]
-        items.push({ label: t("breadcrumbs.week", { week: weekNum }), path: currentPath + `/${weekNum}` })
+        // When on daily goals page, clicking week breadcrumb should go to projection detail
+        if (projectionDetailPath) {
+          items.push({ label: t("breadcrumbs.week", { week: weekNum }), path: projectionDetailPath })
+        } else {
+          items.push({ label: t("breadcrumbs.week", { week: weekNum }), path: currentPath + `/${weekNum}` })
+        }
         break // Don't process further
       }
 
       // Handle quarter in path (Q1, Q2, etc.)
       if (segment.match(/^Q[1-4]$/)) {
         const quarterNum = segment.charAt(1)
-        items.push({ label: t("breadcrumbs.quarter", { quarter: quarterNum }), path: currentPath })
+        // When on daily goals page, clicking quarter breadcrumb should go to projection detail
+        if (projectionDetailPath) {
+          items.push({ label: t("breadcrumbs.quarter", { quarter: quarterNum }), path: projectionDetailPath })
+        } else {
+          items.push({ label: t("breadcrumbs.quarter", { quarter: quarterNum }), path: currentPath })
+        }
         continue
       }
 
@@ -293,7 +335,7 @@ export function BreadcrumbNav() {
     }
 
     setBreadcrumbs(items)
-  }, [location.pathname, t, userName])
+  }, [location.pathname, location.state, t, userName, userInfo?.schoolId, isSchoolAdmin])
 
   // Don't show breadcrumbs on home page
   if (location.pathname === '/' || breadcrumbs.length === 0) {

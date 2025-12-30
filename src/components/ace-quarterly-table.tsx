@@ -265,14 +265,23 @@ export function ACEQuarterlyTable({
   const weekPaceCounts = React.useMemo(() => {
     const counts: number[] = Array(9).fill(0)
     subjects.forEach(subject => {
-      data[subject].forEach((pace, weekIndex) => {
-        if (pace) {
-          counts[weekIndex]++
+      data[subject].forEach((paceOrArray, weekIndex) => {
+        if (paceOrArray) {
+          const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
+          paces.forEach(pace => {
+            if (pace) {
+              // Exclude unfinished paces that are in their original quarter (they're just for reference)
+              const isUnfinishedReference = pace.isUnfinished && pace.originalQuarter === quarter
+              if (!isUnfinishedReference) {
+                counts[weekIndex]++
+              }
+            }
+          })
         }
       })
     })
     return counts
-  }, [data, subjects])
+  }, [data, subjects, quarter])
 
   // Calculate completed, failed, and expected paces for this quarter
   const quarterStats = React.useMemo(() => {
@@ -287,6 +296,18 @@ export function ACEQuarterlyTable({
           const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
           paces.forEach(pace => {
             if (pace) {
+              const isUnfinishedReference = pace.isUnfinished && pace.originalQuarter === quarter
+
+              if (isUnfinishedReference) {
+                // For unfinished references in original quarter: count in Scheduled and Pending
+                // They represent work that was scheduled but not completed in this quarter
+                expected++
+                // They remain as pending (not completed, not failed)
+                // Don't count failed attempts from history for references
+                return
+              }
+
+              // Count all other paces normally
               expected++
 
               // Use explicit backend flag when available, otherwise fall back to grade
@@ -311,7 +332,7 @@ export function ACEQuarterlyTable({
     })
 
     return { completed, failed, expected, totalFailed }
-  }, [data, subjects])
+  }, [data, subjects, quarter])
 
   const completionPercentage = quarterStats.expected > 0
     ? Math.round((quarterStats.completed / quarterStats.expected) * 100)
@@ -715,8 +736,8 @@ export function ACEQuarterlyTable({
                                       {pace.number}
                                     </Badge>
                                     {paceIdx === 0 && (
-                                      <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(pace.grade)}`}>
-                                        {pace.grade !== null ? `${pace.grade}%` : "—"}
+                                      <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(pace.isUnfinished && pace.originalQuarter === quarter ? null : pace.grade)}`}>
+                                        {pace.isUnfinished && pace.originalQuarter === quarter ? "—" : (pace.grade !== null ? `${pace.grade}%` : "—")}
                                       </span>
                                     )}
                                   </div>
