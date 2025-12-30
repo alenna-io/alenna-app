@@ -12,6 +12,7 @@ import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { AlertCircle, Calendar, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react"
 import { useApi } from "@/services/api"
+import type { SchoolYear, Quarter } from "@/services/api"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import type { DateRange } from "react-day-picker"
@@ -212,13 +213,13 @@ export default function SchoolYearWizardPage() {
       try {
         // Try to get by ID directly, or find in list if getById not exposed
         // Assuming getById exists or we fall back to list
-        let yearData: any = null
+        let yearData: SchoolYear | undefined = undefined
         try {
           yearData = await api.schoolYears.getById(schoolYearId)
         } catch {
           // Fallback if getById fails or doesn't exist
           const all = await api.schoolYears.getAll()
-          yearData = all.find((y: any) => y.id === schoolYearId)
+          yearData = all.find((y: SchoolYear) => y.id === schoolYearId)
         }
 
         if (!yearData) {
@@ -228,7 +229,7 @@ export default function SchoolYearWizardPage() {
         }
 
         // Map to form data
-        const mappedQuarters = (yearData.quarters || []).map((q: any) => {
+        const mappedQuarters = (yearData.quarters || []).map((q: Quarter & { holidays?: Array<{ id: string; startDate: string; endDate: string; label?: string }>; quarterHolidays?: Array<{ id: string; startDate: string; endDate: string; label?: string }>; weeks?: Array<{ weekNumber: number; startDate: string; endDate: string }>; schoolWeeks?: Array<{ weekNumber: number; startDate: string; endDate: string }> }) => {
           const holidays = (q.holidays || q.quarterHolidays || [])
           const weeks = (q.weeks || q.schoolWeeks || [])
 
@@ -240,17 +241,17 @@ export default function SchoolYearWizardPage() {
             endDate: q.endDate.split("T")[0],
             order: q.order,
             weeksCount: q.weeksCount,
-            holidays: holidays.map((h: any) => ({
+            holidays: holidays.map((h: { id: string; startDate: string; endDate: string; label?: string }) => ({
               id: h.id,
               startDate: h.startDate.split("T")[0],
               endDate: h.endDate.split("T")[0],
               label: h.label || "",
             })),
-            previewWeeks: weeks.map((w: any) => ({
+            previewWeeks: weeks.map((w: { weekNumber: number; startDate: string; endDate: string }) => ({
               weekNumber: w.weekNumber,
               startDate: w.startDate.split("T")[0],
               endDate: w.endDate.split("T")[0],
-            })).sort((a: any, b: any) => a.weekNumber - b.weekNumber),
+            })).sort((a: { weekNumber: number }, b: { weekNumber: number }) => a.weekNumber - b.weekNumber),
           }
         })
 
@@ -676,7 +677,7 @@ export default function SchoolYearWizardPage() {
         toast.success(t("schoolYears.createdSuccess", "Año escolar creado correctamente"))
       }
       navigate("/school-settings/school-years")
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating school year", err)
       const message = err instanceof Error ? err.message : t("schoolYears.errorSaving", "Error al guardar el año escolar")
       setError(message)
@@ -787,7 +788,7 @@ export default function SchoolYearWizardPage() {
       <Card className="mb-6 bg-white rounded-lg shadow-sm border">
         <CardHeader className="pb-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardTitle className="flex items-center gap-3 text-lg">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+            <div className="w-10 h-10 bg-[#8B5CF6] rounded-lg flex items-center justify-center shadow-sm">
               <span className="text-sm font-bold text-white">{q.order}</span>
             </div>
             <div>
@@ -1186,7 +1187,7 @@ export default function SchoolYearWizardPage() {
                 <div key={q.order} className="border rounded-lg p-5 bg-background hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-3 pb-3 border-b">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-[#8B5CF6] rounded-lg flex items-center justify-center">
                         <span className="text-xs font-bold text-white">{q.order}</span>
                       </div>
                       <div>
@@ -1204,7 +1205,7 @@ export default function SchoolYearWizardPage() {
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-[#8B5CF6] rounded-full"></div>
                       <span className="text-muted-foreground">
                         {t("schoolYears.weeksLabel", { n: q.weeksCount })}
                       </span>
@@ -1274,7 +1275,7 @@ export default function SchoolYearWizardPage() {
   }
 
   if (loading) {
-    return <Loading />
+    return <Loading variant='button' />
   }
 
   return (
@@ -1304,7 +1305,7 @@ export default function SchoolYearWizardPage() {
                       currentStep > step.number
                         ? "bg-green-500 text-white scale-110"
                         : currentStep === step.number
-                          ? "bg-blue-600 text-white scale-110 ring-4 ring-blue-200"
+                          ? "bg-[#8B5CF6] text-white scale-110 ring-4 ring-purple-200"
                           : "bg-gray-200 text-gray-600"
                     )}
                   >
@@ -1355,6 +1356,19 @@ export default function SchoolYearWizardPage() {
             variant="outline"
             onClick={currentStep === 1 ? () => navigate("/school-settings/school-years") : handleBack}
             disabled={saving}
+            className="transition-colors"
+            style={{
+              color: 'var(--color-primary)',
+              backgroundColor: 'var(--color-primary-soft)'
+            }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.filter = 'brightness(0.95)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = ''
+            }}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             {currentStep === 1 ? t("common.cancel", "Cancelar") : t("wizard.back", "Atrás")}
@@ -1363,9 +1377,22 @@ export default function SchoolYearWizardPage() {
           <div className="flex gap-2">
             {currentStep < 6 ? (
               <Button
+                variant="outline"
                 onClick={handleNext}
                 disabled={saving}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
+                className="transition-colors"
+                style={{
+                  color: 'var(--color-primary)',
+                  backgroundColor: 'var(--color-primary-soft)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.disabled) {
+                    e.currentTarget.style.filter = 'brightness(0.95)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.filter = ''
+                }}
               >
                 {t("wizard.next", "Siguiente")} <ChevronRight className="h-4 w-4 ml-2" />
               </Button>

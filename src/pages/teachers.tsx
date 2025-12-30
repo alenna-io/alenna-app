@@ -262,7 +262,7 @@ export default function TeachersPage() {
 
   // Show loading state
   if (isLoading) {
-    return <Loading variant="table" />
+    return <Loading variant="section" />
   }
 
   const targetSchoolId = schoolId || userInfo?.schoolId

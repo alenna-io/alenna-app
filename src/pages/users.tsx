@@ -436,7 +436,7 @@ export default function UsersPage() {
   }
 
   if (isLoading) {
-    return <Loading variant="table" />
+    return <Loading variant="section" />
   }
 
   if (error) {

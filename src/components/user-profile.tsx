@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next"
 interface UserProfileProps {
   userId: string
   onBack: () => void
-  user?: any // Optional pre-loaded user data
+  user?: UserDetail | null // Optional pre-loaded user data
   onDeactivate?: (user: UserDetail) => void
   onReactivate?: (user: UserDetail) => void
   onDelete?: (user: UserDetail) => void
@@ -68,11 +68,11 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
         let schoolName = undefined
         if (preloadedUser.schoolId) {
           try {
-            const schools = await api.schools.getAll()
-            const school = schools.find((s: any) => s.id === preloadedUser.schoolId)
+            const schools = await api.schools.getAll() as Array<{ id: string; name: string }>
+            const school = schools.find((s) => s.id === preloadedUser.schoolId)
             schoolName = school?.name
-          } catch (err) {
-            console.error('Error loading school:', err)
+          } catch {
+            // Silently fail - school name is optional
           }
         }
 
@@ -98,26 +98,41 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
       const isSchoolAdmin = userInfo?.roles.some((role: { name: string }) => role.name === 'SCHOOL_ADMIN') &&
         !userInfo?.roles.some((role: { name: string }) => role.name === 'SUPERADMIN')
 
-      let userDetail: any = null
+      type UserApiResponse = {
+        id: string
+        clerkId?: string
+        email: string
+        firstName?: string
+        lastName?: string
+        schoolId?: string
+        isActive?: boolean
+        roles?: Array<{
+          id: string
+          name: string
+          displayName: string
+        }>
+      }
+
+      let userDetail: UserApiResponse | undefined = undefined
 
       if (isSchoolAdmin) {
         try {
           // Try /me/teachers endpoint for school admins
-          const teachers = await api.schools.getMyTeachers()
-          userDetail = teachers.find((t: { id: string }) => t.id === userId)
-        } catch (err) {
+          const teachers = await api.schools.getMyTeachers() as UserApiResponse[]
+          userDetail = teachers.find((t) => t.id === userId)
+        } catch {
           // If that fails, try getUsers (might work for super admins)
           try {
-            const users = await api.getUsers()
-            userDetail = users.find((u: { id: string }) => u.id === userId)
-          } catch (usersErr) {
+            const users = await api.getUsers() as UserApiResponse[]
+            userDetail = users.find((u) => u.id === userId)
+          } catch {
             // Both failed - will show error
           }
         }
       } else {
         // Try getUsers (for super admins)
-        const users = await api.getUsers()
-        userDetail = users.find((u: { id: string }) => u.id === userId)
+        const users = await api.getUsers() as UserApiResponse[]
+        userDetail = users.find((u) => u.id === userId)
       }
 
       if (userDetail) {
@@ -125,18 +140,24 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
         let schoolName = undefined
         if (userDetail.schoolId) {
           try {
-            const schools = await api.schools.getAll()
-            const school = schools.find((s: any) => s.id === userDetail.schoolId)
+            const schools = await api.schools.getAll() as Array<{ id: string; name: string }>
+            const school = schools.find((s) => s.id === userDetail.schoolId)
             schoolName = school?.name
-          } catch (err) {
-            console.error('Error loading school:', err)
+          } catch {
+            // Silently fail - school name is optional
           }
         }
 
         setUser({
-          ...userDetail,
+          id: userDetail.id,
+          clerkId: userDetail.clerkId || '',
+          email: userDetail.email,
+          firstName: userDetail.firstName,
+          lastName: userDetail.lastName,
+          schoolId: userDetail.schoolId,
           schoolName,
           isActive: userDetail.isActive !== undefined ? userDetail.isActive : true,
+          roles: userDetail.roles || [],
           createdAt: new Date().toISOString(), // Placeholder - would come from API
           updatedAt: new Date().toISOString() // Placeholder - would come from API
         })
@@ -163,7 +184,7 @@ export function UserProfile({ userId, onBack, user: preloadedUser, onDeactivate,
         <Button variant="outline" onClick={onBack} className="mb-4 md:hidden">
           {t("users.backToUsers")}
         </Button>
-        <Loading variant="spinner" message={t("common.loading")} />
+        <Loading variant="button" message={t("common.loading")} />
       </div>
     )
   }

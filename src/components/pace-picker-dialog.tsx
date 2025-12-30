@@ -213,7 +213,7 @@ export function PacePickerDialog({
         <div className="flex-1 overflow-y-auto space-y-2 min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <Loading variant="spinner" message={t("projections.loadingLessons")} className="py-0" />
+              <Loading variant="button" message={t("projections.loadingLessons")} className="py-0" />
             </div>
           ) : filteredPaces.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
@@ -265,7 +265,7 @@ export function PacePickerDialog({
                       disabled={isAlreadyAdded}
                       className={`cursor-pointer ${isAlreadyAdded
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white'
                         }`}
                     >
                       <Plus className="h-4 w-4" />

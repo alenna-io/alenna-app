@@ -1,7 +1,9 @@
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "react-i18next"
 import { getCategoryOrder } from "@/utils/category-order"
+import { CheckCircle2, XCircle } from "lucide-react"
 
 interface ReportCardSubjectData {
   subject: string
@@ -54,11 +56,21 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
     return `${percentage}%`
   }
 
-  // Sort subjects by category order
+  // Sort subjects by category order and sort paces within each subject by code (numeric)
   const sortedSubjects = React.useMemo(() => {
-    return [...quarter.subjects].sort((a, b) => {
-      return getCategoryOrder(a.subject) - getCategoryOrder(b.subject)
-    })
+    return [...quarter.subjects]
+      .sort((a, b) => {
+        return getCategoryOrder(a.subject) - getCategoryOrder(b.subject)
+      })
+      .map(subject => ({
+        ...subject,
+        paces: [...subject.paces].sort((a, b) => {
+          // Sort by code (numeric value)
+          const codeA = parseInt(a.code) || 0
+          const codeB = parseInt(b.code) || 0
+          return codeA - codeB
+        })
+      }))
   }, [quarter.subjects])
 
   // Get all unique PACE positions (to determine column count)
@@ -68,12 +80,50 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
     1
   )
 
+  // Calculate total lessons count
+  const totalLessons = React.useMemo(() => {
+    return sortedSubjects.reduce((sum, subject) => sum + subject.paces.length, 0)
+  }, [sortedSubjects])
+
+  // Calculate total passed lessons
+  const totalPassedLessons = quarter.totalPassedPaces
+
+  // Get grade status (pass/fail) helper
+  const getGradeStatus = (grade: number | null) => {
+    if (grade === null) return null
+    return grade >= 70 ? "passed" : "failed"
+  }
+
   return (
-    <Card className="print:shadow-none print:border-2 overflow-hidden rounded-lg">
-      <CardContent className="p-4 space-y-6">
+    <Card className="print:shadow-none print:border-2 overflow-hidden rounded-lg border-border/50 animate-fade-in-soft">
+      <CardContent className="p-5 md:p-6 space-y-6">
+        {/* Stats Summary Card */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 animate-staggered">
+          <div className="bg-card rounded-lg border border-border/50 p-4 space-y-1">
+            <div className="text-xs text-muted-foreground font-medium">{t("reportCards.finalGrade")}</div>
+            <div className="text-2xl font-bold text-foreground tabular-nums">
+              {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
+            </div>
+          </div>
+          <div className="bg-card rounded-lg border border-border/50 p-4 space-y-1">
+            <div className="text-xs text-muted-foreground font-medium">{t("reportCards.totalLessons")}</div>
+            <div className="text-2xl font-bold text-foreground tabular-nums">{totalLessons}</div>
+          </div>
+          <div className="bg-card rounded-lg border border-border/50 p-4 space-y-1">
+            <div className="text-xs text-muted-foreground font-medium">{t("reportCards.passedLessons")}</div>
+            <div className="text-2xl font-bold text-foreground tabular-nums">{totalPassedLessons}</div>
+          </div>
+          <div className="bg-card rounded-lg border border-border/50 p-4 space-y-1">
+            <div className="text-xs text-muted-foreground font-medium mb-2">{t("reportCards.academicProjectionCompleted")}</div>
+            <Badge variant={quarter.academicProjectionCompleted ? "status-completed" : "status-failed"} className="text-xs">
+              {quarter.academicProjectionCompleted ? t("reportCards.yes") : t("reportCards.no")}
+            </Badge>
+          </div>
+        </div>
+
         {/* PACEs Section */}
-        <div className="overflow-x-auto">
-          <div className="mb-3">
+        <div className="overflow-x-auto animate-fade-in-soft">
+          <div className="mb-4">
             <h3 className="text-base font-semibold text-foreground">
               {t("reportCards.lessons")}{" "}
               <span className="font-normal text-muted-foreground">
@@ -81,100 +131,81 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </span>
             </h3>
           </div>
-          <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
-            <thead>
-              <tr className="bg-primary/90 text-primary-foreground">
-                <th className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.subject")}</th>
-                {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
-                  <th key={i} className="p-2 text-center font-semibold border border-primary/20 min-w-[60px]">
-                    {t("reportCards.lesson")}
-                  </th>
-                ))}
-                <th className="p-2 text-center font-semibold border border-primary/20">{t("reportCards.average")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedSubjects.length > 0 ? (
-                sortedSubjects.map((subject) => (
-                  <React.Fragment key={subject.subject}>
-                    {/* Subject name row */}
-                    <tr className="bg-primary/10">
-                      <td colSpan={maxPacesPerSubject + 2} className="p-2 text-left font-semibold border border-gray-300">
-                        {subject.subject}
-                      </td>
-                    </tr>
-                    {/* Percentage row */}
-                    <tr className="bg-white">
-                      <td className="p-2 text-right text-xs text-muted-foreground border border-gray-300 w-12">
-                        %
-                      </td>
-                      {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
-                        <td key={i} className="p-2 text-center border border-gray-300">
-                          {i < subject.paces.length ? (
-                            <span className="text-xs text-foreground font-medium">
-                              {subject.paces[i].grade !== null ? formatGrade(subject.paces[i].grade!) : "-"}
-                            </span>
-                          ) : (
-                            ""
-                          )}
-                        </td>
-                      ))}
-                      <td className="p-2 text-center font-semibold border border-gray-300 text-foreground">
-                        {subject.average !== null ? formatGrade(subject.average) : "-"}
-                      </td>
-                    </tr>
-                    {/* PACE row */}
-                    <tr className="bg-white">
-                      <td className="p-2 text-right text-xs text-muted-foreground border border-gray-300 w-12">
-                        {t("reportCards.lesson")}
-                      </td>
-                      {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
-                        <td key={i} className="p-2 text-center border border-gray-300">
-                          {i < subject.paces.length ? (
-                            <span className="text-xs font-mono">
-                              {subject.paces[i].code}
-                            </span>
-                          ) : (
-                            ""
-                          )}
-                        </td>
-                      ))}
-                      <td className="p-2 text-center border border-gray-300">
-                        {subject.passedCount}
-                      </td>
-                    </tr>
-                  </React.Fragment>
-                ))
-              ) : (
-                <tr className="bg-white">
-                  <td colSpan={maxPacesPerSubject + 2} className="p-4 text-center text-muted-foreground border border-gray-300">
-                    {t("reportCards.noLessonsAssigned")}
-                  </td>
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/30">
+                  <th className="p-3 text-left font-semibold border-b-2 border-b-primary/50 border-r border-border">{t("reportCards.subject")}</th>
+                  {Array.from({ length: maxPacesPerSubject }).map((_, i) => (
+                    <th key={i} className="p-3 text-center font-semibold border-b-2 border-b-primary/50 border-l border-r border-border min-w-[80px]">
+                      {t("reportCards.lesson")}
+                    </th>
+                  ))}
+                  <th className="p-3 text-center font-semibold border-b-2 border-b-primary/50 border-l border-border">{t("reportCards.average")}</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sortedSubjects.length > 0 ? (
+                  sortedSubjects.map((subject) => (
+                    <React.Fragment key={subject.subject}>
+                      {/* Subject row with lessons */}
+                      <tr className="bg-card border-b border-border hover:bg-muted/20 transition-colors">
+                        <td className="p-3 font-semibold border-r border-border bg-primary/10">
+                          {subject.subject}
+                        </td>
+                        {Array.from({ length: maxPacesPerSubject }).map((_, i) => {
+                          const pace = i < subject.paces.length ? subject.paces[i] : null
+                          const status = pace ? getGradeStatus(pace.grade) : null
 
-        {/* Academic Projection Status */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
-            <tbody>
-              <tr >
-                <td className="p-3 text-left font-semibold border border-primary/20">
-                  {t("reportCards.academicProjectionCompleted")}
-                </td>
-                <td className={`p-3 text-center font-semibold border border-primary/20 w-24 ${quarter.academicProjectionCompleted ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
-                  {quarter.academicProjectionCompleted ? t("reportCards.yes") : t("reportCards.no")}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                          return (
+                            <td key={i} className="p-3 text-center border-l border-r border-border">
+                              {pace ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-xs font-mono text-foreground font-medium">
+                                    {pace.code}
+                                  </span>
+                                  {pace.grade !== null && (
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-sm font-semibold tabular-nums ${status === "passed" ? "text-[#059669]" : status === "failed" ? "text-[#E11D48]" : "text-foreground"
+                                        }`}>
+                                        {formatGrade(pace.grade)}
+                                      </span>
+                                      {status === "passed" && (
+                                        <CheckCircle2 className="h-3 w-3 text-[#059669]" />
+                                      )}
+                                      {status === "failed" && (
+                                        <XCircle className="h-3 w-3 text-[#E11D48]" />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </td>
+                          )
+                        })}
+                        <td className="p-3 text-center font-semibold border-l border-border bg-primary/10 tabular-nums">
+                          {subject.average !== null ? formatGrade(subject.average) : "-"}
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <tr className="bg-card">
+                    <td colSpan={maxPacesPerSubject + 2} className="p-4 text-center text-muted-foreground border-b border-r border-l border-border">
+                      {t("reportCards.noLessonsAssigned")}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Monthly Assignments Section */}
-        <div className="overflow-x-auto">
-          <div className="mb-3">
+        <div className="overflow-x-auto animate-fade-in-soft">
+          <div className="mb-4">
             <h3 className="text-base font-semibold text-foreground">
               {t("reportCards.monthlyAssignments")}{" "}
               <span className="font-normal text-muted-foreground">
@@ -182,79 +213,79 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </span>
             </h3>
           </div>
-          <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
-            <thead>
-              <tr className="bg-primary/90 text-primary-foreground">
-                <th className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.assignment")}</th>
-                <th className="p-2 text-center font-semibold border border-primary/20">{t("reportCards.grade")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quarter.monthlyAssignments.length > 0 ? (
-                <>
-                  {quarter.monthlyAssignments.map((assignment) => (
-                    <tr key={assignment.id} className="bg-white">
-                      <td className="p-2 border border-gray-300">{assignment.name}</td>
-                      <td className="p-2 text-center border border-gray-300">
-                        {assignment.grade !== null ? formatGrade(assignment.grade) : "-"}
+          <div className="border border-border rounded-xl overflow-hidden bg-card">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-muted/30">
+                  <th className="p-3 text-left font-semibold border-b-2 border-b-primary/50 border-r border-border">{t("reportCards.assignment")}</th>
+                  <th className="p-3 text-center font-semibold border-b-2 border-b-primary/50 border-l border-border">{t("reportCards.grade")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quarter.monthlyAssignments.length > 0 ? (
+                  <>
+                    {quarter.monthlyAssignments.map((assignment) => (
+                      <tr key={assignment.id} className="bg-card border-b border-border hover:bg-muted/20 transition-colors">
+                        <td className="p-3 border-r border-border">{assignment.name}</td>
+                        <td className="p-3 text-center border-l border-border tabular-nums font-medium">
+                          {assignment.grade !== null ? formatGrade(assignment.grade) : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Average row for Monthly Assignments */}
+                    <tr className="bg-primary/10 border-t-2 border-t-primary/50">
+                      <td className="p-3 text-left font-semibold border-r border-border">{t("reportCards.averageLabel")}</td>
+                      <td className="p-3 text-center font-semibold border-l border-border tabular-nums">
+                        {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "0.00"}
                       </td>
                     </tr>
-                  ))}
-                  {/* Average row for Monthly Assignments */}
-                  <tr className="bg-primary/90 text-primary-foreground">
-                    <td className="p-2 text-left font-semibold border border-primary/20">{t("reportCards.averageLabel")}</td>
-                    <td className="p-2 text-center font-semibold border border-primary/20">
-                      {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "0.00"}
+                  </>
+                ) : (
+                  <tr className="bg-card">
+                    <td colSpan={2} className="p-4 text-center text-muted-foreground border-b border-r border-l border-border">
+                      {t("reportCards.noMonthlyAssignments")}
                     </td>
                   </tr>
-                </>
-              ) : (
-                <tr className="bg-white">
-                  <td colSpan={2} className="p-4 text-center text-muted-foreground border border-gray-300">
-                    {t("reportCards.noMonthlyAssignments")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* Summary Section */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm rounded-lg overflow-hidden">
-            <tbody>
-              <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border border-gray-300">
-                  {t("reportCards.lessonsAverage")} ({formatPercentage(quarter.pacePercentage)})
-                </td>
-                <td className="p-2 text-center border border-gray-300">
-                  {quarter.overallAverage !== null ? formatGrade(quarter.overallAverage) : "-"}
-                </td>
-              </tr>
-              <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border border-gray-300">
-                  {t("reportCards.monthlyAssignmentsAverage")} ({formatPercentage(quarter.monthlyAssignmentPercentage || 0)})
-                </td>
-                <td className="p-2 text-center border border-gray-300">
-                  {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "-"}
-                </td>
-              </tr>
-              <tr className="bg-gray-100 font-semibold">
-                <td className="p-2 border border-gray-300">
-                  {t("reportCards.passedLessons")}
-                </td>
-                <td className="p-2 text-center border border-gray-300">
-                  {quarter.totalPassedPaces}
-                </td>
-              </tr>
-              <tr className="bg-primary text-primary-foreground font-bold">
-                <td className="p-3 border border-primary/20">{t("reportCards.finalGrade")}</td>
-                <td className="p-3 text-center border border-primary/20 text-lg">
-                  {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Summary Section - Grid Layout */}
+        <div className="animate-fade-in-soft">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-card rounded-lg border border-border/50 p-4 space-y-2">
+              <div className="text-sm text-muted-foreground font-medium">
+                {t("reportCards.lessonsAverage")}
+              </div>
+              <div className="text-xs text-muted-foreground mb-1">
+                {formatPercentage(quarter.pacePercentage)}
+              </div>
+              <div className="text-2xl font-bold text-foreground tabular-nums">
+                {quarter.overallAverage !== null ? formatGrade(quarter.overallAverage) : "-"}
+              </div>
+            </div>
+            <div className="bg-card rounded-lg border border-border/50 p-4 space-y-2">
+              <div className="text-sm text-muted-foreground font-medium">
+                {t("reportCards.monthlyAssignmentsAverage")}
+              </div>
+              <div className="text-xs text-muted-foreground mb-1">
+                {formatPercentage(quarter.monthlyAssignmentPercentage || 0)}
+              </div>
+              <div className="text-2xl font-bold text-foreground tabular-nums">
+                {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "-"}
+              </div>
+            </div>
+            <div className="bg-primary rounded-lg border border-primary p-4 space-y-2 md:col-span-1">
+              <div className="text-sm text-primary-foreground/80 font-medium">
+                {t("reportCards.finalGrade")}
+              </div>
+              <div className="text-3xl font-bold text-primary-foreground tabular-nums">
+                {quarter.finalGrade !== null ? formatGrade(quarter.finalGrade) : "-"}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

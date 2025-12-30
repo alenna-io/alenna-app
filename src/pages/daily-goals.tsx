@@ -2,9 +2,9 @@ import * as React from "react"
 import { useParams, useLocation, useNavigate } from "react-router-dom"
 import { BackButton } from "@/components/ui/back-button"
 import { Loading } from "@/components/ui/loading"
-import { StudentInfoCard } from "@/components/ui/student-info-card"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useApi } from "@/services/api"
 import type { DailyGoalData, DailyGoal, NoteHistory } from "@/types/pace"
@@ -700,7 +700,7 @@ export default function DailyGoalsPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 animate-page-entrance">
       {/* Mobile-only back button (desktop uses breadcrumb) */}
       <div className="flex items-center gap-4 md:hidden">
         <BackButton to={`/students/${studentId}/projections/${projectionId}`}>
@@ -722,69 +722,96 @@ export default function DailyGoalsPage() {
         </div>
       )}
 
-      {/* Student Info Card */}
-      <StudentInfoCard
-        student={student || {
-          id: studentId || "",
-          name: t("projections.loadingStudent"),
-          currentGrade: "",
-          schoolYear: ""
-        }}
-        showBadge={false}
-      />
-
-      {/* Week Navigation */}
-      {quarter && week && (
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              const prev = getPreviousWeek()
-              if (prev) handleNavigateWeek(prev.quarter, prev.week)
-            }}
-            disabled={!getPreviousWeek()}
-            className="flex items-center gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t("dailyGoals.previousWeek")}
-          </Button>
-          <div className="text-center">
-            <div className="text-sm font-medium">
-              {quarter ? getQuarterName(quarter) : ""} - {t("common.week")} {week}
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-2">
+          <h1 className="text-xl font-bold">{t("dailyGoals.title")}</h1>
+          {student && (
+            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+              <span className="font-medium text-foreground">{student.name}</span>
+              {quarter && week && (
+                <Badge variant="filter-active" className="text-xs">
+                  {quarter ? getQuarterName(quarter) : ""} - {t("common.week")} {week}
+                </Badge>
+              )}
             </div>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              const next = getNextWeek()
-              if (next) handleNavigateWeek(next.quarter, next.week)
-            }}
-            disabled={!getNextWeek()}
-            className="flex items-center gap-2"
-          >
-            {t("dailyGoals.nextWeek")}
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          )}
         </div>
-      )}
+
+        {/* Week Navigation Buttons */}
+        {quarter && week && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const prev = getPreviousWeek()
+                if (prev) handleNavigateWeek(prev.quarter, prev.week)
+              }}
+              disabled={!getPreviousWeek()}
+              className="flex items-center gap-2 transition-colors"
+              style={{
+                color: 'var(--color-primary)',
+                backgroundColor: 'var(--color-primary-soft)'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.filter = 'brightness(0.95)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.filter = ''
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t("dailyGoals.previousWeek")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const next = getNextWeek()
+                if (next) handleNavigateWeek(next.quarter, next.week)
+              }}
+              disabled={!getNextWeek()}
+              className="flex items-center gap-2 transition-colors"
+              style={{
+                color: 'var(--color-primary)',
+                backgroundColor: 'var(--color-primary-soft)'
+              }}
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.filter = 'brightness(0.95)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.filter = ''
+              }}
+            >
+              {t("dailyGoals.nextWeek")}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Loading State */}
       {loading ? (
-        <Loading variant="spinner" message={t("dailyGoals.loading")} />
+        <Loading variant="section" />
       ) : (
         /* Daily Goals Table */
-        <DailyGoalsTable
-          quarter={quarter || "Q1"}
-          quarterName={quarter ? getQuarterName(quarter) : t("dailyGoals.firstQuarter")}
-          week={parseInt(week || "1")}
-          data={groupedGoalsData}
-          subjects={Object.keys(groupedGoalsData)}
-          subjectToCategory={subjectToCategory}
-          onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
-          onGoalToggle={canEdit ? handleGoalToggle : undefined}
-          onNotesUpdate={canEdit ? handleNotesUpdate : undefined}
-          dayTotals={calculateDayTotal}
-        />
+        <div className="animate-staggered" style={{ animationDelay: '100ms' }}>
+          <DailyGoalsTable
+            quarter={quarter || "Q1"}
+            quarterName={quarter ? getQuarterName(quarter) : t("dailyGoals.firstQuarter")}
+            week={parseInt(week || "1")}
+            data={groupedGoalsData}
+            subjects={Object.keys(groupedGoalsData)}
+            subjectToCategory={subjectToCategory}
+            onGoalUpdate={canEdit ? handleGoalUpdate : undefined}
+            onGoalToggle={canEdit ? handleGoalToggle : undefined}
+            onNotesUpdate={canEdit ? handleNotesUpdate : undefined}
+            dayTotals={calculateDayTotal}
+          />
+        </div>
       )}
     </div>
   )

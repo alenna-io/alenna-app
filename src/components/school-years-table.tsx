@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, CheckCircle, MoreVertical, Edit, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,7 @@ export function SchoolYearsTable({
   canEdit = false,
   canDelete = false
 }: SchoolYearsTableProps) {
+  const { t } = useTranslation()
   const thClass = "h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm [&:last-child]:w-16"
   const tdClass = "p-4 align-middle first:px-6 first:py-3 [&:last-child]:w-16"
 
@@ -91,12 +93,11 @@ export function SchoolYearsTable({
                       return (
                         <div>
                           {year.isActive ? (
-                            <Badge className="bg-green-600 text-white">
-                              <CheckCircle className="mr-1 h-3 w-3" />
-                              Activo
+                            <Badge variant="status-active">
+                              {t("schools.active")}
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Inactivo</Badge>
+                            <Badge variant="status-inactive">{t("schools.inactive")}</Badge>
                           )}
                         </div>
                       )

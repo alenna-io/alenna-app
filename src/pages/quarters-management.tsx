@@ -12,7 +12,6 @@ import { useTranslation } from "react-i18next"
 import { useQuarterStatus } from "@/hooks/useQuarterStatus"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { toast } from "sonner"
-import { Lock, Unlock, Clock } from "lucide-react"
 
 export default function QuartersManagementPage() {
   const api = useApi()
@@ -69,22 +68,19 @@ export default function QuartersManagementPage() {
     switch (status) {
       case 'closed':
         return (
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <Lock className="h-3 w-3" />
+          <Badge variant="status-closed">
             {t("quarters.closed")}
           </Badge>
         )
       case 'gracePeriod':
         return (
-          <Badge variant="default" className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600">
-            <Clock className="h-3 w-3" />
+          <Badge variant="status-gracePeriod">
             {t("quarters.gracePeriod")}
           </Badge>
         )
       default:
         return (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Unlock className="h-3 w-3" />
+          <Badge variant="status-open">
             {t("quarters.open")}
           </Badge>
         )
@@ -122,7 +118,7 @@ export default function QuartersManagementPage() {
           <SelectContent>
             {schoolYears.map(year => (
               <SelectItem key={year.id} value={year.id}>
-                {year.name} {year.isActive && <Badge className="ml-2">{t("projections.active")}</Badge>}
+                {year.name} {year.isActive && <Badge variant="status-active" className="ml-2">{t("projections.active")}</Badge>}
               </SelectItem>
             ))}
           </SelectContent>

@@ -15,11 +15,11 @@ export function PasswordSetupGuard({ children }: PasswordSetupGuardProps) {
   const { userInfo, isLoading } = useUser()
   const location = useLocation()
 
-  // Show loading while fetching user info
+  // Show loading while fetching user info - use spinner button variant
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loading variant="spinner" />
+        <Loading variant="button" size="lg" />
       </div>
     )
   }

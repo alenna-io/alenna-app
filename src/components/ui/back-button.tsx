@@ -30,8 +30,18 @@ const BackButton = React.forwardRef<
       ref={ref}
       variant="outline"
       onClick={handleClick}
-      className={cn("mb-4", className)}
-      style={{ cursor: 'pointer' }}
+      className={cn("mb-4 transition-colors", className)}
+      style={{
+        cursor: 'pointer',
+        color: 'var(--color-primary)',
+        backgroundColor: 'var(--color-primary-soft)'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.filter = 'brightness(0.95)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.filter = ''
+      }}
       {...props}
     >
       ← {children}

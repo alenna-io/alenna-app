@@ -44,6 +44,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ModuleRouteGuard } from '@/components/ModuleRouteGuard'
 import { PasswordSetupGuard } from '@/components/PasswordSetupGuard'
 import { SetupPasswordPage } from '@/pages/setup-password'
+import { AlennaBackground } from '@/components/ui/alenna-background'
 import '@/lib/i18n' // Initialize i18n
 
 // Protected Route wrapper
@@ -70,6 +71,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <AlennaBackground />
       <ScrollToTop />
       <Routes>
         {/* Public routes - without sidebar */}

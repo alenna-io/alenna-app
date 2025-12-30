@@ -141,7 +141,7 @@ export default function CertificationTypesPage() {
   }
 
   if (loading || isLoadingUser) {
-    return <Loading variant="list" />;
+    return <Loading variant="page" />;
   }
 
   return (

@@ -260,7 +260,7 @@ export default function LecturesPage() {
 
       {/* Lectures Table */}
       {isLoading ? (
-        <Loading variant="spinner" />
+        <Loading variant="section" />
       ) : (
         <LecturesTable
           lectures={paginatedLectures}
