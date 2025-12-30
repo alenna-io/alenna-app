@@ -29,7 +29,7 @@ export function CreateProjectionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="lg:max-w-3xl max-w-[90%]">
         <DialogHeader>
           <DialogTitle>{t("projections.createDialogTitle")}</DialogTitle>
           <DialogDescription>
@@ -48,7 +48,7 @@ export function CreateProjectionDialog({
               </div>
               <div className="flex-1">
                 <div className="font-semibold w-full break-words text-gray-900">{t("projections.generateAutomaticTitle")}</div>
-                <div className="text-sm text-gray-600 w-full break-words mt-1">
+                <div className="hidden sm:block text-sm text-gray-600 w-full break-words mt-1">
                   {t("projections.generateAutomaticDescription")}
                 </div>
               </div>
@@ -65,7 +65,7 @@ export function CreateProjectionDialog({
               </div>
               <div className="flex-1">
                 <div className="font-semibold w-full break-words text-gray-900">{t("projections.fromTemplateTitle")}</div>
-                <div className="text-sm text-gray-600 w-full break-words mt-1">
+                <div className="hidden sm:block text-sm text-gray-600 w-full break-words mt-1">
                   {t("projections.fromTemplateDescription")}
                 </div>
               </div>
@@ -82,7 +82,7 @@ export function CreateProjectionDialog({
               </div>
               <div className="flex-1">
                 <div className="font-semibold w-full break-words text-gray-900">{t("projections.emptyProjectionTitle")}</div>
-                <div className="text-sm text-gray-600 w-full break-words mt-1">
+                <div className="hidden sm:block text-sm text-gray-600 w-full break-words mt-1">
                   {t("projections.emptyProjectionDescription")}
                 </div>
               </div>

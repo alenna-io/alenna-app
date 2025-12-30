@@ -17,6 +17,7 @@ import type { UserInfo } from "@/services/api"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { FileText, BookOpen } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "react-i18next"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { useQuarterStatus } from "@/hooks/useQuarterStatus"
@@ -923,7 +924,7 @@ export default function ACEProjectionPage() {
   }
 
   return (
-    <div className="space-y-5 md:space-y-6 animate-page-entrance">
+    <div className="space-y-3 animate-page-entrance">
       {/* Mobile back button */}
       <div className="md:hidden">
         <BackButton to={`/students/${studentId}/projections`}>
@@ -932,17 +933,14 @@ export default function ACEProjectionPage() {
       </div>
 
       {/* Simplified Header */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="space-y-2">
+        <div className="flex flex-col lg:flex-row justify-start lg:justify-between items-start lg:items-center gap-4">
           <div className="space-y-2">
-            <h1 className="text-xl font-bold">{t("projections.annualProjection")}</h1>
+            <h1 className="text-xl font-bold">{t("projections.annualProjection")} - {student.schoolYear}</h1>
             {/* Minimal Student Info */}
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{student.name}</span>
-              <span>•</span>
-              <span>{student.currentGrade}</span>
-              <span>•</span>
-              <span>{student.schoolYear}</span>
+            <div className="flex items-center gap-2">
+              <p className="text-xl text-gray-700">{student.name}</p>
+              <Badge variant="primary-soft" className="text-sm">{student.currentGrade}</Badge>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -952,7 +950,7 @@ export default function ACEProjectionPage() {
                 <span className="text-lg font-semibold">{totalPaces}</span>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 mb-6 sm:mb-0">
               {currentQuarter && currentWeekInQuarter !== null && (
                 <Button
                   variant="default"
@@ -1002,7 +1000,7 @@ export default function ACEProjectionPage() {
       )}
 
       {/* Quarterly Tabs: Enhanced premium design */}
-      <Tabs defaultValue={currentQuarter || "Q1"} className="w-full">
+      <Tabs defaultValue={currentQuarter || "Q1"} className="w-full mt-8">
         <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 mb-6">
           <TabsList className="inline-flex w-full md:grid md:grid-cols-4 min-w-max md:min-w-0 h-12 bg-secondary/30 p-1.5 rounded-xl border border-border/50">
             <TabsTrigger

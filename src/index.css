@@ -319,8 +319,27 @@
   }
 }
 
-/* Fix sidebar positioning and layout */
+/* Motion System - Soft and Intentional */
+@layer base {
+  * {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Translucent Card System */
 @layer components {
+  .card-surface {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+  
+  .card-surface-strong {
+    background: #FFFFFF;
+    border: 1px solid rgba(226, 232, 240, 0.5);
+  }
+
   /* Sidebar provider wrapper should flex properly */
   .group\/sidebar-wrapper {
     display: flex !important;

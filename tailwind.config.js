@@ -138,9 +138,31 @@ export default {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(400%)' },
         },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-in': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
       },
       animation: {
         'progress-indeterminate': 'progress-indeterminate 1.5s linear infinite',
+        'fade-in-up': 'fade-in-up 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+        'fade-in': 'fade-in 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        'slide-in': 'slide-in 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      transitionTimingFunction: {
+        'soft': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      transitionDuration: {
+        'micro': '150ms',
+        'structural': '300ms',
       },
     },
   },

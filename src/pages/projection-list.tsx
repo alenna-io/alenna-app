@@ -109,7 +109,7 @@ export default function ProjectionListPage() {
       {/* Mobile back button */}
       <div className="md:hidden">
         <BackButton to={backDestination}>
-          Volver
+          {t("common.back")}
         </BackButton>
       </div>
 

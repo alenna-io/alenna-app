@@ -209,7 +209,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] !bg-sidebar p-0 text-sidebar-foreground border-r-sidebar-border"
+            className="w-[--sidebar-width] bg-sidebar! p-0 text-sidebar-foreground border-r-sidebar-border h-screen! md:h-auto!"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -478,7 +478,7 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-semibold text-sidebar-foreground/60 uppercase tracking-wider outline-none transition-[margin,opacity] duration-220 ease-out focus-visible:ring-2 focus-visible:ring-primary/30 [&>svg]:size-3.5 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-full px-3 text-xs font-semibold text-foreground tracking-wider outline-none transition-[margin,opacity] duration-220 ease-out focus-visible:ring-2 focus-visible:ring-primary/30 [&>svg]:size-3.5 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className
       )}

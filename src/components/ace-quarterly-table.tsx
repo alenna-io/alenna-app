@@ -356,38 +356,38 @@ export function ACEQuarterlyTable({
   return (
     <>
       <Card className={`${isActive ? "border-primary border-2" : "border-border/50"} transition-all duration-200`}>
-        <CardHeader className="p-5 md:p-6 border-b border-border/30">
+        <CardHeader className="p-4 md:p-5 lg:p-6 border-b border-border/30">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-              <CardTitle className="flex items-center gap-2 md:gap-3 text-lg">
+              <CardTitle className="flex items-center gap-2 md:gap-3 text-base md:text-lg">
                 <span className="truncate">{quarterName}</span>
-                <Badge variant="secondary" className="text-xs md:text-sm">
+                <Badge variant="secondary" className="text-[10px] md:text-xs lg:text-sm">
                   {quarter}
                 </Badge>
                 {isQuarterClosed && (
-                  <Badge variant="status-closed" className="text-xs md:text-sm">
+                  <Badge variant="status-closed" className="text-[10px] md:text-xs lg:text-sm">
                     {t("quarters.closed")}
                   </Badge>
                 )}
                 {isActive && !isQuarterClosed && (
-                  <Badge variant="status-active" className="text-xs md:text-sm">
+                  <Badge variant="status-active" className="text-[10px] md:text-xs lg:text-sm">
                     {t("projections.current")}
                   </Badge>
                 )}
               </CardTitle>
               {isQuarterOverloaded && (
-                <Badge variant="status-failed" className="text-xs md:text-sm">
+                <Badge variant="status-failed" className="text-[10px] md:text-xs lg:text-sm">
                   {t("projections.quarterOverload")} ({quarterStats.expected}/{MAX_PACES_PER_QUARTER})
                 </Badge>
               )}
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
               {currentWeek && (
-                <Badge variant="outline" className="text-xs md:text-sm">
+                <Badge variant="outline" className="text-[10px] md:text-xs lg:text-sm">
                   {t("projections.week")} {currentWeek}
                 </Badge>
               )}
-              <div className="flex items-center gap-2 text-xs md:text-sm">
+              <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs lg:text-sm">
                 {isQuarterComplete ? (
                   <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
                 ) : (
@@ -404,11 +404,11 @@ export function ACEQuarterlyTable({
           </div>
         </CardHeader>
         <CardContent className="p-0! md:p-6">
-          <div className="overflow-x-auto -mx-3 md:mx-0 border border-border overflow-hidden bg-card rounded-b-xl">
-            <table className="w-full">
+          <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xl">
+            <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="bg-muted/30">
-                  <th className="text-left py-3 px-4 font-semibold bg-card sticky left-0 z-10 min-w-[140px] border-b border-r border-border text-sm">
+                  <th className="text-left py-2 md:py-3 px-3 md:px-4 font-semibold bg-card sticky left-0 z-10 min-w-[100px] max-w-[120px] md:min-w-[140px] md:max-w-none border-b border-r border-border text-xs md:text-sm">
                     {t("projections.subject")}
                   </th>
                   {weeks.map((week, weekIdx) => {
@@ -417,18 +417,18 @@ export function ACEQuarterlyTable({
                     return (
                       <th
                         key={week}
-                        className={`text-center py-3 px-3 font-semibold min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${currentWeek === week
+                        className={`text-center py-2 md:py-3 px-2 md:px-3 font-semibold min-w-[80px] md:min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${currentWeek === week
                           ? "bg-mint-soft/50 border-b-3 border-l-0 border-mint"
                           : "hover:bg-muted/40"
                           }`}
                         onClick={() => onWeekClick?.(quarter, week)}
                       >
-                        <div className="flex flex-col items-center gap-1">
-                          <span className={`text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
+                        <div className="flex flex-col items-center gap-0.5 md:gap-1">
+                          <span className={`text-xs md:text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
                             {t("projections.week")} {week}
                             {currentWeek === week && " ✓"}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[9px] md:text-[10px] text-muted-foreground">
                             {weekPaceCount} {t("projections.lessons")}
                           </span>
                         </div>
@@ -444,10 +444,10 @@ export function ACEQuarterlyTable({
                     className="transition-colors hover:bg-primary-soft/20 group border-b border-border last:border-b-0"
                   >
                     <td
-                      className={`py-3 px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-sm group-hover:bg-primary-soft/20`}
+                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-xs md:text-sm group-hover:bg-primary-soft/20`}
                     >
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold">
+                        <span className="text-xs md:text-sm font-semibold">
                           {subject}
                         </span>
                       </div>
@@ -463,7 +463,7 @@ export function ACEQuarterlyTable({
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className={`py-2 px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
+                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
                           draggable={!isReadOnly && !isQuarterClosed && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
                             if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
@@ -648,7 +648,7 @@ export function ACEQuarterlyTable({
                         >
                           {primaryPace ? (
                             editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                              <div className="inline-flex flex-col items-center gap-2 p-2 min-w-[180px]" onClick={(e) => e.stopPropagation()}>
+                              <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2 min-w-[140px] md:min-w-[180px]" onClick={(e) => e.stopPropagation()}>
                                 <input
                                   type="number"
                                   min="0"
@@ -665,23 +665,23 @@ export function ACEQuarterlyTable({
                                     if (e.key === 'Escape') handleGradeCancel()
                                   }}
                                   placeholder="0-100"
-                                  className="w-16 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-14 md:w-16 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   autoFocus
                                 />
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="flex items-center justify-center w-8 h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
                                     title="Guardar"
                                   >
-                                    <Check className="h-4 w-4" />
+                                    <Check className="h-3 w-3 md:h-4 md:w-4" />
                                   </button>
                                   <button
                                     onClick={handleGradeCancel}
-                                    className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
                                     title="Cancelar"
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3 w-3 md:h-4 md:w-4" />
                                   </button>
                                 </div>
                               </div>
@@ -709,13 +709,13 @@ export function ACEQuarterlyTable({
                                               ? "status-completed"
                                               : "outline"
                                       }
-                                      className="font-mono text-xs px-2 py-0.5 cursor-pointer transition-all"
+                                      className="font-mono text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 cursor-pointer transition-all"
                                       title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
                                     >
                                       {pace.number}
                                     </Badge>
                                     {paceIdx === 0 && (
-                                      <span className={`text-xs mt-0.5 ${getGradeColor(pace.grade)}`}>
+                                      <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(pace.grade)}`}>
                                         {pace.grade !== null ? `${pace.grade}%` : "—"}
                                       </span>
                                     )}
@@ -736,7 +736,7 @@ export function ACEQuarterlyTable({
                               </div>
                             ) : null
                           ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
-                            <div className="inline-flex flex-col items-center gap-2 p-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2" onClick={(e) => e.stopPropagation()}>
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -753,23 +753,23 @@ export function ACEQuarterlyTable({
                                   if (e.key === 'Escape') handleAddPaceCancel()
                                 }}
                                 placeholder="1XXX"
-                                className="w-20 px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-16 md:w-20 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                                 autoFocus
                               />
                               <div className="flex gap-1">
                                 <button
                                   onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white rounded-md hover:bg-[#7C3AED] transition-colors cursor-pointer shadow-sm"
+                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-[#8B5CF6] text-white rounded-md hover:bg-[#7C3AED] transition-colors cursor-pointer shadow-sm"
                                   title={t("projections.add")}
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <Check className="h-3 w-3 md:h-4 md:w-4" />
                                 </button>
                                 <button
                                   onClick={handleAddPaceCancel}
-                                  className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
                                   title="Cancelar"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-3 w-3 md:h-4 md:w-4" />
                                 </button>
                               </div>
                             </div>
@@ -779,9 +779,9 @@ export function ACEQuarterlyTable({
                                 e.stopPropagation()
                                 handleAddPaceClick(subject, weekIndex)
                               }}
-                              className="h-full w-full min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
+                              className="h-full w-full min-h-[32px] md:min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
                             >
-                              <span className="text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
+                              <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
                                 +
                               </span>
                             </div>
