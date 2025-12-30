@@ -899,7 +899,7 @@
     "secondQuarter": "Second Quarter",
     "thirdQuarter": "Third Quarter",
     "fourthQuarter": "Fourth Quarter",
-    "totalLessonsYear": "Total Lessons for School Year",
+    "totalLessonsYear": "Total Lessons",
     "addLesson": "Add Lesson - {{subject}} ({{quarter}} Week {{week}})",
     "subject": "Subject",
     "week": "Week",

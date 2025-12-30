@@ -156,7 +156,7 @@ export function StudentsTable({
                         return (
                           <div className="flex items-center gap-4">
                             <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
-                              <AvatarFallback className="text-sm font-semibold">
+                              <AvatarFallback className="text-sm font-semibold bg-primary-soft text-primary">
                                 {getInitials(student.name)}
                               </AvatarFallback>
                             </Avatar>

@@ -53,12 +53,12 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">{t("students.title")}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <h1 className="text-xl md:text-2xl font-bold">{t("students.title")}</h1>
         {canEdit && onEdit && (
           <Button
             variant="default"
-            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white"
+            className="bg-[#8B5CF6] hover:bg-[#7C3AED] text-white w-full sm:w-auto"
             onClick={() => onEdit(student)}
           >
             <Pencil className="h-4 w-4 mr-2" />
@@ -67,19 +67,19 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:gap-6 md:grid-cols-2">
         {/* Profile Header */}
         <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="text-lg">
+          <CardHeader className="p-4 md:p-6">
+            <div className="flex items-center gap-3 md:gap-4">
+              <Avatar className="h-12 w-12 md:h-10 md:w-10">
+                <AvatarFallback className="text-base md:text-lg">
                   {getInitials(student.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <CardTitle className="text-xl">{student.name}</CardTitle>
-                <p className="text-muted-foreground">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg md:text-xl truncate">{student.name}</CardTitle>
+                <p className="text-sm md:text-base text-muted-foreground truncate">
                   {student.certificationType} • {student.age} años
                 </p>
               </div>
@@ -89,10 +89,10 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
 
         {/* Personal Information */}
         <Card>
-          <CardHeader>
-            <CardTitle>{t("students.personalInfo")}</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-base md:text-lg">{t("students.personalInfo")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">
                 Nombre Completo
@@ -139,7 +139,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                     <p className="text-sm">{student.streetAddress}</p>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   {student.city && (
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">
@@ -187,10 +187,10 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
 
         {/* Academic Information */}
         <Card>
-          <CardHeader>
-            <CardTitle>{t("students.academicInfo")}</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-base md:text-lg">{t("students.academicInfo")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">
                 Tipo de Certificación
@@ -230,18 +230,18 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
           </CardContent>
         </Card>
 
-        <div className='flex flex-row flex-wrap md:flex-nowrap gap-4 w-full col-span-2'>
+        <div className='flex flex-col md:flex-row gap-4 w-full md:col-span-2'>
           {/* A.C.E. Projections - Only show if projections module is enabled */}
           {hasProjectionsModule && (
             <Card className="w-full">
-              <CardHeader>
+              <CardHeader className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                     {t("projections.academicProjections")}
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 md:p-6">
                 <p className="text-sm text-muted-foreground mb-4">
                   {t("projections.weeklyPlanning")}
                 </p>
@@ -275,14 +275,14 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
           {/* Report Cards - Only show if reportCards module is enabled */}
           {hasReportCardsModule && (
             <Card className="w-full">
-              <CardHeader>
+              <CardHeader className="p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                     {t("reportCards.title")}
                   </CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 md:p-6">
                 <p className="text-sm text-muted-foreground mb-4">
                   {t("reportCards.description") || "Ver y generar boletas de calificaciones"}
                 </p>
@@ -317,10 +317,10 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
         {/* Parents Information - Hidden for parent users */}
         {!isParentView && !isStudentView && (
           <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>{t("students.parentsInfo")}</CardTitle>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="text-base md:text-lg">{t("students.parentsInfo")}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               {student.parents.length > 0 ? (
                 <div className="space-y-2">
                   {student.parents.map((parent) => (

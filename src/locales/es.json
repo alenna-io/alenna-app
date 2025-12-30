@@ -902,7 +902,7 @@
     "secondQuarter": "Segundo Bloque",
     "thirdQuarter": "Tercer Bloque",
     "fourthQuarter": "Cuarto Bloque",
-    "totalLessonsYear": "Total de Lecciones del Año Escolar",
+    "totalLessonsYear": "Total de Lecciones",
     "addLesson": "Agregar Lección - {{subject}} ({{quarter}} Semana {{week}})",
     "subject": "Materia",
     "week": "Semana",

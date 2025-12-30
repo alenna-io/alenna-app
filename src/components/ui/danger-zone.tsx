@@ -33,15 +33,15 @@ export function DangerZone({ title, actions }: DangerZoneProps) {
           {actions.map((action, index) => (
             <div
               key={index}
-              className={`flex items-center justify-between p-4 ${index !== actions.length - 1 ? "border-b border-border" : ""}`}
+              className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 p-4 ${index !== actions.length - 1 ? "border-b border-border" : ""}`}
             >
               <div className="flex-1 pr-4">
-                <h3 className="font-semibold text-foreground mb-1">{action.title}</h3>
-                <p className="text-sm text-muted-foreground">{action.description}</p>
+                <h3 className="text-lg font-semibold text-foreground mb-1">{action.title}</h3>
+                <p className="text-sm text-muted">{action.description}</p>
               </div>
               <Button
                 variant={action.buttonVariant || "outline"}
-                className={`ml-4 shrink-0 ${action.buttonClassName || ""}`}
+                className={`shrink-0 ${action.buttonClassName || ""}`}
                 onClick={action.onClick}
               >
                 {action.buttonText}

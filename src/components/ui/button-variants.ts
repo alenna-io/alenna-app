@@ -7,7 +7,7 @@ export const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md hover:shadow-primary/20 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/10 before:via-white/3 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-[var(--motion-short)]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md hover:shadow-destructive/20 focus-visible:ring-destructive/25",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-md hover:shadow-destructive/20 focus-visible:ring-destructive/25 border-1 border-destructive",
         outline:
           "bg-card/60 backdrop-blur-sm hover:bg-primary-soft hover:text-primary border-0",
         secondary:
