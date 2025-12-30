@@ -388,8 +388,8 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                     description: t("students.deactivateDescription"),
                     buttonText: t("students.deactivate"),
                     buttonVariant: "outline" as const,
-                    buttonClassName: "bg-red-50 border-red-300 text-red-700 hover:bg-red-100",
-                    borderClassName: "border-l-red-300",
+                    buttonClassName: "bg-red-100 border-red-300! text-red-700 hover:bg-red-200 hover:text-red-700",
+                    borderClassName: "border-red-300!",
                     onClick: () => onDeactivate(student),
                   },
                 ]

@@ -23,7 +23,13 @@ export function Header() {
         // Silently handle missing active school year - this is expected for super admins
         // or when no school year is configured yet
         const errorMessage = err instanceof Error ? err.message : String(err)
-        const statusCode = (err as any)?.status || (err as any)?.response?.status
+
+        // Extract status code from error object
+        let statusCode: number | undefined
+        if (err && typeof err === 'object') {
+          const errorObj = err as { status?: number; response?: { status?: number } }
+          statusCode = errorObj?.status || errorObj?.response?.status
+        }
 
         // Check for 404 errors or messages indicating no active school year
         if (statusCode === 404 ||
@@ -107,9 +113,9 @@ export function Header() {
   }
 
   return (
-    <>
+    <div className="w-full h-[60px]! rounded-3xl p-3 md:p-4 flex items-center gap-3 mx-auto">
       {/* Mobile menu trigger - only on small screens */}
-      <SidebarTrigger className="md:hidden mr-2" />
+      <SidebarTrigger className="md:hidden shrink-0" />
 
       {/* Breadcrumbs on the left (desktop only) */}
       <BreadcrumbNav />
@@ -133,7 +139,7 @@ export function Header() {
           </Badge>
         </div>
       )}
-    </>
+    </div>
   )
 }
 
