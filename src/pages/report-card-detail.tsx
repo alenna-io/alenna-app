@@ -153,6 +153,7 @@ export default function ReportCardDetailPage() {
             lessonsAverage: t("reportCards.lessonsAverage"),
             monthlyAssignmentsAverage: t("reportCards.monthlyAssignmentsAverage"),
             passedLessons: t("reportCards.passedLessons"),
+            totalLessons: t("reportCards.totalLessons"),
             finalGrade: t("reportCards.finalGrade"),
             noLessonsAssigned: t("reportCards.noLessonsAssigned"),
             noMonthlyAssignments: t("reportCards.noMonthlyAssignments"),

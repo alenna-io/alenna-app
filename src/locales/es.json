@@ -679,6 +679,7 @@
     "lessonsAverage": "Promedio Lecciones",
     "monthlyAssignmentsAverage": "Promedio Asignaciones Mensuales",
     "passedLessons": "Lecciones Aprobadas",
+    "totalLessons": "Total Lecciones",
     "finalGrade": "Calificación Final",
     "noLessonsAssigned": "No hay lecciones asignadas para este bloque",
     "noMonthlyAssignments": "No hay asignaciones mensuales para este bloque",
