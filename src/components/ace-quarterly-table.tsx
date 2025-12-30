@@ -296,13 +296,18 @@ export function ACEQuarterlyTable({
           const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
           paces.forEach(pace => {
             if (pace) {
-              // Exclude unfinished paces that are in their original quarter (they're just for reference)
-              // Only count the actual pace in the current quarter, not the reference copy
               const isUnfinishedReference = pace.isUnfinished && pace.originalQuarter === quarter
+
               if (isUnfinishedReference) {
-                return // Skip counting this pace - it's just a reference
+                // For unfinished references in original quarter: count in Scheduled and Pending
+                // They represent work that was scheduled but not completed in this quarter
+                expected++
+                // They remain as pending (not completed, not failed)
+                // Don't count failed attempts from history for references
+                return
               }
 
+              // Count all other paces normally
               expected++
 
               // Use explicit backend flag when available, otherwise fall back to grade

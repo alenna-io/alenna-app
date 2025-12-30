@@ -830,13 +830,21 @@ export default function ACEProjectionPage() {
   }
 
   // Calculate total paces for summary (must be before early returns)
+  // Exclude unfinished references in original quarters to avoid double counting
   const totalPaces = React.useMemo(() => {
     if (!projectionDetail) return 0
     let count = 0
-    Object.values(projectionDetail.quarters).forEach(quarter => {
+    Object.entries(projectionDetail.quarters).forEach(([quarterKey, quarter]) => {
       Object.values(quarter).forEach(weekPaces => {
         weekPaces.forEach(pace => {
-          if (pace !== null) count++
+          if (pace !== null) {
+            // Exclude unfinished paces that are in their original quarter (they're just references)
+            // The actual pace is counted in the quarter where it was moved
+            const isUnfinishedReference = pace.isUnfinished && pace.originalQuarter === quarterKey
+            if (!isUnfinishedReference) {
+              count++
+            }
+          }
         })
       })
     })
