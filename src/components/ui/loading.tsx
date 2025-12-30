@@ -24,8 +24,14 @@ interface LoadingProps {
    * - "card": Card skeleton (replaces old "profile")
    * - "inline": Small inline skeleton (replaces old "spinner" inline)
    * - "button": Button spinner (only for button loading states)
+   * - "list-page": List page skeleton with header, search, filters, table/cards, pagination
+   * - "detail-page": Detail page skeleton for profile/detail pages
+   * - "projection-details": Projection details page skeleton
+   * - "dashboard": Dashboard/home page skeleton
+   * - "report-cards-list": Report cards list page skeleton
+   * - "simple-page": Simple page skeleton with header and content
    */
-  variant?: "page" | "section" | "card" | "inline" | "button"
+  variant?: "page" | "section" | "card" | "inline" | "button" | "list-page" | "detail-page" | "projection-details" | "dashboard" | "report-cards-list" | "simple-page"
 
   /**
    * Loading message (deprecated - no longer shown)
@@ -52,6 +58,26 @@ interface LoadingProps {
    * For page variant: custom skeleton layout
    */
   children?: React.ReactNode
+
+  /**
+   * For list-page variant: show create button skeleton
+   */
+  showCreateButton?: boolean
+
+  /**
+   * For list-page variant: show table or cards skeleton
+   */
+  view?: "table" | "cards"
+
+  /**
+   * For list-page variant: show filters skeleton
+   */
+  showFilters?: boolean
+
+  /**
+   * For list-page variant: show view toggle skeleton
+   */
+  showViewToggle?: boolean
 }
 
 export function Loading({
@@ -61,7 +87,11 @@ export function Loading({
   size = "sm",
   inline,
   className,
-  children
+  children,
+  showCreateButton,
+  view,
+  showFilters,
+  showViewToggle
 }: LoadingProps) {
   // Handle deprecated inline prop
   let variant = propVariant
@@ -89,6 +119,10 @@ export function Loading({
       size={size}
       className={className}
       children={children}
+      showCreateButton={showCreateButton}
+      view={view}
+      showFilters={showFilters}
+      showViewToggle={showViewToggle}
     />
   )
 }

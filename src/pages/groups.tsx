@@ -194,7 +194,7 @@ export default function GroupsPage() {
   }, [filters.schoolYear, schoolYears])
 
   if (isLoadingUser || isLoading) {
-    return <Loading variant="card" />
+    return <Loading variant="list-page" showCreateButton={true} view="table" showFilters={true} />
   }
 
   // Only school admins can access groups

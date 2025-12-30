@@ -129,7 +129,7 @@ export default function UserDetailPage() {
 
   // Show loading state
   if (loading) {
-    return <Loading variant="card" />
+    return <Loading variant="detail-page" />
   }
 
   // Show permission error if user doesn't have access

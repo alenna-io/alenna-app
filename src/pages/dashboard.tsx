@@ -19,7 +19,7 @@ export function DashboardPage() {
   const isDashboardRoute = location.pathname === '/dashboard'
   
   if (isDashboardRoute && (isLoadingUser || isLoadingModules)) {
-    return <Loading />
+    return <Loading variant="dashboard" />
   }
 
   if (!userInfo) {

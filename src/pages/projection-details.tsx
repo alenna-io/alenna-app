@@ -863,17 +863,7 @@ export default function ACEProjectionPage() {
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="space-y-4 md:space-y-6">
-        {/* Mobile back button */}
-        <div className="md:hidden">
-          <BackButton to={`/students/${studentId}/projections`}>
-            {t("common.back")}
-          </BackButton>
-        </div>
-        <Loading variant="section" />
-      </div>
-    )
+    return <Loading variant="projection-details" />
   }
 
   // Show error state
