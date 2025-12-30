@@ -440,7 +440,7 @@ export default function GroupDetailPage() {
   }
 
   if (isLoading) {
-    return <Loading variant="list" />
+    return <Loading variant="page" />
   }
 
   if (!groupDetail) {

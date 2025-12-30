@@ -274,7 +274,7 @@ export default function ProjectionsPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <Loading variant="table" />
+    return <Loading variant="section" />
   }
 
   if (!isTeacherOrAdmin) {

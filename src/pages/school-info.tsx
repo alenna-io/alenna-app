@@ -132,7 +132,7 @@ export default function SchoolInfoPage() {
   }
 
   if (loading) {
-    return <Loading variant="profile" />;
+    return <Loading variant="card" />;
   }
 
   // Only SCHOOL_ADMIN can view/manage students and teachers for their school
