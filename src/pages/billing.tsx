@@ -1,9 +1,9 @@
 import * as React from "react"
 import { useApi } from "@/services/api"
-import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { Badge } from "@/components/ui/badge"
 import { DollarSign, TrendingUp, Users, Settings, Plus } from "lucide-react"
 import { toast } from "sonner"
@@ -12,13 +12,8 @@ import { Link } from "react-router-dom"
 import { SearchBar } from "@/components/ui/search-bar"
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, CheckCircle2, Send, X, RotateCcw } from "lucide-react"
+import { CheckCircle2, Send, X, RotateCcw } from "lucide-react"
+import { AlennaTable } from "@/components/ui/alenna-table"
 
 interface BillingRecord {
   id: string
@@ -84,6 +79,8 @@ export default function BillingPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [generatingBills, setGeneratingBills] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
 
   // Filters
   const [filters, setFilters] = React.useState<Filters>({
@@ -407,28 +404,42 @@ export default function BillingPage() {
   }
 
   // Filter records
-  const filteredRecords = records.filter((record) => {
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase()
-      const matchesName = record.studentName?.toLowerCase().includes(searchLower)
-      const matchesMonth = getMonthName(record.billingMonth).toLowerCase().includes(searchLower)
-      if (!matchesName && !matchesMonth) return false
-    }
-
-    // Other filters
-    if (filters.month !== "all" && `${record.billingMonth}/${record.billingYear}` !== filters.month) return false
-    if (filters.student !== "all" && record.studentId !== filters.student) return false
-    if (filters.status !== "all") {
-      // Handle both old 'paid' status and new billStatus/paymentStatus
-      if (filters.status === 'paid') {
-        if (record.paymentStatus !== 'paid') return false
-      } else {
-        if (record.billStatus !== filters.status) return false
+  const filteredRecords = React.useMemo(() => {
+    return records.filter((record) => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase()
+        const matchesName = record.studentName?.toLowerCase().includes(searchLower)
+        const matchesMonth = getMonthName(record.billingMonth).toLowerCase().includes(searchLower)
+        if (!matchesName && !matchesMonth) return false
       }
-    }
-    return true
-  })
+
+      // Other filters
+      if (filters.month !== "all" && `${record.billingMonth}/${record.billingYear}` !== filters.month) return false
+      if (filters.student !== "all" && record.studentId !== filters.student) return false
+      if (filters.status !== "all") {
+        // Handle both old 'paid' status and new billStatus/paymentStatus
+        if (filters.status === 'paid') {
+          if (record.paymentStatus !== 'paid') return false
+        } else {
+          if (record.billStatus !== filters.status) return false
+        }
+      }
+      return true
+    })
+  }, [records, searchTerm, filters])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage)
+  const paginatedRecords = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredRecords.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredRecords, currentPage, itemsPerPage])
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filters.month, filters.student, filters.status])
 
   // Get unique months for filter
   const months = React.useMemo(() => {
@@ -513,7 +524,91 @@ export default function BillingPage() {
   }
 
   if (isLoading) {
-    return <Loading variant="page" />
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <AlennaSkeleton height={28} width="40%" className="max-w-md" />
+            <AlennaSkeleton height={20} width="70%" variant="text" className="max-w-2xl" />
+          </div>
+          <div className="flex gap-2">
+            <AlennaSkeleton height={40} width={160} className="rounded-md" />
+            <AlennaSkeleton height={40} width={160} className="rounded-md" />
+          </div>
+        </div>
+
+        {/* Dashboard Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <AlennaSkeleton height={16} width="40%" variant="text" />
+                <AlennaSkeleton height={16} width={16} variant="circular" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <AlennaSkeleton height={32} width="60%" />
+                  <AlennaSkeleton height={14} width="50%" variant="text" />
+                  <div className="pt-2 border-t">
+                    <AlennaSkeleton height={24} width="50%" />
+                    <AlennaSkeleton height={14} width="60%" variant="text" className="mt-1" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Search and Filters */}
+        <AlennaSkeleton height={40} width="100%" className="rounded-md" />
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <AlennaSkeleton key={i} height={32} width={120} className="rounded-full" />
+          ))}
+        </div>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <th key={i} className="h-14 px-4 text-left">
+                        <AlennaSkeleton height={16} width={80} variant="text" />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b">
+                      {Array.from({ length: 8 }).map((_, j) => (
+                        <td key={j} className="p-4">
+                          <AlennaSkeleton height={16} width={j === 0 ? 120 : j === 7 ? 40 : 100} variant="text" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between px-6 py-4 border-t">
+            <AlennaSkeleton height={16} width={120} variant="text" />
+            <div className="flex items-center gap-2">
+              <AlennaSkeleton height={36} width={36} className="rounded-md" />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <AlennaSkeleton key={i} height={36} width={36} className="rounded-md" />
+              ))}
+              <AlennaSkeleton height={36} width={36} className="rounded-md" />
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+    )
   }
 
   if (error) {
@@ -570,11 +665,11 @@ export default function BillingPage() {
             <div className="space-y-2">
               <div>
                 <div className="text-2xl font-bold">{formatCurrency(dashboardData?.totalIncome || 0)}</div>
-                <p className="text-xs text-muted-foreground">Total Income</p>
+                <p className="text-xs text-muted-foreground">{t("billing.totalIncome")}</p>
               </div>
               <div className="pt-2 border-t">
                 <div className="text-lg font-semibold text-blue-600">{formatCurrency(dashboardData?.expectedIncome || 0)}</div>
-                <p className="text-xs text-muted-foreground">Expected Income</p>
+                <p className="text-xs text-muted-foreground">{t("billing.expectedIncome")}</p>
               </div>
             </div>
           </CardContent>
@@ -583,20 +678,20 @@ export default function BillingPage() {
         {/* Missing Money & Interests */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("billing.outstanding")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div>
                 <div className="text-2xl font-bold text-red-600">{formatCurrency(dashboardData?.missingIncome || 0)}</div>
-                <p className="text-xs text-muted-foreground">Missing Money</p>
+                <p className="text-xs text-muted-foreground">{t("billing.missingMoney")}</p>
               </div>
               <div className="pt-2 border-t">
                 <div className="text-lg font-semibold text-orange-600">
                   {formatCurrency(dashboardData?.lateFeesApplied || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground">Late Fees (Interests)</p>
+                <p className="text-xs text-muted-foreground">{t("billing.lateFeesInterests")}</p>
               </div>
             </div>
           </CardContent>
@@ -605,7 +700,7 @@ export default function BillingPage() {
         {/* Paid vs Total Students */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("billing.paymentStatus")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -631,7 +726,7 @@ export default function BillingPage() {
       <div className="space-y-6">
         {/* Search */}
         <SearchBar
-          placeholder="Search by student name or month..."
+          placeholder={t("billing.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -647,164 +742,129 @@ export default function BillingPage() {
         />
 
         {/* Billing Records Table */}
-        <Card>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm">
-                      {t("billing.studentName")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.month")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.tuition")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.lateFee")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.total")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.billStatus")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.dueDate")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.paidDate")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRecords.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                        {t("billing.noRecordsFound")}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredRecords.map((record) => (
-                      <tr key={record.id} className="border-b hover:bg-muted/50">
-                        <td className="p-4 align-middle first:px-6">
-                          <div className="font-medium">{record.studentName || 'Unknown Student'}</div>
-                        </td>
-                        <td className="p-4 align-middle">
-                          {getMonthName(record.billingMonth)} {record.billingYear}
-                        </td>
-                        <td className="p-4 align-middle">
-                          {getScholarshipDisplay(record)}
-                        </td>
-                        <td className="p-4 align-middle">
-                          {getLateFeeDisplay(record)}
-                        </td>
-                        <td className="p-4 align-middle font-semibold">
-                          {(() => {
-                            // Calculate final amount: effectiveTuitionAmount - scholarshipAmount - discounts + extras + lateFeeAmount
-                            // If there's a pending late fee, include it in the display
-                            const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
-                              if (adj.type === 'percentage') {
-                                return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
-                              }
-                              return sum + adj.value
-                            }, 0)
-                            const extraAmount = record.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
-                            const appliedLateFee = record.lateFeeAmount
+        <AlennaTable
+          columns={[
+            {
+              key: 'studentName',
+              label: t("billing.studentName"),
+              render: (record) => (
+                <div className="font-medium">{record.studentName || 'Unknown Student'}</div>
+              )
+            },
+            {
+              key: 'month',
+              label: t("billing.month"),
+              render: (record) => (
+                <div className="text-sm">
+                  {getMonthName(record.billingMonth)} {record.billingYear}
+                </div>
+              )
+            },
+            {
+              key: 'tuition',
+              label: t("billing.tuition"),
+              render: (record) => getScholarshipDisplay(record)
+            },
+            {
+              key: 'lateFee',
+              label: t("billing.lateFee"),
+              render: (record) => getLateFeeDisplay(record)
+            },
+            {
+              key: 'total',
+              label: t("billing.total"),
+              render: (record) => {
+                const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
+                  if (adj.type === 'percentage') {
+                    return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
+                  }
+                  return sum + adj.value
+                }, 0)
+                const extraAmount = record.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
+                const appliedLateFee = record.lateFeeAmount
 
-                            // Check if there's a pending late fee
-                            const dueDate = new Date(record.dueDate)
-                            const today = new Date()
-                            today.setHours(0, 0, 0, 0)
-                            dueDate.setHours(0, 0, 0, 0)
-                            const isOverdue = today > dueDate
-                            const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'cancelled' && record.billStatus !== 'not_required' && appliedLateFee === 0
+                const dueDate = new Date(record.dueDate)
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                dueDate.setHours(0, 0, 0, 0)
+                const isOverdue = today > dueDate
+                const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'cancelled' && record.billStatus !== 'not_required' && appliedLateFee === 0
 
-                            let pendingLateFee = 0
-                            if (hasPendingLateFee) {
-                              const amountAfterDiscounts = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount
-                              if (record.tuitionTypeSnapshot.lateFeeType === 'fixed') {
-                                pendingLateFee = record.tuitionTypeSnapshot.lateFeeValue
-                              } else {
-                                pendingLateFee = amountAfterDiscounts * (record.tuitionTypeSnapshot.lateFeeValue / 100)
-                              }
-                            }
+                let pendingLateFee = 0
+                if (hasPendingLateFee) {
+                  const amountAfterDiscounts = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount
+                  if (record.tuitionTypeSnapshot.lateFeeType === 'fixed') {
+                    pendingLateFee = record.tuitionTypeSnapshot.lateFeeValue
+                  } else {
+                    pendingLateFee = amountAfterDiscounts * (record.tuitionTypeSnapshot.lateFeeValue / 100)
+                  }
+                }
 
-                            const totalFinalAmount = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount + appliedLateFee + pendingLateFee
-                            return formatCurrency(totalFinalAmount)
-                          })()}
-                        </td>
-                        <td className="p-4 align-middle">
-                          {getStatusBadge(record.billStatus, record.paymentStatus, record.isOverdue)}
-                        </td>
-                        <td className="p-4 align-middle">
-                          <div className={record.isOverdue && !record.isPaid ? 'text-red-600 font-medium' : ''}>
-                            {formatDate(record.dueDate)}
-                          </div>
-                        </td>
-                        <td className="p-4 align-middle">
-                          {record.paidAt ? formatDate(record.paidAt) : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 align-middle">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="cursor-pointer">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {record.paymentStatus !== 'paid' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleMarkAsPaid(record.id)}
-                                  className="cursor-pointer"
-                                >
-                                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  {t("billing.markAsPaid")}
-                                </DropdownMenuItem>
-                              )}
-                              {record.paymentStatus !== 'paid' && record.billStatus !== 'cancelled' && (
-                                <>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusUpdate(record.id, 'sent')}
-                                    className="cursor-pointer"
-                                  >
-                                    <Send className="h-4 w-4 mr-2" />
-                                    {t("billing.markBillAsSent")}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusUpdate(record.id, 'not_required')}
-                                    className="cursor-pointer"
-                                  >
-                                    <X className="h-4 w-4 mr-2" />
-                                    {t("billing.markBillAsNotRequired")}
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {record.paymentStatus === 'paid' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleStatusUpdate(record.id, 'required')}
-                                  className="cursor-pointer"
-                                >
-                                  <RotateCcw className="h-4 w-4 mr-2" />
-                                  {t("billing.reopenBill")}
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                const totalFinalAmount = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount + appliedLateFee + pendingLateFee
+                return <div className="font-semibold">{formatCurrency(totalFinalAmount)}</div>
+              }
+            },
+            {
+              key: 'status',
+              label: t("billing.billStatus"),
+              render: (record) => getStatusBadge(record.billStatus, record.paymentStatus, record.isOverdue)
+            },
+            {
+              key: 'dueDate',
+              label: t("billing.dueDate"),
+              render: (record) => (
+                <div className={record.isOverdue && !record.isPaid ? 'text-red-600 font-medium' : ''}>
+                  {formatDate(record.dueDate)}
+                </div>
+              )
+            },
+            {
+              key: 'paidDate',
+              label: t("billing.paidDate"),
+              render: (record) => (
+                record.paidAt ? formatDate(record.paidAt) : <span className="text-muted-foreground">—</span>
+              )
+            }
+          ]}
+          data={paginatedRecords}
+          pagination={{
+            currentPage,
+            totalPages,
+            totalItems: filteredRecords.length,
+            pageSize: itemsPerPage,
+            onPageChange: setCurrentPage
+          }}
+          actions={[
+            {
+              label: t("billing.markAsPaid"),
+              icon: <CheckCircle2 className="h-4 w-4" />,
+              onClick: (record) => handleMarkAsPaid(record.id),
+              disabled: (record) => record.paymentStatus === 'paid'
+            },
+            {
+              label: t("billing.markBillAsSent"),
+              icon: <Send className="h-4 w-4" />,
+              onClick: (record) => handleStatusUpdate(record.id, 'sent'),
+              disabled: (record) => record.paymentStatus === 'paid' || record.billStatus === 'cancelled'
+            },
+            {
+              label: t("billing.markBillAsNotRequired"),
+              icon: <X className="h-4 w-4" />,
+              onClick: (record) => handleStatusUpdate(record.id, 'not_required'),
+              disabled: (record) => record.paymentStatus === 'paid' || record.billStatus === 'cancelled'
+            },
+            {
+              label: t("billing.reopenBill"),
+              icon: <RotateCcw className="h-4 w-4" />,
+              onClick: (record) => handleStatusUpdate(record.id, 'required'),
+              disabled: (record) => record.paymentStatus !== 'paid'
+            }
+          ]}
+          emptyState={{
+            message: t("billing.noRecordsFound")
+          }}
+          getRowId={(record) => record.id}
+        />
       </div>
     </div>
   )

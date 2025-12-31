@@ -2,13 +2,12 @@ import * as React from "react"
 import { useApi } from "@/services/api"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Edit } from "lucide-react"
 import { toast } from "sonner"
 import { EditScholarshipDialog } from "@/components/billing/edit-scholarship-dialog"
 import { useTranslation } from "react-i18next"
+import { AlennaTable, type AlennaTableColumn, type AlennaTableAction } from "@/components/ui/alenna-table"
 
 interface Student {
   id: string
@@ -40,6 +39,8 @@ export default function BillingStudentConfigPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [editScholarshipDialogOpen, setEditScholarshipDialogOpen] = React.useState(false)
   const [selectedStudentForScholarship, setSelectedStudentForScholarship] = React.useState<Student | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
   const { t } = useTranslation()
 
   const loadingRef = React.useRef(false)
@@ -144,8 +145,57 @@ export default function BillingStudentConfigPage() {
     setEditScholarshipDialogOpen(true)
   }
 
+  // Pagination
+  const totalPages = Math.ceil(students.length / itemsPerPage)
+  const paginatedStudents = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return students.slice(startIndex, startIndex + itemsPerPage)
+  }, [students, currentPage, itemsPerPage])
+
+  const columns: AlennaTableColumn<Student>[] = [
+    {
+      key: 'name',
+      label: t("billing.studentName"),
+      render: (student) => (
+        <div className="font-medium">{student.firstName} {student.lastName}</div>
+      )
+    },
+    {
+      key: 'tuitionType',
+      label: t("billing.tuitionType"),
+      render: (student) => (
+        <div className="font-medium">{getTuitionTypeName(student.id)}</div>
+      )
+    },
+    {
+      key: 'tuition',
+      label: t("billing.tuition"),
+      render: (student) => formatCurrency(getTuitionAmount(student.id))
+    },
+    {
+      key: 'scholarship',
+      label: t("billing.scholarshipColumn"),
+      render: (student) => formatScholarship(student.id)
+    },
+    {
+      key: 'total',
+      label: t("billing.total"),
+      render: (student) => (
+        <div className="font-semibold">{formatCurrency(getTotalAmount(student.id))}</div>
+      )
+    }
+  ]
+
+  const actions: AlennaTableAction<Student>[] = [
+    {
+      label: t("billing.edit"),
+      icon: <Edit className="h-4 w-4" />,
+      onClick: handleEditScholarship
+    }
+  ]
+
   if (isLoading) {
-    return <Loading variant="page" />
+    return <Loading variant="list-page" showCreateButton={false} view="table" showFilters={false} />
   }
 
   if (error) {
@@ -165,93 +215,26 @@ export default function BillingStudentConfigPage() {
     <div className="space-y-6">
       <PageHeader
         moduleKey="billing"
-        title="Student Billing Configuration"
-        description="Configure tuition types and scholarships for each student. Changes affect all future billing records."
+        title={t("billing.studentBillingConfiguration")}
+        description={t("billing.studentBillingConfigurationDescription")}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("billing.studentBillingSettings")}</CardTitle>
-          <CardDescription>
-            {t("billing.studentBillingSettingsDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm">
-                    {t("billing.studentName")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.email")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.tuitionType")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.tuition")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.scholarshipColumn")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.total")}
-                  </th>
-                  <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                    {t("billing.actions")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      {t("billing.noStudentsFound")}
-                    </td>
-                  </tr>
-                ) : (
-                  students.map((student) => (
-                    <tr key={student.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4 align-middle first:px-6">
-                        <div className="font-medium">{student.firstName} {student.lastName}</div>
-                      </td>
-                      <td className="p-4 align-middle text-sm text-muted-foreground">
-                        {student.email}
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Badge variant="outline">
-                          {getTuitionTypeName(student.id)}
-                        </Badge>
-                      </td>
-                      <td className="p-4 align-middle">
-                        {formatCurrency(getTuitionAmount(student.id))}
-                      </td>
-                      <td className="p-4 align-middle">
-                        {formatScholarship(student.id)}
-                      </td>
-                      <td className="p-4 align-middle font-semibold">
-                        {formatCurrency(getTotalAmount(student.id))}
-                      </td>
-                      <td className="p-4 align-middle">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditScholarship(student)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          {t("billing.edit")}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <AlennaTable
+        columns={columns}
+        data={paginatedStudents}
+        actions={actions}
+        pagination={{
+          currentPage,
+          totalPages,
+          totalItems: students.length,
+          pageSize: itemsPerPage,
+          onPageChange: setCurrentPage
+        }}
+        emptyState={{
+          message: t("billing.noStudentsFound")
+        }}
+        getRowId={(student) => student.id}
+      />
 
       <EditScholarshipDialog
         open={editScholarshipDialogOpen}

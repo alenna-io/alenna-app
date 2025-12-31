@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useApi } from "@/services/api"
 import { toast } from "sonner"
-import { useTranslation } from "react-i18next"
 import { Loading } from "@/components/ui/loading"
+import type { SchoolYear } from "@/services/api"
 
 interface BulkCreateBillsDialogProps {
   open: boolean
@@ -23,7 +23,6 @@ interface BulkCreateBillsDialogProps {
 }
 
 export function BulkCreateBillsDialog({ open, onOpenChange, onSuccess }: BulkCreateBillsDialogProps) {
-  const { t } = useTranslation()
   const api = useApi()
   const [loading, setLoading] = React.useState(false)
   const [schoolYears, setSchoolYears] = React.useState<Array<{ id: string; name: string }>>([])
@@ -39,19 +38,20 @@ export function BulkCreateBillsDialog({ open, onOpenChange, onSuccess }: BulkCre
     if (open) {
       loadData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   const loadData = async () => {
     try {
       setLoadingData(true)
-      const yearsData = await api.schoolYears.getAll()
+      const yearsData = await api.schoolYears.getAll() as SchoolYear[]
 
-      setSchoolYears(yearsData.map((y: any) => ({
+      setSchoolYears(yearsData.map((y) => ({
         id: y.id,
         name: y.name,
       })))
 
-      const activeYear = yearsData.find((y: any) => y.isActive)
+      const activeYear = yearsData.find((y) => y.isActive)
       if (activeYear) {
         setFormData(prev => ({ ...prev, schoolYearId: activeYear.id }))
       }
@@ -82,26 +82,27 @@ export function BulkCreateBillsDialog({ open, onOpenChange, onSuccess }: BulkCre
       toast.success(`Successfully created ${result.count} bills`)
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create bills')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create bills'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
   const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' },
+    { value: 1, label: '01' },
+    { value: 2, label: '02' },
+    { value: 3, label: '03' },
+    { value: 4, label: '04' },
+    { value: 5, label: '05' },
+    { value: 6, label: '06' },
+    { value: 7, label: '07' },
+    { value: 8, label: '08' },
+    { value: 9, label: '09' },
+    { value: 10, label: '10' },
+    { value: 11, label: '11' },
+    { value: 12, label: '12' },
   ]
 
   return (

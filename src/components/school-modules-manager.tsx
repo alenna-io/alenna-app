@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/contexts/UserContext";
 
 interface Module {
   id: string;
@@ -42,6 +43,7 @@ interface SchoolModulesManagerProps {
 export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
   const api = useApi();
   const { t } = useTranslation();
+  const { userInfo } = useUser();
   const [modules, setModules] = React.useState<Module[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState<string | null>(null);
@@ -54,7 +56,15 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
         setLoading(true);
         const schoolModules = await api.schools.getSchoolModules(schoolId);
         if (!cancelled) {
-          setModules(schoolModules);
+          // Filter out users and schools modules - these are only for super school (Alenna)
+          const isAlennaSchool = userInfo?.schoolName?.toLowerCase() === 'alenna';
+          const filteredModules = schoolModules.filter((module: Module) => {
+            if (module.key === 'users' || module.key === 'schools') {
+              return isAlennaSchool;
+            }
+            return true;
+          });
+          setModules(filteredModules);
         }
       } catch (error) {
         if (!cancelled) {
@@ -73,9 +83,9 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
     return () => {
       cancelled = true;
     };
-    // Only refetch when schoolId changes
+    // Only refetch when schoolId or userInfo changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId]);
+  }, [schoolId, userInfo?.schoolName]);
 
   const handleToggleModule = async (moduleId: string, isEnabled: boolean) => {
     try {

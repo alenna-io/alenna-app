@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
-import { Loading } from "@/components/ui/loading"
+import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -579,6 +579,8 @@ export default function CreateStudentWizardPage() {
   const handleSubmit = async () => {
     if (!userInfo?.schoolId) return
 
+    setIsSaving(true)
+
     // Check student limit before creating
     try {
       const schoolData = await api.schools.getMy()
@@ -598,8 +600,6 @@ export default function CreateStudentWizardPage() {
       console.error('Error checking student limit:', err)
       // Continue anyway - backend will also validate
     }
-
-    setIsSaving(true)
     try {
       const parents = [
         {
@@ -786,10 +786,26 @@ export default function CreateStudentWizardPage() {
     { number: 4, title: t("groups.preview"), description: t("students.step4Description") },
   ]
 
-  if (isLoadingUser || isLoading) return <Loading variant='button' />
-
   return (
     <div className="min-h-screen">
+      {/* Loading Overlay */}
+      {(isLoadingUser || isLoading) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">{t("common.loading") || "Loading"}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {t("wizard.pleaseWait") || "Please wait..."}
+                  </p>
+                </div>
+                <Progress indeterminate className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
       <div className="w-full p-3 space-y-6">
         {/* Back button - only show on mobile */}
         <div className="md:hidden">

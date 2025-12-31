@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "react-i18next"
 import { getCategoryOrder } from "@/utils/category-order"
 import { CheckCircle2, XCircle } from "lucide-react"
+import { AlennaTable } from "@/components/ui/alenna-table"
 
 interface ReportCardSubjectData {
   subject: string
@@ -204,7 +205,7 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
         </div>
 
         {/* Monthly Assignments Section */}
-        <div className="overflow-x-auto animate-fade-in-soft">
+        <div className="animate-fade-in-soft">
           <div className="mb-4">
             <h3 className="text-base font-semibold text-foreground">
               {t("reportCards.monthlyAssignments")}{" "}
@@ -213,42 +214,43 @@ export function ReportCardTable({ quarter }: ReportCardTableProps) {
               </span>
             </h3>
           </div>
-          <div className="border border-border rounded-xl overflow-hidden bg-card">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-muted/30">
-                  <th className="p-3 text-left font-semibold border-b-2 border-b-primary/50 border-r border-border">{t("reportCards.assignment")}</th>
-                  <th className="p-3 text-center font-semibold border-b-2 border-b-primary/50 border-l border-border">{t("reportCards.grade")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quarter.monthlyAssignments.length > 0 ? (
-                  <>
-                    {quarter.monthlyAssignments.map((assignment) => (
-                      <tr key={assignment.id} className="bg-card border-b border-border hover:bg-muted/20 transition-colors">
-                        <td className="p-3 border-r border-border">{assignment.name}</td>
-                        <td className="p-3 text-center border-l border-border tabular-nums font-medium">
-                          {assignment.grade !== null ? formatGrade(assignment.grade) : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                    {/* Average row for Monthly Assignments */}
-                    <tr className="bg-primary/10 border-t-2 border-t-primary/50">
-                      <td className="p-3 text-left font-semibold border-r border-border">{t("reportCards.averageLabel")}</td>
-                      <td className="p-3 text-center font-semibold border-l border-border tabular-nums">
-                        {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "0.00"}
-                      </td>
-                    </tr>
-                  </>
-                ) : (
-                  <tr className="bg-card">
-                    <td colSpan={2} className="p-4 text-center text-muted-foreground border-b border-r border-l border-border">
-                      {t("reportCards.noMonthlyAssignments")}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="space-y-0">
+            <AlennaTable
+              columns={[
+                {
+                  key: 'assignment',
+                  label: t("reportCards.assignment"),
+                  render: (assignment) => (
+                    <div className="text-sm">{assignment.name}</div>
+                  )
+                },
+                {
+                  key: 'grade',
+                  label: t("reportCards.grade"),
+                  render: (assignment) => (
+                    <div className="text-sm text-center tabular-nums font-medium">
+                      {assignment.grade !== null ? formatGrade(assignment.grade) : "-"}
+                    </div>
+                  ),
+                  className: "text-center"
+                }
+              ]}
+              data={quarter.monthlyAssignments}
+              emptyState={{
+                message: t("reportCards.noMonthlyAssignments")
+              }}
+              getRowId={(assignment) => assignment.id}
+            />
+            {quarter.monthlyAssignments.length > 0 && (
+              <div className="bg-primary/10 border-t-2 border-t-primary/50 rounded-b-md border border-border border-t-0">
+                <div className="grid grid-cols-2 p-3">
+                  <div className="text-sm font-semibold text-left">{t("reportCards.averageLabel")}</div>
+                  <div className="text-sm font-semibold text-center tabular-nums">
+                    {quarter.monthlyAssignmentAverage !== null ? formatGrade(quarter.monthlyAssignmentAverage) : "0.00"}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

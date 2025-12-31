@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2, CreditCard } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2, CreditCard, ChevronRight } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import { ModuleIcon } from "@/components/ui/module-icon"
@@ -402,7 +402,19 @@ export function AppSidebar() {
             )
           }
 
-          const renderBillingMenuItem = () => {
+          const BillingMenuItem = () => {
+            const isBillingActive = location.pathname.startsWith('/billing')
+            const isRecordsActive = location.pathname === '/billing'
+            const isStudentConfigActive = location.pathname === '/billing/student-config'
+            const isConfigActive = location.pathname === '/billing/config'
+            const [isSubMenuOpen, setIsSubMenuOpen] = React.useState(isBillingActive)
+
+            React.useEffect(() => {
+              if (isBillingActive) {
+                setIsSubMenuOpen(true)
+              }
+            }, [isBillingActive])
+
             const billingModule = otherModules.find(m => m.key === 'billing')
             if (!billingModule) return null
 
@@ -412,37 +424,30 @@ export function AppSidebar() {
               icon: CreditCard,
             }
 
-            const isBillingActive = location.pathname.startsWith('/billing')
-            const isRecordsActive = location.pathname === '/billing'
-            const isStudentConfigActive = location.pathname === '/billing/student-config'
-            const isConfigActive = location.pathname === '/billing/config'
-
             return (
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  asChild
                   isActive={isBillingActive}
                   tooltip={billingConfig.title}
-                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isBillingActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setIsSubMenuOpen(!isSubMenuOpen)
+                  }}
+                  className={`cursor-pointer !overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isBillingActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
                 >
-                  <Link
-                    to="/billing"
-                    onClick={() => {
-                      if (isMobile) {
-                        setOpenMobile(false)
-                      }
-                    }}
-                    className="flex items-center gap-2 min-w-0"
-                  >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     {hasModuleIcon('billing') ? (
                       <ModuleIcon moduleKey="billing" size={20} className="flex-shrink-0" />
                     ) : (
                       <billingConfig.icon className={`flex-shrink-0 ${isBillingActive ? "text-primary" : "text-sidebar-foreground"}`} />
                     )}
                     <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{billingConfig.title}</span>
-                  </Link>
+                    <ChevronRight
+                      className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden cursor-pointer ${isSubMenuOpen ? "rotate-90" : ""}`}
+                    />
+                  </div>
                 </SidebarMenuButton>
-                {isBillingActive && (
+                {isSubMenuOpen && (
                   <SidebarMenuSub>
                     <SidebarMenuSubItem>
                       <SidebarMenuSubButton asChild isActive={isRecordsActive}>
@@ -501,7 +506,7 @@ export function AppSidebar() {
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
                       <SidebarMenu>
-                        {Array.from({ length: academicItems.length || 3 }).map((_, index) => (
+                        {Array.from({ length: 3 }).map((_, index) => (
                           <SidebarMenuItem key={`skeleton-academic-${index}`}>
                             <div className="flex items-center gap-2 px-2 py-2">
                               <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
@@ -526,7 +531,7 @@ export function AppSidebar() {
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
                       <SidebarMenu>
-                        {Array.from({ length: schoolManagementItems.length || 3 }).map((_, index) => (
+                        {Array.from({ length: 3 }).map((_, index) => (
                           <SidebarMenuItem key={`skeleton-management-${index}`}>
                             <div className="flex items-center gap-2 px-2 py-2">
                               <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
@@ -538,7 +543,7 @@ export function AppSidebar() {
                     ) : (
                       <SidebarMenu>
                         {schoolManagementItems.map((item, index) => renderMenuItem(item, index))}
-                        {renderBillingMenuItem()}
+                        <BillingMenuItem />
                       </SidebarMenu>
                     )}
                   </SidebarGroupContent>
@@ -552,7 +557,7 @@ export function AppSidebar() {
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
                       <SidebarMenu>
-                        {Array.from({ length: otherItems.length || 2 }).map((_, index) => (
+                        {Array.from({ length: 3 }).map((_, index) => (
                           <SidebarMenuItem key={`skeleton-other-${index}`}>
                             <div className="flex items-center gap-2 px-2 py-2">
                               <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />

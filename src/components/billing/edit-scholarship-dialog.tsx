@@ -56,6 +56,7 @@ export function EditScholarshipDialog({
     if (open) {
       loadTuitionTypes()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   React.useEffect(() => {
@@ -99,35 +100,32 @@ export function EditScholarshipDialog({
 
     try {
       setLoading(true)
-      const data: {
+
+      const apiData: {
         tuitionTypeId?: string
-        scholarshipType?: 'percentage' | 'fixed' | null
-        scholarshipValue?: number | null
+        scholarshipType?: 'percentage' | 'fixed'
+        scholarshipValue?: number
       } = {}
 
       if (tuitionTypeId) {
-        data.tuitionTypeId = tuitionTypeId
+        apiData.tuitionTypeId = tuitionTypeId
       }
-
       if (scholarshipType && value !== null) {
-        data.scholarshipType = scholarshipType
-        data.scholarshipValue = value
-      } else {
-        data.scholarshipType = null
-        data.scholarshipValue = null
+        apiData.scholarshipType = scholarshipType
+        apiData.scholarshipValue = value
       }
 
       if (scholarship?.id) {
-        await api.billing.updateStudentScholarship(student.id, data)
+        await api.billing.updateStudentScholarship(student.id, apiData)
         toast.success("Scholarship updated successfully")
       } else {
-        await api.billing.createStudentScholarship(student.id, data)
+        await api.billing.createStudentScholarship(student.id, apiData)
         toast.success("Scholarship created successfully")
       }
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
-      const errorMessage = error.message || "Failed to save scholarship"
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to save scholarship"
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -136,7 +134,7 @@ export function EditScholarshipDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {scholarship?.id ? t("billing.editScholarship") : t("billing.createScholarship")}

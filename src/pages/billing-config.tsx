@@ -3,15 +3,14 @@ import { useApi } from "@/services/api"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { BackButton } from "@/components/ui/back-button"
-import { Settings, Plus, Trash2, Edit } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { Plus, Trash2, Edit } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -20,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { AlennaTable, type AlennaTableColumn, type AlennaTableAction } from "@/components/ui/alenna-table"
 
 interface TuitionType {
   id: string
@@ -34,7 +34,6 @@ interface TuitionType {
 export default function BillingConfigPage() {
   const { t } = useTranslation()
   const api = useApi()
-  const navigate = useNavigate()
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [config, setConfig] = React.useState<{
@@ -47,6 +46,8 @@ export default function BillingConfigPage() {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [selectedType, setSelectedType] = React.useState<TuitionType | null>(null)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
   const [formData, setFormData] = React.useState({
     name: "",
     baseAmount: "",
@@ -58,6 +59,7 @@ export default function BillingConfigPage() {
 
   React.useEffect(() => {
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadData = async () => {
@@ -76,7 +78,7 @@ export default function BillingConfigPage() {
       }
 
       setTuitionTypes(typesData || [])
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log("Error loading data:", error)
     } finally {
       setLoading(false)
@@ -106,8 +108,9 @@ export default function BillingConfigPage() {
       }
       toast.success("Configuration saved successfully")
       await loadData()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save configuration")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to save configuration"
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -188,8 +191,9 @@ export default function BillingConfigPage() {
       }
       setEditDialogOpen(false)
       await loadData()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save tuition type")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to save tuition type"
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -205,8 +209,9 @@ export default function BillingConfigPage() {
       setDeleteDialogOpen(false)
       setSelectedType(null)
       await loadData()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete tuition type")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete tuition type"
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
@@ -220,8 +225,63 @@ export default function BillingConfigPage() {
     }).format(amount)
   }
 
+  // Pagination
+  const sortedTuitionTypes = React.useMemo(() => {
+    return [...tuitionTypes].sort((a, b) => a.displayOrder - b.displayOrder)
+  }, [tuitionTypes])
+
+  const totalPages = Math.ceil(sortedTuitionTypes.length / itemsPerPage)
+  const paginatedTuitionTypes = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return sortedTuitionTypes.slice(startIndex, startIndex + itemsPerPage)
+  }, [sortedTuitionTypes, currentPage, itemsPerPage])
+
+  const columns: AlennaTableColumn<TuitionType>[] = [
+    {
+      key: 'name',
+      label: t("billing.name"),
+      render: (type) => <div className="font-medium">{type.name}</div>
+    },
+    {
+      key: 'baseAmount',
+      label: t("billing.baseAmount"),
+      render: (type) => formatCurrency(type.baseAmount)
+    },
+    {
+      key: 'lateFee',
+      label: t("billing.lateFee"),
+      render: (type) => (
+        type.lateFeeType === 'fixed'
+          ? formatCurrency(type.lateFeeValue)
+          : `${type.lateFeeValue}%`
+      )
+    },
+    {
+      key: 'displayOrder',
+      label: t("billing.displayOrder"),
+      render: (type) => type.displayOrder
+    }
+  ]
+
+  const actions: AlennaTableAction<TuitionType>[] = [
+    {
+      label: t("billing.edit"),
+      icon: <Edit className="h-4 w-4" />,
+      onClick: (type) => handleOpenEditDialog(type)
+    },
+    {
+      label: t("billing.delete"),
+      icon: <Trash2 className="h-4 w-4" />,
+      variant: 'destructive',
+      onClick: (type) => {
+        setSelectedType(type)
+        setDeleteDialogOpen(true)
+      }
+    }
+  ]
+
   if (loading) {
-    return <Loading variant="page" />
+    return <Loading variant="simple-page" />
   }
 
   return (
@@ -234,26 +294,20 @@ export default function BillingConfigPage() {
       </div>
 
       <PageHeader
-        icon={Settings}
+        moduleKey="billing"
         title={t("billing.configuration")}
         description={t("billing.configurationDescription")}
       />
 
       {/* Tuition Config */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("billing.paymentSettings")}</CardTitle>
-          <CardDescription>
-            {t("billing.paymentSettingsDescription")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <Card className="border-border/50">
+        <CardContent className="p-4">
           <form onSubmit={handleSaveConfig}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel>
+            <div className="flex items-end gap-4">
+              <div className="flex-1 min-w-0">
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
                   {t("billing.dueDay")} <span className="text-destructive">*</span>
-                </FieldLabel>
+                </label>
                 <Input
                   type="number"
                   min="1"
@@ -262,15 +316,13 @@ export default function BillingConfigPage() {
                   value={config.dueDay}
                   onChange={(e) => setConfig({ ...config, dueDay: e.target.value })}
                   placeholder="5"
+                  className="w-24"
                 />
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1.5">
                   {t("billing.dueDayDescription")}
                 </p>
-              </Field>
-            </FieldGroup>
-
-            <div className="flex justify-end mt-6">
-              <Button type="submit" disabled={saving}>
+              </div>
+              <Button type="submit" disabled={saving} size="sm" className="shrink-0">
                 {saving ? t("billing.saving") : t("billing.saveConfiguration")}
               </Button>
             </div>
@@ -279,94 +331,40 @@ export default function BillingConfigPage() {
       </Card>
 
       {/* Tuition Types */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t("billing.tuitionTypes")}</CardTitle>
-              <CardDescription>
-                {t("billing.tuitionTypesDescription")}
-              </CardDescription>
-            </div>
-            <Button onClick={() => handleOpenEditDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("billing.addTuitionType")}
-            </Button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{t("billing.tuitionTypes")}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t("billing.tuitionTypesDescription")}
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {tuitionTypes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {t("billing.noTuitionTypes")}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground first:px-6 text-sm">
-                      {t("billing.name")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.baseAmount")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.lateFee")}
-                    </th>
-                    <th className="h-14 px-4 text-left align-middle font-semibold text-foreground text-sm">
-                      {t("billing.displayOrder")}
-                    </th>
-                    <th className="h-14 px-4 text-right align-middle font-semibold text-foreground text-sm">
-                      {t("billing.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tuitionTypes
-                    .sort((a, b) => a.displayOrder - b.displayOrder)
-                    .map((type) => (
-                      <tr key={type.id} className="border-b hover:bg-muted/50">
-                        <td className="p-4 align-middle first:px-6 font-medium">{type.name}</td>
-                        <td className="p-4 align-middle">{formatCurrency(type.baseAmount)}</td>
-                        <td className="p-4 align-middle">
-                          {type.lateFeeType === 'fixed'
-                            ? formatCurrency(type.lateFeeValue)
-                            : `${type.lateFeeValue}%`}
-                        </td>
-                        <td className="p-4 align-middle">{type.displayOrder}</td>
-                        <td className="p-4 align-middle text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenEditDialog(type)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedType(type)
-                                setDeleteDialogOpen(true)
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <Button onClick={() => handleOpenEditDialog()}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("billing.addTuitionType")}
+          </Button>
+        </div>
+        <AlennaTable
+          columns={columns}
+          data={paginatedTuitionTypes}
+          actions={actions}
+          pagination={{
+            currentPage,
+            totalPages,
+            totalItems: sortedTuitionTypes.length,
+            pageSize: itemsPerPage,
+            onPageChange: setCurrentPage
+          }}
+          emptyState={{
+            message: t("billing.noTuitionTypes")
+          }}
+          getRowId={(type) => type.id}
+        />
+      </div>
 
       {/* Edit/Create Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               {selectedType ? t("billing.editTuitionType") : t("billing.createTuitionType")}
@@ -380,18 +378,18 @@ export default function BillingConfigPage() {
           <div className="space-y-4 py-4">
             <Field>
               <FieldLabel>
-                Name <span className="text-destructive">*</span>
+                {t("billing.name")} <span className="text-destructive">*</span>
               </FieldLabel>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Elementary, High School"
+                placeholder={t("billing.namePlaceholder")}
                 required
               />
             </Field>
             <Field>
               <FieldLabel>
-                Base Amount <span className="text-destructive">*</span>
+                {t("billing.baseAmount")} <span className="text-destructive">*</span>
               </FieldLabel>
               <Input
                 type="number"
@@ -432,8 +430,8 @@ export default function BillingConfigPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percentage">Percentage</SelectItem>
-                  <SelectItem value="fixed">Fixed Amount</SelectItem>
+                  <SelectItem value="percentage">{t("billing.percentage")}</SelectItem>
+                  <SelectItem value="fixed">{t("billing.fixedAmount")}</SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -458,7 +456,7 @@ export default function BillingConfigPage() {
             </Field>
             <Field>
               <FieldLabel>
-                Display Order
+                {t("billing.displayOrder")}
               </FieldLabel>
               <Input
                 type="number"
@@ -471,10 +469,10 @@ export default function BillingConfigPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSaveType} disabled={saving}>
-              {saving ? "Saving..." : selectedType ? "Update" : "Create"}
+              {saving ? t("common.saving") : selectedType ? t("common.update") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -484,17 +482,17 @@ export default function BillingConfigPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Tuition Type</DialogTitle>
+            <DialogTitle>{t("billing.deleteTuitionType")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedType?.name}"? This action cannot be undone.
+              {t("billing.deleteTuitionTypeConfirm", { name: selectedType?.name || "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDeleteType} disabled={saving}>
-              {saving ? "Deleting..." : "Delete"}
+              {saving ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

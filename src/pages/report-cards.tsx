@@ -211,7 +211,7 @@ export default function ReportCardsPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <Loading variant="section" />
+    return <Loading variant="report-cards-list" />
   }
 
   if (!userInfo) {

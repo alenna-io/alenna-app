@@ -60,6 +60,8 @@ export default function MonthlyAssignmentsPage() {
     Q4: 0,
   })
   const [loading, setLoading] = React.useState(true)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 10
 
   // Dialog states
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
@@ -194,13 +196,25 @@ export default function MonthlyAssignmentsPage() {
 
   const selectedSchoolYear = schoolYears.find(y => y.id === selectedSchoolYearId)
 
+  // Pagination
+  const totalPages = Math.ceil(templates.length / itemsPerPage)
+  const paginatedTemplates = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return templates.slice(startIndex, startIndex + itemsPerPage)
+  }, [templates, currentPage, itemsPerPage])
+
+  // Reset to page 1 when templates change
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [templates.length])
+
   // Redirect super admins - they should not access monthly assignments page
   if (isSuperAdmin) {
     return <Navigate to="/users" replace />
   }
 
   if (isLoadingUser || (loading && !selectedSchoolYearId)) {
-    return <Loading variant='card' />
+    return <Loading variant="simple-page" />
   }
 
   // Check if user has permission (teachers and school admins only)
@@ -315,11 +329,15 @@ export default function MonthlyAssignmentsPage() {
               </Button>
             </div>
             <MonthlyAssignmentsTable
-              assignments={templates}
+              assignments={paginatedTemplates}
               onEdit={handleEdit}
               onDelete={(assignment) => setDeleteDialog(assignment)}
               canEdit={true}
               canDelete={true}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={templates.length}
+              onPageChange={setCurrentPage}
             />
           </div>
         </>

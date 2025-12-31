@@ -3,10 +3,12 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "deleting": "Deleting...",
     "remove": "Remove",
     "edit": "Edit",
     "create": "Create",
     "creating": "Creating...",
+    "update": "Update",
     "search": "Search",
     "loading": "Loading...",
     "saving": "Saving...",
@@ -228,8 +230,14 @@
     "lateFeeValue": "Late Fee Value",
     "percentageLateFeeExample": "Percentage (e.g., 5.00 for 5%). If base amount is $100 and late fee is 5%, the total will be $105.",
     "fixedLateFeeExample": "Fixed dollar amount (e.g., 50.00 for $50)",
+    "namePlaceholder": "e.g., Elementary, High School",
+    "percentage": "Percentage",
+    "fixedAmount": "Fixed Amount",
+    "deleteTuitionType": "Delete Tuition Type",
+    "deleteTuitionTypeConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "studentsPaidTotal": "Students Paid / Total",
-    "paymentRate": "Payment Rate"
+    "paymentRate": "Payment Rate",
+    "searchPlaceholder": "Search by student name or month..."
   },
   "students": {
     "title": "Students",

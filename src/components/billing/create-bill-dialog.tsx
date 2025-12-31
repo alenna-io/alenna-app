@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useApi } from "@/services/api"
 import { toast } from "sonner"
-import { useTranslation } from "react-i18next"
 import { Loading } from "@/components/ui/loading"
+import type { SchoolYear } from "@/services/api"
 
 interface CreateBillDialogProps {
   open: boolean
@@ -23,7 +23,6 @@ interface CreateBillDialogProps {
 }
 
 export function CreateBillDialog({ open, onOpenChange, onSuccess }: CreateBillDialogProps) {
-  const { t } = useTranslation()
   const api = useApi()
   const [loading, setLoading] = React.useState(false)
   const [students, setStudents] = React.useState<Array<{ id: string; name: string }>>([])
@@ -42,6 +41,7 @@ export function CreateBillDialog({ open, onOpenChange, onSuccess }: CreateBillDi
     if (open) {
       loadData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   const loadData = async () => {
@@ -52,17 +52,18 @@ export function CreateBillDialog({ open, onOpenChange, onSuccess }: CreateBillDi
         api.schoolYears.getAll(),
       ])
 
-      setStudents(studentsData.map((s: any) => ({
+      setStudents((studentsData as Array<{ id: string; firstName: string; lastName: string }>).map((s) => ({
         id: s.id,
         name: `${s.firstName} ${s.lastName}`,
       })))
 
-      setSchoolYears(yearsData.map((y: any) => ({
+      const typedYearsData = yearsData as SchoolYear[]
+      setSchoolYears(typedYearsData.map((y) => ({
         id: y.id,
         name: y.name,
       })))
 
-      const activeYear = yearsData.find((y: any) => y.isActive)
+      const activeYear = typedYearsData.find((y) => y.isActive)
       if (activeYear) {
         setFormData(prev => ({ ...prev, schoolYearId: activeYear.id }))
       }
@@ -102,26 +103,27 @@ export function CreateBillDialog({ open, onOpenChange, onSuccess }: CreateBillDi
         billingYear: new Date().getFullYear(),
         baseAmount: '',
       })
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create bill')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create bill'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
   const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' },
+    { value: 1, label: '01' },
+    { value: 2, label: '02' },
+    { value: 3, label: '03' },
+    { value: 4, label: '04' },
+    { value: 5, label: '05' },
+    { value: 6, label: '06' },
+    { value: 7, label: '07' },
+    { value: 8, label: '08' },
+    { value: 9, label: '09' },
+    { value: 10, label: '10' },
+    { value: 11, label: '11' },
+    { value: 12, label: '12' },
   ]
 
   return (
