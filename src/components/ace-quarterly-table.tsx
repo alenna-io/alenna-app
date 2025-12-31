@@ -31,12 +31,29 @@ interface QuarterlyTableProps {
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
 }
 
-// Simplified 2-color system: alternating between blue and gray
-const getSubjectColor = (index: number) => {
-  const isEven = index % 2 === 0
-  return isEven
-    ? { bg: "bg-white border-gray-200", text: "text-gray-800" }
-    : { bg: "bg-slate-50 border-slate-200", text: "text-slate-900" }
+// Subject-specific color mapping with soft pastel backgrounds
+const getSubjectColor = (subjectName: string) => {
+  const normalizedSubject = subjectName.toLowerCase().trim()
+
+  // Map subjects to soft pastel background colors with dark text
+  if (normalizedSubject.includes("math")) {
+    return { bg: "bg-amber-soft/15", text: "text-foreground" }
+  }
+  if (normalizedSubject.includes("english")) {
+    return { bg: "bg-coral-soft/15", text: "text-foreground" }
+  }
+  if (normalizedSubject.includes("word building")) {
+    return { bg: "bg-lavender-soft/15", text: "text-foreground" }
+  }
+  if (normalizedSubject.includes("science")) {
+    return { bg: "bg-sky-soft/15", text: "text-foreground" }
+  }
+  if (normalizedSubject.includes("social studies")) {
+    return { bg: "bg-mint-soft/15", text: "text-foreground" }
+  }
+
+  // Default fallback
+  return { bg: "bg-card", text: "text-foreground" }
 }
 
 export function ACEQuarterlyTable({
@@ -459,16 +476,16 @@ export function ACEQuarterlyTable({
                 </tr>
               </thead>
               <tbody>
-                {subjects.map((subject, subjectIndex) => (
+                {subjects.map((subject) => (
                   <tr
                     key={subject}
-                    className="transition-colors hover:bg-primary-soft/20 group border-b border-border last:border-b-0"
+                    className={`transition-colors group border-b border-border last:border-b-0 ${getSubjectColor(subject).bg} hover:opacity-80`}
                   >
                     <td
-                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subjectIndex).bg} ${getSubjectColor(subjectIndex).text} text-xs md:text-sm group-hover:bg-primary-soft/20`}
+                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] ${getSubjectColor(subject).bg} ${getSubjectColor(subject).text} text-xs md:text-sm`}
                     >
                       <div className="flex flex-col">
-                        <span className="text-xs md:text-sm font-semibold">
+                        <span className={`text-xs md:text-sm font-semibold ${getSubjectColor(subject).text}`}>
                           {subject}
                         </span>
                       </div>
