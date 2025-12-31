@@ -23,6 +23,7 @@ import { useModuleAccess } from "@/hooks/useModuleAccess"
 import type { ModuleData } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { LoadingSpinner } from "@/components/ui/loading"
+import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { useTranslation } from "react-i18next"
 
 type MenuIcon = typeof GraduationCap
@@ -400,9 +401,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>{t("sidebar.academicSection") || "Academic"}</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: academicItems.length || 3 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-academic-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {academicItems.map((item, index) => renderMenuItem(item, index))}
@@ -418,9 +426,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>{t("sidebar.schoolManagementSection") || "School Management"}</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: schoolManagementItems.length || 3 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-management-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {schoolManagementItems.map((item, index) => renderMenuItem(item, index))}
@@ -436,9 +451,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>Navegación</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: otherItems.length || 2 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-other-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {otherItems.map((item, index) => renderMenuItem(item, index))}
