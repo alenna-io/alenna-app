@@ -32,6 +32,7 @@ const MODULE_DEPENDENCIES: Record<string, string[]> = {
   school_admin: [],
   schools: [],
   users: [],
+  billing: [],
 };
 
 interface SchoolModulesManagerProps {

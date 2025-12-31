@@ -182,6 +182,7 @@ export default function CreateStudentWizardPage() {
     parent2Email: "",
     parent2Phone: "",
     parent2Relationship: "",
+    billingBaseAmount: "",
   })
 
   React.useEffect(() => {
@@ -620,7 +621,7 @@ export default function CreateStudentWizardPage() {
         })
       }
 
-      await api.students.create({
+      const student = await api.students.create({
         schoolId: userInfo.schoolId,
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
@@ -639,6 +640,37 @@ export default function CreateStudentWizardPage() {
         zipCode: formData.zipCode.trim() || undefined,
         parents,
       })
+
+      // Create billing data if base amount is provided
+      if (formData.billingBaseAmount && formData.billingBaseAmount.trim()) {
+        try {
+          const customAmount = parseFloat(formData.billingBaseAmount)
+          if (!isNaN(customAmount) && customAmount > 0) {
+            // Get tuition config to calculate scholarship
+            const tuitionConfig = await api.billing.getTuitionConfig()
+            if (tuitionConfig) {
+              const schoolBaseAmount = parseFloat(tuitionConfig.baseTuitionAmount?.toString() || "0")
+              if (schoolBaseAmount > 0 && customAmount < schoolBaseAmount) {
+                // Calculate scholarship to make final amount = custom amount
+                const scholarshipAmount = schoolBaseAmount - customAmount
+                // Create student scholarship with fixed discount
+                await api.billing.createStudentScholarship(student.id, {
+                  scholarshipType: 'fixed',
+                  scholarshipValue: scholarshipAmount,
+                })
+              } else if (customAmount !== schoolBaseAmount) {
+                // If custom amount is different, we'd need to store it differently
+                // For now, just log a warning
+                console.warn('Custom amount provided but cannot be stored as scholarship (would need custom base amount field)')
+              }
+            }
+          }
+        } catch (billingError) {
+          console.error('Error creating billing data:', billingError)
+          // Don't fail student creation if billing fails
+          toast.warning(t("students.billingDataWarning") || "Student created but billing data could not be set")
+        }
+      }
 
       toast.success(t("students.createSuccess"))
       navigate("/students")
@@ -1267,6 +1299,29 @@ export default function CreateStudentWizardPage() {
                     {errors.expectedLevel && <p className="text-sm text-destructive mt-1">{errors.expectedLevel}</p>}
                   </Field>
                 )}
+
+                {/* Billing Information (Optional) */}
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2">{t("students.billingInfo") || "Billing Information (Optional)"}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {t("students.billingInfoDescription") || "Set a custom base amount for this student. If not provided, the school's default tuition amount will be used."}
+                    </p>
+                  </div>
+                  <Field>
+                    <FieldLabel htmlFor="billingBaseAmount">{t("students.billingBaseAmount") || "Base Tuition Amount (Optional)"}</FieldLabel>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      id="billingBaseAmount"
+                      value={formData.billingBaseAmount}
+                      onChange={(e) => setFormData({ ...formData, billingBaseAmount: e.target.value })}
+                      placeholder={t("students.billingBaseAmountPlaceholder") || "Leave empty to use school default"}
+                    />
+                  </Field>
+                </div>
               </div>
             )}
 

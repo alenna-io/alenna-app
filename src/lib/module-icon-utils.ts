@@ -11,6 +11,7 @@ const iconMap: Record<string, string | null> = {
   users: null, // No icon file exists
   schools: null, // No icon file exists
   configuration: "settings",
+  billing: "billing",
 }
 
 export function hasModuleIcon(moduleKey: string): boolean {
