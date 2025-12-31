@@ -208,6 +208,7 @@ export interface UserInfo {
   language?: string;
   schoolId: string;
   schoolName: string;
+  schoolLogoUrl?: string;
   studentId?: string | null;
   createdPassword: boolean;
   studentProfile?: {

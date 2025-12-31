@@ -54,6 +54,7 @@ export function AppSidebar() {
 
   // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
+  const schoolLogoUrl = userInfo?.schoolLogoUrl
 
   const roleNames = React.useMemo(() => {
     const roles = userInfo?.roles?.map(role => role.name) ?? []
@@ -281,16 +282,18 @@ export function AppSidebar() {
           <div className="flex flex-col gap-2 items-center">
             <SidebarMenu className="w-full">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild className="justify-center">
-                  <Link to="/" className="flex justify-center">
-                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                      <span className="text-lg font-bold">
-                        {isLoadingUser ? (
-                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
-                        ) : (
-                          schoolName.charAt(0).toUpperCase()
-                        )}
-                      </span>
+                <SidebarMenuButton size="default" asChild className="justify-center">
+                  <Link to="/" className="flex justify-center p-0!">
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+                      {isLoadingUser ? (
+                        <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
+                      ) : schoolLogoUrl ? (
+                        <img src={schoolLogoUrl} alt={schoolName} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-lg font-bold">
+                          {schoolName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 </SidebarMenuButton>
@@ -306,16 +309,18 @@ export function AppSidebar() {
           <div className="flex items-center justify-between gap-2">
             <SidebarMenu className="flex-1">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
+                <SidebarMenuButton size="lg" asChild className='px-2.5'>
                   <Link to="/">
-                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                      <span className="text-lg font-bold">
-                        {isLoadingUser ? (
-                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
-                        ) : (
-                          schoolName.charAt(0).toUpperCase()
-                        )}
-                      </span>
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+                      {isLoadingUser ? (
+                        <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
+                      ) : schoolLogoUrl ? (
+                        <img src={schoolLogoUrl} alt={schoolName} className="w-full h-auto! object-contain" />
+                      ) : (
+                        <span className="text-lg font-bold">
+                          {schoolName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                       <span className="font-semibold break-words leading-tight text-xs">

@@ -47,7 +47,8 @@ export function DashboardPage() {
     }
 
     fetchCurrentWeek()
-  }, [api])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Show loading when user or modules are loading
   if (isLoadingUser || isLoadingModules) {

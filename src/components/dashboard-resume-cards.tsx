@@ -48,7 +48,8 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
     }
 
     fetchCounts()
-  }, [api, userInfo?.schoolId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userInfo?.schoolId])
 
   React.useEffect(() => {
     const fetchVerse = async () => {
