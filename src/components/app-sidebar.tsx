@@ -2,6 +2,8 @@ import * as React from "react"
 import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2 } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
+import { ModuleIcon } from "@/components/ui/module-icon"
+import { hasModuleIcon } from "@/lib/module-icon-utils"
 import {
   Sidebar,
   SidebarContent,
@@ -367,7 +369,7 @@ export function AppSidebar() {
                   asChild
                   isActive={isActive}
                   tooltip={item.title}
-                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground [&>svg]:!text-primary-foreground" : ""}`}
+                  className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
                 >
                   <Link
                     to={item.url}
@@ -378,7 +380,11 @@ export function AppSidebar() {
                     }}
                     className="flex items-center gap-2 min-w-0"
                   >
-                    <item.icon className={`flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground"}`} />
+                    {item.moduleKey && hasModuleIcon(item.moduleKey) ? (
+                      <ModuleIcon moduleKey={item.moduleKey} size={20} className="flex-shrink-0" />
+                    ) : (
+                      <item.icon className={`flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground"}`} />
+                    )}
                     <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
@@ -461,7 +467,7 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!text-primary-foreground data-[active=true]:!bg-primary data-[active=true]:!text-primary-foreground [&>svg]:!text-primary-foreground" : ""}`}
+                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
                       >
                         <Link
                           to={item.url}
@@ -473,7 +479,13 @@ export function AppSidebar() {
                           }}
                           className="flex items-center gap-2 min-w-0"
                         >
-                          <item.icon className="flex-shrink-0" />
+                          {item.url === "/school-settings" && hasModuleIcon("school_admin") ? (
+                            <ModuleIcon moduleKey="school_admin" size={20} className="flex-shrink-0" />
+                          ) : item.url === "/configuration" && hasModuleIcon("configuration") ? (
+                            <ModuleIcon moduleKey="configuration" size={20} className="flex-shrink-0" />
+                          ) : (
+                            <item.icon className="flex-shrink-0" />
+                          )}
                           <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>

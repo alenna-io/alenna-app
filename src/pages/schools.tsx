@@ -334,6 +334,7 @@ export default function SchoolsPage() {
 
       <div className="flex items-center justify-between">
         <PageHeader
+          moduleKey="schools"
           title={t("schools.title")}
           description={t("schools.description")}
         />

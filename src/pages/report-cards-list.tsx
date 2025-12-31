@@ -132,6 +132,7 @@ export default function ReportCardsListPage() {
 
       {/* Page Title */}
       <PageHeader
+        moduleKey="reportCards"
         title={t("reportCards.listTitle")}
         description={t("reportCards.listDescription")}
       />

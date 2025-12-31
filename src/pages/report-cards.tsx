@@ -243,6 +243,7 @@ export default function ReportCardsPage() {
     <div className="space-y-6">
       {/* Page Title */}
       <PageHeader
+        moduleKey="reportCards"
         title={t("reportCards.title")}
         description={t("reportCards.description")}
       />

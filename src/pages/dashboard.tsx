@@ -2,9 +2,10 @@ import { Navigate, Link, useLocation } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 import { Loading } from "@/components/ui/loading"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
-import { Card, CardContent } from "@/components/ui/card"
 import { useTranslation } from "react-i18next"
-import { GraduationCap, BookOpen, Library, Calendar, Award, Users2, UserCog, Settings, Users, Building, Sliders } from "lucide-react"
+import { GraduationCap, Users, Building } from "lucide-react"
+import { ModuleIcon } from "@/components/ui/module-icon"
+import { hasModuleIcon } from "@/lib/module-icon-utils"
 
 type MenuIcon = typeof GraduationCap
 
@@ -14,11 +15,8 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const location = useLocation()
 
-  // Only show loading if we're actually on the dashboard route
-  // This prevents showing dashboard loader when navigating to other routes
-  const isDashboardRoute = location.pathname === '/dashboard'
-  
-  if (isDashboardRoute && (isLoadingUser || isLoadingModules)) {
+  // Show loading when user or modules are loading
+  if (isLoadingUser || isLoadingModules) {
     return <Loading variant="dashboard" />
   }
 
@@ -83,18 +81,18 @@ export function DashboardPage() {
   })
 
   // Map modules to display format
-  const moduleDisplayMap: Record<string, { title: string; url: string; icon: MenuIcon }> = {
-    students: { title: t("sidebar.students"), url: "/students", icon: GraduationCap },
-    projections: { title: t("sidebar.projections"), url: "/projections", icon: BookOpen },
-    paces: { title: t("sidebar.lectures") || "Lectures", url: "/lectures", icon: Library },
-    monthlyAssignments: { title: t("sidebar.monthlyAssignments"), url: "/monthly-assignments", icon: Calendar },
-    reportCards: { title: t("sidebar.reportCards"), url: "/report-cards", icon: Award },
-    groups: { title: t("sidebar.groups"), url: "/groups", icon: Users2 },
-    teachers: { title: t("sidebar.teachers"), url: `/schools/${userInfo?.schoolId || ''}/teachers`, icon: UserCog },
-    school_admin: { title: t("sidebar.schoolSettings"), url: "/school-settings", icon: Sliders },
+  const moduleDisplayMap: Record<string, { title: string; url: string; icon?: MenuIcon }> = {
+    students: { title: t("sidebar.students"), url: "/students" },
+    projections: { title: t("sidebar.projections"), url: "/projections" },
+    paces: { title: t("sidebar.lectures") || "Lectures", url: "/lectures" },
+    monthlyAssignments: { title: t("sidebar.monthlyAssignments"), url: "/monthly-assignments" },
+    reportCards: { title: t("sidebar.reportCards"), url: "/report-cards" },
+    groups: { title: t("sidebar.groups"), url: "/groups" },
+    teachers: { title: t("sidebar.teachers"), url: `/schools/${userInfo?.schoolId || ''}/teachers` },
+    school_admin: { title: t("sidebar.schoolSettings"), url: "/school-settings" },
     users: { title: t("sidebar.users"), url: "/users", icon: Users },
     schools: { title: t("sidebar.schools"), url: "/schools", icon: Building },
-    configuration: { title: t("sidebar.configuration"), url: "/configuration", icon: Settings },
+    configuration: { title: t("sidebar.configuration"), url: "/configuration" },
   }
 
   const moduleItems = accessibleModules
@@ -103,7 +101,6 @@ export function DashboardPage() {
       const config = moduleDisplayMap[module.key] || {
         title: t(`modules.${module.key}`) || module.name,
         url: `/${module.key}`,
-        icon: Settings,
       }
       return {
         ...config,
@@ -117,7 +114,6 @@ export function DashboardPage() {
     moduleItems.push({
       title: moduleDisplayMap.configuration.title,
       url: moduleDisplayMap.configuration.url,
-      icon: Settings,
       moduleKey: 'configuration',
     })
   }
@@ -128,9 +124,9 @@ export function DashboardPage() {
   }
 
   const userName = userInfo.fullName || userInfo.email || "Usuario"
-  const greeting = new Date().getHours() < 12 ? t("dashboard.goodMorning") || "Buenos días" : 
-                   new Date().getHours() < 18 ? t("dashboard.goodAfternoon") || "Buenas tardes" : 
-                   t("dashboard.goodEvening") || "Buenas noches"
+  const greeting = new Date().getHours() < 12 ? t("dashboard.goodMorning") || "Buenos días" :
+    new Date().getHours() < 18 ? t("dashboard.goodAfternoon") || "Buenas tardes" :
+      t("dashboard.goodEvening") || "Buenas noches"
 
   return (
     <div className="space-y-8">
@@ -144,28 +140,35 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Modules Grid */}
+      {/* Modules Grid - Single Row */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">
           {t("dashboard.modules") || "Módulos"}
         </h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-wrap gap-6 overflow-x-auto pb-4">
           {moduleItems.map((module) => {
             const isActive = location.pathname.startsWith(module.url)
-            const IconComponent = module.icon
 
             return (
-              <Link key={module.moduleKey} to={module.url}>
-                <Card className={`h-full transition-all hover:shadow-xl hover:shadow-primary/10 cursor-pointer border-2 ${isActive ? 'ring-2 ring-primary border-primary shadow-lg' : 'border-transparent hover:border-primary/20'}`}>
-                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 min-h-[200px]">
-                    <div className="w-16 h-16 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                      <IconComponent className="h-8 w-8 text-[#8B5CF6]" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg">{module.title}</h3>
-                    </div>
-                  </CardContent>
-                </Card>
+              <Link key={module.moduleKey} to={module.url} className="shrink-0">
+                <div className={`flex flex-col items-center gap-3 transition-all cursor-pointer ${isActive ? 'scale-105' : 'hover:scale-105'}`}>
+                  {/* Icon with shadow and effects */}
+                  <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all ${isActive
+                    ? 'shadow-lg shadow-primary/30 ring-2 ring-primary'
+                    : 'shadow-md hover:shadow-lg hover:shadow-primary/20'
+                    }`}>
+                    {module.moduleKey && hasModuleIcon(module.moduleKey) ? (
+                      <ModuleIcon moduleKey={module.moduleKey} size={80} className="rounded-2xl p-4" />
+                    ) : module.icon ? (
+                      <module.icon className="h-8 w-8 text-[#8B5CF6]" />
+                    ) : null}
+                  </div>
+                  {/* Module name below */}
+                  <h3 className={`font-semibold text-sm text-center transition-colors ${isActive ? 'text-primary' : 'text-foreground'
+                    }`}>
+                    {module.title}
+                  </h3>
+                </div>
               </Link>
             )
           })}

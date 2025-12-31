@@ -128,6 +128,7 @@ export default function SchoolSettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        moduleKey="school_admin"
         title={t("schoolSettings.title")}
         description={t("schoolSettings.description")}
       />
