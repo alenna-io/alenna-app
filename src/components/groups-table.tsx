@@ -50,7 +50,7 @@ export function GroupsTable({
 
   return (
     <Card>
-      <CardContent className="p-0">
+      <CardContent className="p-0 border-none!">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -85,7 +85,7 @@ export function GroupsTable({
                 groups.map((group) => (
                   <tr
                     key={group.id}
-                    className="border-b group cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="border-nonegroup cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => onViewDetails(group.id)}
                   >
                     <td className={tdClass + " font-medium"}>

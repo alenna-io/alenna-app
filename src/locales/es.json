@@ -727,7 +727,17 @@
     "goodEvening": "Buenas noches",
     "welcomeMessage": "Bienvenido a tu panel de control. Selecciona un módulo para comenzar.",
     "modules": "Módulos",
-    "noModulesAvailable": "No hay módulos disponibles en este momento."
+    "noModulesAvailable": "No hay módulos disponibles en este momento.",
+    "currentSchoolYear": "Año Escolar Actual",
+    "activeStudents": "Estudiantes Activos",
+    "studentsEnrolled": "Estudiantes inscritos",
+    "activeTeachers": "Maestros Activos",
+    "teachersActive": "Maestros activos",
+    "currentPeriod": "Período Actual",
+    "ofQuarter": "del trimestre",
+    "verseOfTheMonth": "Versículo del Mes",
+    "characterTraitOfTheMonth": "Rasgo de Carácter del Mes",
+    "focusTrait": "Rasgo de enfoque para este mes"
   },
   "sidebar": {
     "students": "Estudiantes",

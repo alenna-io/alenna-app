@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Navigate, Link, useLocation } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 import { Loading } from "@/components/ui/loading"
@@ -6,6 +7,9 @@ import { useTranslation } from "react-i18next"
 import { GraduationCap, Users, Building } from "lucide-react"
 import { ModuleIcon } from "@/components/ui/module-icon"
 import { hasModuleIcon } from "@/lib/module-icon-utils"
+import { DashboardResumeCards } from "@/components/dashboard-resume-cards"
+import { useApi } from "@/services/api"
+import type { CurrentWeekInfo } from "@/services/api"
 
 type MenuIcon = typeof GraduationCap
 
@@ -14,6 +18,37 @@ export function DashboardPage() {
   const { modules, isLoading: isLoadingModules } = useModuleAccess()
   const { t } = useTranslation()
   const location = useLocation()
+  const api = useApi()
+  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
+  const [loadingWeekInfo, setLoadingWeekInfo] = React.useState(true)
+
+  React.useEffect(() => {
+    const fetchCurrentWeek = async () => {
+      try {
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        setCurrentWeekInfo(weekInfo)
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        let statusCode: number | undefined
+        if (err && typeof err === 'object') {
+          const errorObj = err as { status?: number; response?: { status?: number } }
+          statusCode = errorObj?.status || errorObj?.response?.status
+        }
+        if (statusCode === 404 ||
+          errorMessage.includes('año escolar activo') ||
+          errorMessage.includes('No hay un año escolar activo') ||
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found')) {
+          setCurrentWeekInfo(null)
+        }
+      } finally {
+        setLoadingWeekInfo(false)
+      }
+    }
+
+    fetchCurrentWeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Show loading when user or modules are loading
   if (isLoadingUser || isLoadingModules) {
@@ -31,7 +66,7 @@ export function DashboardPage() {
   const isStudentOnly = hasRole('STUDENT') && !isSuperAdmin && !isSchoolAdmin && !hasRole('TEACHER') && !hasRole('PARENT')
   const schoolName = userInfo?.schoolName || "Alenna"
 
-  // Filter modules based on user access
+  // Filter modules based on user access - same logic as sidebar
   const accessibleModules = modules.filter(module => {
     const hasActions = (module.actions?.length ?? 0) > 0
 
@@ -51,7 +86,14 @@ export function DashboardPage() {
       }
     }
 
-    if (module.key === 'users' || module.key === 'schools') {
+    if (module.key === 'users') {
+      const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
+      if (!isSuperAdmin || !isAlennaSchool) {
+        return false
+      }
+    }
+
+    if (module.key === 'schools') {
       const isAlennaSchool = schoolName?.toLowerCase() === 'alenna'
       if (!isSuperAdmin || !isAlennaSchool) {
         return false
@@ -129,7 +171,7 @@ export function DashboardPage() {
       t("dashboard.goodEvening") || "Buenas noches"
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 px-4">
       {/* Welcome Section */}
       <div className="space-y-2">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
@@ -139,6 +181,11 @@ export function DashboardPage() {
           {t("dashboard.welcomeMessage") || "Bienvenido a tu panel de control. Selecciona un módulo para comenzar."}
         </p>
       </div>
+
+      {/* Resume Cards for School Admins */}
+      {isSchoolAdmin && !loadingWeekInfo && (
+        <DashboardResumeCards currentWeekInfo={currentWeekInfo} />
+      )}
 
       {/* Modules Grid - Single Row */}
       <div className="space-y-4">

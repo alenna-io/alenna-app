@@ -23,6 +23,7 @@ import { useModuleAccess } from "@/hooks/useModuleAccess"
 import type { ModuleData } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { LoadingSpinner } from "@/components/ui/loading"
+import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { useTranslation } from "react-i18next"
 
 type MenuIcon = typeof GraduationCap
@@ -53,6 +54,7 @@ export function AppSidebar() {
 
   // Get school name - show "Alenna" only if userInfo is loaded but schoolName is missing
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")
+  const schoolLogoUrl = userInfo?.schoolLogoUrl
 
   const roleNames = React.useMemo(() => {
     const roles = userInfo?.roles?.map(role => role.name) ?? []
@@ -280,16 +282,18 @@ export function AppSidebar() {
           <div className="flex flex-col gap-2 items-center">
             <SidebarMenu className="w-full">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild className="justify-center">
-                  <Link to="/" className="flex justify-center">
-                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                      <span className="text-lg font-bold">
-                        {isLoadingUser ? (
-                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
-                        ) : (
-                          schoolName.charAt(0).toUpperCase()
-                        )}
-                      </span>
+                <SidebarMenuButton size="default" asChild className="justify-center">
+                  <Link to="/" className="flex justify-center p-0!">
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+                      {isLoadingUser ? (
+                        <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
+                      ) : schoolLogoUrl ? (
+                        <img src={schoolLogoUrl} alt={schoolName} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-lg font-bold">
+                          {schoolName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 </SidebarMenuButton>
@@ -305,16 +309,18 @@ export function AppSidebar() {
           <div className="flex items-center justify-between gap-2">
             <SidebarMenu className="flex-1">
               <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
+                <SidebarMenuButton size="lg" asChild className='px-2.5'>
                   <Link to="/">
-                    <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-                      <span className="text-lg font-bold">
-                        {isLoadingUser ? (
-                          <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
-                        ) : (
-                          schoolName.charAt(0).toUpperCase()
-                        )}
-                      </span>
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+                      {isLoadingUser ? (
+                        <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
+                      ) : schoolLogoUrl ? (
+                        <img src={schoolLogoUrl} alt={schoolName} className="w-full h-auto! object-contain" />
+                      ) : (
+                        <span className="text-lg font-bold">
+                          {schoolName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                     <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                       <span className="font-semibold break-words leading-tight text-xs">
@@ -400,9 +406,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>{t("sidebar.academicSection") || "Academic"}</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: academicItems.length || 3 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-academic-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {academicItems.map((item, index) => renderMenuItem(item, index))}
@@ -418,9 +431,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>{t("sidebar.schoolManagementSection") || "School Management"}</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: schoolManagementItems.length || 3 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-management-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {schoolManagementItems.map((item, index) => renderMenuItem(item, index))}
@@ -436,9 +456,16 @@ export function AppSidebar() {
                   <SidebarGroupLabel>Navegación</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {(isLoading || isLoadingUser) ? (
-                      <div className="flex items-center justify-center py-4">
-                        <LoadingSpinner size="md" className="text-muted-foreground" />
-                      </div>
+                      <SidebarMenu>
+                        {Array.from({ length: otherItems.length || 2 }).map((_, index) => (
+                          <SidebarMenuItem key={`skeleton-other-${index}`}>
+                            <div className="flex items-center gap-2 px-2 py-2">
+                              <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                              <AlennaSkeleton height={16} width="60%" variant="text" />
+                            </div>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
                     ) : (
                       <SidebarMenu>
                         {otherItems.map((item, index) => renderMenuItem(item, index))}

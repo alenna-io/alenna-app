@@ -743,7 +743,17 @@
     "goodEvening": "Good evening",
     "welcomeMessage": "Welcome to your dashboard. Select a module to get started.",
     "modules": "Modules",
-    "noModulesAvailable": "No modules are available at this time."
+    "noModulesAvailable": "No modules are available at this time.",
+    "currentSchoolYear": "Current School Year",
+    "activeStudents": "Active Students",
+    "studentsEnrolled": "Students enrolled",
+    "activeTeachers": "Active Teachers",
+    "teachersActive": "Teachers active",
+    "currentPeriod": "Current Period",
+    "ofQuarter": "of quarter",
+    "verseOfTheMonth": "Verse of the Month",
+    "characterTraitOfTheMonth": "Character Trait of the Month",
+    "focusTrait": "Focus trait for this month"
   },
   "wizard": {
     "title": "Generate Projection",
