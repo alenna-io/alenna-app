@@ -225,6 +225,7 @@ export default function LecturesPage() {
     return (
       <div className="space-y-6">
         <PageHeader
+          moduleKey="paces"
           title={t("lectures.title") || "Lectures"}
           description={t("lectures.description") || "Browse and search the lectures catalog"}
         />
@@ -236,6 +237,7 @@ export default function LecturesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        moduleKey="paces"
         title={t("lectures.title") || "Lectures"}
         description={t("lectures.description") || "Browse and search the lectures catalog"}
       />

@@ -89,6 +89,7 @@ export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
+        moduleKey="configuration"
         title={t("configuration.title")}
         description={t("configuration.description")}
       />

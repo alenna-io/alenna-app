@@ -465,6 +465,7 @@ export default function UsersPage() {
 
       <div className="flex items-center justify-between">
         <PageHeader
+          moduleKey="users"
           title={schoolId ? t("users.titleForSchool") : t("users.title")}
           description={schoolId ? t("users.descriptionForSchool") : t("users.description")}
         />

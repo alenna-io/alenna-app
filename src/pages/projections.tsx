@@ -315,6 +315,7 @@ export default function ProjectionsPage() {
       {/* Page Title */}
       <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-4">
         <PageHeader
+          moduleKey="projections"
           title={t("projections.title")}
           description={t("projections.description")}
         />

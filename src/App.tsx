@@ -1,10 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { LoginPage } from '@/pages/login'
 import { SignUpPage } from '@/pages/signup'
 import { DashboardPage } from '@/pages/dashboard'
-import { HomePage } from '@/pages/home'
 import StudentsPage from '@/pages/students'
 import TeachersPage from '@/pages/teachers'
 import ProjectionListPage from '@/pages/projection-list'
@@ -105,7 +104,7 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<HomePage />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="students" element={<ModuleRouteGuard requiredModule="students"><StudentsPage /></ModuleRouteGuard>} />
           <Route path="students/create" element={<ModuleRouteGuard requiredModule="students"><CreateStudentWizardPage /></ModuleRouteGuard>} />

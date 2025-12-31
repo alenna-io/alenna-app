@@ -15,6 +15,7 @@ import { MonthlyAssignmentsTable, type MonthlyAssignmentTemplate } from "@/compo
 import { MonthlyAssignmentFormDialog } from "@/components/monthly-assignment-form-dialog"
 import { useTranslation } from "react-i18next"
 import { useUser } from "@/contexts/UserContext"
+import { PageHeader } from "@/components/ui/page-header"
 
 
 const QUARTERS = [
@@ -208,42 +209,39 @@ export default function MonthlyAssignmentsPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-page-entrance">
+    <div className="space-y-6">
       {/* Header Section */}
-      <Card className="card-soft p-4 md:p-6 animate-fade-in-soft">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="space-y-2 flex-1">
-            <h1 className="text-xl font-bold text-foreground">{t("monthlyAssignments.title")}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t("monthlyAssignments.description")}
-            </p>
-            <div className="flex items-center gap-3 mt-3">
-              <span className="text-sm font-medium text-muted-foreground">{t("common.schoolYear")}:</span>
-              <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
-                <SelectTrigger className="w-full sm:w-[220px] cursor-pointer h-9 bg-card border border-input">
-                  <SelectValue placeholder={t("projections.selectSchoolYear")}>
-                    {selectedSchoolYear ? (
-                      <span className="flex items-center gap-2 truncate">
-                        <span className="truncate">{selectedSchoolYear.name}</span>
-                        {selectedSchoolYear.isActive && (
-                          <Badge variant="status-active" className="shrink-0 text-xs">{t("projections.active")}</Badge>
-                        )}
-                      </span>
-                    ) : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {schoolYears.map(year => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.name} {year.isActive && <Badge variant="status-active" className="ml-2">{t("projections.active")}</Badge>}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <PageHeader
+          moduleKey="monthlyAssignments"
+          title={t("monthlyAssignments.title")}
+          description={t("monthlyAssignments.description")}
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">{t("common.schoolYear")}:</span>
+          <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
+            <SelectTrigger className="w-full sm:w-[220px] cursor-pointer h-9 bg-card border border-input">
+              <SelectValue placeholder={t("projections.selectSchoolYear")}>
+                {selectedSchoolYear ? (
+                  <span className="flex items-center gap-2 truncate">
+                    <span className="truncate">{selectedSchoolYear.name}</span>
+                    {selectedSchoolYear.isActive && (
+                      <Badge variant="status-active" className="shrink-0 text-xs">{t("projections.active")}</Badge>
+                    )}
+                  </span>
+                ) : null}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {schoolYears.map(year => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.name} {year.isActive && <Badge variant="status-active" className="ml-2">{t("projections.active")}</Badge>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </Card>
+      </div>
 
       {selectedSchoolYearId && (
         <>
