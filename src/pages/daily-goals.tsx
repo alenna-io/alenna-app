@@ -199,7 +199,7 @@ export default function DailyGoalsPage() {
     return mapping
   }, [projectionDetail, goalsData])
 
-  // Group daily goals by category
+  // Group daily goals by category (except electives which are shown separately)
   const groupedGoalsData = React.useMemo(() => {
     // Get categories from projection if available, otherwise use categories from paces
     const projectionCategories = projectionDetail?.categories || []
@@ -226,33 +226,56 @@ export default function DailyGoalsPage() {
       return goalsData
     }
 
+    // Separate electives from other subjects
+    // Electives start with "Elective: " and should be shown as separate rows
+    const electiveSubjects: string[] = []
     const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
-    // Initialize all categories with empty arrays
+    // Initialize all non-elective categories with empty arrays
     allCategories.forEach(category => {
-      categoryGroups.set(category, [])
+      if (category !== 'Electives') {
+        categoryGroups.set(category, [])
+      }
     })
 
-    // Group subjects by category
-    // Only use categories that are in allCategories (projection categories)
+    // Group subjects by category (except electives)
     Object.keys(goalsData).forEach(subject => {
-      const category = subjectToCategory.get(subject)
-      if (category && allCategories.has(category)) {
-        // Only add if category is in allCategories (ensures we use projection category names)
-        categoryGroups.get(category)!.push(subject)
-      } else if (category) {
-        // Category from mapping doesn't match projection categories
-        // This shouldn't happen, but log it for debugging
-        console.warn(`Category "${category}" from subject "${subject}" not in projection categories`)
+      // Check if this is an elective (starts with "Elective: ")
+      if (subject.startsWith('Elective: ')) {
+        electiveSubjects.push(subject)
+      } else {
+        // For non-electives, group by category
+        const category = subjectToCategory.get(subject)
+        if (category && allCategories.has(category) && category !== 'Electives') {
+          categoryGroups.get(category)!.push(subject)
+        } else if (category && category !== 'Electives') {
+          // Category from mapping doesn't match projection categories
+          console.warn(`Category "${category}" from subject "${subject}" not in projection categories`)
+        }
       }
     })
 
     // Build grouped result
     const result: DailyGoalData = {}
 
-    // Only process categories that are in allCategories (projection categories)
-    // This ensures we never use sub-subject names as category keys
+    // Add electives as separate rows (each elective gets its own row)
+    electiveSubjects.sort().forEach(electiveSubject => {
+      result[electiveSubject] = goalsData[electiveSubject] || Array(5).fill(null).map(() => ({
+        text: '',
+        isCompleted: false,
+        notes: undefined,
+        notesCompleted: false,
+        notesHistory: []
+      }))
+    })
+
+    // Process non-elective categories (grouped as before)
     allCategories.forEach(category => {
+      if (category === 'Electives') {
+        // Skip Electives category - we handle electives separately above
+        return
+      }
+
       const subjects = categoryGroups.get(category) || []
 
       // For each day (0-4), combine goals from all sub-subjects in this category
@@ -315,12 +338,15 @@ export default function DailyGoalsPage() {
         }
       }
 
-      // Only add categories that are in allCategories (projection categories)
       result[category] = combinedGoals
     })
 
     // Also add categories that don't have any goalsData yet (from projection but no goals)
     allCategories.forEach(category => {
+      if (category === 'Electives') {
+        // Skip Electives - already handled above
+        return
+      }
       if (!result[category]) {
         // Create empty goals for this category
         result[category] = Array(5).fill(null).map(() => ({
@@ -333,12 +359,12 @@ export default function DailyGoalsPage() {
       }
     })
 
-    // Don't add unmapped subjects - they should be mapped to categories
-    // If a subject isn't mapped, it means there's a data inconsistency
-    // We'll only show categories that are in the projection
-
-    // Sort result keys by category order
-    const sortedKeys = sortCategoriesByOrder(Object.keys(result))
+    // Sort result keys: electives first (sorted), then categories (by category order)
+    const electiveKeys = Object.keys(result).filter(key => key.startsWith('Elective: ')).sort()
+    const categoryKeys = Object.keys(result).filter(key => !key.startsWith('Elective: '))
+    const sortedCategoryKeys = sortCategoriesByOrder(categoryKeys)
+    const sortedKeys = [...electiveKeys, ...sortedCategoryKeys]
+    
     const sortedResult: DailyGoalData = {}
     sortedKeys.forEach(key => {
       sortedResult[key] = result[key]

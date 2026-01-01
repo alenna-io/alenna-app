@@ -18,12 +18,12 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { Loading } from "@/components/ui/loading"
-import { Progress } from "@/components/ui/progress"
 import { useUser } from "@/contexts/UserContext"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
+import { isElectivesCategory } from "@/utils/elective-utils"
 
 interface Subject {
   id: string
@@ -92,7 +92,6 @@ export default function GenerateProjectionWizardPage() {
   const [subjects, setSubjects] = React.useState<Subject[]>([])
   const [loading, setLoading] = React.useState(false)
   const [isGenerating, setIsGenerating] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
   const [subjectSearchTerms, setSubjectSearchTerms] = React.useState<Record<number, string>>({})
   const [openSubjectPopovers, setOpenSubjectPopovers] = React.useState<Record<number, boolean>>({})
   const [studentSearchTerm, setStudentSearchTerm] = React.useState("")
@@ -142,7 +141,7 @@ export default function GenerateProjectionWizardPage() {
         }
       } catch (error) {
         console.error("Error fetching data:", error)
-        setError("Error al cargar los datos. Por favor, recarga la página.")
+        toast.error("Error al cargar los datos. Por favor, recarga la página.")
       } finally {
         setLoading(false)
       }
@@ -372,19 +371,15 @@ export default function GenerateProjectionWizardPage() {
   }
 
   const validateStep = (step: WizardStep): boolean => {
-    setError(null)
-
     switch (step) {
       case 1:
         if (!formData.studentId) {
           const errorMsg = t("wizard.selectStudentError")
-          setError(errorMsg)
           toast.error(errorMsg)
           return false
         }
         if (!formData.schoolYear || !activeSchoolYear) {
           const errorMsg = t("projections.noActiveSchoolYear")
-          setError(errorMsg)
           toast.error(errorMsg)
           return false
         }
@@ -392,19 +387,58 @@ export default function GenerateProjectionWizardPage() {
       case 2: {
         if (formData.subjects.length === 0) {
           const errorMsg = t("wizard.addSubjectError")
-          setError(errorMsg)
           toast.error(errorMsg)
           return false
         }
-        const invalidSubjects = formData.subjects.some(
-          (s) => !s.subSubjectId || !s.startPace || !s.endPace || s.startPace > s.endPace || s.startPace === 0 || s.endPace === 0
+
+        // Debug: Log all subjects to see their state
+        console.log('[Validation Debug] All subjects:', formData.subjects)
+
+        const invalidSubjects = formData.subjects.filter(
+          (s) => {
+            const isInvalid = !s.subSubjectId || !s.startPace || !s.endPace || s.startPace >= s.endPace || s.startPace < 1 || s.endPace < 1 || !Number.isInteger(s.startPace) || !Number.isInteger(s.endPace)
+            if (isInvalid) {
+              console.log('[Validation Debug] Invalid subject found:', {
+                subSubjectId: s.subSubjectId,
+                subSubjectName: s.subSubjectName,
+                startPace: s.startPace,
+                endPace: s.endPace,
+                startPaceType: typeof s.startPace,
+                endPaceType: typeof s.endPace,
+                checks: {
+                  hasSubSubjectId: !!s.subSubjectId,
+                  hasStartPace: !!s.startPace,
+                  hasEndPace: !!s.endPace,
+                  startLessThanEnd: s.startPace < s.endPace,
+                  startAtLeast1: s.startPace >= 1,
+                  endAtLeast1: s.endPace >= 1,
+                  startIsInteger: Number.isInteger(s.startPace),
+                  endIsInteger: Number.isInteger(s.endPace),
+                }
+              })
+            }
+            return isInvalid
+          }
         )
-        if (invalidSubjects) {
-          const errorMsg = t("wizard.completeFieldsError")
-          setError(errorMsg)
+
+        if (invalidSubjects.length > 0) {
+          console.log('[Validation Debug] Invalid subjects count:', invalidSubjects.length)
+          const invalidSubjectNames = invalidSubjects.map(s => {
+            const issues = []
+            if (!s.subSubjectId) issues.push('materia no seleccionada')
+            if (!s.startPace || s.startPace < 1 || !Number.isInteger(s.startPace)) issues.push(`inicial inválido (${s.startPace || 'vacío'})`)
+            if (!s.endPace || s.endPace < 1 || !Number.isInteger(s.endPace)) issues.push(`final inválido (${s.endPace || 'vacío'})`)
+            if (s.startPace && s.endPace && s.startPace >= s.endPace) issues.push('inicial debe ser menor que final')
+            return `${s.subSubjectName || 'Sin nombre'}: ${issues.join(', ')}`
+          }).join('; ')
+          const errorMsg = invalidSubjects.length === 1
+            ? `La materia "${invalidSubjects[0].subSubjectName}" tiene valores de pace inválidos. Los paces deben ser números enteros positivos y el inicial debe ser menor que el final.`
+            : `Las siguientes materias tienen valores de pace inválidos (deben ser números enteros positivos): ${invalidSubjectNames}`
           toast.error(errorMsg)
           return false
         }
+
+        console.log('[Validation Debug] All subjects are valid')
         return true
       }
       case 3:
@@ -426,7 +460,6 @@ export default function GenerateProjectionWizardPage() {
 
           if (hasActiveProjection) {
             const errorMsg = t("wizard.existingProjectionError", { year: activeSchoolYear.name })
-            setError(errorMsg)
             toast.error(errorMsg)
             return
           }
@@ -445,13 +478,10 @@ export default function GenerateProjectionWizardPage() {
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep((prev) => (prev - 1) as WizardStep)
-      setError(null)
     }
   }
 
   const handleGenerate = async () => {
-    setError(null)
-
     if (!validateStep(2)) {
       setCurrentStep(2)
       return
@@ -459,8 +489,20 @@ export default function GenerateProjectionWizardPage() {
 
     setIsGenerating(true)
     try {
+      // Filter out subjects with invalid pace values before sending
+      const validSubjects = formData.subjects.filter(
+        (s) => s.subSubjectId && s.startPace >= 1 && s.endPace >= 1 && s.startPace < s.endPace && Number.isInteger(s.startPace) && Number.isInteger(s.endPace)
+      )
+
+      if (validSubjects.length === 0) {
+        const errorMsg = t("wizard.completeFieldsError")
+        toast.error(errorMsg)
+        setCurrentStep(2)
+        return
+      }
+
       // Include difficulty for each subject
-      const subjectsWithDifficulty = formData.subjects.map(subject => {
+      const subjectsWithDifficulty = validSubjects.map(subject => {
         const subjectData = subjects.find(s => s.id === subject.subSubjectId)
         return {
           ...subject,
@@ -474,10 +516,40 @@ export default function GenerateProjectionWizardPage() {
         subjects: subjectsWithDifficulty,
       }) as { id: string; studentId: string }
       navigate(`/students/${projection.studentId}/projections/${projection.id}`)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error generating projection:", error)
-      const errorMessage = error instanceof Error ? error.message : "Error al generar la proyección. Por favor, inténtalo de nuevo."
-      setError(errorMessage)
+      let errorMessage = "Error al generar la proyección. Por favor, inténtalo de nuevo."
+
+      // Type guard for error with response
+      interface ErrorWithResponse {
+        response?: {
+          data?: {
+            error?: string
+            issues?: Array<{ message?: string }>
+          }
+        }
+        issues?: Array<{ message?: string }>
+      }
+
+      // Parse validation errors from API
+      if (error && typeof error === 'object') {
+        const err = error as ErrorWithResponse
+
+        // Check for issues in error object or response
+        const issues = err.issues || err.response?.data?.issues || []
+
+        if (issues.length > 0 && issues[0]?.message) {
+          errorMessage = issues[0].message
+        } else if (err.response?.data?.error) {
+          errorMessage = err.response.data.error
+        } else if (error instanceof Error) {
+          errorMessage = error.message
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      toast.error(errorMessage)
       setCurrentStep(2) // Go back to subjects step on error
     } finally {
       setIsGenerating(false)
@@ -497,7 +569,13 @@ export default function GenerateProjectionWizardPage() {
   }, [formData.subjects, subjects])
 
   // Check if a subject can be selected (must be contiguous with other selected subjects in same category)
+  // Exception: Electives can be selected multiple times without contiguity requirement
   const canSelectSubject = React.useCallback((subject: Subject, index: number) => {
+    // For Electives category, allow multiple selections without contiguity requirement
+    if (isElectivesCategory(subject.categoryName)) {
+      return true
+    }
+
     const selectedInCategory = getSelectedSubjectsInCategory(subject.categoryName, index)
 
     // If no other subjects selected in this category, allow selection
@@ -584,7 +662,9 @@ export default function GenerateProjectionWizardPage() {
   return (
     <div className="min-h-screen">
       <div className="w-full p-3 space-y-6">
-        <BackButton to="/projections">{t("wizard.backToProjections")}</BackButton>
+        <div className="block md:hidden">
+          <BackButton to="/projections">{t("wizard.backToProjections")}</BackButton>
+        </div>
 
         <PageHeader
           title={t("wizard.title")}
@@ -630,29 +710,63 @@ export default function GenerateProjectionWizardPage() {
           </div>
         </div>
 
-        {error && (
-          <Alert variant="destructive" className="mb-6 bg-red-50 text-red-900 border-red-200 dark:bg-red-950 dark:text-red-100 dark:border-red-800">
-            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <AlertDescription className="text-red-800 dark:text-red-200">{error}</AlertDescription>
-          </Alert>
-        )}
 
         {/* Loading Overlay */}
         {isGenerating && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-md mx-4">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold mb-2">{t("wizard.generating")}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {t("wizard.pleaseWait")}
-                    </p>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 min-h-screen">
+            <div className="w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95 duration-300">
+              <Card className="border-2 border-[#8B5CF6]/20 shadow-2xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
+                <CardContent className="p-8">
+                  <div className="space-y-6">
+                    {/* Animated Spinner */}
+                    <div className="flex justify-center">
+                      <div className="relative">
+                        <div className="absolute inset-0 rounded-full border-4 border-[#8B5CF6]/20"></div>
+                        <div className="relative w-16 h-16 rounded-full border-4 border-transparent border-t-[#8B5CF6] border-r-[#8B5CF6] animate-spin">
+                          <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-[#7C3AED] border-l-[#7C3AED] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-[#8B5CF6] animate-pulse"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Text Content */}
+                    <div className="text-center space-y-2">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+                        {t("wizard.generating")}
+                      </h3>
+                      <p className="text-sm text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-150">
+                        {t("wizard.pleaseWait")}
+                      </p>
+                    </div>
+
+                    {/* Animated Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="relative h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                          className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#7C3AED] to-[#8B5CF6] rounded-full"
+                          style={{
+                            backgroundSize: '200% 100%',
+                            animation: 'progress 2s ease-in-out infinite',
+                          }}
+                        ></div>
+                        <div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                          style={{
+                            animation: 'shimmer-overlay 2s ease-in-out infinite',
+                          }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span className="animate-pulse">Procesando...</span>
+                        <span className="animate-pulse" style={{ animationDelay: '0.3s' }}>Por favor espera</span>
+                      </div>
+                    </div>
                   </div>
-                  <Progress indeterminate className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
@@ -770,7 +884,7 @@ export default function GenerateProjectionWizardPage() {
                                   const selectedStudent = students.find(s => s.id === formData.studentId)
                                   const studentLevel = selectedStudent?.expectedLevel || selectedStudent?.currentLevel
                                   if (studentLevel && template.level !== studentLevel) {
-                                    toast.warning(t("projections.levelMismatchWarning", { templateLevel: template.level, studentLevel }))
+                                    toast.error(t("projections.levelMismatchWarning", { templateLevel: template.level, studentLevel }))
                                   }
 
                                   // Load template subjects into form
@@ -977,8 +1091,12 @@ export default function GenerateProjectionWizardPage() {
                                                 value={`${categoryName}-${s.id}`}
                                                 onSelect={() => {
                                                   if (!canSelect) {
-                                                    setError(`Solo puedes seleccionar materias contiguas. Ya tienes seleccionadas: ${selectedInCategory.map(sub => sub.name).join(", ")}`)
-                                                    return
+                                                    if (isElectivesCategory(categoryName)) {
+                                                      // Allow for electives
+                                                    } else {
+                                                      toast.error(`Solo puedes seleccionar materias contiguas. Ya tienes seleccionadas: ${selectedInCategory.map(sub => sub.name).join(", ")}`)
+                                                      return
+                                                    }
                                                   }
                                                   updateSubject(index, {
                                                     subSubjectId: s.id,
@@ -986,7 +1104,6 @@ export default function GenerateProjectionWizardPage() {
                                                   })
                                                   setOpenSubjectPopovers((prev) => ({ ...prev, [index]: false }))
                                                   // Keep the search term so user can easily change selection
-                                                  setError(null)
                                                 }}
                                                 disabled={!canSelect}
                                                 className={cn(
@@ -1046,9 +1163,16 @@ export default function GenerateProjectionWizardPage() {
                                 ) : (() => {
                                   const cacheKey = `${subject.subSubjectId}-${subject.extendToNextLevel || false}`
                                   const availablePaces = paceCatalogs[cacheKey] || []
-                                  const paceOptions = availablePaces.map((p) => parseInt(p.code)).filter((n) => !isNaN(n)).sort((a, b) => a - b)
+                                  const paceOptions = availablePaces
+                                    .map((p) => parseInt(p.code))
+                                    .filter((n) => !isNaN(n) && n >= 1 && Number.isInteger(n))
+                                    .sort((a, b) => a - b)
 
-                                  return paceOptions.length > 0 ? (
+                                  if (paceOptions.length === 0) {
+                                    return <div className="text-sm text-muted-foreground">{t("wizard.noPacesAvailable") || "No hay paces disponibles"}</div>
+                                  }
+
+                                  return (
                                     <div className="space-y-4">
                                       {!subject.extendToNextLevel && (
                                         <div className="flex justify-end">
@@ -1121,8 +1245,6 @@ export default function GenerateProjectionWizardPage() {
                                         </div>
                                       </div>
                                     </div>
-                                  ) : (
-                                    <div className="text-sm text-yellow-600">{t("wizard.noPacesFound")}</div>
                                   )
                                 })()}
                               </>
