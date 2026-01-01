@@ -520,20 +520,30 @@ export default function GenerateProjectionWizardPage() {
       console.error("Error generating projection:", error)
       let errorMessage = "Error al generar la proyección. Por favor, inténtalo de nuevo."
 
-      // Parse validation errors from API
-      const hasResponse = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object'
-      const hasIssues = error && typeof error === 'object' && 'issues' in error && Array.isArray(error.issues)
-      
-      if (hasResponse && ('error' in error.response.data || 'issues' in error.response.data) || hasIssues) {
-        const issues = (hasIssues && Array.isArray(error.issues) ? error.issues : []) || 
-                      (hasResponse && 'issues' in error.response.data && Array.isArray(error.response.data.issues) ? error.response.data.issues : [])
-        if (issues.length > 0) {
-          const firstIssue = issues[0]
-          if (firstIssue && typeof firstIssue === 'object' && 'message' in firstIssue && typeof firstIssue.message === 'string') {
-            errorMessage = firstIssue.message
+      // Type guard for error with response
+      interface ErrorWithResponse {
+        response?: {
+          data?: {
+            error?: string
+            issues?: Array<{ message?: string }>
           }
-        } else if (hasResponse && 'error' in error.response.data && typeof error.response.data.error === 'string') {
-          errorMessage = error.response.data.error
+        }
+        issues?: Array<{ message?: string }>
+      }
+
+      // Parse validation errors from API
+      if (error && typeof error === 'object') {
+        const err = error as ErrorWithResponse
+
+        // Check for issues in error object or response
+        const issues = err.issues || err.response?.data?.issues || []
+
+        if (issues.length > 0 && issues[0]?.message) {
+          errorMessage = issues[0].message
+        } else if (err.response?.data?.error) {
+          errorMessage = err.response.data.error
+        } else if (error instanceof Error) {
+          errorMessage = error.message
         }
       } else if (error instanceof Error) {
         errorMessage = error.message
