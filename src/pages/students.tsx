@@ -382,9 +382,9 @@ export default function StudentsPage() {
         (filters.isLeveled === "true" && student.isLeveled) ||
         (filters.isLeveled === "false" && !student.isLeveled)
 
-      // Group filter - this will be handled by fetching students from the group
-      // For now, return true and we'll handle group filtering separately
-      const matchesGroup = !filters.groupId || filters.groupId === "all"
+      // Group filter - when a group is selected, students are already filtered by the API
+      // So all students in the list match the selected group
+      const matchesGroup = true
 
       // Active/Inactive status filter
       const matchesStatus =
@@ -480,33 +480,32 @@ export default function StudentsPage() {
       try {
         setIsLoading(true)
 
-        // Find the group to get teacherId and schoolYearId
-        const schoolYears = await api.schoolYears.getAll()
-        const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
-        if (!activeYear) return
+        if (!userInfo?.schoolId) {
+          return
+        }
 
-        const allGroups = await api.groups.getBySchoolYear(activeYear.id)
-        const group = allGroups.find((g: { id: string; deletedAt: string | null }) =>
-          g.id === filters.groupId && !g.deletedAt
-        )
+        // Use getGroupStudents API to get students for this group
+        const groupStudents = await api.groups.getGroupStudents(filters.groupId)
 
-        if (!group) return
+        // Extract student IDs from GroupStudent objects
+        const studentIds = groupStudents
+          .filter((gs: { deletedAt: string | null }) => !gs.deletedAt)
+          .map((gs: { studentId: string }) => gs.studentId)
 
-        // Get all groups with the same teacher, schoolYear, and name
-        const sameGroups = allGroups.filter((g: { teacherId: string; schoolYearId: string; name: string | null; deletedAt: string | null }) =>
-          !g.deletedAt &&
-          g.teacherId === group.teacherId &&
-          g.schoolYearId === group.schoolYearId &&
-          (group.name ? g.name === group.name : !g.name)
-        )
+        if (studentIds.length === 0) {
+          if (isMounted) {
+            setStudents([])
+            setIsLoading(false)
+          }
+          return
+        }
 
-        // Fetch students for this group
+        // Fetch all students and filter by the student IDs from the group
         const allStudents = await api.students.getAll()
-        const studentIds = sameGroups.map((g: { studentId: string }) => g.studentId)
-        const groupStudents = allStudents.filter((s: { id: string }) => studentIds.includes(s.id))
+        const groupStudentsList = allStudents.filter((s: { id: string }) => studentIds.includes(s.id))
 
         if (isMounted) {
-          const transformedStudents: Student[] = groupStudents.map((student: unknown) => {
+          const transformedStudents: Student[] = groupStudentsList.map((student: unknown) => {
             const s = student as Record<string, unknown>
             return {
               id: s.id as string,

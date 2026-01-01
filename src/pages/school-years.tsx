@@ -2,7 +2,6 @@ import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorDialog } from "@/components/ui/error-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { Navigate } from "react-router-dom";
@@ -12,6 +11,7 @@ import type { SchoolYear, ModuleData } from "@/services/api";
 import { toast } from "sonner";
 import { SchoolYearsTable } from "@/components/school-years-table";
 import { useTranslation } from "react-i18next";
+import { Loading } from "@/components/ui/loading";
 
 
 export default function SchoolYearsPage() {
@@ -22,6 +22,8 @@ export default function SchoolYearsPage() {
   const [loading, setLoading] = React.useState(true);
   const [hasPermission, setHasPermission] = React.useState(true);
   const [isReadOnly, setIsReadOnly] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
   const [errorDialog, setErrorDialog] = React.useState<{
     open: boolean;
     title?: string;
@@ -121,40 +123,18 @@ export default function SchoolYearsPage() {
     }
   };
 
+  // Pagination - must be before conditional returns (Rules of Hooks)
+  const paginatedSchoolYears = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return schoolYears.slice(startIndex, startIndex + itemsPerPage);
+  }, [schoolYears, currentPage, itemsPerPage]);
+
   if (!hasPermission) {
     return <Navigate to="/404" replace />;
   }
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-          <Skeleton className="h-10 w-40" />
-        </div>
-        <Skeleton className="h-4 w-full" />
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="border rounded-lg p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-                <div className="flex gap-2">
-                  <Skeleton className="h-8 w-16" />
-                  <Skeleton className="h-8 w-16" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <Loading variant="list-page" showCreateButton={!isReadOnly} view="table" showFilters={false} />;
   }
 
   return (
@@ -187,12 +167,16 @@ export default function SchoolYearsPage() {
 
       {/* School Years Table */}
       <SchoolYearsTable
-        schoolYears={schoolYears}
+        schoolYears={paginatedSchoolYears}
         onEdit={!isReadOnly ? handleEdit : undefined}
         onDelete={!isReadOnly ? handleDelete : undefined}
         onSetActive={!isReadOnly ? handleSetActive : undefined}
         canEdit={!isReadOnly}
         canDelete={!isReadOnly}
+        currentPage={currentPage}
+        totalPages={Math.ceil(schoolYears.length / itemsPerPage)}
+        totalItems={schoolYears.length}
+        onPageChange={setCurrentPage}
       />
 
 

@@ -24,6 +24,7 @@ import {
 import { X, Filter, ChevronDown, ChevronUp, Check, ChevronsUpDown } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
+import { includesIgnoreAccents } from "@/lib/string-utils"
 
 export interface FilterField {
   key: string
@@ -208,12 +209,11 @@ export function GenericFilters<T extends Record<string, string>>({
               const getFilteredOptions = () => {
                 if (!field.options) return []
                 if (!searchTerm) return field.options
-                const search = searchTerm.toLowerCase()
                 const allOption = field.options.find(opt => opt.value === "all")
                 const filtered = field.options.filter(opt =>
                   opt.value === "all" || // Always include "all"
-                  opt.label.toLowerCase().includes(search) ||
-                  opt.value.toLowerCase().includes(search)
+                  includesIgnoreAccents(opt.label, searchTerm) ||
+                  includesIgnoreAccents(opt.value, searchTerm)
                 )
                 // Ensure "all" is first if it exists
                 if (allOption && filtered.length > 0 && filtered[0].value !== "all") {

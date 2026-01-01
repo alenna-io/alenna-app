@@ -6,7 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 
 interface ModuleRouteGuardProps {
   children: React.ReactNode;
-  requiredModule: 'students' | 'projections' | 'paces' | 'monthlyAssignments' | 'reportCards' | 'groups' | 'teachers' | 'school_admin' | 'schools' | 'users';
+  requiredModule: 'students' | 'projections' | 'paces' | 'monthlyAssignments' | 'reportCards' | 'groups' | 'teachers' | 'school_admin' | 'schools' | 'users' | 'billing';
   fallback?: React.ReactNode;
 }
 

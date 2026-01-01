@@ -82,7 +82,7 @@ export default function ProjectionListPage() {
   }
 
   if (isLoading || isLoadingUser) {
-    return <Loading variant="page" />
+    return <Loading variant="report-cards-list" />
   }
 
   if (error || !student) {

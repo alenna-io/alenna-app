@@ -19,6 +19,8 @@ import QuartersManagementPage from '@/pages/quarters-management'
 import SchoolInfoPage from '@/pages/school-info'
 import CertificationTypesPage from '@/pages/certification-types'
 import BillingPage from '@/pages/billing'
+import BillingConfigPage from '@/pages/billing-config'
+import BillingStudentConfigPage from '@/pages/billing-student-config'
 import UsersPage from '@/pages/users'
 import UserDetailPage from '@/pages/user-detail'
 import SchoolsPage from '@/pages/schools'
@@ -124,7 +126,9 @@ export default function App() {
           <Route path="school-settings/school-years/wizard" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
           <Route path="school-settings/quarters" element={<ModuleRouteGuard requiredModule="school_admin"><QuartersManagementPage /></ModuleRouteGuard>} />
           <Route path="school-settings/certification-types" element={<ModuleRouteGuard requiredModule="school_admin"><CertificationTypesPage /></ModuleRouteGuard>} />
-          <Route path="configuration/billing" element={<BillingPage />} />
+          <Route path="billing" element={<ModuleRouteGuard requiredModule="billing"><BillingPage /></ModuleRouteGuard>} />
+          <Route path="billing/student-config" element={<ModuleRouteGuard requiredModule="billing"><BillingStudentConfigPage /></ModuleRouteGuard>} />
+          <Route path="billing/config" element={<ModuleRouteGuard requiredModule="billing"><BillingConfigPage /></ModuleRouteGuard>} />
           <Route path="users" element={<ModuleRouteGuard requiredModule="users"><UsersPage /></ModuleRouteGuard>} />
           <Route path="users/:userId" element={<UserDetailPage />} />
           <Route path="schools" element={<ModuleRouteGuard requiredModule="schools"><SchoolsPage /></ModuleRouteGuard>} />
