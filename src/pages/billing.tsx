@@ -5,16 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { Badge } from "@/components/ui/badge"
-import { DollarSign, TrendingUp, Users, Settings, Plus, CheckCircle2, Send, X } from "lucide-react"
+import { DollarSign, TrendingUp, Users, Plus, CheckCircle2, Send, X, Pencil, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
-import { Link } from "react-router-dom"
 import { SearchBar } from "@/components/ui/search-bar"
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
 import { AlennaTable } from "@/components/ui/alenna-table"
 import { PartialPaymentDialog } from "@/components/billing/partial-payment-dialog"
 import { PaymentHistoryDialog } from "@/components/billing/payment-history-dialog"
+import { EditBillingRecordDialog } from "@/components/billing/edit-billing-record-dialog"
 
 interface BillingRecord {
   id: string
@@ -97,6 +97,9 @@ export default function BillingPage() {
   const [selectedRecordForPartialPayment, setSelectedRecordForPartialPayment] = React.useState<BillingRecord | null>(null)
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = React.useState(false)
   const [selectedRecordForHistory, setSelectedRecordForHistory] = React.useState<BillingRecord | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [selectedRecordForEdit, setSelectedRecordForEdit] = React.useState<BillingRecord | null>(null)
+  const [updatingAllRecords, setUpdatingAllRecords] = React.useState(false)
 
   // Sorting
   const [sortField, setSortField] = React.useState<string | null>(null)
@@ -462,12 +465,61 @@ export default function BillingPage() {
     }
   }
 
-  const getScholarshipDisplay = (record: BillingRecord) => {
-    // If no scholarship, show effective tuition amount
-    if (record.scholarshipAmount === 0) {
-      return formatCurrency(record.effectiveTuitionAmount)
+  const handleBulkUpdateBills = async () => {
+    try {
+      setUpdatingAllRecords(true)
+      const now = new Date()
+      const currentMonth = now.getMonth() + 1
+      const currentYear = now.getFullYear()
+
+      const schoolYearId = records[0]?.schoolYearId || ""
+
+      if (!schoolYearId) {
+        toast.error("No active school year found.")
+        return
+      }
+
+      // Check if there are any records for the current month that are not paid/locked
+      const currentMonthRecords = records.filter(r =>
+        r.billingMonth === currentMonth &&
+        r.billingYear === currentYear &&
+        r.paymentStatus !== 'paid' &&
+        !r.isLocked
+      )
+
+      if (currentMonthRecords.length === 0) {
+        toast.error(t("billing.noRecordsToUpdate") || "No records available to update for the current month. All records are either paid or locked.")
+        return
+      }
+
+      const result = await api.billing.bulkUpdate({
+        schoolYearId,
+        billingMonth: currentMonth,
+        billingYear: currentYear,
+      })
+
+      toast.success(t("billing.recordsUpdated", { updated: result.updated, skipped: result.skipped }) || `Updated ${result.updated} record(s). ${result.skipped} skipped.`)
+      await loadData()
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : t("billing.failedToUpdateRecords") || "Failed to update records"
+      toast.error(errorMessage)
+    } finally {
+      setUpdatingAllRecords(false)
     }
-    return <span className="text-green-600">-{formatCurrency(record.scholarshipAmount)}</span>
+  }
+
+  const getScholarshipDisplay = (record: BillingRecord) => {
+    // Calculate tuition with scholarship, discounts, and extra charges (but not late fees)
+    const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
+      if (adj.type === 'percentage') {
+        return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
+      }
+      return sum + adj.value
+    }, 0)
+    const extraAmount = record.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
+
+    const tuitionWithAdjustments = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount
+    return formatCurrency(tuitionWithAdjustments)
   }
 
   const getLateFeeDisplay = (record: BillingRecord) => {
@@ -843,20 +895,37 @@ export default function BillingPage() {
           description={t("billing.description")}
         />
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleBulkGenerateBills}
-            disabled={generatingBills}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {generatingBills ? t("billing.generating") : t("billing.generateBills")}
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/billing/config">
-              <Settings className="mr-2 h-4 w-4" />
-              {t("billing.configurationButton")}
-            </Link>
-          </Button>
+          {records.length > 0 ? (() => {
+            const now = new Date()
+            const currentMonth = now.getMonth() + 1
+            const currentYear = now.getFullYear()
+            const currentMonthRecords = records.filter(r =>
+              r.billingMonth === currentMonth &&
+              r.billingYear === currentYear &&
+              r.paymentStatus !== 'paid' &&
+              !r.isLocked
+            )
+            const hasUpdatableRecords = currentMonthRecords.length > 0
+
+            return (
+              <Button
+                onClick={handleBulkUpdateBills}
+                disabled={updatingAllRecords || !hasUpdatableRecords}
+                title={!hasUpdatableRecords ? t("billing.noRecordsToUpdate") || "No records available to update for the current month" : ""}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${updatingAllRecords ? 'animate-spin' : ''}`} />
+                {updatingAllRecords ? t("billing.updating") || "Updating..." : t("billing.updateAllRecords") || "Update All Records"}
+              </Button>
+            )
+          })() : (
+            <Button
+              onClick={handleBulkGenerateBills}
+              disabled={generatingBills}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {generatingBills ? t("billing.generating") : t("billing.generateBills")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1071,6 +1140,16 @@ export default function BillingPage() {
           onSort={handleSort}
           actions={[
             {
+              label: t("billing.editRecord") || "Edit Record",
+              icon: <Pencil className="h-4 w-4" />,
+              onClick: (record) => {
+                setSelectedRecordForEdit(record)
+                setEditDialogOpen(true)
+              },
+              disabled: (record) => record.isLocked || record.paymentStatus === 'paid',
+              section: t("billing.recordManagement") || "Record Management"
+            },
+            {
               label: t("billing.markAsPaid"),
               icon: <CheckCircle2 className="h-4 w-4" />,
               onClick: (record) => handleMarkAsPaid(record.id),
@@ -1117,6 +1196,26 @@ export default function BillingPage() {
           getRowId={(record) => record.id}
         />
 
+        <EditBillingRecordDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          record={selectedRecordForEdit}
+          onSuccess={async () => {
+            if (selectedRecordForEdit) {
+              try {
+                const updatedRecord = await api.billing.getById(selectedRecordForEdit.id)
+                if (updatedRecord) {
+                  const updatedRecords = records.map(r =>
+                    r.id === selectedRecordForEdit.id ? updatedRecord : r
+                  )
+                  setRecords(updatedRecords)
+                }
+              } catch {
+                await loadData()
+              }
+            }
+          }}
+        />
         <PartialPaymentDialog
           open={partialPaymentDialogOpen}
           onOpenChange={setPartialPaymentDialogOpen}

@@ -503,6 +503,12 @@ export const billingApi = {
     studentIds?: string[];
   }, token: string | null) =>
     apiFetch('/billing/bulk', token, { method: 'POST', body: JSON.stringify(data) }),
+  bulkUpdate: (data: {
+    schoolYearId: string;
+    billingMonth: number;
+    billingYear: number;
+  }, token: string | null) =>
+    apiFetch('/billing/bulk-update', token, { method: 'PUT', body: JSON.stringify(data) }),
   update: (id: string, data: {
     taxableBillStatus?: 'not_required' | 'required' | 'sent';
     billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
@@ -1154,6 +1160,14 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.bulkCreate(data, token);
+      },
+      bulkUpdate: async (data: {
+        schoolYearId: string;
+        billingMonth: number;
+        billingYear: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.bulkUpdate(data, token);
       },
       update: async (id: string, data: {
         taxableBillStatus?: 'not_required' | 'required' | 'sent';
