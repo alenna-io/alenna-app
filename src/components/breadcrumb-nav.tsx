@@ -229,6 +229,8 @@ export function BreadcrumbNav() {
       'teachers': t("breadcrumbs.teachers"),
       'documents': t("breadcrumbs.documents"),
       'settings': t("breadcrumbs.settings"),
+      'billing': t("breadcrumbs.billing") || "Billing",
+      'config': t("breadcrumbs.config") || "Configuration",
     }
 
     let currentPath = ''
@@ -254,6 +256,12 @@ export function BreadcrumbNav() {
           items.push({ label: t("breadcrumbs.generateProjection") || "Generate Projection", path: currentPath })
           continue
         }
+      }
+
+      // Handle "config" route
+      if (segment === 'config' && prevSegment === 'billing') {
+        items.push({ label: t("breadcrumbs.config") || "Configuration", path: currentPath })
+        continue
       }
 
       // Check if segment is an ID (UUID, Prisma ID, or numeric)

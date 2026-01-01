@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useApi } from '@/services/api';
 import { useUser } from '@/contexts/UserContext';
 
-export type ModuleKey = 'students' | 'projections' | 'paces' | 'monthlyAssignments' | 'reportCards' | 'groups' | 'teachers' | 'school_admin' | 'schools' | 'users';
+export type ModuleKey = 'students' | 'projections' | 'paces' | 'monthlyAssignments' | 'reportCards' | 'groups' | 'teachers' | 'school_admin' | 'schools' | 'users' | 'billing';
 
 interface ModuleData {
   id: string;
@@ -129,6 +129,7 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
   return <ModuleContext.Provider value={value}>{children}</ModuleContext.Provider>;
 }
 
+/* eslint-disable react-refresh/only-export-components */
 export function useModuleAccess(): ModuleContextValue {
   const context = React.useContext(ModuleContext);
   if (!context) {

@@ -11,6 +11,8 @@ import type { ModuleData } from "@/services/api";
 import { useUser } from "@/contexts/UserContext";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { AlennaTable, type AlennaTableColumn } from "@/components/ui/alenna-table";
+import { Badge } from "@/components/ui/badge";
 
 interface CertificationType {
   id: string;
@@ -32,6 +34,8 @@ export default function CertificationTypesPage() {
   const [newName, setNewName] = React.useState("");
   const [newDescription, setNewDescription] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
   const [errorDialog, setErrorDialog] = React.useState<{
     open: boolean;
     title?: string;
@@ -136,12 +140,48 @@ export default function CertificationTypesPage() {
     }
   };
 
+  const columns: AlennaTableColumn<CertificationType>[] = React.useMemo(() => [
+    {
+      key: 'name',
+      label: t("certificationTypes.nameLabel") || "Name",
+      render: (type) => (
+        <div className="font-medium">{type.name}</div>
+      )
+    },
+    {
+      key: 'description',
+      label: t("certificationTypes.descriptionLabel") || "Description",
+      render: (type) => (
+        <div className="text-sm text-muted-foreground">
+          {type.description || <span className="text-muted-foreground">—</span>}
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      label: t("common.status"),
+      render: (type) => (
+        type.isActive === false ? (
+          <Badge variant="status-inactive">{t("common.disabled")}</Badge>
+        ) : (
+          <Badge variant="status-active">{t("common.active")}</Badge>
+        )
+      )
+    }
+  ], [t])
+
+  const totalPages = Math.ceil(certificationTypes.length / itemsPerPage);
+  const paginatedTypes = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return certificationTypes.slice(startIndex, startIndex + itemsPerPage);
+  }, [certificationTypes, currentPage, itemsPerPage]);
+
   if (!hasPermission) {
     return <Navigate to="/404" replace />;
   }
 
   if (loading || isLoadingUser) {
-    return <Loading variant="page" />;
+    return <Loading variant="list-page" showCreateButton={!isReadOnly} view="table" showFilters={false} />;
   }
 
   return (
@@ -167,32 +207,21 @@ export default function CertificationTypesPage() {
       <Separator />
 
       <div className="space-y-4">
-        {certificationTypes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t("certificationTypes.noCertificationTypes")}
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {certificationTypes.map((type) => (
-              <li
-                key={type.id}
-                className="flex items-center justify-between border rounded-md px-4 py-2 bg-white"
-              >
-                <div>
-                  <div className="font-medium">{type.name}</div>
-                  {type.description && (
-                    <div className="text-xs text-muted-foreground">{type.description}</div>
-                  )}
-                </div>
-                {type.isActive === false && (
-                  <span className="text-xs text-muted-foreground">
-                    {t("common.disabled")}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+        <AlennaTable
+          columns={columns}
+          data={paginatedTypes}
+          pagination={{
+            currentPage,
+            totalPages,
+            totalItems: certificationTypes.length,
+            pageSize: itemsPerPage,
+            onPageChange: setCurrentPage
+          }}
+          emptyState={{
+            message: t("certificationTypes.noCertificationTypes")
+          }}
+          getRowId={(type) => type.id}
+        />
       </div>
 
       {!isReadOnly && (

@@ -221,6 +221,11 @@ export default function LecturesPage() {
     }
   }
 
+  // Show loading state
+  if (isLoading) {
+    return <Loading variant="list-page" showCreateButton={false} view="table" showFilters={true} />
+  }
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -236,11 +241,16 @@ export default function LecturesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        moduleKey="paces"
-        title={t("lectures.title") || "Lectures"}
-        description={t("lectures.description") || "Browse and search the lectures catalog"}
-      />
+      <div className="flex flex-col gap-4">
+        <div className="flex md:flex-row flex-col items-start md:items-center justify-between gap-4">
+          <PageHeader
+            moduleKey="paces"
+            title={t("lectures.title") || "Lectures"}
+            description={t("lectures.description") || "Browse and search the lectures catalog"}
+            className="flex-1"
+          />
+        </div>
+      </div>
 
       {/* Search */}
       <SearchBar
@@ -260,9 +270,15 @@ export default function LecturesPage() {
         subjects={subjects}
       />
 
-      {/* Lectures Table */}
-      {isLoading ? (
-        <Loading variant="section" />
+      {/* Lectures Content */}
+      {sortedLectures.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            {searchTerm
+              ? t("lectures.noResults") || "No results found"
+              : t("lectures.noLectures") || "No lectures found"}
+          </p>
+        </div>
       ) : (
         <LecturesTable
           lectures={paginatedLectures}
@@ -273,6 +289,7 @@ export default function LecturesPage() {
           totalPages={totalPages}
           totalItems={sortedLectures.length}
           onPageChange={setCurrentPage}
+          loading={false}
         />
       )}
     </div>

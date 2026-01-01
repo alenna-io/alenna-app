@@ -320,7 +320,7 @@ export default function SchoolsPage() {
   }
 
   if (isLoading) {
-    return <Loading variant="page" />
+    return <Loading variant="list-page" showCreateButton={true} view="table" showFilters={false} />
   }
 
   return (

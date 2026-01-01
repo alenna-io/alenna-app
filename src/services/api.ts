@@ -459,6 +459,159 @@ export const schoolsApi = {
     apiFetch(`/schools/${id}/modules/disable`, token, { method: 'POST', body: JSON.stringify({ moduleId }) }),
 };
 
+// Billing API
+export const billingApi = {
+  getAll: (token: string | null, filters?: {
+    studentId?: string;
+    schoolYearId?: string;
+    billingMonth?: number;
+    billingYear?: number;
+    taxableBillStatus?: 'not_required' | 'required' | 'sent';
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+      if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
+      if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
+      if (filters.taxableBillStatus) params.append('taxableBillStatus', filters.taxableBillStatus);
+      if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.billStatus) params.append('billStatus', filters.billStatus); // backward compatibility
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+    }
+    const query = params.toString();
+    return apiFetch(`/billing${query ? '?' + query : ''}`, token);
+  },
+  getById: (id: string, token: string | null) => apiFetch(`/billing/${id}`, token),
+  create: (data: {
+    studentId: string;
+    schoolYearId: string;
+    billingMonth: number;
+    billingYear: number;
+    baseAmount?: number;
+  }, token: string | null) =>
+    apiFetch('/billing', token, { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (data: {
+    schoolYearId: string;
+    billingMonth: number;
+    billingYear: number;
+    studentIds?: string[];
+  }, token: string | null) =>
+    apiFetch('/billing/bulk', token, { method: 'POST', body: JSON.stringify(data) }),
+  bulkUpdate: (data: {
+    schoolYearId: string;
+    billingMonth: number;
+    billingYear: number;
+  }, token: string | null) =>
+    apiFetch('/billing/bulk-update', token, { method: 'PUT', body: JSON.stringify(data) }),
+  update: (id: string, data: {
+    taxableBillStatus?: 'not_required' | 'required' | 'sent';
+    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
+    effectiveTuitionAmount?: number;
+    discountAdjustments?: Array<{ type: 'percentage' | 'fixed'; value: number; description?: string }>;
+    extraCharges?: Array<{ amount: number; description?: string }>;
+    paymentNote?: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  recordPayment: (id: string, data: {
+    paymentMethod: 'manual' | 'online' | 'other';
+    paymentNote?: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/${id}/record-payment`, token, { method: 'POST', body: JSON.stringify(data) }),
+  recordPartialPayment: (id: string, data: {
+    amount: number;
+    paymentMethod: 'manual' | 'online' | 'other';
+    paymentNote?: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/${id}/record-partial-payment`, token, { method: 'POST', body: JSON.stringify(data) }),
+  applyLateFee: (id: string, token: string | null, data?: {
+    lateFeeAmount?: number;
+  }) =>
+    apiFetch(`/billing/${id}/apply-late-fee`, token, { method: 'POST', body: JSON.stringify(data || {}) }),
+  bulkApplyLateFee: (token: string | null, data?: {
+    billingRecordIds?: string[];
+    dueDate?: string;
+  }) =>
+    apiFetch('/billing/bulk-apply-late-fee', token, { method: 'POST', body: JSON.stringify(data || {}) }),
+  getTuitionConfig: (token: string | null) => apiFetch('/billing/tuition-config', token),
+  createTuitionConfig: (data: {
+    dueDay?: number;
+  }, token: string | null) =>
+    apiFetch('/billing/tuition-config', token, { method: 'POST', body: JSON.stringify(data) }),
+  updateTuitionConfig: (id: string, data: {
+    dueDay?: number;
+  }, token: string | null) =>
+    apiFetch(`/billing/tuition-config/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  getTuitionTypes: (token: string | null) => apiFetch('/billing/tuition-types', token),
+  getTuitionTypeById: (id: string, token: string | null) => apiFetch(`/billing/tuition-types/${id}`, token),
+  createTuitionType: (data: {
+    name: string;
+    baseAmount: number;
+    currency?: string;
+    lateFeeType: 'fixed' | 'percentage';
+    lateFeeValue: number;
+    displayOrder?: number;
+  }, token: string | null) =>
+    apiFetch('/billing/tuition-types', token, { method: 'POST', body: JSON.stringify(data) }),
+  updateTuitionType: (id: string, data: {
+    name?: string;
+    baseAmount?: number;
+    currency?: string;
+    lateFeeType?: 'fixed' | 'percentage';
+    lateFeeValue?: number;
+    displayOrder?: number;
+  }, token: string | null) =>
+    apiFetch(`/billing/tuition-types/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTuitionType: (id: string, token: string | null) =>
+    apiFetch(`/billing/tuition-types/${id}`, token, { method: 'DELETE' }),
+  getStudentScholarship: (studentId: string, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/scholarship`, token),
+  createStudentScholarship: (studentId: string, data: {
+    tuitionTypeId?: string;
+    scholarshipType?: 'percentage' | 'fixed';
+    scholarshipValue?: number;
+    taxableBillRequired?: boolean;
+  }, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'POST', body: JSON.stringify(data) }),
+  updateStudentScholarship: (studentId: string, data: {
+    tuitionTypeId?: string;
+    scholarshipType?: 'percentage' | 'fixed';
+    scholarshipValue?: number;
+    taxableBillRequired?: boolean;
+  }, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  getMetrics: (token: string | null, filters?: {
+    startDate?: string;
+    endDate?: string;
+    schoolYearId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+    const query = params.toString();
+    return apiFetch(`/billing/metrics${query ? '?' + query : ''}`, token);
+  },
+  getDashboard: (filters: {
+    startDate: string;
+    endDate: string;
+    schoolYearId?: string;
+    includeAll?: boolean;
+  }, token: string | null) => {
+    const params = new URLSearchParams();
+    params.append('startDate', filters.startDate);
+    params.append('endDate', filters.endDate);
+    if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+    if (filters.includeAll) params.append('includeAll', filters.includeAll.toString());
+    return apiFetch(`/billing/dashboard?${params}`, token);
+  },
+};
+
 // Groups API
 export const groupsApi = {
   getBySchoolYear: (schoolYearId: string, token: string | null) => apiFetch(`/groups/school-year/${schoolYearId}`, token),
@@ -968,6 +1121,188 @@ export function useApi() {
       getStudentAssignments: async (schoolYearId: string) => {
         const token = await getToken();
         return groupsApi.getStudentAssignments(schoolYearId, token);
+      },
+    },
+    billing: {
+      getAll: async (filters?: {
+        studentId?: string;
+        schoolYearId?: string;
+        billingMonth?: number;
+        billingYear?: number;
+        taxableBillStatus?: 'not_required' | 'required' | 'sent';
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
+        startDate?: string;
+        endDate?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.getAll(token, filters);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return billingApi.getById(id, token);
+      },
+      create: async (data: {
+        studentId: string;
+        schoolYearId: string;
+        billingMonth: number;
+        billingYear: number;
+        baseAmount?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.create(data, token);
+      },
+      bulkCreate: async (data: {
+        schoolYearId: string;
+        billingMonth: number;
+        billingYear: number;
+        studentIds?: string[];
+      }) => {
+        const token = await getToken();
+        return billingApi.bulkCreate(data, token);
+      },
+      bulkUpdate: async (data: {
+        schoolYearId: string;
+        billingMonth: number;
+        billingYear: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.bulkUpdate(data, token);
+      },
+      update: async (id: string, data: {
+        taxableBillStatus?: 'not_required' | 'required' | 'sent';
+        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
+        effectiveTuitionAmount?: number;
+        discountAdjustments?: Array<{ type: 'percentage' | 'fixed'; value: number; description?: string }>;
+        extraCharges?: Array<{ amount: number; description?: string }>;
+        paymentNote?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.update(id, data, token);
+      },
+      recordPayment: async (id: string, data: {
+        paymentMethod: 'manual' | 'online' | 'other';
+        paymentNote?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.recordPayment(id, data, token);
+      },
+      recordPartialPayment: async (id: string, data: {
+        amount: number;
+        paymentMethod: 'manual' | 'online' | 'other';
+        paymentNote?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.recordPartialPayment(id, data, token);
+      },
+      applyLateFee: async (id: string, data?: { lateFeeAmount?: number }) => {
+        const token = await getToken();
+        return billingApi.applyLateFee(id, token, data);
+      },
+      bulkApplyLateFee: async (data?: {
+        billingRecordIds?: string[];
+        dueDate?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.bulkApplyLateFee(token, data);
+      },
+      getTuitionConfig: async () => {
+        const token = await getToken();
+        return billingApi.getTuitionConfig(token);
+      },
+      createTuitionConfig: async (data: {
+        dueDay?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.createTuitionConfig(data, token);
+      },
+      updateTuitionConfig: async (id: string, data: {
+        dueDay?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.updateTuitionConfig(id, data, token);
+      },
+      getTuitionTypes: async () => {
+        const token = await getToken();
+        return billingApi.getTuitionTypes(token);
+      },
+      getTuitionTypeById: async (id: string) => {
+        const token = await getToken();
+        return billingApi.getTuitionTypeById(id, token);
+      },
+      createTuitionType: async (data: {
+        name: string;
+        baseAmount: number;
+        currency?: string;
+        lateFeeType: 'fixed' | 'percentage';
+        lateFeeValue: number;
+        displayOrder?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.createTuitionType(data, token);
+      },
+      updateTuitionType: async (id: string, data: {
+        name?: string;
+        baseAmount?: number;
+        currency?: string;
+        lateFeeType?: 'fixed' | 'percentage';
+        lateFeeValue?: number;
+        displayOrder?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.updateTuitionType(id, data, token);
+      },
+      deleteTuitionType: async (id: string) => {
+        const token = await getToken();
+        return billingApi.deleteTuitionType(id, token);
+      },
+      getStudentScholarship: async (studentId: string) => {
+        const token = await getToken();
+        try {
+          return await billingApi.getStudentScholarship(studentId, token);
+        } catch (error) {
+          // 404 is expected when a student doesn't have a scholarship
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+            return null;
+          }
+          throw error;
+        }
+      },
+      createStudentScholarship: async (studentId: string, data: {
+        tuitionTypeId?: string;
+        scholarshipType?: 'percentage' | 'fixed';
+        scholarshipValue?: number;
+        taxableBillRequired?: boolean;
+      }) => {
+        const token = await getToken();
+        return billingApi.createStudentScholarship(studentId, data, token);
+      },
+      updateStudentScholarship: async (studentId: string, data: {
+        tuitionTypeId?: string;
+        scholarshipType?: 'percentage' | 'fixed';
+        scholarshipValue?: number;
+        taxableBillRequired?: boolean;
+      }) => {
+        const token = await getToken();
+        return billingApi.updateStudentScholarship(studentId, data, token);
+      },
+      getMetrics: async (filters?: {
+        startDate?: string;
+        endDate?: string;
+        schoolYearId?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.getMetrics(token, filters);
+      },
+      getDashboard: async (filters: {
+        startDate: string;
+        endDate: string;
+        schoolYearId?: string;
+        includeAll?: boolean;
+      }) => {
+        const token = await getToken();
+        return billingApi.getDashboard(filters, token);
       },
     },
   };

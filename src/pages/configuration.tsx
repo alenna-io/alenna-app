@@ -69,7 +69,7 @@ export default function ConfigurationPage() {
   };
 
   if (loading) {
-    return <Loading variant="page" />;
+    return <Loading variant="simple-page" />;
   }
 
   // Filter modules user has access to
