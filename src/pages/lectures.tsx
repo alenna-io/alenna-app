@@ -8,6 +8,9 @@ import { includesIgnoreAccents } from "@/lib/string-utils"
 import { LecturesFilters } from "@/components/lectures-filters"
 import { SearchBar } from "@/components/ui/search-bar"
 import { LecturesTable } from "@/components/lectures-table"
+import { CreateSubjectDialog } from "@/components/create-subject-dialog"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 
 interface PaceCatalogItem {
   id: string
@@ -23,8 +26,11 @@ interface PaceCatalogItem {
 interface SubSubject {
   id: string
   name: string
+  categoryId: string
   categoryName: string
   levelId: string
+  levelName?: string
+  levelNumber?: number
 }
 
 export default function LecturesPage() {
@@ -44,6 +50,7 @@ export default function LecturesPage() {
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc")
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
 
   // Get unique categories and levels from subjects
   const categories = React.useMemo(() => {
@@ -57,6 +64,54 @@ export default function LecturesPage() {
     subjects.forEach(s => levs.add(s.levelId))
     return Array.from(levs).sort()
   }, [subjects])
+
+  // Extract unique categories with IDs and levels with IDs for the dialog
+  const categoriesWithIds = React.useMemo(() => {
+    const categoryMap = new Map<string, { id: string; name: string }>()
+    subjects.forEach(s => {
+      if (!categoryMap.has(s.categoryName) && s.categoryId) {
+        categoryMap.set(s.categoryName, {
+          id: s.categoryId,
+          name: s.categoryName,
+        })
+      }
+    })
+    return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [subjects])
+
+  const levelsWithIds = React.useMemo(() => {
+    const levelMap = new Map<string, { id: string; name: string; number?: number }>()
+    subjects.forEach(s => {
+      if (!levelMap.has(s.levelId)) {
+        levelMap.set(s.levelId, {
+          id: s.levelId,
+          name: s.levelName || s.levelId,
+          number: s.levelNumber,
+        })
+      }
+    })
+    return Array.from(levelMap.values()).sort((a, b) => {
+      if (a.number !== undefined && b.number !== undefined) {
+        return a.number - b.number
+      }
+      if (a.number !== undefined) return -1
+      if (b.number !== undefined) return 1
+      return a.name.localeCompare(b.name)
+    })
+  }, [subjects])
+
+  const handleSubjectCreated = async () => {
+    // Refresh subjects and lectures
+    try {
+      const allSubjects = await api.subjects.getAll()
+      setSubjects(allSubjects as SubSubject[])
+
+      const data = await api.paceCatalog.get({})
+      setAllLectures(data as PaceCatalogItem[])
+    } catch (err) {
+      console.error('Error refreshing data:', err)
+    }
+  }
 
 
   // Fetch all subjects first
@@ -249,8 +304,20 @@ export default function LecturesPage() {
             description={t("lectures.description") || "Browse and search the lectures catalog"}
             className="flex-1"
           />
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Subject
+          </Button>
         </div>
       </div>
+
+      <CreateSubjectDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={handleSubjectCreated}
+        categories={categoriesWithIds}
+        levels={levelsWithIds}
+      />
 
       {/* Search */}
       <SearchBar

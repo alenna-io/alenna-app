@@ -163,13 +163,29 @@ export default function ACEProjectionPage() {
           console.warn('Could not fetch school years for quarter status:', err)
         }
 
+        // Collect all unique sub-subjects from ALL quarters and their categories
+        // This ensures we can display all sub-subjects even if they have no paces in a particular quarter
+        const allSubSubjects = new Set<string>()
+        const subSubjectToCategory = new Map<string, string>() // subject -> category
+
+        Object.values(detail.quarters).forEach(quarter => {
+          Object.keys(quarter).forEach(subject => {
+            allSubSubjects.add(subject)
+            // Get category from first non-null pace for this subject
+            const firstPace = quarter[subject]?.find(p => p !== null)
+            if (firstPace && firstPace.category && !subSubjectToCategory.has(subject)) {
+              subSubjectToCategory.set(subject, firstPace.category)
+            }
+          })
+        })
+
         // Convert API data to the format expected by ACEQuarterlyTable
-        // Pass categories to ensure all projection categories are shown in all quarters
+        // Pass categories, all sub-subjects, and their category mapping to ensure all projection sub-subjects are shown in all quarters
         const convertedData = {
-          Q1: convertQuarterData(detail.quarters.Q1, detail.categories),
-          Q2: convertQuarterData(detail.quarters.Q2, detail.categories),
-          Q3: convertQuarterData(detail.quarters.Q3, detail.categories),
-          Q4: convertQuarterData(detail.quarters.Q4, detail.categories),
+          Q1: convertQuarterData(detail.quarters.Q1, detail.categories, Array.from(allSubSubjects), subSubjectToCategory),
+          Q2: convertQuarterData(detail.quarters.Q2, detail.categories, Array.from(allSubSubjects), subSubjectToCategory),
+          Q3: convertQuarterData(detail.quarters.Q3, detail.categories, Array.from(allSubSubjects), subSubjectToCategory),
+          Q4: convertQuarterData(detail.quarters.Q4, detail.categories, Array.from(allSubSubjects), subSubjectToCategory),
         }
         setProjectionData(convertedData)
 
@@ -209,25 +225,68 @@ export default function ACEProjectionPage() {
   // Helper function to convert API pace detail to PaceData (including ID for updates)
   const convertQuarterData = (
     quarterPaces: { [subject: string]: (PaceDetail | null)[] },
-    projectionCategories?: string[]
+    projectionCategories?: string[],
+    allProjectionSubSubjects?: string[],
+    allSubSubjectToCategory?: Map<string, string>
   ): QuarterData => {
-    // First, group sub-subjects by category from the paces in this quarter
-    const categoryGroups = new Map<string, string[]>() // category -> [subjects]
+    // For electives, each subject is already formatted as "Elective: Name" and should be a separate row
+    // For other categories, group sub-subjects by category
+    const result: QuarterData = {}
 
+    // Build category mapping: use provided mapping first, then fall back to current quarter's paces
+    const subjectToCategory = new Map<string, string>(allSubSubjectToCategory || [])
+
+    // Also get categories from current quarter's paces (in case a subject only appears in this quarter)
     Object.keys(quarterPaces).forEach(subject => {
       const firstPace = quarterPaces[subject].find(p => p !== null)
-      if (firstPace && firstPace.category) {
-        const category = firstPace.category
-        if (!categoryGroups.has(category)) {
-          categoryGroups.set(category, [])
-        }
-        categoryGroups.get(category)!.push(subject)
+      if (firstPace && firstPace.category && !subjectToCategory.has(subject)) {
+        subjectToCategory.set(subject, firstPace.category)
       }
     })
 
-    // Now build result grouped by category
-    const result: QuarterData = {}
+    // Identify electives (subjects that start with "Elective: ")
+    const electiveSubjects: string[] = []
+    const categoryGroups = new Map<string, string[]>() // category -> [subjects]
 
+    // Process subjects that have paces in this quarter
+    Object.keys(quarterPaces).forEach(subject => {
+      const category = subjectToCategory.get(subject)
+      if (category) {
+        // Check if this is an elective (starts with "Elective: ")
+        if (subject.startsWith('Elective: ')) {
+          electiveSubjects.push(subject)
+        } else {
+          // For non-electives, group by category
+          if (!categoryGroups.has(category)) {
+            categoryGroups.set(category, [])
+          }
+          categoryGroups.get(category)!.push(subject)
+        }
+      }
+    })
+
+    // Also include all sub-subjects from the projection that might not have paces in this quarter
+    if (allProjectionSubSubjects) {
+      allProjectionSubSubjects.forEach(subject => {
+        const category = subjectToCategory.get(subject)
+        if (category) {
+          if (subject.startsWith('Elective: ')) {
+            if (!electiveSubjects.includes(subject)) {
+              electiveSubjects.push(subject)
+            }
+          } else {
+            if (!categoryGroups.has(category)) {
+              categoryGroups.set(category, [])
+            }
+            if (!categoryGroups.get(category)!.includes(subject)) {
+              categoryGroups.get(category)!.push(subject)
+            }
+          }
+        }
+      })
+    }
+
+    // Process non-elective categories FIRST (grouped as before)
     // Use categories from projection if available, otherwise use categories from paces
     const categoriesFromPaces = Array.from(new Set(
       Array.from(categoryGroups.keys())
@@ -235,16 +294,18 @@ export default function ACEProjectionPage() {
 
     // Use projection categories if available, otherwise fall back to categories from paces
     // This ensures ALL projection categories are shown, even if empty in this quarter
+    // Filter out "Electives" category since we handle electives separately below
     const allCategories = projectionCategories && projectionCategories.length > 0
-      ? new Set(projectionCategories)
-      : new Set(categoriesFromPaces)
+      ? new Set(projectionCategories.filter(cat => cat !== 'Electives'))
+      : new Set(categoriesFromPaces.filter(cat => cat !== 'Electives'))
 
     // Sort categories by default order
     const sortedCategories = Array.from(allCategories).sort((a, b) => {
       return getCategoryOrder(a) - getCategoryOrder(b)
     })
 
-    // Process ALL categories (even if they have no paces in this quarter)
+    // Process ALL categories FIRST (even if they have no paces in this quarter)
+    // This ensures categories appear before electives
     sortedCategories.forEach(category => {
       const subjects = categoryGroups.get(category) || [] // Empty array if category has no subjects in this quarter
       // For each week (0-8), collect all paces from all sub-subjects in this category
@@ -286,6 +347,42 @@ export default function ACEProjectionPage() {
 
       // Always add the category to result, even if all weeks are null (empty row)
       result[category] = weekPaces
+    })
+
+    // Add electives as separate rows AFTER categories
+    // Include ALL electives from the projection, even if they have no paces in this quarter
+    const allElectiveSubjects = allProjectionSubSubjects
+      ? allProjectionSubSubjects.filter(sub => sub.startsWith('Elective: '))
+      : electiveSubjects
+
+    // Ensure we include all electives, not just those with paces in this quarter
+    const uniqueElectives = new Set([...electiveSubjects, ...allElectiveSubjects])
+
+    Array.from(uniqueElectives).sort().forEach(electiveSubject => {
+      const weekPaces: (import('@/types/pace').PaceData | null | import('@/types/pace').PaceData[])[] = Array(9).fill(null)
+
+      for (let weekIndex = 0; weekIndex < 9; weekIndex++) {
+        const pace = quarterPaces[electiveSubject]?.[weekIndex]
+        if (pace) {
+          weekPaces[weekIndex] = {
+            id: pace.id,
+            number: pace.number,
+            grade: pace.grade,
+            isCompleted: pace.isCompleted,
+            isFailed: pace.isFailed,
+            isUnfinished: pace.isUnfinished,
+            originalQuarter: pace.originalQuarter,
+            originalWeek: pace.originalWeek,
+            gradeHistory: pace.gradeHistory.map(gh => ({
+              grade: gh.grade,
+              date: gh.date,
+              note: gh.note,
+            })),
+          }
+        }
+      }
+
+      result[electiveSubject] = weekPaces
     })
 
     return result

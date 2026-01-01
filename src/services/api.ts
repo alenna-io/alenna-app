@@ -119,6 +119,8 @@ export const paceCatalogApi = {
 // SubSubjects API
 export const subSubjectsApi = {
   getAll: (token: string | null) => apiFetch('/sub-subjects', token),
+  create: (data: { name: string; categoryId: string; levelId: string; startPace: number; endPace: number }, token: string | null) =>
+    apiFetch('/sub-subjects', token, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Projection Templates API
@@ -761,6 +763,10 @@ export function useApi() {
       getAll: async () => {
         const token = await getToken();
         return subSubjectsApi.getAll(token);
+      },
+      create: async (data: { name: string; categoryId: string; levelId: string; startPace: number; endPace: number }) => {
+        const token = await getToken();
+        return subSubjectsApi.create(data, token);
       },
     },
     projectionTemplates: {

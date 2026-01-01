@@ -724,6 +724,25 @@
   .animate-shimmer {
     animation: shimmer 1.6s ease-in-out infinite;
   }
+
+  /* Progress bar animation for loading overlay */
+  @keyframes progress {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes shimmer-overlay {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
   
   /* Respect reduced motion preferences */
   @media (prefers-reduced-motion: reduce) {

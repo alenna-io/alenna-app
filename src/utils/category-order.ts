@@ -5,10 +5,9 @@
 export const DEFAULT_CATEGORY_ORDER = [
   'Math',
   'English',
-  'Word Building',
   'Science',
+  'Word Building',
   'Social Studies',
-  'Spanish',
   'Electives'
 ] as const
 
@@ -17,7 +16,7 @@ export const DEFAULT_CATEGORY_ORDER = [
  * Returns a high number if category is not in the default order
  */
 export function getCategoryOrder(category: string): number {
-  const index = DEFAULT_CATEGORY_ORDER.indexOf(category as any)
+  const index = DEFAULT_CATEGORY_ORDER.indexOf(category as typeof DEFAULT_CATEGORY_ORDER[number])
   return index === -1 ? 999 : index
 }
 
