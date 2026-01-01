@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { Badge } from "@/components/ui/badge"
-import { DollarSign, TrendingUp, Users, Settings, Plus } from "lucide-react"
+import { DollarSign, TrendingUp, Users, Settings, Plus, CheckCircle2, Send, X } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { SearchBar } from "@/components/ui/search-bar"
 import { GenericFilters } from "@/components/ui/generic-filters"
 import type { FilterField } from "@/components/ui/generic-filters"
-import { CheckCircle2, Send, X, RotateCcw } from "lucide-react"
 import { AlennaTable } from "@/components/ui/alenna-table"
+import { PartialPaymentDialog } from "@/components/billing/partial-payment-dialog"
+import { PaymentHistoryDialog } from "@/components/billing/payment-history-dialog"
 
 interface BillingRecord {
   id: string
@@ -35,8 +36,9 @@ interface BillingRecord {
   extraCharges: Array<{ amount: number; description?: string }>
   finalAmount: number
   lateFeeAmount: number
-  billStatus: 'required' | 'sent' | 'not_required' | 'cancelled'
-  paymentStatus: 'unpaid' | 'paid'
+  billStatus: 'not_required' | 'required' | 'sent'
+  paymentStatus: 'pending' | 'delayed' | 'partial_payment' | 'paid'
+  paidAmount: number
   paidAt: string | null
   lockedAt: string | null
   paymentMethod: 'manual' | 'online' | 'other' | null
@@ -45,6 +47,16 @@ interface BillingRecord {
   isOverdue: boolean
   isPaid: boolean
   isLocked: boolean
+  paymentTransactions?: Array<{
+    id: string
+    amount: number
+    paymentMethod: 'manual' | 'online' | 'other'
+    paymentNote?: string | null
+    paidBy: string
+    paidByName?: string
+    paidAt: string
+    createdAt: string
+  }>
 }
 
 interface Student {
@@ -65,8 +77,8 @@ interface DashboardData {
 
 interface Filters extends Record<string, string> {
   month: string
-  student: string
-  status: string
+  name: string
+  paymentStatus: string
 }
 
 export default function BillingPage() {
@@ -81,12 +93,20 @@ export default function BillingPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 10
+  const [partialPaymentDialogOpen, setPartialPaymentDialogOpen] = React.useState(false)
+  const [selectedRecordForPartialPayment, setSelectedRecordForPartialPayment] = React.useState<BillingRecord | null>(null)
+  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] = React.useState(false)
+  const [selectedRecordForHistory, setSelectedRecordForHistory] = React.useState<BillingRecord | null>(null)
+
+  // Sorting
+  const [sortField, setSortField] = React.useState<string | null>(null)
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc')
 
   // Filters
   const [filters, setFilters] = React.useState<Filters>({
     month: "all",
-    student: "all",
-    status: "all",
+    name: "all",
+    paymentStatus: "all",
   })
 
   const loadingRef = React.useRef(false)
@@ -131,7 +151,7 @@ export default function BillingPage() {
             today.setHours(0, 0, 0, 0)
             dueDate.setHours(0, 0, 0, 0)
             const isOverdue = today > dueDate
-            const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'cancelled' && record.billStatus !== 'not_required' && record.lateFeeAmount === 0
+            const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'not_required' && record.lateFeeAmount === 0
 
             let pendingLateFee = 0
             if (hasPendingLateFee) {
@@ -162,19 +182,20 @@ export default function BillingPage() {
             }, 0)
             const totalFinalAmount = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount + totalLateFee
 
-            // Count paid bills
+            // Count total income: sum of paidAmount for all records (includes partial payments)
+            const paidAmt = record.paidAmount ?? 0
+            totalIncome += paidAmt
+
+            // Count paid students (fully paid only)
             if (record.paymentStatus === 'paid') {
-              totalIncome += record.finalAmount // Use stored finalAmount for paid bills
               paidStudentIds.add(record.studentId)
             }
 
-            // Count expected income (all bills that should be paid)
-            if (['required', 'sent'].includes(record.billStatus) || record.paymentStatus === 'paid') {
-              expectedIncome += totalFinalAmount // Include pending late fees
-            }
+            // Count expected income: sum of finalAmount for all records
+            expectedIncome += totalFinalAmount
 
-            // Count unpaid students
-            if (['required', 'sent'].includes(record.billStatus) && record.paymentStatus === 'unpaid') {
+            // Count unpaid students (pending, delayed, or partial payment)
+            if (['pending', 'delayed', 'partial_payment'].includes(record.paymentStatus)) {
               unpaidStudentIds.add(record.studentId)
             }
 
@@ -197,7 +218,8 @@ export default function BillingPage() {
         }
       }
 
-      // Automatically apply late fees for overdue bills
+      // Automatically mark overdue records as delayed and apply late fees
+      // This is handled by the backend job, but we trigger it here for immediate updates
       if (recordsData && config && Array.isArray(recordsData)) {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -207,21 +229,20 @@ export default function BillingPage() {
           return (
             today > dueDate &&
             record.paymentStatus !== 'paid' &&
-            record.billStatus !== 'cancelled' &&
-            record.billStatus !== 'not_required' &&
-            record.lateFeeAmount === 0
+            (record.paymentStatus === 'pending' || record.paymentStatus === 'partial_payment')
           )
         })
 
         if (overdueBills.length > 0) {
           try {
+            // This will mark as delayed and apply late fees (backend saves to DB)
             await api.billing.bulkApplyLateFee({})
-            // Reload data to get updated records with late fees
+            // Reload data to get updated records from DB
             const updatedRecords = await api.billing.getAll()
             setRecords(updatedRecords || [])
           } catch (err: unknown) {
-            // Silently fail - late fees will be applied on next load
-            console.warn('Failed to automatically apply late fees:', err)
+            // Silently fail - will be handled by background job
+            console.warn('Failed to automatically update overdue records:', err)
           }
         }
       }
@@ -240,38 +261,93 @@ export default function BillingPage() {
     loadData()
   }, [loadData])
 
-  const getStatusBadge = (billStatus: string, paymentStatus: string, isOverdue: boolean) => {
-    if (paymentStatus === 'paid') {
-      return (
-        <Badge className="bg-green-600 text-white">
-          {t("billing.status.paid")}
-        </Badge>
-      )
+  const calculateActualFinalAmount = (record: BillingRecord): number => {
+    const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
+      if (adj.type === 'percentage') {
+        return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
+      }
+      return sum + adj.value
+    }, 0)
+    const extraAmount = record.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
+    const appliedLateFee = record.lateFeeAmount
+
+    const dueDate = new Date(record.dueDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    dueDate.setHours(0, 0, 0, 0)
+    const isOverdue = today > dueDate
+    const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'not_required' && appliedLateFee === 0
+
+    let pendingLateFee = 0
+    if (hasPendingLateFee) {
+      const amountAfterDiscounts = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount
+      if (record.tuitionTypeSnapshot.lateFeeType === 'fixed') {
+        pendingLateFee = record.tuitionTypeSnapshot.lateFeeValue
+      } else {
+        pendingLateFee = amountAfterDiscounts * (record.tuitionTypeSnapshot.lateFeeValue / 100)
+      }
     }
 
+    return record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount + appliedLateFee + pendingLateFee
+  }
+
+  const getPaymentStatusBadge = (record: BillingRecord) => {
+    switch (record.paymentStatus) {
+      case 'paid':
+        return (
+          <Badge className="bg-green-100 text-green-700 border border-green-300">
+            {t("billing.paymentStatus.paid")}
+          </Badge>
+        )
+      case 'partial_payment': {
+        const paidAmt = record.paidAmount ?? 0
+        const actualFinalAmount = calculateActualFinalAmount(record)
+        return (
+          <div className="flex flex-col gap-1">
+            <Badge className="bg-blue-100 text-blue-700 border border-blue-300">
+              {t("billing.paymentStatus.partialPayment")}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {formatCurrency(paidAmt)} / {formatCurrency(actualFinalAmount)}
+            </div>
+          </div>
+        )
+      }
+      case 'delayed':
+        return (
+          <Badge className="bg-red-100 text-red-700 border border-red-300">
+            {t("billing.paymentStatus.delayed")}
+          </Badge>
+        )
+      case 'pending':
+        return (
+          <Badge className="bg-gray-100 text-gray-700 border border-gray-300">
+            {t("billing.paymentStatus.pending")}
+          </Badge>
+        )
+      default:
+        return <Badge variant="outline">{record.paymentStatus}</Badge>
+    }
+  }
+
+  const getTaxableBillStatusBadge = (billStatus: string) => {
     switch (billStatus) {
       case 'sent':
         return (
-          <Badge className={isOverdue ? "bg-orange-600 text-white" : "bg-blue-600 text-white"}>
-            {t("billing.status.sent")}
+          <Badge className="bg-blue-100 text-blue-700 border border-blue-300">
+            {t("billing.taxableBillStatus.sent")}
           </Badge>
         )
       case 'required':
         return (
-          <Badge className={isOverdue ? "bg-red-600 text-white" : "bg-yellow-600 text-white"}>
-            {t("billing.status.required")}
+          <Badge className="bg-amber-100 text-amber-700 border border-amber-300">
+            {t("billing.taxableBillStatus.required")}
           </Badge>
         )
       case 'not_required':
         return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-700">
-            {t("billing.status.notRequired")}
-          </Badge>
-        )
-      case 'cancelled':
-        return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-700">
-            {t("billing.status.cancelled")}
+          <Badge className="bg-gray-100 text-gray-700 border border-gray-300">
+            {t("billing.taxableBillStatus.notRequired")}
           </Badge>
         )
       default:
@@ -288,37 +364,66 @@ export default function BillingPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
   }
 
-  const getMonthName = (month: number) => {
-    const date = new Date(2000, month - 1, 1)
-    return date.toLocaleDateString('en-US', { month: 'long' })
+  const getMonthName = (month: number, year: number) => {
+    return `${String(month).padStart(2, '0')}/${year}`
   }
 
   const handleStatusUpdate = async (recordId: string, newBillStatus: BillingRecord['billStatus']) => {
+    const record = records.find(r => r.id === recordId)
+    if (!record) return
+
+    // Optimistic update
+    const updatedRecords = records.map(r =>
+      r.id === recordId ? { ...r, billStatus: newBillStatus } : r
+    )
+    setRecords(updatedRecords)
+
     try {
-      await api.billing.update(recordId, { billStatus: newBillStatus })
+      await api.billing.update(recordId, { taxableBillStatus: newBillStatus })
       toast.success(t("billing.statusUpdated"))
-      await loadData()
     } catch (err: unknown) {
+      // Revert on error
+      setRecords(records)
       const errorMessage = err instanceof Error ? err.message : "Failed to update status"
       toast.error(errorMessage)
     }
   }
 
   const handleMarkAsPaid = async (recordId: string) => {
+    const record = records.find(r => r.id === recordId)
+    if (!record) return
+
+    const actualFinalAmount = calculateActualFinalAmount(record)
+
+    // Optimistic update
+    const updatedRecords = records.map(r =>
+      r.id === recordId
+        ? {
+          ...r,
+          paymentStatus: 'paid' as const,
+          paidAmount: actualFinalAmount,
+          paidAt: new Date().toISOString(),
+          isPaid: true,
+        }
+        : r
+    )
+    setRecords(updatedRecords)
+
     try {
       await api.billing.recordPayment(recordId, {
         paymentMethod: 'manual',
       })
       toast.success(t("billing.paymentRecorded"))
-      await loadData()
     } catch (err: unknown) {
+      // Revert on error
+      setRecords(records)
       const errorMessage = err instanceof Error ? err.message : "Failed to record payment"
       toast.error(errorMessage)
     }
@@ -368,66 +473,153 @@ export default function BillingPage() {
   const getLateFeeDisplay = (record: BillingRecord) => {
     // Show late fee if:
     // 1. Late fee has been applied (lateFeeAmount > 0), OR
-    // 2. Bill is unpaid and overdue (after due date)
+    // 2. Bill is delayed (paymentStatus === 'delayed'), OR
+    // 3. Bill is unpaid and overdue (after due date) and requires taxable bill
     const dueDate = new Date(record.dueDate)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     dueDate.setHours(0, 0, 0, 0)
 
     const isOverdue = today > dueDate
-    const shouldShowLateFee = record.lateFeeAmount > 0 || (isOverdue && !record.isPaid && record.billStatus !== 'cancelled' && record.billStatus !== 'not_required')
+    const isDelayed = record.paymentStatus === 'delayed'
+    const shouldShowLateFee = record.lateFeeAmount > 0 || isDelayed || (isOverdue && !record.isPaid && record.billStatus !== 'not_required')
 
     if (shouldShowLateFee) {
-      // Calculate late fee if not already applied
-      if (record.lateFeeAmount === 0) {
-        // Calculate discount amount
-        const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
-          if (adj.type === 'percentage') {
-            return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
-          }
-          return sum + adj.value
-        }, 0)
-        const amountAfterDiscounts = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount
-
-        // Calculate late fee based on snapshot
-        let calculatedLateFee = 0
-        if (record.tuitionTypeSnapshot.lateFeeType === 'fixed') {
-          calculatedLateFee = record.tuitionTypeSnapshot.lateFeeValue
-        } else {
-          calculatedLateFee = amountAfterDiscounts * (record.tuitionTypeSnapshot.lateFeeValue / 100)
-        }
-        return <span className="text-orange-600">+{formatCurrency(calculatedLateFee)}</span>
+      // If late fee is already applied, show it
+      if (record.lateFeeAmount > 0) {
+        return <span className="text-orange-600">+{formatCurrency(record.lateFeeAmount)}</span>
       }
-      return <span className="text-red-600">+{formatCurrency(record.lateFeeAmount)}</span>
+
+      // Calculate late fee if not already applied
+      // Calculate discount amount
+      const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
+        if (adj.type === 'percentage') {
+          return sum + (record.effectiveTuitionAmount - record.scholarshipAmount) * (adj.value / 100)
+        }
+        return sum + adj.value
+      }, 0)
+      const amountAfterDiscounts = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount
+
+      // Calculate late fee based on snapshot
+      let calculatedLateFee = 0
+      if (record.tuitionTypeSnapshot.lateFeeType === 'fixed') {
+        calculatedLateFee = record.tuitionTypeSnapshot.lateFeeValue
+      } else {
+        calculatedLateFee = amountAfterDiscounts * (record.tuitionTypeSnapshot.lateFeeValue / 100)
+      }
+      return <span className="text-orange-600">+{formatCurrency(calculatedLateFee)}</span>
     }
     return <span className="text-muted-foreground">—</span>
   }
 
   // Filter records
   const filteredRecords = React.useMemo(() => {
-    return records.filter((record) => {
+    let filtered = records.filter((record) => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
         const matchesName = record.studentName?.toLowerCase().includes(searchLower)
-        const matchesMonth = getMonthName(record.billingMonth).toLowerCase().includes(searchLower)
+        const matchesMonth = getMonthName(record.billingMonth, record.billingYear).toLowerCase().includes(searchLower)
         if (!matchesName && !matchesMonth) return false
       }
 
       // Other filters
       if (filters.month !== "all" && `${record.billingMonth}/${record.billingYear}` !== filters.month) return false
-      if (filters.student !== "all" && record.studentId !== filters.student) return false
-      if (filters.status !== "all") {
-        // Handle both old 'paid' status and new billStatus/paymentStatus
-        if (filters.status === 'paid') {
-          if (record.paymentStatus !== 'paid') return false
-        } else {
-          if (record.billStatus !== filters.status) return false
-        }
-      }
+      if (filters.name !== "all" && record.studentId !== filters.name) return false
+      if (filters.paymentStatus !== "all" && record.paymentStatus !== filters.paymentStatus) return false
       return true
     })
-  }, [records, searchTerm, filters])
+
+    // Sort records
+    if (sortField) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue: string | number | Date
+        let bValue: string | number | Date
+
+        switch (sortField) {
+          case 'studentName':
+            aValue = (a.studentName || '').toLowerCase()
+            bValue = (b.studentName || '').toLowerCase()
+            break
+          case 'month':
+            {
+              // Sort by year first, then month
+              if (a.billingYear !== b.billingYear) {
+                return sortDirection === 'asc'
+                  ? a.billingYear - b.billingYear
+                  : b.billingYear - a.billingYear
+              }
+              return sortDirection === 'asc'
+                ? a.billingMonth - b.billingMonth
+                : b.billingMonth - a.billingMonth
+            }
+          case 'tuition':
+            aValue = Number(a.effectiveTuitionAmount) - Number(a.scholarshipAmount)
+            bValue = Number(b.effectiveTuitionAmount) - Number(b.scholarshipAmount)
+            break
+          case 'lateFee':
+            aValue = Number(a.lateFeeAmount)
+            bValue = Number(b.lateFeeAmount)
+            break
+          case 'total':
+            {
+              const aDiscountAmount = a.discountAdjustments.reduce((sum, adj) => {
+                if (adj.type === 'percentage') {
+                  return sum + (Number(a.effectiveTuitionAmount) - Number(a.scholarshipAmount)) * (adj.value / 100)
+                }
+                return sum + adj.value
+              }, 0)
+              const aExtraAmount = a.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
+              aValue = Number(a.effectiveTuitionAmount) - Number(a.scholarshipAmount) - aDiscountAmount + aExtraAmount + Number(a.lateFeeAmount)
+
+              const bDiscountAmount = b.discountAdjustments.reduce((sum, adj) => {
+                if (adj.type === 'percentage') {
+                  return sum + (Number(b.effectiveTuitionAmount) - Number(b.scholarshipAmount)) * (adj.value / 100)
+                }
+                return sum + adj.value
+              }, 0)
+              const bExtraAmount = b.extraCharges.reduce((sum, charge) => sum + charge.amount, 0)
+              bValue = Number(b.effectiveTuitionAmount) - Number(b.scholarshipAmount) - bDiscountAmount + bExtraAmount + Number(b.lateFeeAmount)
+            }
+            break
+          case 'paymentStatus':
+            aValue = a.paymentStatus.toLowerCase()
+            bValue = b.paymentStatus.toLowerCase()
+            break
+          case 'dueDate':
+            aValue = new Date(a.dueDate)
+            bValue = new Date(b.dueDate)
+            break
+          case 'paidDate':
+            aValue = a.paidAt ? new Date(a.paidAt) : new Date(0)
+            bValue = b.paidAt ? new Date(b.paidAt) : new Date(0)
+            break
+          case 'billStatus':
+            aValue = a.billStatus.toLowerCase()
+            bValue = b.billStatus.toLowerCase()
+            break
+          default:
+            return 0
+        }
+
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+        }
+
+        if (aValue instanceof Date && bValue instanceof Date) {
+          return sortDirection === 'asc'
+            ? aValue.getTime() - bValue.getTime()
+            : bValue.getTime() - aValue.getTime()
+        }
+
+        const comparison = String(aValue).localeCompare(String(bValue))
+        return sortDirection === 'asc' ? comparison : -comparison
+      })
+    }
+
+    return filtered
+  }, [records, searchTerm, filters, sortField, sortDirection])
 
   // Pagination
   const totalPages = Math.ceil(filteredRecords.length / itemsPerPage)
@@ -436,10 +628,19 @@ export default function BillingPage() {
     return filteredRecords.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredRecords, currentPage, itemsPerPage])
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters/sort change
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filters.month, filters.student, filters.status])
+  }, [searchTerm, filters.month, filters.name, filters.paymentStatus, sortField, sortDirection])
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
 
   // Get unique months for filter
   const months = React.useMemo(() => {
@@ -468,20 +669,20 @@ export default function BillingPage() {
           const [m, y] = month.split('/').map(Number)
           return {
             value: month,
-            label: `${getMonthName(m)} ${y}`,
+            label: getMonthName(m, y),
           }
         }),
       ],
     },
     {
-      key: "student",
-      label: t("billing.studentName"),
+      key: "name",
+      label: t("billing.studentName") || "Nombre",
       type: "select",
       color: "bg-green-500",
-      placeholder: t("billing.allStudents"),
+      placeholder: t("billing.allStudents") || "Todos los estudiantes",
       searchable: true,
       options: [
-        { value: "all", label: t("billing.allStudents") },
+        { value: "all", label: t("billing.allStudents") || "Todos los estudiantes" },
         ...students.map((student) => ({
           value: student.id,
           label: `${student.firstName} ${student.lastName}`,
@@ -489,18 +690,17 @@ export default function BillingPage() {
       ],
     },
     {
-      key: "status",
-      label: t("billing.billStatus"),
+      key: "paymentStatus",
+      label: t("billing.paymentStatusLabel") || "Estado de Pago",
       type: "select",
       color: "bg-purple-500",
-      placeholder: t("billing.allStatuses"),
+      placeholder: t("billing.allStatuses") || "Todos los estados",
       options: [
-        { value: "all", label: t("billing.allStatuses") },
-        { value: "required", label: t("billing.status.required") },
-        { value: "sent", label: t("billing.status.sent") },
-        { value: "paid", label: t("billing.status.paid") },
-        { value: "not_required", label: t("billing.status.notRequired") },
-        { value: "cancelled", label: t("billing.status.cancelled") },
+        { value: "all", label: t("billing.allStatuses") || "Todos los estados" },
+        { value: "pending", label: t("billing.paymentStatus.pending") || "Pendiente" },
+        { value: "delayed", label: t("billing.paymentStatus.delayed") || "Atrasado" },
+        { value: "partial_payment", label: t("billing.paymentStatus.partialPayment") || "Pago Parcial" },
+        { value: "paid", label: t("billing.paymentStatus.paid") || "Pagado" },
       ],
     },
   ]
@@ -509,16 +709,23 @@ export default function BillingPage() {
     const labels: string[] = []
     if (currentFilters.month && currentFilters.month !== "all") {
       const [m, y] = currentFilters.month.split('/').map(Number)
-      labels.push(`Month: ${getMonthName(m)} ${y}`)
+      labels.push(`${t("billing.month") || "Mes"}: ${getMonthName(m, y)}`)
     }
-    if (currentFilters.student && currentFilters.student !== "all") {
-      const student = students.find((s) => s.id === currentFilters.student)
+    if (currentFilters.name && currentFilters.name !== "all") {
+      const student = students.find((s) => s.id === currentFilters.name)
       if (student) {
-        labels.push(`Student: ${student.firstName} ${student.lastName}`)
+        labels.push(`${t("billing.studentName") || "Nombre"}: ${student.firstName} ${student.lastName}`)
       }
     }
-    if (currentFilters.status && currentFilters.status !== "all") {
-      labels.push(`Status: ${currentFilters.status.charAt(0).toUpperCase() + currentFilters.status.slice(1).replace('_', ' ')}`)
+    if (currentFilters.paymentStatus && currentFilters.paymentStatus !== "all") {
+      const statusLabel = currentFilters.paymentStatus === 'pending'
+        ? t("billing.paymentStatus.pending") || "Pendiente"
+        : currentFilters.paymentStatus === 'delayed'
+          ? t("billing.paymentStatus.delayed") || "Atrasado"
+          : currentFilters.paymentStatus === 'partial_payment'
+            ? t("billing.paymentStatus.partialPayment") || "Pago Parcial"
+            : t("billing.paymentStatus.paid") || "Pagado"
+      labels.push(`${t("billing.paymentStatusLabel") || "Estado de Pago"}: ${statusLabel}`)
     }
     return labels
   }
@@ -700,7 +907,7 @@ export default function BillingPage() {
         {/* Paid vs Total Students */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("billing.paymentStatus")}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("billing.paymentStatusLabel")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -747,32 +954,42 @@ export default function BillingPage() {
             {
               key: 'studentName',
               label: t("billing.studentName"),
+              sortable: true,
+              className: 'text-left',
               render: (record) => (
-                <div className="font-medium">{record.studentName || 'Unknown Student'}</div>
+                <div className="font-medium text-left">{record.studentName || 'Unknown Student'}</div>
               )
             },
             {
               key: 'month',
               label: t("billing.month"),
+              sortable: true,
+              className: 'text-left',
               render: (record) => (
-                <div className="text-sm">
-                  {getMonthName(record.billingMonth)} {record.billingYear}
+                <div className="text-sm text-left">
+                  {getMonthName(record.billingMonth, record.billingYear)}
                 </div>
               )
             },
             {
               key: 'tuition',
               label: t("billing.tuition"),
-              render: (record) => getScholarshipDisplay(record)
+              sortable: true,
+              className: 'text-left',
+              render: (record) => <div className="text-left">{getScholarshipDisplay(record)}</div>
             },
             {
               key: 'lateFee',
               label: t("billing.lateFee"),
-              render: (record) => getLateFeeDisplay(record)
+              sortable: true,
+              className: 'text-left',
+              render: (record) => <div className="text-left">{getLateFeeDisplay(record)}</div>
             },
             {
               key: 'total',
               label: t("billing.total"),
+              sortable: true,
+              className: 'text-left',
               render: (record) => {
                 const discountAmount = record.discountAdjustments.reduce((sum, adj) => {
                   if (adj.type === 'percentage') {
@@ -788,7 +1005,7 @@ export default function BillingPage() {
                 today.setHours(0, 0, 0, 0)
                 dueDate.setHours(0, 0, 0, 0)
                 const isOverdue = today > dueDate
-                const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'cancelled' && record.billStatus !== 'not_required' && appliedLateFee === 0
+                const hasPendingLateFee = isOverdue && !record.isPaid && record.billStatus !== 'not_required' && appliedLateFee === 0
 
                 let pendingLateFee = 0
                 if (hasPendingLateFee) {
@@ -801,19 +1018,23 @@ export default function BillingPage() {
                 }
 
                 const totalFinalAmount = record.effectiveTuitionAmount - record.scholarshipAmount - discountAmount + extraAmount + appliedLateFee + pendingLateFee
-                return <div className="font-semibold">{formatCurrency(totalFinalAmount)}</div>
+                return <div className="font-semibold text-left">{formatCurrency(totalFinalAmount)}</div>
               }
             },
             {
-              key: 'status',
-              label: t("billing.billStatus"),
-              render: (record) => getStatusBadge(record.billStatus, record.paymentStatus, record.isOverdue)
+              key: 'paymentStatus',
+              label: t("billing.paymentStatusLabel"),
+              sortable: true,
+              className: 'text-left',
+              render: (record) => <div className="text-left">{getPaymentStatusBadge(record)}</div>
             },
             {
               key: 'dueDate',
               label: t("billing.dueDate"),
+              sortable: true,
+              className: 'text-left',
               render: (record) => (
-                <div className={record.isOverdue && !record.isPaid ? 'text-red-600 font-medium' : ''}>
+                <div className={`text-left ${record.isOverdue && !record.isPaid ? 'text-red-600 font-medium' : ''}`}>
                   {formatDate(record.dueDate)}
                 </div>
               )
@@ -821,9 +1042,20 @@ export default function BillingPage() {
             {
               key: 'paidDate',
               label: t("billing.paidDate"),
+              sortable: true,
+              className: 'text-left',
               render: (record) => (
-                record.paidAt ? formatDate(record.paidAt) : <span className="text-muted-foreground">—</span>
+                <div className="text-left">
+                  {record.paidAt ? formatDate(record.paidAt) : <span className="text-muted-foreground">—</span>}
+                </div>
               )
+            },
+            {
+              key: 'billStatus',
+              label: t("billing.taxableBillStatusLabel") || t("billing.billStatus"),
+              sortable: true,
+              className: 'text-left',
+              render: (record) => <div className="text-left">{getTaxableBillStatusBadge(record.billStatus)}</div>
             }
           ]}
           data={paginatedRecords}
@@ -834,36 +1066,70 @@ export default function BillingPage() {
             pageSize: itemsPerPage,
             onPageChange: setCurrentPage
           }}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
           actions={[
             {
               label: t("billing.markAsPaid"),
               icon: <CheckCircle2 className="h-4 w-4" />,
               onClick: (record) => handleMarkAsPaid(record.id),
-              disabled: (record) => record.paymentStatus === 'paid'
+              disabled: (record) => record.paymentStatus === 'paid',
+              section: t("billing.payments") || "Payments"
+            },
+            {
+              label: t("billing.addPartialPayment"),
+              icon: <DollarSign className="h-4 w-4" />,
+              onClick: (record) => {
+                setSelectedRecordForPartialPayment(record)
+                setPartialPaymentDialogOpen(true)
+              },
+              disabled: (record) => record.paymentStatus === 'paid' || (record.finalAmount - (record.paidAmount ?? 0)) <= 0,
+              section: t("billing.payments") || "Payments"
+            },
+            {
+              label: t("billing.paymentHistory"),
+              icon: <DollarSign className="h-4 w-4" />,
+              onClick: (record) => {
+                setSelectedRecordForHistory(record)
+                setPaymentHistoryDialogOpen(true)
+              },
+              section: t("billing.payments") || "Payments"
             },
             {
               label: t("billing.markBillAsSent"),
               icon: <Send className="h-4 w-4" />,
               onClick: (record) => handleStatusUpdate(record.id, 'sent'),
-              disabled: (record) => record.paymentStatus === 'paid' || record.billStatus === 'cancelled'
+              disabled: (record) => record.billStatus === 'sent' || record.paymentStatus !== 'paid',
+              section: t("billing.invoiceBill") || "Invoice/Bill"
             },
             {
               label: t("billing.markBillAsNotRequired"),
               icon: <X className="h-4 w-4" />,
               onClick: (record) => handleStatusUpdate(record.id, 'not_required'),
-              disabled: (record) => record.paymentStatus === 'paid' || record.billStatus === 'cancelled'
-            },
-            {
-              label: t("billing.reopenBill"),
-              icon: <RotateCcw className="h-4 w-4" />,
-              onClick: (record) => handleStatusUpdate(record.id, 'required'),
-              disabled: (record) => record.paymentStatus !== 'paid'
+              disabled: (record) => record.billStatus === 'not_required',
+              section: t("billing.invoiceBill") || "Invoice/Bill"
             }
           ]}
           emptyState={{
             message: t("billing.noRecordsFound")
           }}
           getRowId={(record) => record.id}
+        />
+
+        <PartialPaymentDialog
+          open={partialPaymentDialogOpen}
+          onOpenChange={setPartialPaymentDialogOpen}
+          record={selectedRecordForPartialPayment}
+          onSuccess={async () => {
+            // Reload all data to ensure we have the latest state
+            await loadData()
+          }}
+        />
+        <PaymentHistoryDialog
+          open={paymentHistoryDialogOpen}
+          onOpenChange={setPaymentHistoryDialogOpen}
+          record={selectedRecordForHistory}
         />
       </div>
     </div>

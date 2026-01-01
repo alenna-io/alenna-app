@@ -4,13 +4,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Info } from "lucide-react";
+import { Info, GraduationCap, BookOpen, Library, Calendar, Award, UserCog, Users2, Sliders, Settings, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/contexts/UserContext";
+import { ModuleIcon } from "@/components/ui/module-icon";
+import { hasModuleIcon } from "@/lib/module-icon-utils";
 
 interface Module {
   id: string;
@@ -31,9 +33,21 @@ const MODULE_DEPENDENCIES: Record<string, string[]> = {
   groups: [],
   teachers: [],
   school_admin: [],
-  schools: [],
-  users: [],
   billing: [],
+};
+
+// Fallback icons for modules without icon files
+const MODULE_FALLBACK_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  students: GraduationCap,
+  projections: BookOpen,
+  paces: Library,
+  monthlyAssignments: Calendar,
+  reportCards: Award,
+  groups: Users2,
+  teachers: UserCog,
+  school_admin: Sliders,
+  configuration: Settings,
+  billing: CreditCard,
 };
 
 interface SchoolModulesManagerProps {
@@ -56,13 +70,9 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
         setLoading(true);
         const schoolModules = await api.schools.getSchoolModules(schoolId);
         if (!cancelled) {
-          // Filter out users and schools modules - these are only for super school (Alenna)
-          const isAlennaSchool = userInfo?.schoolName?.toLowerCase() === 'alenna';
+          // Filter out users and schools modules - these are only for Super Admins
           const filteredModules = schoolModules.filter((module: Module) => {
-            if (module.key === 'users' || module.key === 'schools') {
-              return isAlennaSchool;
-            }
-            return true;
+            return module.key !== 'users' && module.key !== 'schools';
           });
           setModules(filteredModules);
         }
@@ -155,7 +165,11 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
 
       // Refresh modules list
       const schoolModules = await api.schools.getSchoolModules(schoolId);
-      setModules(schoolModules);
+      // Filter out users and schools modules - these are only for Super Admins
+      const filteredModules = schoolModules.filter((module: Module) => {
+        return module.key !== 'users' && module.key !== 'schools';
+      });
+      setModules(filteredModules);
     } catch (error) {
       console.error("Error toggling module:", error);
       const errorMessage = error instanceof Error ? error.message : "Error updating module";
@@ -296,48 +310,68 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
 
     const hasDependencyIssue = !module.isEnabled && missingDependencies.length > 0;
     const hasDependentModules = module.isEnabled && dependents.length > 0;
+    const FallbackIcon = MODULE_FALLBACK_ICONS[module.key];
 
     return (
       <Card
         key={module.id}
         className={cn(
-          "transition-all",
-          module.isEnabled && "border-green-200 dark:border-green-800"
+          "transition-all duration-300 hover:shadow-lg",
+          module.isEnabled
+            ? "border-primary/50 shadow-md bg-gradient-to-br from-background to-primary/5"
+            : "border-border/50 hover:border-border"
         )}
       >
-        <CardHeader className="pb-3 pt-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <CardTitle className="text-base font-semibold m-0">
-                  {module.name}
-                </CardTitle>
-                {dependencies.length > 0 && (
-                  <Badge variant="outline" className="text-xs">
-                    <Info className="h-3 w-3 mr-1.5" />
-                    {t("schools.modules.requires") || "Requires"}{" "}
-                    {dependencies.map((key) => {
-                      const dep = modules.find((m) => m.key === key);
-                      return dep?.name || key;
-                    }).join(", ")}
-                  </Badge>
+        <CardHeader className="pb-4 pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              {/* Module Icon */}
+              <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center">
+                {hasModuleIcon(module.key) ? (
+                  <ModuleIcon
+                    moduleKey={module.key}
+                    size={32}
+                    className=""
+                  />
+                ) : FallbackIcon ? (
+                  <FallbackIcon className={cn(
+                    "h-7 w-7",
+                    module.isEnabled ? "text-primary" : "text-muted-foreground"
+                  )} />
+                ) : null}
+              </div>
+
+              <div className="flex-1 space-y-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <CardTitle className="text-base font-semibold m-0 text-foreground">
+                    {module.name}
+                  </CardTitle>
+                  {dependencies.length > 0 && (
+                    <Badge variant="outline" className="text-xs font-normal bg-muted/50 border-muted-foreground/20">
+                      <Info className="h-3 w-3 mr-1 opacity-70" />
+                      {t("schools.modules.requires") || "Requires"}{" "}
+                      {dependencies.map((key) => {
+                        const dep = modules.find((m) => m.key === key);
+                        return dep?.name || key;
+                      }).join(", ")}
+                    </Badge>
+                  )}
+                </div>
+                {module.description && (
+                  <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+                    {module.description}
+                  </CardDescription>
                 )}
               </div>
-              {module.description && (
-                <CardDescription className="text-sm mt-1">
-                  {module.description}
-                </CardDescription>
-              )}
             </div>
-            <div className="flex items-center gap-3">
+
+            <div className="flex items-center gap-3 flex-shrink-0">
               {module.isEnabled ? (
-                <Badge variant="default">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                <Badge variant="default" className="bg-primary/90 text-primary-foreground shadow-sm">
                   {t("common.enabled") || "Enabled"}
                 </Badge>
               ) : (
-                <Badge variant="secondary">
-                  <XCircle className="h-3 w-3 mr-1" />
+                <Badge variant="secondary" className="bg-muted text-muted-foreground">
                   {t("common.disabled") || "Disabled"}
                 </Badge>
               )}
@@ -351,7 +385,7 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
                   checked={module.isEnabled}
                   disabled={updating === module.id || (hasDependencyIssue && !module.isEnabled) || (hasDependentModules && module.isEnabled)}
                   onCheckedChange={(checked) => handleToggleModule(module.id, checked === true)}
-                  className="h-5 w-5 cursor-pointer"
+                  className="h-5 w-5 cursor-pointer data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -360,11 +394,11 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
         </CardHeader>
 
         {hasDependentModules && (
-          <CardContent className="pt-0 pb-3 px-6">
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md p-2.5 border border-border">
-              <Info className="h-3.5 w-3.5 text-muted-foreground/80 mt-0.5 shrink-0" />
-              <span>
-                <span className="font-medium text-foreground/90">
+          <CardContent className="pt-0 pb-4 px-6">
+            <div className="flex items-start gap-2.5 text-xs text-muted-foreground bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-200/50 dark:border-blue-800/30">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+              <span className="leading-relaxed">
+                <span className="font-semibold text-blue-900 dark:text-blue-300">
                   {t("schools.modules.dependentModules") || "Dependent Modules"}:{" "}
                 </span>
                 {t("schools.modules.usedBy", {
@@ -392,14 +426,15 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Select/Deselect All Button */}
-      <div className="flex justify-end mb-2">
+      <div className="flex justify-end">
         <Button
           variant="outline"
           size="sm"
           onClick={handleSelectAll}
           disabled={updating !== null || modules.length === 0}
+          className="shadow-sm hover:shadow-md transition-shadow"
         >
           {allEnabled
             ? t("schools.modules.deselectAll") || "Deselect All"
@@ -408,31 +443,34 @@ export function SchoolModulesManager({ schoolId }: SchoolModulesManagerProps) {
       </div>
 
       {/* Render grouped modules */}
-      {groupedModules.map((group, groupIndex) => {
-        if (group.standalone.length > 0) {
-          // Standalone modules (no dependencies, no children)
-          return (
-            <React.Fragment key={`standalone-${groupIndex}`}>
-              {group.standalone.map((module) => renderModuleCard(module))}
-            </React.Fragment>
-          );
-        }
+      <div className="space-y-4">
+        {groupedModules.map((group, groupIndex) => {
+          if (group.standalone.length > 0) {
+            // Standalone modules (no dependencies, no children)
+            return (
+              <React.Fragment key={`standalone-${groupIndex}`}>
+                {group.standalone.map((module) => renderModuleCard(module))}
+              </React.Fragment>
+            );
+          }
 
-        // Parent module with children
-        return (
-          <div key={`group-${group.parent?.id || groupIndex}`} className="space-y-2">
-            {group.parent && renderModuleCard(group.parent)}
-            {group.children.length > 0 && (
-              <div className="ml-6 space-y-2 pl-4 border-l-2 border-muted-foreground/30">
-                {group.children.map((module) => renderModuleCard(module))}
-              </div>
-            )}
-            {groupIndex < groupedModules.length - 1 && (
-              <Separator className="my-4" />
-            )}
-          </div>
-        );
-      })}
+          // Parent module with children
+          return (
+            <div key={`group-${group.parent?.id || groupIndex}`} className="space-y-3">
+              {group.parent && renderModuleCard(group.parent)}
+              {group.children.length > 0 && (
+                <div className="ml-8 space-y-3 pl-6 border-l-2 border-primary/20 dark:border-primary/30 relative">
+                  <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-primary/20 dark:bg-primary/30 border-2 border-background"></div>
+                  {group.children.map((module) => renderModuleCard(module))}
+                </div>
+              )}
+              {groupIndex < groupedModules.length - 1 && (
+                <Separator className="my-5 bg-border/50" />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

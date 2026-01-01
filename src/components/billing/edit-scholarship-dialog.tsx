@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
@@ -27,6 +28,7 @@ interface Scholarship {
   tuitionTypeId?: string | null
   scholarshipType?: 'percentage' | 'fixed' | null
   scholarshipValue?: number | null
+  taxableBillRequired?: boolean
 }
 
 interface EditScholarshipDialogProps {
@@ -48,6 +50,7 @@ export function EditScholarshipDialog({
   const [tuitionTypeId, setTuitionTypeId] = React.useState<string>("")
   const [scholarshipType, setScholarshipType] = React.useState<'percentage' | 'fixed' | null>(null)
   const [scholarshipValue, setScholarshipValue] = React.useState("")
+  const [taxableBillRequired, setTaxableBillRequired] = React.useState(false)
   const [tuitionTypes, setTuitionTypes] = React.useState<Array<{ id: string; name: string; baseAmount: number }>>([])
   const api = useApi()
   const { t } = useTranslation()
@@ -64,10 +67,12 @@ export function EditScholarshipDialog({
       setTuitionTypeId(scholarship.tuitionTypeId || "")
       setScholarshipType(scholarship.scholarshipType || null)
       setScholarshipValue(scholarship.scholarshipValue?.toString() || "")
+      setTaxableBillRequired(scholarship.taxableBillRequired ?? false)
     } else {
       setTuitionTypeId("")
       setScholarshipType(null)
       setScholarshipValue("")
+      setTaxableBillRequired(false)
     }
   }, [scholarship, open])
 
@@ -105,6 +110,7 @@ export function EditScholarshipDialog({
         tuitionTypeId?: string
         scholarshipType?: 'percentage' | 'fixed'
         scholarshipValue?: number
+        taxableBillRequired?: boolean
       } = {}
 
       if (tuitionTypeId) {
@@ -114,6 +120,7 @@ export function EditScholarshipDialog({
         apiData.scholarshipType = scholarshipType
         apiData.scholarshipValue = value
       }
+      apiData.taxableBillRequired = taxableBillRequired
 
       if (scholarship?.id) {
         await api.billing.updateStudentScholarship(student.id, apiData)
@@ -205,6 +212,22 @@ export function EditScholarshipDialog({
               </p>
             </Field>
           )}
+
+          <Field>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="taxableBillRequired"
+                checked={taxableBillRequired}
+                onCheckedChange={(checked) => setTaxableBillRequired(checked === true)}
+              />
+              <FieldLabel htmlFor="taxableBillRequired" className="!mb-0 cursor-pointer">
+                {t("billing.taxableBillRequired")}
+              </FieldLabel>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t("billing.taxableBillRequiredDescription")}
+            </p>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

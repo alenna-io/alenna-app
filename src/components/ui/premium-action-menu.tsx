@@ -4,6 +4,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreVertical } from "lucide-react"
@@ -15,6 +18,7 @@ interface PremiumActionMenuItem {
   onClick: () => void
   variant?: 'default' | 'destructive'
   disabled?: boolean
+  section?: string
 }
 
 interface PremiumActionMenuProps {
@@ -28,6 +32,20 @@ export function PremiumActionMenu({
   align = 'end',
   className
 }: PremiumActionMenuProps) {
+  const groupedItems = React.useMemo(() => {
+    const groups: Map<string | undefined, PremiumActionMenuItem[]> = new Map()
+    
+    items.forEach((item) => {
+      const section = item.section || undefined
+      if (!groups.has(section)) {
+        groups.set(section, [])
+      }
+      groups.get(section)!.push(item)
+    })
+
+    return Array.from(groups.entries())
+  }, [items])
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -49,24 +67,36 @@ export function PremiumActionMenu({
           "data-[state=open]:shadow-xl data-[state=closed]:shadow-lg"
         )}
       >
-        {items.map((item, index) => (
-          <DropdownMenuItem
-            key={index}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!item.disabled) {
-                item.onClick()
-              }
-            }}
-            disabled={item.disabled}
-            className={cn(
-              "cursor-pointer transition-colors",
-              item.variant === 'destructive' && "text-destructive focus:text-destructive focus:bg-destructive/10"
+        {groupedItems.map(([section, sectionItems], groupIndex) => (
+          <React.Fragment key={section || 'default'}>
+            {groupIndex > 0 && <DropdownMenuSeparator />}
+            {section && (
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                {section}
+              </DropdownMenuLabel>
             )}
-          >
-            {item.icon && <span className="mr-2">{item.icon}</span>}
-            {item.label}
-          </DropdownMenuItem>
+            <DropdownMenuGroup>
+              {sectionItems.map((item, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (!item.disabled) {
+                      item.onClick()
+                    }
+                  }}
+                  disabled={item.disabled}
+                  className={cn(
+                    "cursor-pointer transition-colors",
+                    item.variant === 'destructive' && "text-destructive focus:text-destructive focus:bg-destructive/10"
+                  )}
+                >
+                  {item.icon && <span className="mr-2">{item.icon}</span>}
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </React.Fragment>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -466,8 +466,9 @@ export const billingApi = {
     schoolYearId?: string;
     billingMonth?: number;
     billingYear?: number;
-    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled';
-    paymentStatus?: 'unpaid' | 'paid';
+    taxableBillStatus?: 'not_required' | 'required' | 'sent';
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
     startDate?: string;
     endDate?: string;
   }) => {
@@ -477,8 +478,9 @@ export const billingApi = {
       if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
       if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
       if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
-      if (filters.billStatus) params.append('billStatus', filters.billStatus);
+      if (filters.taxableBillStatus) params.append('taxableBillStatus', filters.taxableBillStatus);
       if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.billStatus) params.append('billStatus', filters.billStatus); // backward compatibility
       if (filters.startDate) params.append('startDate', filters.startDate);
       if (filters.endDate) params.append('endDate', filters.endDate);
     }
@@ -502,7 +504,8 @@ export const billingApi = {
   }, token: string | null) =>
     apiFetch('/billing/bulk', token, { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: {
-    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled';
+    taxableBillStatus?: 'not_required' | 'required' | 'sent';
+    billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
     effectiveTuitionAmount?: number;
     discountAdjustments?: Array<{ type: 'percentage' | 'fixed'; value: number; description?: string }>;
     extraCharges?: Array<{ amount: number; description?: string }>;
@@ -514,6 +517,12 @@ export const billingApi = {
     paymentNote?: string;
   }, token: string | null) =>
     apiFetch(`/billing/${id}/record-payment`, token, { method: 'POST', body: JSON.stringify(data) }),
+  recordPartialPayment: (id: string, data: {
+    amount: number;
+    paymentMethod: 'manual' | 'online' | 'other';
+    paymentNote?: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/${id}/record-partial-payment`, token, { method: 'POST', body: JSON.stringify(data) }),
   applyLateFee: (id: string, token: string | null, data?: {
     lateFeeAmount?: number;
   }) =>
@@ -560,12 +569,14 @@ export const billingApi = {
     tuitionTypeId?: string;
     scholarshipType?: 'percentage' | 'fixed';
     scholarshipValue?: number;
+    taxableBillRequired?: boolean;
   }, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'POST', body: JSON.stringify(data) }),
   updateStudentScholarship: (studentId: string, data: {
     tuitionTypeId?: string;
     scholarshipType?: 'percentage' | 'fixed';
     scholarshipValue?: number;
+    taxableBillRequired?: boolean;
   }, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'PUT', body: JSON.stringify(data) }),
   getMetrics: (token: string | null, filters?: {
@@ -1112,8 +1123,9 @@ export function useApi() {
         schoolYearId?: string;
         billingMonth?: number;
         billingYear?: number;
-        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled';
-        paymentStatus?: 'unpaid' | 'paid';
+        taxableBillStatus?: 'not_required' | 'required' | 'sent';
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
         startDate?: string;
         endDate?: string;
       }) => {
@@ -1144,7 +1156,8 @@ export function useApi() {
         return billingApi.bulkCreate(data, token);
       },
       update: async (id: string, data: {
-        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled';
+        taxableBillStatus?: 'not_required' | 'required' | 'sent';
+        billStatus?: 'required' | 'sent' | 'not_required' | 'cancelled'; // backward compatibility
         effectiveTuitionAmount?: number;
         discountAdjustments?: Array<{ type: 'percentage' | 'fixed'; value: number; description?: string }>;
         extraCharges?: Array<{ amount: number; description?: string }>;
@@ -1159,6 +1172,14 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.recordPayment(id, data, token);
+      },
+      recordPartialPayment: async (id: string, data: {
+        amount: number;
+        paymentMethod: 'manual' | 'online' | 'other';
+        paymentNote?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.recordPartialPayment(id, data, token);
       },
       applyLateFee: async (id: string, data?: { lateFeeAmount?: number }) => {
         const token = await getToken();
@@ -1238,6 +1259,7 @@ export function useApi() {
         tuitionTypeId?: string;
         scholarshipType?: 'percentage' | 'fixed';
         scholarshipValue?: number;
+        taxableBillRequired?: boolean;
       }) => {
         const token = await getToken();
         return billingApi.createStudentScholarship(studentId, data, token);
@@ -1246,6 +1268,7 @@ export function useApi() {
         tuitionTypeId?: string;
         scholarshipType?: 'percentage' | 'fixed';
         scholarshipValue?: number;
+        taxableBillRequired?: boolean;
       }) => {
         const token = await getToken();
         return billingApi.updateStudentScholarship(studentId, data, token);

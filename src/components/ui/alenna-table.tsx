@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { PremiumActionMenu } from "@/components/ui/premium-action-menu"
-import { ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronLeft, ChevronRight, ChevronsUpDown, Columns } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 
@@ -22,6 +31,7 @@ export interface AlennaTableAction<T> {
   onClick: (item: T) => void
   variant?: 'default' | 'destructive'
   disabled?: (item: T) => boolean
+  section?: string
 }
 
 export interface AlennaTableProps<T> {
@@ -48,6 +58,8 @@ export interface AlennaTableProps<T> {
   sortDirection?: 'asc' | 'desc'
   onSort?: (field: string) => void
   getRowId?: (item: T) => string
+  tableId?: string
+  enableColumnSelector?: boolean
 }
 
 export function AlennaTable<T>({
@@ -61,26 +73,121 @@ export function AlennaTable<T>({
   sortField,
   sortDirection,
   onSort,
-  getRowId
+  getRowId,
+  tableId,
+  enableColumnSelector = true
 }: AlennaTableProps<T>) {
   const { t } = useTranslation()
 
+  const getStorageKey = () => {
+    return tableId ? `alenna-table-columns-${tableId}` : null
+  }
+
+  const getInitialVisibility = (): Record<string, boolean> => {
+    if (!enableColumnSelector) {
+      return {}
+    }
+
+    const storageKey = getStorageKey()
+    if (storageKey) {
+      try {
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          return JSON.parse(stored)
+        }
+      } catch (error) {
+        console.error("Error loading column visibility from storage:", error)
+      }
+    }
+
+    const initial: Record<string, boolean> = {}
+    columns.forEach((col) => {
+      initial[col.key] = true
+    })
+    return initial
+  }
+
+  const [columnVisibility, setColumnVisibility] = React.useState<Record<string, boolean>>(getInitialVisibility)
+  const [columnSelectorOpen, setColumnSelectorOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!enableColumnSelector) return
+
+    setColumnVisibility((prev) => {
+      const updated = { ...prev }
+      let hasChanges = false
+
+      columns.forEach((col) => {
+        if (!(col.key in updated)) {
+          updated[col.key] = true
+          hasChanges = true
+        }
+      })
+
+      return hasChanges ? updated : prev
+    })
+  }, [columns, enableColumnSelector])
+
+  React.useEffect(() => {
+    if (!enableColumnSelector) return
+
+    const storageKey = tableId ? `alenna-table-columns-${tableId}` : null
+    if (storageKey) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(columnVisibility))
+      } catch (error) {
+        console.error("Error saving column visibility to storage:", error)
+      }
+    }
+  }, [columnVisibility, tableId, enableColumnSelector])
+
+  const handleToggleColumn = (columnKey: string, checked: boolean) => {
+    setColumnVisibility((prev) => {
+      const newVisibility = { ...prev, [columnKey]: checked }
+      const visibleCount = Object.values(newVisibility).filter(Boolean).length
+
+      if (visibleCount === 0) {
+        return prev
+      }
+
+      return newVisibility
+    })
+  }
+
+  const visibleColumns = React.useMemo(() => {
+    if (!enableColumnSelector) {
+      return columns
+    }
+
+    return columns.filter((col) => {
+      return columnVisibility[col.key] !== false
+    })
+  }, [columns, columnVisibility, enableColumnSelector])
+
   const hasActions = actions && actions.length > 0
-  const displayColumns = hasActions ? [...columns, { key: 'actions', label: '' }] : columns
+  const displayColumns = hasActions ? [...visibleColumns, { key: 'actions', label: '' }] : visibleColumns
 
   const getSortIcon = (columnKey: string) => {
-    if (!onSort || sortField !== columnKey) {
+    if (!onSort) {
       return null
+    }
+
+    if (sortField === columnKey) {
+      return (
+        <ChevronsUpDown
+          className={cn(
+            "h-3 w-3 ml-1 transition-all",
+            sortDirection === "asc"
+              ? "text-primary -translate-y-px"
+              : "text-primary translate-y-px"
+          )}
+        />
+      )
     }
 
     return (
       <ChevronsUpDown
-        className={cn(
-          "h-3 w-3 ml-1 transition-all",
-          sortDirection === "asc"
-            ? "text-primary -translate-y-px"
-            : "text-primary translate-y-px"
-        )}
+        className="h-3 w-3 ml-1 text-muted-foreground opacity-40"
       />
     )
   }
@@ -98,7 +205,7 @@ export function AlennaTable<T>({
     }
 
     const typedColumn = column as AlennaTableColumn<T>
-    const isSortable = typedColumn.sortable && onSort
+    const isSortable = (typedColumn.sortable !== false) && onSort
 
     if (isSortable) {
       return (
@@ -111,8 +218,8 @@ export function AlennaTable<T>({
         >
           <button
             type="button"
-            onClick={() => onSort(typedColumn.key)}
-            className="inline-flex items-center text-sm font-semibold text-foreground hover:text-primary transition-colors cursor-pointer"
+            onClick={() => onSort && onSort(typedColumn.key)}
+            className="inline-flex items-center text-[0.8rem] font-semibold text-foreground hover:text-primary transition-colors cursor-pointer text-left"
           >
             {typedColumn.label}
             {getSortIcon(typedColumn.key)}
@@ -141,14 +248,15 @@ export function AlennaTable<T>({
       icon: action.icon,
       onClick: () => action.onClick(item),
       variant: action.variant,
-      disabled: action.disabled ? action.disabled(item) : false
+      disabled: action.disabled ? action.disabled(item) : false,
+      section: action.section
     })) || []
 
     return (
       <tr
         key={rowId}
         className={cn(
-          "border-b transition-colors duration-200",
+          "border-b transition-colors duration-200 text-[0.8rem]",
           onRowClick && "cursor-pointer",
           "hover:bg-muted/30 group"
         )}
@@ -339,8 +447,91 @@ export function AlennaTable<T>({
     )
   }
 
+  const renderColumnSelector = () => {
+    if (!enableColumnSelector) {
+      return null
+    }
+
+    const visibleCount = Object.values(columnVisibility).filter(Boolean).length
+    const allVisible = visibleCount === columns.length
+
+    const handleSelectAll = () => {
+      const newVisibility: Record<string, boolean> = {}
+      columns.forEach((col) => {
+        newVisibility[col.key] = true
+      })
+      setColumnVisibility(newVisibility)
+    }
+
+    const handleDeselectAll = () => {
+      if (columns.length <= 1) return
+
+      const newVisibility: Record<string, boolean> = {}
+      columns.forEach((col, index) => {
+        newVisibility[col.key] = index === 0
+      })
+      setColumnVisibility(newVisibility)
+    }
+
+    return (
+      <div className="flex items-center gap-2 px-6 py-3 border-b bg-muted/30">
+        <DropdownMenu open={columnSelectorOpen} onOpenChange={setColumnSelectorOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-auto">
+              <Columns className="h-4 w-4 mr-2" />
+              {t("common.columns") || "Columns"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>
+              {t("common.toggleColumns") || "Toggle Columns"}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault()
+                if (allVisible) {
+                  handleDeselectAll()
+                } else {
+                  handleSelectAll()
+                }
+              }}
+              className="cursor-pointer"
+            >
+              {allVisible
+                ? (t("common.deselectAll") || "Deselect All")
+                : (t("common.selectAll") || "Select All")
+              }
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {columns.map((column) => {
+              const isVisible = columnVisibility[column.key] !== false
+              const label = typeof column.label === 'string' ? column.label : column.key
+
+              return (
+                <DropdownMenuCheckboxItem
+                  key={column.key}
+                  checked={isVisible}
+                  onCheckedChange={(checked) => handleToggleColumn(column.key, checked)}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                  }}
+                  disabled={isVisible && visibleCount === 1}
+                  className="cursor-pointer"
+                >
+                  {label}
+                </DropdownMenuCheckboxItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    )
+  }
+
   return (
     <Card className="rounded-md border border-border/50 shadow-sm">
+      {enableColumnSelector && renderColumnSelector()}
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
