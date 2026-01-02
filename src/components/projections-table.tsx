@@ -36,6 +36,7 @@ interface ProjectionsTableProps {
   totalPages: number
   totalItems: number
   onPageChange: (page: number) => void
+  tableId?: string
 }
 
 export function ProjectionsTable({
@@ -48,7 +49,8 @@ export function ProjectionsTable({
   currentPage,
   totalPages,
   totalItems,
-  onPageChange
+  onPageChange,
+  tableId
 }: ProjectionsTableProps) {
   const { t } = useTranslation()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
@@ -144,6 +146,7 @@ export function ProjectionsTable({
           }
         }}
         getRowId={(projection) => projection.id}
+        tableId={tableId}
       />
 
       <ConfirmationDialog

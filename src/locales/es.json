@@ -50,6 +50,20 @@
     "noSelection": "No seleccionado",
     "active": "Activo",
     "inactive": "Inactivo",
+    "months": {
+      "january": "Enero",
+      "february": "Febrero",
+      "march": "Marzo",
+      "april": "Abril",
+      "may": "Mayo",
+      "june": "Junio",
+      "july": "Julio",
+      "august": "Agosto",
+      "september": "Septiembre",
+      "october": "Octubre",
+      "november": "Noviembre",
+      "december": "Diciembre"
+    },
     "dangerZone": "Zona de Peligro",
     "showing": "Mostrando {{start}} - {{end}} de {{total}} resultados",
     "goTo": "Ir a",
@@ -748,6 +762,7 @@
     "focusTrait": "Rasgo de enfoque para este mes"
   },
   "sidebar": {
+    "home": "Inicio",
     "students": "Estudiantes",
     "users": "Usuarios",
     "schools": "Escuelas",
@@ -774,6 +789,7 @@
     "configurationDescription": "Gestiona tipos de colegiatura y fechas de vencimiento de pagos",
     "studentName": "Nombre",
     "month": "Mes",
+    "year": "Año",
     "tuition": "Colegiatura",
     "lateFee": "Interés por Atraso",
     "total": "Total",

@@ -1,5 +1,6 @@
 // Map module keys to icon file names
 const iconMap: Record<string, string | null> = {
+  home: "home",
   students: "students",
   projections: "projections",
   paces: "lectures",

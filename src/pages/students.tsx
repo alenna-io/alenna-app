@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -56,18 +57,19 @@ export default function StudentsPage() {
   const [studentError, setStudentError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [filters, setFilters] = React.useState<Filters>({
+  const tableId = "students"
+  const [filters, setFilters] = usePersistedState<Filters>("filters", {
     certificationType: "all",
     graduationYear: "all",
     isLeveled: "all",
     groupId: "all",
     isActive: "all"
-  })
+  }, tableId)
   const [groups, setGroups] = React.useState<Array<{ id: string; name: string | null; teacherName: string }>>([])
   const [view, setView] = React.useState<"cards" | "table">("table")
-  const [sortField, setSortField] = React.useState<SortField>(null)
-  const [sortDirection, setSortDirection] = React.useState<SortDirection>("asc")
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const [sortField, setSortField] = usePersistedState<SortField>("sortField", null, tableId)
+  const [sortDirection, setSortDirection] = usePersistedState<SortDirection>("sortDirection", "asc", tableId)
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const [isStudentDialogOpen, setIsStudentDialogOpen] = React.useState(false)
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null)
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
@@ -423,7 +425,7 @@ export default function StudentsPage() {
   // Reset to page 1 when filters/search/sort changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filters, sortField, sortDirection])
+  }, [searchTerm, filters, sortField, sortDirection, setCurrentPage])
 
   // Fetch students from group when group filter is selected
   React.useEffect(() => {
@@ -1266,6 +1268,7 @@ export default function StudentsPage() {
           totalPages={totalPages}
           totalItems={filteredAndSortedStudents.length}
           onPageChange={setCurrentPage}
+          tableId={tableId}
         />
       )}
 

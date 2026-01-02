@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { EditScholarshipDialog } from "@/components/billing/edit-scholarship-dialog"
 import { useTranslation } from "react-i18next"
 import { AlennaTable, type AlennaTableColumn, type AlennaTableAction } from "@/components/ui/alenna-table"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface Student {
   id: string
@@ -39,7 +40,8 @@ export default function BillingStudentConfigPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [editScholarshipDialogOpen, setEditScholarshipDialogOpen] = React.useState(false)
   const [selectedStudentForScholarship, setSelectedStudentForScholarship] = React.useState<Student | null>(null)
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const tableId = "billing-student-config"
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
   const { t } = useTranslation()
 
@@ -234,6 +236,7 @@ export default function BillingStudentConfigPage() {
           message: t("billing.noStudentsFound")
         }}
         getRowId={(student) => student.id}
+        tableId={tableId}
       />
 
       <EditScholarshipDialog

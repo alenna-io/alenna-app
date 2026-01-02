@@ -48,6 +48,20 @@
     "noSelection": "Not selected",
     "active": "Active",
     "inactive": "Inactive",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
     "dangerZone": "Danger Zone",
     "showing": "Showing {{start}} - {{end}} of {{total}} results",
     "goTo": "Go to",
@@ -124,6 +138,7 @@
     "createOption": "Create \"{{name}}\""
   },
   "sidebar": {
+    "home": "Home",
     "students": "Students",
     "users": "Users",
     "schools": "Schools",
@@ -154,6 +169,7 @@
     "configurationDescription": "Manage tuition types and payment due dates",
     "studentName": "Student Name",
     "month": "Month",
+    "year": "Year",
     "tuition": "Tuition",
     "lateFee": "Late Fee",
     "total": "Total",

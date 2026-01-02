@@ -22,6 +22,7 @@ interface GroupsTableProps {
   totalPages: number
   totalItems: number
   onPageChange: (page: number) => void
+  tableId?: string
 }
 
 export function GroupsTable({
@@ -32,6 +33,7 @@ export function GroupsTable({
   totalPages,
   totalItems,
   onPageChange,
+  tableId,
 }: GroupsTableProps) {
   const { t } = useTranslation()
 
@@ -97,6 +99,7 @@ export function GroupsTable({
       }}
       onRowClick={(group) => onViewDetails(group.id)}
       getRowId={(group) => group.id}
+      tableId={tableId}
     />
   )
 }

@@ -463,6 +463,58 @@ export const schoolsApi = {
 
 // Billing API
 export const billingApi = {
+  getAggregatedFinancials: (token: string | null, filters?: {
+    startDate?: string;
+    endDate?: string;
+    billingMonth?: number;
+    billingYear?: number;
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    studentId?: string;
+    schoolYearId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
+      if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
+      if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+    }
+    const query = params.toString();
+    return apiFetch(`/billing/aggregated-financials${query ? '?' + query : ''}`, token);
+  },
+  getRecords: (token: string | null, filters?: {
+    startDate?: string;
+    endDate?: string;
+    billingMonth?: number;
+    billingYear?: number;
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    studentId?: string;
+    schoolYearId?: string;
+    offset?: number;
+    limit?: number;
+    sortField?: string;
+    sortDirection?: 'asc' | 'desc';
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
+      if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
+      if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+      if (filters.offset !== undefined) params.append('offset', filters.offset.toString());
+      if (filters.limit !== undefined) params.append('limit', filters.limit.toString());
+      if (filters.sortField) params.append('sortField', filters.sortField);
+      if (filters.sortDirection) params.append('sortDirection', filters.sortDirection);
+    }
+    const query = params.toString();
+    return apiFetch(`/billing/records${query ? '?' + query : ''}`, token);
+  },
   getAll: (token: string | null, filters?: {
     studentId?: string;
     schoolYearId?: string;
@@ -1292,6 +1344,34 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.updateStudentScholarship(studentId, data, token);
+      },
+      getAggregatedFinancials: async (filters?: {
+        startDate?: string;
+        endDate?: string;
+        billingMonth?: number;
+        billingYear?: number;
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        studentId?: string;
+        schoolYearId?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.getAggregatedFinancials(token, filters);
+      },
+      getRecords: async (filters?: {
+        startDate?: string;
+        endDate?: string;
+        billingMonth?: number;
+        billingYear?: number;
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        studentId?: string;
+        schoolYearId?: string;
+        offset?: number;
+        limit?: number;
+        sortField?: string;
+        sortDirection?: 'asc' | 'desc';
+      }) => {
+        const token = await getToken();
+        return billingApi.getRecords(token, filters);
       },
       getMetrics: async (filters?: {
         startDate?: string;

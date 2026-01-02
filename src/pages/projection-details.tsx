@@ -1080,19 +1080,27 @@ export default function ACEProjectionPage() {
       </div>
 
       {/* PACE Picker Dialog */}
-      {pacePickerContext && (
-        <PacePickerDialog
-          open={pacePickerOpen}
-          onClose={() => {
-            setPacePickerOpen(false)
-            setPacePickerContext(null)
-          }}
-          onSelect={handlePaceSelect}
-          categoryFilter={subjectToCategory.get(pacePickerContext.subject) || pacePickerContext.subject}
-          title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 })}
-          existingPaceCatalogIds={existingPaceCatalogIds}
-        />
-      )}
+      {pacePickerContext && (() => {
+        const category = subjectToCategory.get(pacePickerContext.subject) || pacePickerContext.subject
+        const isElective = pacePickerContext.subject.startsWith('Elective: ')
+        // For electives, extract the sub-subject name (remove "Elective: " prefix)
+        const subSubjectName = isElective ? pacePickerContext.subject.replace('Elective: ', '') : undefined
+        
+        return (
+          <PacePickerDialog
+            open={pacePickerOpen}
+            onClose={() => {
+              setPacePickerOpen(false)
+              setPacePickerContext(null)
+            }}
+            onSelect={handlePaceSelect}
+            categoryFilter={isElective ? category : category}
+            subSubjectFilter={subSubjectName}
+            title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 })}
+            existingPaceCatalogIds={existingPaceCatalogIds}
+          />
+        )
+      })()}
 
       {/* Quarterly Tabs: Enhanced premium design */}
       <Tabs defaultValue={currentQuarter || "Q1"} className="w-full mt-8">

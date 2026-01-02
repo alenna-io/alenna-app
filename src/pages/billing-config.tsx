@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { AlennaTable, type AlennaTableColumn, type AlennaTableAction } from "@/components/ui/alenna-table"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface TuitionType {
   id: string
@@ -46,7 +47,8 @@ export default function BillingConfigPage() {
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
   const [selectedType, setSelectedType] = React.useState<TuitionType | null>(null)
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const tableId = "billing-config"
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
   const [formData, setFormData] = React.useState({
     name: "",
@@ -355,6 +357,7 @@ export default function BillingConfigPage() {
             pageSize: itemsPerPage,
             onPageChange: setCurrentPage
           }}
+          tableId={tableId}
           emptyState={{
             message: t("billing.noTuitionTypes")
           }}

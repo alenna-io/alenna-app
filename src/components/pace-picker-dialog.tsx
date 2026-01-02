@@ -36,6 +36,7 @@ interface PacePickerDialogProps {
   onClose: () => void
   onSelect: (paceId: string, paceCode: string) => void
   categoryFilter?: string
+  subSubjectFilter?: string // For electives, filter by specific sub-subject name
   levelFilter?: string
   title?: string
   existingPaceCatalogIds?: string[] // IDs of paces already in the projection
@@ -46,6 +47,7 @@ export function PacePickerDialog({
   onClose,
   onSelect,
   categoryFilter,
+  subSubjectFilter,
   // levelFilter is deprecated - level filtering is now handled by the dropdown in the dialog
   title = "Seleccionar Lección",
   existingPaceCatalogIds = []
@@ -64,18 +66,30 @@ export function PacePickerDialog({
       setSearchTerm("") // Reset search when dialog opens
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, categoryFilter])
+  }, [open, categoryFilter, subSubjectFilter])
 
   const fetchPaces = async () => {
     try {
       setLoading(true)
-      // Fetch ALL paces for the category (no level filter)
-      const filters: { category?: string } = {}
-      if (categoryFilter) {
+      // For electives, filter by subSubject name; otherwise filter by category
+      const filters: { category?: string; subSubjectId?: string } = {}
+      if (subSubjectFilter) {
+        // If subSubjectFilter is provided, we need to find the subSubjectId first
+        // For now, we'll filter by category and then filter by subSubjectName in the frontend
+        // This is a temporary solution - ideally we'd pass subSubjectId directly
+        if (categoryFilter) {
+          filters.category = categoryFilter
+        }
+      } else if (categoryFilter) {
         filters.category = categoryFilter
       }
 
-      const data = await api.paceCatalog.get(filters)
+      let data = await api.paceCatalog.get(filters)
+      
+      // If subSubjectFilter is provided, filter by subSubjectName
+      if (subSubjectFilter) {
+        data = data.filter((pace: PaceCatalogItem) => pace.subSubjectName === subSubjectFilter)
+      }
       // Sort by level first, then by code
       const sortedData = [...data].sort((a, b) => {
         // First sort by level (L1, L2, etc., with Electives at the end)

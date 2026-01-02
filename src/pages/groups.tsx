@@ -12,6 +12,7 @@ import { GroupsTable } from "@/components/groups-table"
 import { GroupsFilters } from "@/components/groups-filters"
 import { SearchBar } from "@/components/ui/search-bar"
 import { includesIgnoreAccents } from "@/lib/string-utils"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface GroupFromAPI {
   id: string
@@ -54,11 +55,12 @@ export default function GroupsPage() {
   const [teachers, setTeachers] = React.useState<Array<{ id: string; fullName: string }>>([])
   const [allGroups, setAllGroups] = React.useState<GroupDisplay[]>([])
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [filters, setFilters] = React.useState<Filters>({
+  const tableId = "groups"
+  const [filters, setFilters] = usePersistedState<Filters>("filters", {
     schoolYear: "",
     teacher: ""
-  })
-  const [currentPage, setCurrentPage] = React.useState(1)
+  }, tableId)
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
 
   // Check if user is school admin
@@ -180,7 +182,7 @@ export default function GroupsPage() {
   // Reset to page 1 when filters change
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filters])
+  }, [searchTerm, filters, setCurrentPage])
 
   const handleViewDetails = (groupId: string) => {
     navigate(`/groups/${groupId}`)
@@ -262,6 +264,7 @@ export default function GroupsPage() {
           totalPages={totalPages}
           totalItems={filteredGroups.length}
           onPageChange={setCurrentPage}
+          tableId={tableId}
         />
       )}
     </div>

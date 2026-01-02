@@ -8,6 +8,7 @@ import { includesIgnoreAccents } from "@/lib/string-utils"
 import { LecturesFilters } from "@/components/lectures-filters"
 import { SearchBar } from "@/components/ui/search-bar"
 import { LecturesTable } from "@/components/lectures-table"
+import { usePersistedState } from "@/hooks/use-table-state"
 import { CreateSubjectDialog } from "@/components/create-subject-dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -40,15 +41,16 @@ export default function LecturesPage() {
   const [subjects, setSubjects] = React.useState<SubSubject[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
-  const [filters, setFilters] = React.useState<{ category: string; level: string; subject: string }>({
+  const tableId = "lectures"
+  const [filters, setFilters] = usePersistedState<{ category: string; level: string; subject: string }>("filters", {
     category: "all",
     level: "all",
     subject: "all"
-  })
+  }, tableId)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [sortField, setSortField] = React.useState<"code" | "name" | "category" | "subject" | "level" | null>("code")
-  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc")
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const [sortField, setSortField] = usePersistedState<"code" | "name" | "category" | "subject" | "level" | null>("sortField", "code", tableId)
+  const [sortDirection, setSortDirection] = usePersistedState<"asc" | "desc">("sortDirection", "asc", tableId)
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
 
@@ -263,7 +265,7 @@ export default function LecturesPage() {
   // Reset to page 1 when filters/sort/search changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filters, sortField, sortDirection])
+  }, [searchTerm, filters, sortField, sortDirection, setCurrentPage])
 
   const handleSort = (field: "code" | "name" | "category" | "subject" | "level") => {
     if (sortField === field) {
@@ -357,6 +359,7 @@ export default function LecturesPage() {
           totalItems={sortedLectures.length}
           onPageChange={setCurrentPage}
           loading={false}
+          tableId={tableId}
         />
       )}
     </div>
