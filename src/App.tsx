@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '@/lib/query-client'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { LoginPage } from '@/pages/login'
 import { SignUpPage } from '@/pages/signup'
@@ -18,6 +20,7 @@ import SchoolYearWizardPage from '@/pages/school-year-wizard'
 import QuartersManagementPage from '@/pages/quarters-management'
 import SchoolInfoPage from '@/pages/school-info'
 import CertificationTypesPage from '@/pages/certification-types'
+import MonthlyContentPage from '@/pages/monthly-content'
 import BillingPage from '@/pages/billing'
 import BillingConfigPage from '@/pages/billing-config'
 import BillingStudentConfigPage from '@/pages/billing-student-config'
@@ -71,9 +74,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
 
   return (
-    <BrowserRouter>
-      <AlennaBackground />
-      <ScrollToTop />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AlennaBackground />
+        <ScrollToTop />
       <Routes>
         {/* Public routes - without sidebar */}
         <Route path="/login" element={<LoginPage />} />
@@ -126,6 +130,7 @@ export default function App() {
           <Route path="school-settings/school-years/wizard" element={<ModuleRouteGuard requiredModule="school_admin"><SchoolYearWizardPage /></ModuleRouteGuard>} />
           <Route path="school-settings/quarters" element={<ModuleRouteGuard requiredModule="school_admin"><QuartersManagementPage /></ModuleRouteGuard>} />
           <Route path="school-settings/certification-types" element={<ModuleRouteGuard requiredModule="school_admin"><CertificationTypesPage /></ModuleRouteGuard>} />
+          <Route path="school-settings/monthly-content" element={<ModuleRouteGuard requiredModule="school_admin"><MonthlyContentPage /></ModuleRouteGuard>} />
           <Route path="billing" element={<ModuleRouteGuard requiredModule="billing"><BillingPage /></ModuleRouteGuard>} />
           <Route path="billing/student-config" element={<ModuleRouteGuard requiredModule="billing"><BillingStudentConfigPage /></ModuleRouteGuard>} />
           <Route path="billing/config" element={<ModuleRouteGuard requiredModule="billing"><BillingConfigPage /></ModuleRouteGuard>} />
@@ -153,6 +158,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster richColors position="bottom-right" />
-    </BrowserRouter>
+      </BrowserRouter>
+    </QueryClientProvider>
   )
 }

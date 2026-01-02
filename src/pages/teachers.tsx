@@ -18,6 +18,7 @@ import { Plus, GraduationCap } from "lucide-react"
 import { TeacherFormDialog } from "@/components/teacher-form-dialog"
 import { useTranslation } from "react-i18next"
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { useTeachers, useTeachersCount, useCreateTeacher } from "@/hooks/queries"
 
 type SortField = "firstName" | "lastName" | null
 type SortDirection = "asc" | "desc"
@@ -28,9 +29,20 @@ export default function TeachersPage() {
   const api = useApi()
   const { userInfo } = useUser()
   const { t } = useTranslation()
-  const [teachers, setTeachers] = React.useState<Teacher[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+  
+  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
+  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
+  const isSchoolAdmin = hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+  
+  const targetSchoolId = schoolId || userInfo?.schoolId
+  const { data: teachersData = [], isLoading: isLoadingTeachers, error: teachersError } = useTeachers(targetSchoolId, isSchoolAdmin)
+  const { data: teachersCountData, isLoading: isLoadingCount } = useTeachersCount(targetSchoolId, isSchoolAdmin)
+  const createTeacherMutation = useCreateTeacher()
+  
+  const teachers = teachersData
+  const teachersCount = teachersCountData?.count || 0
+  const isLoading = isLoadingTeachers || isLoadingCount
+  const error = teachersError ? (teachersError as Error).message : null
   const [hasPermission, setHasPermission] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [view, setView] = React.useState<"cards" | "table">("table")
@@ -39,15 +51,8 @@ export default function TeachersPage() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const [isTeacherDialogOpen, setIsTeacherDialogOpen] = React.useState(false)
   const [school, setSchool] = React.useState<{ userLimit?: number; teacherLimit?: number } | null>(null)
-  const [teachersCount, setTeachersCount] = React.useState<number>(0)
   const [limitWarningDialog, setLimitWarningDialog] = React.useState<{ open: boolean; title: string; message: string } | null>(null)
   const itemsPerPage = 10
-
-  const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
-  const hasRole = React.useCallback((role: string) => roleNames.includes(role), [roleNames])
-
-  // Only SCHOOL_ADMIN can access this page
-  const isSchoolAdmin = hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
 
   React.useEffect(() => {
     if (!isSchoolAdmin && !hasRole('SUPERADMIN')) {
@@ -56,18 +61,13 @@ export default function TeachersPage() {
     }
   }, [isSchoolAdmin, hasRole])
 
-  // Fetch school info and teachers count for school admins
   React.useEffect(() => {
     if (!isSchoolAdmin) return
 
     const fetchSchoolInfo = async () => {
       try {
-        // Use /me endpoint for school admins to avoid permission issues
         const schoolData = await api.schools.getMy()
         setSchool(schoolData)
-
-        const countData = await api.schools.getMyTeachersCount()
-        setTeachersCount(countData.count)
       } catch (err) {
         console.error('Error fetching school info:', err)
       }
@@ -76,79 +76,12 @@ export default function TeachersPage() {
     fetchSchoolInfo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSchoolAdmin])
-
-  // Fetch teachers list from API
+  
   React.useEffect(() => {
-    if (!isSchoolAdmin) {
-      setTeachers([])
-      setIsLoading(false)
-      return
+    if (teachersError && ((teachersError as Error).message?.includes('permiso') || (teachersError as Error).message?.includes('403'))) {
+      setHasPermission(false)
     }
-
-    if (!schoolId && !userInfo?.schoolId) {
-      setError("No se pudo determinar la escuela")
-      setIsLoading(false)
-      return
-    }
-
-    let isMounted = true
-
-    const fetchTeachers = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        // Use /me endpoint for school admins to avoid permission issues
-        const data = isSchoolAdmin
-          ? await api.schools.getMyTeachers()
-          : await api.schools.getTeachers(schoolId || userInfo?.schoolId || '')
-
-        if (isMounted) {
-          // Transform API data to match frontend Teacher type
-          const transformedTeachers: Teacher[] = data.map((teacher: unknown) => {
-            const t = teacher as Record<string, unknown>
-            return {
-              id: t.id as string,
-              clerkId: t.clerkId as string,
-              email: t.email as string,
-              firstName: t.firstName as string,
-              lastName: t.lastName as string,
-              fullName: t.fullName as string,
-              schoolId: t.schoolId as string,
-              roles: (t.roles || []) as Teacher['roles'],
-              primaryRole: t.primaryRole as Teacher['primaryRole'],
-              isActive: t.isActive !== undefined ? (t.isActive as boolean) : true,
-            }
-          })
-
-          setTeachers(transformedTeachers)
-        }
-      } catch (err) {
-        const error = err as Error
-        console.error('Error fetching teachers:', error)
-        if (isMounted) {
-          // Check if it's a permission error (403)
-          if (error.message?.includes('permiso') || error.message?.includes('403')) {
-            setHasPermission(false)
-          } else {
-            setError(error.message || 'Failed to load teachers')
-            setTeachers([])
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchTeachers()
-
-    return () => {
-      isMounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, isSchoolAdmin, userInfo?.schoolId])
+  }, [teachersError])
 
   // Filter, search, and sort logic
   const filteredAndSortedTeachers = React.useMemo(() => {
@@ -224,35 +157,10 @@ export default function TeachersPage() {
     lastName: string
     roleIds: string[]
   }) => {
-    const targetSchoolId = schoolId || userInfo?.schoolId
     if (!targetSchoolId) {
       throw new Error("No se pudo determinar la escuela")
     }
-    await api.createUser({ ...data, schoolId: targetSchoolId })
-    // Reload teachers and count - use /me endpoint for school admins
-    const teachersData = isSchoolAdmin
-      ? await api.schools.getMyTeachers()
-      : await api.schools.getTeachers(targetSchoolId)
-    const transformedTeachers: Teacher[] = teachersData.map((teacher: unknown) => {
-      const t = teacher as Record<string, unknown>
-      return {
-        id: t.id as string,
-        clerkId: t.clerkId as string,
-        email: t.email as string,
-        firstName: t.firstName as string,
-        lastName: t.lastName as string,
-        fullName: t.fullName as string,
-        schoolId: t.schoolId as string,
-        roles: (t.roles || []) as Teacher['roles'],
-        primaryRole: t.primaryRole as Teacher['primaryRole'],
-        isActive: t.isActive !== undefined ? (t.isActive as boolean) : true,
-      }
-    })
-    setTeachers(transformedTeachers)
-    const countData = isSchoolAdmin
-      ? await api.schools.getMyTeachersCount()
-      : await api.schools.getTeachersCount(targetSchoolId)
-    setTeachersCount(countData.count)
+    await createTeacherMutation.mutateAsync({ ...data, schoolId: targetSchoolId })
   }
 
   // Show permission error if user doesn't have access
@@ -264,8 +172,6 @@ export default function TeachersPage() {
   if (isLoading) {
     return <Loading variant="list-page" showCreateButton={false} view="table" showFilters={false} />
   }
-
-  const targetSchoolId = schoolId || userInfo?.schoolId
 
   // Show admin/teacher teachers list
   return (

@@ -19,6 +19,7 @@ import { CreateEmptyProjectionDialog } from "@/components/create-empty-projectio
 import { CreateFromTemplateDialog } from "@/components/create-from-template-dialog"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { useTranslation } from "react-i18next"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface ProjectionWithStudent {
   id: string
@@ -64,12 +65,13 @@ export default function ProjectionsPage() {
   const [schoolYears, setSchoolYears] = React.useState<Array<{ id: string; name: string; isActive?: boolean }>>([])
   const [activeSchoolYear, setActiveSchoolYear] = React.useState<{ id: string; name: string } | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [filters, setFilters] = React.useState<{ schoolYear: string }>({
+  const tableId = "projections"
+  const [filters, setFilters] = usePersistedState<{ schoolYear: string }>("filters", {
     schoolYear: "all"
-  })
-  const [sortField, setSortField] = React.useState<"firstName" | "lastName">("lastName")
-  const [sortDirection, setSortDirection] = React.useState<"asc" | "desc">("asc")
-  const [currentPage, setCurrentPage] = React.useState(1)
+  }, tableId)
+  const [sortField, setSortField] = usePersistedState<"firstName" | "lastName">("sortField", "lastName", tableId)
+  const [sortDirection, setSortDirection] = usePersistedState<"asc" | "desc">("sortDirection", "asc", tableId)
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
   const [showCreateDialog, setShowCreateDialog] = React.useState(false)
   const [showEmptyDialog, setShowEmptyDialog] = React.useState(false)
@@ -216,7 +218,7 @@ export default function ProjectionsPage() {
   // Reset to page 1 when filters/sort/search changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [filters.schoolYear, sortField, sortDirection, searchTerm])
+  }, [filters.schoolYear, sortField, sortDirection, searchTerm, setCurrentPage])
 
   const handleSort = (field: "firstName" | "lastName") => {
     if (sortField === field) {
@@ -367,6 +369,7 @@ export default function ProjectionsPage() {
             totalPages={totalPages}
             totalItems={sortedProjections.length}
             onPageChange={setCurrentPage}
+            tableId={tableId}
           />
         ) : (
           /* Empty State */

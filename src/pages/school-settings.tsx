@@ -3,7 +3,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/page-header";
-import { Building2, Calendar, ChevronRight, Lock, GraduationCap, Clock } from "lucide-react";
+import { Building2, Calendar, ChevronRight, Lock, GraduationCap, Clock, BookOpen } from "lucide-react";
 import { useApi } from "@/services/api";
 import type { ModuleData } from "@/services/api";
 import { useUser } from "@/contexts/UserContext";
@@ -76,6 +76,15 @@ export default function SchoolSettingsPage() {
       path: "/school-settings/quarters",
       readPermission: "quarters.read",
       writePermission: "quarters.close",
+    },
+    {
+      id: "monthly-content",
+      title: t("schoolSettings.monthlyContent.title"),
+      description: t("schoolSettings.monthlyContent.description"),
+      icon: BookOpen,
+      path: "/school-settings/monthly-content",
+      readPermission: "schoolInfo.read",
+      writePermission: "schoolInfo.update",
     },
   ], [t]);
 

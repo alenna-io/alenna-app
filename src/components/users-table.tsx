@@ -43,6 +43,7 @@ interface UsersTableProps {
   currentUserId?: string
   currentUserEmail?: string
   updatingUsers?: Set<string>
+  tableId?: string
 }
 
 export function UsersTable({
@@ -61,7 +62,8 @@ export function UsersTable({
   canDelete = false,
   currentUserId,
   currentUserEmail,
-  updatingUsers = new Set()
+  updatingUsers = new Set(),
+  tableId
 }: UsersTableProps) {
   const { t } = useTranslation()
 
@@ -215,6 +217,7 @@ export function UsersTable({
       }}
       onRowClick={onUserSelect}
       getRowId={(user) => user.id}
+      tableId={tableId}
     />
   )
 }

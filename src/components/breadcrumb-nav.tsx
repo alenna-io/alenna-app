@@ -374,7 +374,7 @@ export function BreadcrumbNav() {
           const isLast = index === breadcrumbs.length - 1
 
           return (
-            <React.Fragment key={crumb.path}>
+            <React.Fragment key={`${crumb.path}-${index}`}>
               {index > 0 && (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               )}

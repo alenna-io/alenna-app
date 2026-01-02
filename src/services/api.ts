@@ -12,7 +12,6 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'Cache-Control': 'no-cache',
   };
 
   // Merge any additional headers
@@ -25,7 +24,6 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   }
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
-    cache: 'no-store',
     ...options,
     headers,
   });
@@ -463,6 +461,58 @@ export const schoolsApi = {
 
 // Billing API
 export const billingApi = {
+  getAggregatedFinancials: (token: string | null, filters?: {
+    startDate?: string;
+    endDate?: string;
+    billingMonth?: number;
+    billingYear?: number;
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    studentId?: string;
+    schoolYearId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
+      if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
+      if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+    }
+    const query = params.toString();
+    return apiFetch(`/billing/aggregated-financials${query ? '?' + query : ''}`, token);
+  },
+  getRecords: (token: string | null, filters?: {
+    startDate?: string;
+    endDate?: string;
+    billingMonth?: number;
+    billingYear?: number;
+    paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+    studentId?: string;
+    schoolYearId?: string;
+    offset?: number;
+    limit?: number;
+    sortField?: string;
+    sortDirection?: 'asc' | 'desc';
+  }) => {
+    const params = new URLSearchParams();
+    if (filters) {
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.billingMonth) params.append('billingMonth', filters.billingMonth.toString());
+      if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
+      if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
+      if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
+      if (filters.offset !== undefined) params.append('offset', filters.offset.toString());
+      if (filters.limit !== undefined) params.append('limit', filters.limit.toString());
+      if (filters.sortField) params.append('sortField', filters.sortField);
+      if (filters.sortDirection) params.append('sortDirection', filters.sortDirection);
+    }
+    const query = params.toString();
+    return apiFetch(`/billing/records${query ? '?' + query : ''}`, token);
+  },
   getAll: (token: string | null, filters?: {
     studentId?: string;
     schoolYearId?: string;
@@ -612,6 +662,42 @@ export const billingApi = {
     if (filters.includeAll) params.append('includeAll', filters.includeAll.toString());
     return apiFetch(`/billing/dashboard?${params}`, token);
   },
+};
+
+// Character Traits API
+export const characterTraitsApi = {
+  getAll: (schoolYearId?: string, token?: string | null) => {
+    const params = new URLSearchParams();
+    if (schoolYearId) params.append('schoolYearId', schoolYearId);
+    const query = params.toString();
+    return apiFetch(`/schools/me/character-traits${query ? '?' + query : ''}`, token || null);
+  },
+  getById: (id: string, token: string | null) => 
+    apiFetch(`/schools/me/character-traits/${id}`, token),
+  getByMonth: (schoolYearId: string, month: number, token: string | null) => {
+    const params = new URLSearchParams();
+    params.append('schoolYearId', schoolYearId);
+    params.append('month', month.toString());
+    return apiFetch(`/schools/me/character-traits/by-month?${params}`, token);
+  },
+  create: (data: {
+    schoolYearId: string;
+    month: number;
+    characterTrait: string;
+    verseText: string;
+    verseReference: string;
+  }, token: string | null) =>
+    apiFetch('/schools/me/character-traits', token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: {
+    schoolYearId?: string;
+    month?: number;
+    characterTrait?: string;
+    verseText?: string;
+    verseReference?: string;
+  }, token: string | null) =>
+    apiFetch(`/schools/me/character-traits/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) =>
+    apiFetch(`/schools/me/character-traits/${id}`, token, { method: 'DELETE' }),
 };
 
 // Groups API
@@ -1293,6 +1379,34 @@ export function useApi() {
         const token = await getToken();
         return billingApi.updateStudentScholarship(studentId, data, token);
       },
+      getAggregatedFinancials: async (filters?: {
+        startDate?: string;
+        endDate?: string;
+        billingMonth?: number;
+        billingYear?: number;
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        studentId?: string;
+        schoolYearId?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.getAggregatedFinancials(token, filters);
+      },
+      getRecords: async (filters?: {
+        startDate?: string;
+        endDate?: string;
+        billingMonth?: number;
+        billingYear?: number;
+        paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
+        studentId?: string;
+        schoolYearId?: string;
+        offset?: number;
+        limit?: number;
+        sortField?: string;
+        sortDirection?: 'asc' | 'desc';
+      }) => {
+        const token = await getToken();
+        return billingApi.getRecords(token, filters);
+      },
       getMetrics: async (filters?: {
         startDate?: string;
         endDate?: string;
@@ -1309,6 +1423,44 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.getDashboard(filters, token);
+      },
+    },
+    characterTraits: {
+      getAll: async (schoolYearId?: string) => {
+        const token = await getToken();
+        return characterTraitsApi.getAll(schoolYearId, token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return characterTraitsApi.getById(id, token);
+      },
+      getByMonth: async (schoolYearId: string, month: number) => {
+        const token = await getToken();
+        return characterTraitsApi.getByMonth(schoolYearId, month, token);
+      },
+      create: async (data: {
+        schoolYearId: string;
+        month: number;
+        characterTrait: string;
+        verseText: string;
+        verseReference: string;
+      }) => {
+        const token = await getToken();
+        return characterTraitsApi.create(data, token);
+      },
+      update: async (id: string, data: {
+        schoolYearId?: string;
+        month?: number;
+        characterTrait?: string;
+        verseText?: string;
+        verseReference?: string;
+      }) => {
+        const token = await getToken();
+        return characterTraitsApi.update(id, data, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return characterTraitsApi.delete(id, token);
       },
     },
   };

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AlennaTable, type AlennaTableColumn } from "@/components/ui/alenna-table";
 import { Badge } from "@/components/ui/badge";
+import { usePersistedState } from "@/hooks/use-table-state";
 
 interface CertificationType {
   id: string;
@@ -34,7 +35,8 @@ export default function CertificationTypesPage() {
   const [newName, setNewName] = React.useState("");
   const [newDescription, setNewDescription] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const tableId = "certification-types";
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId);
   const itemsPerPage = 10;
   const [errorDialog, setErrorDialog] = React.useState<{
     open: boolean;
@@ -217,6 +219,7 @@ export default function CertificationTypesPage() {
             pageSize: itemsPerPage,
             onPageChange: setCurrentPage
           }}
+          tableId={tableId}
           emptyState={{
             message: t("certificationTypes.noCertificationTypes")
           }}

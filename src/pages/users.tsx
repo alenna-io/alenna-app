@@ -22,6 +22,7 @@ import { includesIgnoreAccents } from "@/lib/string-utils"
 import { SearchBar } from "@/components/ui/search-bar"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface User {
   id: string
@@ -63,11 +64,12 @@ export default function UsersPage() {
   const [hasPermission, setHasPermission] = React.useState(true)
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [filters, setFilters] = React.useState<{ role: string; schoolId: string; isActive: string }>({
+  const tableId = "users"
+  const [filters, setFilters] = usePersistedState<{ role: string; schoolId: string; isActive: string }>("filters", {
     role: "",
     schoolId: "",
     isActive: ""
-  })
+  }, tableId)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false)
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null)
@@ -90,7 +92,7 @@ export default function UsersPage() {
     userId: string
     userName: string
   }>({ open: false, userId: '', userName: '' })
-  const [currentPage, setCurrentPage] = React.useState(1)
+  const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
   const [openSchoolPopover, setOpenSchoolPopover] = React.useState(false)
   const [schoolSearchTerm, setSchoolSearchTerm] = React.useState("")
@@ -429,7 +431,7 @@ export default function UsersPage() {
   // Reset to page 1 when search changes
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm])
+  }, [searchTerm, setCurrentPage])
 
   if (!hasPermission) {
     return <Navigate to="/404" replace />
@@ -538,6 +540,7 @@ export default function UsersPage() {
           currentUserId={userInfo?.id}
           currentUserEmail={userInfo?.email}
           updatingUsers={updatingUsers}
+          tableId={tableId}
         />
       ) : (
         <Card>

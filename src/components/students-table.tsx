@@ -21,6 +21,7 @@ interface StudentsTableProps {
   onRemoveFromGroup?: (student: Student, groupAssignmentId: string) => void
   groupAssignmentMap?: Map<string, string> // Maps student ID to group assignment ID
   showRemoveFromGroup?: boolean
+  tableId?: string
 }
 
 export function StudentsTable({
@@ -35,7 +36,8 @@ export function StudentsTable({
   onPageChange,
   onRemoveFromGroup,
   groupAssignmentMap,
-  showRemoveFromGroup = false
+  showRemoveFromGroup = false,
+  tableId
 }: StudentsTableProps) {
   const { t } = useTranslation()
 
@@ -199,6 +201,7 @@ export function StudentsTable({
         }
       }}
       getRowId={(student) => student.id}
+      tableId={tableId}
     />
   )
 }

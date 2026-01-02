@@ -23,6 +23,7 @@ interface LecturesTableProps {
   totalItems: number
   onPageChange: (page: number) => void
   loading?: boolean
+  tableId?: string
 }
 
 export function LecturesTable({
@@ -35,6 +36,7 @@ export function LecturesTable({
   totalItems,
   onPageChange,
   loading = false,
+  tableId,
 }: LecturesTableProps) {
   const { t } = useTranslation()
 
@@ -106,6 +108,7 @@ export function LecturesTable({
         }
       }}
       getRowId={(lecture) => lecture.id}
+      tableId={tableId}
     />
   )
 }

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2, CreditCard, ChevronRight } from "lucide-react"
+import { Settings, Users, FileText, GraduationCap, Building, User as UserIcon, BookOpen, Sliders, Library, Calendar, Award, UserCog, Users2, CreditCard, ChevronRight, Home } from "lucide-react"
 import { UserButton } from "@clerk/clerk-react"
 import { Link, useLocation } from "react-router-dom"
 import { ModuleIcon } from "@/components/ui/module-icon"
@@ -42,6 +42,7 @@ export function AppSidebar() {
 
   // Module to route/icon mapping with translations
   const moduleConfig: Record<string, { title: string; url: string; icon: MenuIcon }> = React.useMemo(() => ({
+    home: { title: t("sidebar.home") || "Home", url: "/", icon: Home },
     students: { title: t("sidebar.students"), url: "/students", icon: GraduationCap },
     projections: { title: t("sidebar.projections"), url: "/projections", icon: BookOpen },
     paces: { title: t("sidebar.lectures") || "Lectures", url: "/lectures", icon: Library },
@@ -183,8 +184,16 @@ export function AppSidebar() {
   }
 
   // Organize navigation items into groups
-  const academicModules = ['students', 'projections', 'reportCards', 'monthlyAssignments']
+  const academicModules = ['home', 'students', 'projections', 'reportCards', 'monthlyAssignments']
   const schoolManagementModules = ['groups', 'teachers', 'paces']
+
+  // Always add Home item manually (it's not a module from API)
+  const homeItem = {
+    title: moduleConfig.home.title,
+    url: moduleConfig.home.url,
+    icon: moduleConfig.home.icon,
+    moduleKey: 'home' as const,
+  }
 
   const academicItems = otherModules
     .filter(module => academicModules.includes(module.key))
@@ -206,6 +215,9 @@ export function AppSidebar() {
         moduleKey: module.key,
       }
     })
+
+  // Add Home item at the beginning
+  academicItems.unshift(homeItem)
 
   const schoolManagementItems = otherModules
     .filter(module => schoolManagementModules.includes(module.key))
@@ -582,44 +594,57 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupLabel>{t("sidebar.configurationSection")}</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {configurationMenuItems.map((item) => {
-                  const isActive = item.url === '/'
-                    ? location.pathname === '/'
-                    : location.pathname.startsWith(item.url)
-
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        tooltip={item.title}
-                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
-                      >
-                        <Link
-                          to={item.url}
-                          onClick={() => {
-                            // Close sidebar on mobile when clicking a menu item
-                            if (isMobile) {
-                              setOpenMobile(false)
-                            }
-                          }}
-                          className="flex items-center gap-2 min-w-0"
-                        >
-                          {item.url === "/school-settings" && hasModuleIcon("school_admin") ? (
-                            <ModuleIcon moduleKey="school_admin" size={20} className="flex-shrink-0" />
-                          ) : item.url === "/configuration" && hasModuleIcon("configuration") ? (
-                            <ModuleIcon moduleKey="configuration" size={20} className="flex-shrink-0" />
-                          ) : (
-                            <item.icon className="flex-shrink-0" />
-                          )}
-                          <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
+              {(isLoading || isLoadingUser) ? (
+                <SidebarMenu>
+                  {Array.from({ length: configurationMenuItems.length }).map((_, index) => (
+                    <SidebarMenuItem key={`skeleton-config-${index}`}>
+                      <div className="flex items-center gap-2 px-2 py-2">
+                        <AlennaSkeleton height={20} width={20} variant="rectangular" className="rounded" />
+                        <AlennaSkeleton height={16} width="60%" variant="text" />
+                      </div>
                     </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
+                  ))}
+                </SidebarMenu>
+              ) : (
+                <SidebarMenu>
+                  {configurationMenuItems.map((item) => {
+                    const isActive = item.url === '/'
+                      ? location.pathname === '/'
+                      : location.pathname.startsWith(item.url)
+
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          tooltip={item.title}
+                          className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
+                        >
+                          <Link
+                            to={item.url}
+                            onClick={() => {
+                              // Close sidebar on mobile when clicking a menu item
+                              if (isMobile) {
+                                setOpenMobile(false)
+                              }
+                            }}
+                            className="flex items-center gap-2 min-w-0"
+                          >
+                            {item.url === "/school-settings" && hasModuleIcon("school_admin") ? (
+                              <ModuleIcon moduleKey="school_admin" size={20} className="flex-shrink-0" />
+                            ) : item.url === "/configuration" && hasModuleIcon("configuration") ? (
+                              <ModuleIcon moduleKey="configuration" size={20} className="flex-shrink-0" />
+                            ) : (
+                              <item.icon className="flex-shrink-0" />
+                            )}
+                            <span className="break-words leading-tight flex-1 whitespace-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )
+                  })}
+                </SidebarMenu>
+              )}
             </SidebarGroupContent>
           </SidebarGroup>
         )}
