@@ -145,7 +145,7 @@ export function MonthlyContentFormDialog({
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <Field>
-              <FieldLabel required>{t("monthlyContent.schoolYear")}</FieldLabel>
+              <FieldLabel>{t("monthlyContent.schoolYear")}</FieldLabel>
               <Select
                 value={formData.schoolYearId}
                 onValueChange={(value) => setFormData({ ...formData, schoolYearId: value })}
@@ -164,7 +164,7 @@ export function MonthlyContentFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel required>{t("monthlyContent.month")}</FieldLabel>
+              <FieldLabel>{t("monthlyContent.month")}</FieldLabel>
               <Select
                 value={formData.month}
                 onValueChange={(value) => setFormData({ ...formData, month: value })}
@@ -183,7 +183,7 @@ export function MonthlyContentFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel required>{t("monthlyContent.characterTrait")}</FieldLabel>
+              <FieldLabel>{t("monthlyContent.characterTrait")}</FieldLabel>
               <Input
                 value={formData.characterTrait}
                 onChange={(e) => setFormData({ ...formData, characterTrait: e.target.value })}
@@ -193,7 +193,7 @@ export function MonthlyContentFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel required>{t("monthlyContent.verseText")}</FieldLabel>
+              <FieldLabel>{t("monthlyContent.verseText")}</FieldLabel>
               <Textarea
                 value={formData.verseText}
                 onChange={(e) => setFormData({ ...formData, verseText: e.target.value })}
@@ -204,7 +204,7 @@ export function MonthlyContentFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel required>{t("monthlyContent.verseReference")}</FieldLabel>
+              <FieldLabel>{t("monthlyContent.verseReference")}</FieldLabel>
               <Input
                 value={formData.verseReference}
                 onChange={(e) => setFormData({ ...formData, verseReference: e.target.value })}
