@@ -31,6 +31,8 @@
     "yes": "Sí",
     "no": "No",
     "noResults": "No se encontraron resultados",
+    "noResultsFound": "No hay datos disponibles",
+    "noResultsMessage": "No hay elementos para mostrar en este momento. Intenta ajustar tus filtros o crea un nuevo elemento para comenzar.",
     "goBack": "Volver",
     "important": "Importante",
     "enabled": "Habilitado",
@@ -51,6 +53,18 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "months": {
+      "1": "Enero",
+      "2": "Febrero",
+      "3": "Marzo",
+      "4": "Abril",
+      "5": "Mayo",
+      "6": "Junio",
+      "7": "Julio",
+      "8": "Agosto",
+      "9": "Septiembre",
+      "10": "Octubre",
+      "11": "Noviembre",
+      "12": "Diciembre",
       "january": "Enero",
       "february": "Febrero",
       "march": "Marzo",
@@ -120,6 +134,39 @@
     "certificationTypes": {
       "title": "Tipos de Certificación",
       "description": "Administra los tipos de certificación disponibles para esta escuela"
+    },
+    "monthlyContent": {
+      "title": "Contenido Mensual",
+      "description": "Configura rasgos de carácter y versículos del mes"
+    }
+  },
+  "monthlyContent": {
+    "title": "Configuración de Contenido Mensual",
+    "description": "Configura rasgos de carácter y versículos para cada mes del año escolar",
+    "schoolYear": "Año Escolar",
+    "month": "Mes",
+    "characterTrait": "Rasgo",
+    "verseText": "Versículo",
+    "verseReference": "Referencia",
+    "create": "Agregar Contenido Mensual",
+    "edit": "Editar Contenido Mensual",
+    "createDescription": "Agregar un nuevo rasgo de carácter y versículo para un mes",
+    "editDescription": "Actualizar el rasgo de carácter y versículo para este mes",
+    "createSuccess": "Contenido mensual creado exitosamente",
+    "updateSuccess": "Contenido mensual actualizado exitosamente",
+    "deleteSuccess": "Contenido mensual eliminado exitosamente",
+    "createError": "Error al crear contenido mensual",
+    "updateError": "Error al actualizar contenido mensual",
+    "deleteTitle": "Eliminar Contenido Mensual",
+    "deleteDescription": "¿Estás seguro de que deseas eliminar este contenido mensual? Esta acción no se puede deshacer.",
+    "selectMonth": "Selecciona un mes",
+    "characterTraitPlaceholder": "ej., Fiel, Compasivo, Paciente",
+    "verseTextPlaceholder": "Ingresa el texto completo del versículo",
+    "verseReferencePlaceholder": "ej., Proverbios 3:5",
+    "emptyTitle": "No hay contenido mensual configurado",
+    "emptyDescription": "Comienza agregando rasgos de carácter y versículos para cada mes del año escolar. Este contenido se mostrará en el tablero.",
+    "error": {
+      "invalidMonth": "El mes debe estar entre 1 y 12"
     }
   },
   "certificationTypes": {
@@ -736,7 +783,7 @@
     "teachers": "Maestros",
     "documents": "Documentos",
     "settings": "Configuración",
-    "billing": "Facturación",
+    "billing": "Finanzas",
     "config": "Configuración",
     "createStudent": "Crear Estudiante",
     "createSchool": "Crear Escuela",
@@ -953,7 +1000,12 @@
     "invalidDiscountValue": "Valor de descuento inválido",
     "discountPercentageExceeds100": "El porcentaje de descuento no puede exceder 100%",
     "invalidExtraChargeAmount": "Monto de cargo extra inválido",
-    "noRecordsToUpdate": "No hay registros disponibles para actualizar para el mes actual. Todos los registros están pagados o bloqueados."
+    "noRecordsToUpdate": "No hay registros disponibles para actualizar para el mes actual. Todos los registros están pagados o bloqueados.",
+    "noActiveSchoolYear": "No se encontró un año escolar activo. Por favor crea un año escolar primero.",
+    "billsGeneratedSuccessfully": "Facturas generadas exitosamente para todos los estudiantes",
+    "failedToGenerateBills": "Error al generar facturas",
+    "recordsUpdated": "{{updated}} registro(s) actualizado(s). {{skipped}} omitido(s).",
+    "failedToUpdateRecords": "Error al actualizar registros"
   },
   "wizard": {
     "title": "Generar Proyección",
@@ -1030,7 +1082,7 @@
     "activateSchool": "Activar Escuela",
     "deactivateSchool": "Desactivar Escuela",
     "configuration": "Configuración",
-    "billing": "Facturación"
+    "billing": "Finanzas"
   },
   "filters": {
     "title": "Filtros",

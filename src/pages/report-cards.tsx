@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from "react-router-dom"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
-import { EmptyState } from "@/components/ui/empty-state"
 import { FileText } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
@@ -307,17 +306,17 @@ export default function ReportCardsPage() {
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <EmptyState
-              icon={FileText}
-              title={t("reportCards.noReportCards")}
-              description={searchTerm || filters.schoolYear
-                ? t("reportCards.noReportCardsWithFilters")
-                : t("reportCards.noProjectionsYet")}
-            />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed rounded-lg">
+          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2 text-foreground">
+            {t("reportCards.noReportCards")}
+          </h3>
+          <p className="text-sm text-muted-foreground text-center mb-4 max-w-md">
+            {searchTerm || filters.schoolYear
+              ? t("reportCards.noReportCardsWithFilters")
+              : t("reportCards.noProjectionsYet")}
+          </p>
+        </div>
       )}
 
       {/* Pagination */}

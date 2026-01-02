@@ -29,6 +29,8 @@
     "yes": "Yes",
     "no": "No",
     "noResults": "No results found",
+    "noResultsFound": "No data available",
+    "noResultsMessage": "There are no items to display at this time. Try adjusting your filters or create a new item to get started.",
     "goBack": "Go Back",
     "important": "Important",
     "enabled": "Enabled",
@@ -49,6 +51,18 @@
     "active": "Active",
     "inactive": "Inactive",
     "months": {
+      "1": "January",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September",
+      "10": "October",
+      "11": "November",
+      "12": "December",
       "january": "January",
       "february": "February",
       "march": "March",
@@ -120,6 +134,39 @@
     "certificationTypes": {
       "title": "Certification Types",
       "description": "Manage certification types available for this school"
+    },
+    "monthlyContent": {
+      "title": "Monthly Content",
+      "description": "Configure character traits and verses of the month"
+    }
+  },
+  "monthlyContent": {
+    "title": "Monthly Content Configuration",
+    "description": "Configure character traits and verses for each month of the school year",
+    "schoolYear": "School Year",
+    "month": "Month",
+    "characterTrait": "Character Trait",
+    "verseText": "Verse Text",
+    "verseReference": "Verse Reference",
+    "create": "Add Monthly Content",
+    "edit": "Edit Monthly Content",
+    "createDescription": "Add a new character trait and verse for a month",
+    "editDescription": "Update the character trait and verse for this month",
+    "createSuccess": "Monthly content created successfully",
+    "updateSuccess": "Monthly content updated successfully",
+    "deleteSuccess": "Monthly content deleted successfully",
+    "createError": "Failed to create monthly content",
+    "updateError": "Failed to update monthly content",
+    "deleteTitle": "Delete Monthly Content",
+    "deleteDescription": "Are you sure you want to delete this monthly content? This action cannot be undone.",
+    "selectMonth": "Select a month",
+    "characterTraitPlaceholder": "e.g., Faithful, Compassionate, Patient",
+    "verseTextPlaceholder": "Enter the full verse text",
+    "verseReferencePlaceholder": "e.g., Proverbs 3:5",
+    "emptyTitle": "No monthly content configured",
+    "emptyDescription": "Get started by adding character traits and verses for each month of the school year. This content will be displayed on the dashboard.",
+    "error": {
+      "invalidMonth": "Month must be between 1 and 12"
     }
   },
   "certificationTypes": {
@@ -264,6 +311,12 @@
       "partialPayment": "Partial Payment",
       "paid": "Paid"
     },
+    "noActiveSchoolYear": "No active school year found. Please create a school year first.",
+    "billsGeneratedSuccessfully": "Bills generated successfully for all students",
+    "failedToGenerateBills": "Failed to generate bills",
+    "noRecordsToUpdate": "No records available to update for the current month. All records are either paid or locked.",
+    "recordsUpdated": "Updated {{updated}} record(s). {{skipped}} skipped.",
+    "failedToUpdateRecords": "Failed to update records",
     "taxableBillStatus": {
       "notRequired": "Not Required",
       "required": "Required",

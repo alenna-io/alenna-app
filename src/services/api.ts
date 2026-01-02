@@ -664,6 +664,42 @@ export const billingApi = {
   },
 };
 
+// Character Traits API
+export const characterTraitsApi = {
+  getAll: (schoolYearId?: string, token?: string | null) => {
+    const params = new URLSearchParams();
+    if (schoolYearId) params.append('schoolYearId', schoolYearId);
+    const query = params.toString();
+    return apiFetch(`/schools/me/character-traits${query ? '?' + query : ''}`, token || null);
+  },
+  getById: (id: string, token: string | null) => 
+    apiFetch(`/schools/me/character-traits/${id}`, token),
+  getByMonth: (schoolYearId: string, month: number, token: string | null) => {
+    const params = new URLSearchParams();
+    params.append('schoolYearId', schoolYearId);
+    params.append('month', month.toString());
+    return apiFetch(`/schools/me/character-traits/by-month?${params}`, token);
+  },
+  create: (data: {
+    schoolYearId: string;
+    month: number;
+    characterTrait: string;
+    verseText: string;
+    verseReference: string;
+  }, token: string | null) =>
+    apiFetch('/schools/me/character-traits', token, { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: {
+    schoolYearId?: string;
+    month?: number;
+    characterTrait?: string;
+    verseText?: string;
+    verseReference?: string;
+  }, token: string | null) =>
+    apiFetch(`/schools/me/character-traits/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string, token: string | null) =>
+    apiFetch(`/schools/me/character-traits/${id}`, token, { method: 'DELETE' }),
+};
+
 // Groups API
 export const groupsApi = {
   getBySchoolYear: (schoolYearId: string, token: string | null) => apiFetch(`/groups/school-year/${schoolYearId}`, token),
@@ -1387,6 +1423,44 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.getDashboard(filters, token);
+      },
+    },
+    characterTraits: {
+      getAll: async (schoolYearId?: string) => {
+        const token = await getToken();
+        return characterTraitsApi.getAll(schoolYearId, token);
+      },
+      getById: async (id: string) => {
+        const token = await getToken();
+        return characterTraitsApi.getById(id, token);
+      },
+      getByMonth: async (schoolYearId: string, month: number) => {
+        const token = await getToken();
+        return characterTraitsApi.getByMonth(schoolYearId, month, token);
+      },
+      create: async (data: {
+        schoolYearId: string;
+        month: number;
+        characterTrait: string;
+        verseText: string;
+        verseReference: string;
+      }) => {
+        const token = await getToken();
+        return characterTraitsApi.create(data, token);
+      },
+      update: async (id: string, data: {
+        schoolYearId?: string;
+        month?: number;
+        characterTrait?: string;
+        verseText?: string;
+        verseReference?: string;
+      }) => {
+        const token = await getToken();
+        return characterTraitsApi.update(id, data, token);
+      },
+      delete: async (id: string) => {
+        const token = await getToken();
+        return characterTraitsApi.delete(id, token);
       },
     },
   };

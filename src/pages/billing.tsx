@@ -429,25 +429,23 @@ export default function BillingPage() {
       const currentMonth = now.getMonth() + 1
       const currentYear = now.getFullYear()
 
-      // Get active school year - for now, use a placeholder or get from API
-      // You may need to adjust this based on your school year logic
-      const schoolYearId = records[0]?.schoolYearId || ""
-
-      if (!schoolYearId) {
-        toast.error("No active school year found. Please create a school year first.")
+      const currentWeekInfo = await api.schoolYears.getCurrentWeek()
+      
+      if (!currentWeekInfo?.schoolYear?.id) {
+        toast.error(t("billing.noActiveSchoolYear"))
         return
       }
 
       await api.billing.bulkCreate({
-        schoolYearId,
+        schoolYearId: currentWeekInfo.schoolYear.id,
         billingMonth: currentMonth,
         billingYear: currentYear,
       })
 
-      toast.success("Bills generated successfully for all students")
+      toast.success(t("billing.billsGeneratedSuccessfully"))
       await loadBillingData()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to generate bills"
+      const errorMessage = err instanceof Error ? err.message : t("billing.failedToGenerateBills")
       toast.error(errorMessage)
     } finally {
       setGeneratingBills(false)
@@ -461,14 +459,15 @@ export default function BillingPage() {
       const currentMonth = now.getMonth() + 1
       const currentYear = now.getFullYear()
 
-      const schoolYearId = records[0]?.schoolYearId || ""
-
-      if (!schoolYearId) {
-        toast.error("No active school year found.")
+      const currentWeekInfo = await api.schoolYears.getCurrentWeek()
+      
+      if (!currentWeekInfo?.schoolYear?.id) {
+        toast.error(t("billing.noActiveSchoolYear"))
         return
       }
 
-      // Check if there are any records for the current month that are not paid/locked
+      const schoolYearId = currentWeekInfo.schoolYear.id
+
       const currentMonthRecords = records.filter(r =>
         r.billingMonth === currentMonth &&
         r.billingYear === currentYear &&
@@ -477,7 +476,7 @@ export default function BillingPage() {
       )
 
       if (currentMonthRecords.length === 0) {
-        toast.error(t("billing.noRecordsToUpdate") || "No records available to update for the current month. All records are either paid or locked.")
+        toast.error(t("billing.noRecordsToUpdate"))
         return
       }
 
@@ -487,10 +486,10 @@ export default function BillingPage() {
         billingYear: currentYear,
       })
 
-      toast.success(t("billing.recordsUpdated", { updated: result.updated, skipped: result.skipped }) || `Updated ${result.updated} record(s). ${result.skipped} skipped.`)
+      toast.success(t("billing.recordsUpdated", { updated: result.updated, skipped: result.skipped }))
       await loadBillingData()
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : t("billing.failedToUpdateRecords") || "Failed to update records"
+      const errorMessage = err instanceof Error ? err.message : t("billing.failedToUpdateRecords")
       toast.error(errorMessage)
     } finally {
       setUpdatingAllRecords(false)

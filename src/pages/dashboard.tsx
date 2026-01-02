@@ -20,7 +20,6 @@ export function DashboardPage() {
   const location = useLocation()
   const api = useApi()
   const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
-  const [loadingWeekInfo, setLoadingWeekInfo] = React.useState(true)
 
   React.useEffect(() => {
     const fetchCurrentWeek = async () => {
@@ -41,8 +40,6 @@ export function DashboardPage() {
           errorMessage.includes('not found')) {
           setCurrentWeekInfo(null)
         }
-      } finally {
-        setLoadingWeekInfo(false)
       }
     }
 
@@ -183,7 +180,7 @@ export function DashboardPage() {
       </div>
 
       {/* Resume Cards for School Admins */}
-      {isSchoolAdmin && !loadingWeekInfo && (
+      {isSchoolAdmin && (
         <DashboardResumeCards currentWeekInfo={currentWeekInfo} />
       )}
 
