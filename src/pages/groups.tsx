@@ -13,6 +13,7 @@ import { GroupsFilters } from "@/components/groups-filters"
 import { SearchBar } from "@/components/ui/search-bar"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { usePersistedState } from "@/hooks/use-table-state"
+import { useSchoolYears, useTeachers } from "@/hooks/queries"
 
 interface GroupFromAPI {
   id: string
@@ -50,10 +51,18 @@ export default function GroupsPage() {
 
   // Check if teachers module is enabled
   const hasTeachersModule = hasModule('teachers')
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [schoolYears, setSchoolYears] = React.useState<Array<{ id: string; name: string; isActive: boolean }>>([])
-  const [teachers, setTeachers] = React.useState<Array<{ id: string; fullName: string }>>([])
+
+  const { data: schoolYearsData = [], isLoading: isLoadingSchoolYears } = useSchoolYears()
+  const schoolYears = schoolYearsData as Array<{ id: string; name: string; isActive: boolean }>
+
+  const { data: teachersData = [], isLoading: isLoadingTeachers } = useTeachers(
+    userInfo?.schoolId,
+    true
+  )
+  const teachers = hasTeachersModule ? (teachersData || []).map(t => ({ id: t.id, fullName: t.fullName })) : []
+
   const [allGroups, setAllGroups] = React.useState<GroupDisplay[]>([])
+  const isLoading = isLoadingSchoolYears || isLoadingTeachers
   const [searchTerm, setSearchTerm] = React.useState("")
   const tableId = "groups"
   const [filters, setFilters] = usePersistedState<Filters>("filters", {
@@ -69,58 +78,28 @@ export default function GroupsPage() {
   }, [userInfo])
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      // Only fetch if user is a school admin and has schoolId
-      if (!isSchoolAdmin || !userInfo || !userInfo.schoolId) {
-        setIsLoading(false)
+    const fetchAllGroups = async () => {
+      if (!isSchoolAdmin || !userInfo || !userInfo.schoolId || schoolYears.length === 0) {
         return
       }
 
       try {
-        setIsLoading(true)
-        // Fetch school years
-        const schoolYearsData = await api.schoolYears.getAll()
-        setSchoolYears(schoolYearsData)
-
-        // Set active school year as default filter
-        const activeYear = schoolYearsData.find((sy: { isActive: boolean }) => sy.isActive)
-        if (activeYear) {
-          setFilters(prev => ({ ...prev, schoolYear: activeYear.id }))
-        }
-
-        // Fetch teachers only if teachers module is enabled
-        let teachersList: Array<{ id: string; fullName: string }> = []
-        if (hasTeachersModule) {
-          try {
-            const teachersData = await api.schools.getMyTeachers()
-            teachersList = teachersData.map((t: { id: string; fullName: string }) => ({ id: t.id, fullName: t.fullName }))
-            setTeachers(teachersList)
-          } catch (error) {
-            console.warn('Could not fetch teachers (module may not be enabled):', error)
-            // Continue without teachers - groups can still be displayed
-          }
-        }
-
-        // Fetch all groups from all school years
         const allGroupsData: GroupFromAPI[] = []
-        for (const year of schoolYearsData) {
+        for (const year of schoolYears) {
           try {
             const groupsData = await api.groups.getBySchoolYear(year.id)
-            allGroupsData.push(...groupsData)
+            allGroupsData.push(...(groupsData as GroupFromAPI[]))
           } catch (error) {
-            // Silently skip years we can't access
             console.error(`Error fetching groups for year ${year.id}:`, error)
           }
         }
 
-        // Map groups to display format (no longer need logical grouping - API returns distinct groups)
         const grouped: GroupDisplay[] = allGroupsData
           .filter((group: GroupFromAPI) => !group.deletedAt)
           .map((group: GroupFromAPI) => {
-            const teacher = teachersList.find((t: { id: string }) => t.id === group.teacherId)
-            const schoolYear = schoolYearsData.find((sy: { id: string }) => sy.id === group.schoolYearId)
+            const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
+            const schoolYear = schoolYears.find((sy: { id: string }) => sy.id === group.schoolYearId)
 
-            // Allow groups even without teacher (when teachers module is disabled)
             if (!schoolYear) return null
 
             return {
@@ -139,16 +118,19 @@ export default function GroupsPage() {
         setAllGroups(grouped)
       } catch (error) {
         console.error('Error fetching groups data:', error)
-      } finally {
-        setIsLoading(false)
       }
     }
 
-    if (!isLoadingUser && userInfo) {
-      fetchData()
+    if (!isLoadingUser && userInfo && !isLoading) {
+      fetchAllGroups()
+
+      const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
+      if (activeYear && !filters.schoolYear) {
+        setFilters(prev => ({ ...prev, schoolYear: activeYear.id }))
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userInfo, isSchoolAdmin, isLoadingUser])
+  }, [userInfo, isSchoolAdmin, isLoadingUser, schoolYears, teachers, isLoading])
 
   // Filter and search groups - must be before early returns
   const filteredGroups = React.useMemo(() => {
@@ -195,7 +177,7 @@ export default function GroupsPage() {
     return selectedYear?.isActive ?? false
   }, [filters.schoolYear, schoolYears])
 
-  if (isLoadingUser || isLoading) {
+  if (isLoadingUser || isLoading || isLoadingSchoolYears || isLoadingTeachers) {
     return <Loading variant="list-page" showCreateButton={true} view="table" showFilters={true} />
   }
 
@@ -245,7 +227,7 @@ export default function GroupsPage() {
         totalGroups={allGroups.length}
         filteredCount={filteredGroups.length}
         schoolYears={schoolYears}
-        teachers={teachers}
+        teachers={hasTeachersModule ? teachers : []}
       />
 
       {/* Groups Table */}

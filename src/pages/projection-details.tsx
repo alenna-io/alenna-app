@@ -987,7 +987,7 @@ export default function ACEProjectionPage() {
     const isClosed = isQuarterClosed(quarter)
     const isReadOnlyQuarter = isParentOnly || isClosed
     return (
-      <div className="space-y-5 md:space-y-6 animate-tab-content">
+      <div key={`quarter-content-${quarter}`} className="space-y-5 md:space-y-6 animate-tab-content">
         <ACEQuarterlyTable
           quarter={quarter}
           quarterName={quarterName}
@@ -1004,7 +1004,7 @@ export default function ACEProjectionPage() {
           isQuarterClosed={isClosed}
         />
         {hasModule('monthlyAssignments') && (
-          <div className="animate-staggered" style={{ animationDelay: '100ms' }}>
+          <div key={`monthly-assignments-${quarter}`} className="animate-staggered" style={{ animationDelay: '100ms' }}>
             <MonthlyAssignmentsSection
               quarter={quarter}
               assignments={monthlyAssignments}
@@ -1133,19 +1133,19 @@ export default function ACEProjectionPage() {
           </TabsList>
         </div>
 
-        <TabsContent value="Q1" className="mt-0">
+        <TabsContent key="Q1" value="Q1" className="mt-0">
           {renderQuarterContent("Q1", t("monthlyAssignments.quarterLabelQ1"))}
         </TabsContent>
 
-        <TabsContent value="Q2" className="mt-0">
+        <TabsContent key="Q2" value="Q2" className="mt-0">
           {renderQuarterContent("Q2", t("monthlyAssignments.quarterLabelQ2"))}
         </TabsContent>
 
-        <TabsContent value="Q3" className="mt-0">
+        <TabsContent key="Q3" value="Q3" className="mt-0">
           {renderQuarterContent("Q3", t("monthlyAssignments.quarterLabelQ3"))}
         </TabsContent>
 
-        <TabsContent value="Q4" className="mt-0">
+        <TabsContent key="Q4" value="Q4" className="mt-0">
           {renderQuarterContent("Q4", t("monthlyAssignments.quarterLabelQ4"))}
         </TabsContent>
       </Tabs>

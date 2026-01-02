@@ -12,7 +12,6 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
-    'Cache-Control': 'no-cache',
   };
 
   // Merge any additional headers
@@ -25,7 +24,6 @@ async function apiFetch(url: string, token: string | null, options: RequestInit 
   }
 
   const response = await fetch(`${API_BASE_URL}${url}`, {
-    cache: 'no-store',
     ...options,
     headers,
   });

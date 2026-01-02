@@ -19,6 +19,7 @@ import { CreateEmptyProjectionDialog } from "@/components/create-empty-projectio
 import { CreateFromTemplateDialog } from "@/components/create-from-template-dialog"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { useTranslation } from "react-i18next"
+import { usePersistedState } from "@/hooks/use-table-state"
 
 interface ProjectionWithStudent {
   id: string

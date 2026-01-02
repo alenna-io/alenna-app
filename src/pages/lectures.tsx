@@ -2,7 +2,6 @@ import * as React from "react"
 import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
-import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
 import { includesIgnoreAccents } from "@/lib/string-utils"
 import { LecturesFilters } from "@/components/lectures-filters"
@@ -12,6 +11,8 @@ import { usePersistedState } from "@/hooks/use-table-state"
 import { CreateSubjectDialog } from "@/components/create-subject-dialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { useLectures, useSubjects, queryKeys } from "@/hooks/queries"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface PaceCatalogItem {
   id: string
@@ -35,12 +36,16 @@ interface SubSubject {
 }
 
 export default function LecturesPage() {
-  const api = useApi()
   const { t } = useTranslation()
-  const [allLectures, setAllLectures] = React.useState<PaceCatalogItem[]>([])
-  const [subjects, setSubjects] = React.useState<SubSubject[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+  const queryClient = useQueryClient()
+
+  const { data: allLecturesData = [], isLoading: isLoadingLectures, error: lecturesError } = useLectures()
+  const { data: subjectsData = [], isLoading: isLoadingSubjects, error: subjectsError } = useSubjects()
+
+  const allLectures = (allLecturesData as unknown[]) as PaceCatalogItem[]
+  const subjects = (subjectsData as unknown[]) as SubSubject[]
+  const isLoading = isLoadingLectures || isLoadingSubjects
+  const error = lecturesError ? (lecturesError as Error).message : (subjectsError ? (subjectsError as Error).message : null)
   const tableId = "lectures"
   const [filters, setFilters] = usePersistedState<{ category: string; level: string; subject: string }>("filters", {
     category: "all",
@@ -103,77 +108,9 @@ export default function LecturesPage() {
   }, [subjects])
 
   const handleSubjectCreated = async () => {
-    // Refresh subjects and lectures
-    try {
-      const allSubjects = await api.subjects.getAll()
-      setSubjects(allSubjects as SubSubject[])
-
-      const data = await api.paceCatalog.get({})
-      setAllLectures(data as PaceCatalogItem[])
-    } catch (err) {
-      console.error('Error refreshing data:', err)
-    }
+    queryClient.invalidateQueries({ queryKey: queryKeys.lectures.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.subjects.all })
   }
-
-
-  // Fetch all subjects first
-  React.useEffect(() => {
-    let cancelled = false
-    const fetchSubjects = async () => {
-      try {
-        const allSubjects = await api.subjects.getAll()
-        if (!cancelled) {
-          setSubjects(allSubjects as SubSubject[])
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching subjects:', err)
-          setError(err instanceof Error ? err.message : 'Failed to load subjects')
-        }
-      }
-    }
-    fetchSubjects()
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Fetch all lectures once on mount
-  React.useEffect(() => {
-    let cancelled = false
-
-    const fetchAllLectures = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        // Fetch all lectures at once
-        const data = await api.paceCatalog.get({})
-
-        if (!cancelled) {
-          setAllLectures(data as PaceCatalogItem[])
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching lectures:', err)
-          setError(err instanceof Error ? err.message : 'Failed to load lectures')
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchAllLectures()
-
-    return () => {
-      cancelled = true
-    }
-    // Only fetch once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // Filter lectures by filters and search term (using AND logic for all filters)
   const filteredLectures = React.useMemo(() => {

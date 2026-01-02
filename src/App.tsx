@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '@/lib/query-client'
 import { DashboardLayout } from '@/layouts/dashboard-layout'
 import { LoginPage } from '@/pages/login'
 import { SignUpPage } from '@/pages/signup'
@@ -71,9 +73,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
 
   return (
-    <BrowserRouter>
-      <AlennaBackground />
-      <ScrollToTop />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AlennaBackground />
+        <ScrollToTop />
       <Routes>
         {/* Public routes - without sidebar */}
         <Route path="/login" element={<LoginPage />} />
@@ -153,6 +156,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster richColors position="bottom-right" />
-    </BrowserRouter>
+      </BrowserRouter>
+    </QueryClientProvider>
   )
 }

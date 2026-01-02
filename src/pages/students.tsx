@@ -16,6 +16,16 @@ import { useApi } from "@/services/api"
 import type { Student } from "@/types/student"
 import { useUser } from "@/contexts/UserContext"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
+import {
+  useStudents,
+  useStudent,
+  useCreateStudent,
+  useUpdateStudent,
+  useDeleteStudent,
+  useDeactivateStudent,
+  useReactivateStudent,
+} from "@/hooks/queries"
+import { useSchoolYears } from "@/hooks/queries/use-school-years"
 import { SearchBar } from "@/components/ui/search-bar"
 import { Button } from "@/components/ui/button"
 import { Plus, Users } from "lucide-react"
@@ -49,10 +59,6 @@ export default function StudentsPage() {
 
   // Check if teachers module is enabled
   const hasTeachersModule = hasModule('teachers')
-  const [students, setStudents] = React.useState<Student[]>([])
-  const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [isLoadingStudent, setIsLoadingStudent] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [studentError, setStudentError] = React.useState<string | null>(null)
   const [hasPermission, setHasPermission] = React.useState(true)
@@ -146,202 +152,94 @@ export default function StudentsPage() {
     }
   }, [userInfo, isStudentOnly, studentId, navigate])
 
-  // Fetch students list from API (scoped to user's school or specific school) - only when not viewing a specific student
+  const targetSchoolId = schoolId || userInfo?.schoolId
+  const { data: students = [], isLoading, error: studentsError } = useStudents(
+    !studentId && !isStudentOnly ? targetSchoolId : undefined
+  )
+
   React.useEffect(() => {
-    if (studentId) return
-    if (isStudentOnly) {
-      setStudents([])
-      setIsLoading(false)
-      return
+    if (studentsError) {
+      const error = studentsError as Error
+      if (error.message?.includes('permiso') || error.message?.includes('403')) {
+        setHasPermission(false)
+      } else {
+        setError(error.message || 'Failed to load students')
+      }
+    } else {
+      setError(null)
     }
+  }, [studentsError])
 
-    let isMounted = true
+  const { data: selectedStudentData, isLoading: isLoadingStudent, error: studentQueryError } = useStudent(
+    studentId || undefined
+  )
 
-    const fetchStudents = async () => {
+  React.useEffect(() => {
+    if (studentQueryError) {
+      const error = studentQueryError as Error
+      if (error.message?.includes('permiso') || error.message?.includes('not found') || error.message?.includes('Student not found') || error.message?.includes('no encontrada') || error.message?.includes('no encontrado')) {
+        setHasPermission(false)
+      } else {
+        setStudentError(error.message || 'Failed to load student')
+      }
+    } else {
+      setStudentError(null)
+    }
+  }, [studentQueryError])
+
+  const selectedStudent = selectedStudentData || null
+
+  const createStudentMutation = useCreateStudent()
+  const updateStudentMutation = useUpdateStudent()
+  const deleteStudentMutation = useDeleteStudent()
+  const deactivateStudentMutation = useDeactivateStudent()
+  const reactivateStudentMutation = useReactivateStudent()
+
+  const { data: schoolYears = [] } = useSchoolYears()
+
+  React.useEffect(() => {
+    if (!isSchoolAdmin || !userInfo?.schoolId || studentId || isStudentOnly) return
+
+    const fetchGroups = async () => {
       try {
-        setIsLoading(true)
-        setError(null)
+        const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
+        if (activeYear) {
+          const allGroups = await api.groups.getBySchoolYear(activeYear.id)
 
-        // If we have a schoolId from the route, fetch students for that specific school
-        // Otherwise, fetch students for the current user's school
-        const data = schoolId
-          ? await api.schools.getStudents(schoolId)
-          : await api.students.getAll()
-
-        // Fetch groups for filtering (only for school admins)
-        if (isSchoolAdmin && userInfo?.schoolId) {
-          try {
-            const schoolYears = await api.schoolYears.getAll()
-            const activeYear = schoolYears.find((sy: { isActive: boolean }) => sy.isActive)
-            if (activeYear) {
-              const allGroups = await api.groups.getBySchoolYear(activeYear.id)
-
-              // Fetch teachers only if teachers module is enabled
-              let teachers: Array<{ id: string; fullName: string }> = []
-              if (hasTeachersModule) {
-                try {
-                  teachers = await api.schools.getMyTeachers()
-                } catch (teachersError) {
-                  // Teachers module might not be enabled - continue without teacher names
-                  console.warn('Could not fetch teachers:', teachersError)
-                }
-              }
-
-              // Group by teacher and name to create unique groups
-              const groupMap = new Map<string, { id: string; name: string | null; teacherName: string }>()
-              allGroups.forEach((g: { id: string; teacherId: string; name: string | null; deletedAt: string | null }) => {
-                if (!g.deletedAt) {
-                  const teacher = teachers.find((t: { id: string }) => t.id === g.teacherId)
-                  const groupKey = `${g.teacherId}-${g.name || 'default'}`
-                  if (!groupMap.has(groupKey)) {
-                    groupMap.set(groupKey, {
-                      id: g.id, // Use first group ID as identifier
-                      name: g.name,
-                      teacherName: teacher?.fullName || t("groups.noTeacher") || 'Sin maestro' // Fallback if teacher not found
-                    })
-                  }
-                }
-              })
-              if (isMounted) {
-                setGroups(Array.from(groupMap.values()))
-              }
+          let teachers: Array<{ id: string; fullName: string }> = []
+          if (hasTeachersModule) {
+            try {
+              teachers = await api.schools.getMyTeachers()
+            } catch (teachersError) {
+              console.warn('Could not fetch teachers:', teachersError)
             }
-          } catch (err) {
-            // Silently fail - groups filter is optional
-            console.error('Error fetching groups:', err)
           }
-        }
 
-        if (isMounted) {
-          // Transform API data to match frontend Student type
-          const transformedStudents: Student[] = data.map((student: unknown) => {
-            const s = student as Record<string, unknown>
-            return {
-              id: s.id as string,
-              firstName: s.firstName as string,
-              lastName: s.lastName as string,
-              name: s.name as string,
-              age: s.age as number,
-              birthDate: s.birthDate as string,
-              certificationType: s.certificationType as string,
-              certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
-              graduationDate: s.graduationDate as string,
-              parents: (s.parents || []) as Student['parents'],
-              email: (s.email || undefined) as string | undefined,
-              phone: (s.phone || undefined) as string | undefined,
-              isLeveled: s.isLeveled as boolean,
-              expectedLevel: s.expectedLevel as string | undefined,
-              currentLevel: s.currentLevel as string | undefined,
-              streetAddress: (s.streetAddress || undefined) as string | undefined,
-              city: (s.city || undefined) as string | undefined,
-              state: (s.state || undefined) as string | undefined,
-              country: (s.country || undefined) as string | undefined,
-              zipCode: (s.zipCode || undefined) as string | undefined,
-              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
+          const groupMap = new Map<string, { id: string; name: string | null; teacherName: string }>()
+          allGroups.forEach((g: { id: string; teacherId: string; name: string | null; deletedAt: string | null }) => {
+            if (!g.deletedAt) {
+              const teacher = teachers.find((t: { id: string }) => t.id === g.teacherId)
+              const groupKey = `${g.teacherId}-${g.name || 'default'}`
+              if (!groupMap.has(groupKey)) {
+                groupMap.set(groupKey, {
+                  id: g.id,
+                  name: g.name,
+                  teacherName: teacher?.fullName || t("groups.noTeacher") || 'Sin maestro'
+                })
+              }
             }
           })
-
-          setStudents(transformedStudents)
+          setGroups(Array.from(groupMap.values()))
         }
       } catch (err) {
-        const error = err as Error
-        console.error('Error fetching students:', error)
-        console.error('Error message:', error.message)
-        if (isMounted) {
-          // Check if it's a permission error (403)
-          if (error.message?.includes('permiso') || error.message?.includes('403')) {
-            console.log('Setting hasPermission to false')
-            setHasPermission(false)
-          } else {
-            setError(error.message || 'Failed to load students')
-            setStudents([])
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
+        console.error('Error fetching groups:', err)
       }
     }
 
-    fetchStudents()
-
-    return () => {
-      isMounted = false
-    }
+    fetchGroups()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, schoolId, isStudentOnly])
+  }, [isSchoolAdmin, userInfo?.schoolId, studentId, isStudentOnly, schoolYears, hasTeachersModule])
 
-  // Fetch individual student from API when viewing profile
-  React.useEffect(() => {
-    if (!studentId) {
-      setSelectedStudent(null)
-      return
-    }
-
-    let isMounted = true
-
-    const fetchStudent = async () => {
-      try {
-        setIsLoadingStudent(true)
-        setStudentError(null)
-        const data = await api.students.getById(studentId)
-
-        if (isMounted) {
-          // Transform API data to match frontend Student type
-          const s = data as Record<string, unknown>
-          const transformedStudent: Student = {
-            id: s.id as string,
-            firstName: s.firstName as string,
-            lastName: s.lastName as string,
-            name: s.name as string,
-            age: s.age as number,
-            birthDate: s.birthDate as string,
-            certificationType: s.certificationType as string,
-            certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
-            graduationDate: s.graduationDate as string,
-            parents: (s.parents || []) as Student['parents'],
-            email: (s.email || undefined) as string | undefined,
-            phone: (s.phone || undefined) as string | undefined,
-            isLeveled: s.isLeveled as boolean,
-            expectedLevel: s.expectedLevel as string | undefined,
-            currentLevel: s.currentLevel as string | undefined,
-            streetAddress: (s.streetAddress || undefined) as string | undefined,
-            city: (s.city || undefined) as string | undefined,
-            state: (s.state || undefined) as string | undefined,
-            country: (s.country || undefined) as string | undefined,
-            zipCode: (s.zipCode || undefined) as string | undefined,
-            isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-          }
-
-          setSelectedStudent(transformedStudent)
-        }
-      } catch (err) {
-        const error = err as Error
-        console.error('Error fetching student:', error)
-        if (isMounted) {
-          // Check if it's a permission error (403) or not found error (404)
-          if (error.message?.includes('permiso') || error.message?.includes('not found') || error.message?.includes('Student not found') || error.message?.includes('no encontrada') || error.message?.includes('no encontrado')) {
-            setHasPermission(false)
-          } else {
-            setStudentError(error.message || 'Failed to load student')
-            setSelectedStudent(null)
-          }
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingStudent(false)
-        }
-      }
-    }
-
-    fetchStudent()
-
-    return () => {
-      isMounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId])
 
   // Calculate available graduation years from students
   const availableGraduationYears = React.useMemo(() => {
@@ -427,133 +325,8 @@ export default function StudentsPage() {
     setCurrentPage(1)
   }, [searchTerm, filters, sortField, sortDirection, setCurrentPage])
 
-  // Fetch students from group when group filter is selected
-  React.useEffect(() => {
-    if ((!filters.groupId || filters.groupId === "all") || !userInfo?.schoolId || studentId) {
-      // If no group filter or viewing a student, refetch all students
-      if ((!filters.groupId || filters.groupId === "all") && !studentId && !isStudentOnly) {
-        const fetchAllStudents = async () => {
-          try {
-            setIsLoading(true)
-            const data = schoolId
-              ? await api.schools.getStudents(schoolId)
-              : await api.students.getAll()
-
-            const transformedStudents: Student[] = data.map((student: unknown) => {
-              const s = student as Record<string, unknown>
-              return {
-                id: s.id as string,
-                firstName: s.firstName as string,
-                lastName: s.lastName as string,
-                name: s.name as string,
-                age: s.age as number,
-                birthDate: s.birthDate as string,
-                certificationType: s.certificationType as string,
-                graduationDate: s.graduationDate as string,
-                parents: (s.parents || []) as Student['parents'],
-                email: (s.email || undefined) as string | undefined,
-                phone: (s.phone || undefined) as string | undefined,
-                isLeveled: s.isLeveled as boolean,
-                expectedLevel: s.expectedLevel as string | undefined,
-                currentLevel: s.currentLevel as string | undefined,
-                streetAddress: (s.streetAddress || undefined) as string | undefined,
-                city: (s.city || undefined) as string | undefined,
-                state: (s.state || undefined) as string | undefined,
-                country: (s.country || undefined) as string | undefined,
-                zipCode: (s.zipCode || undefined) as string | undefined,
-                isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-              }
-            })
-            setStudents(transformedStudents)
-          } catch (err) {
-            console.error('Error fetching all students:', err)
-          } finally {
-            setIsLoading(false)
-          }
-        }
-        fetchAllStudents()
-      }
-      return
-    }
-
-    let isMounted = true
-
-    const fetchStudentsByGroup = async () => {
-      try {
-        setIsLoading(true)
-
-        if (!userInfo?.schoolId) {
-          return
-        }
-
-        // Use getGroupStudents API to get students for this group
-        const groupStudents = await api.groups.getGroupStudents(filters.groupId)
-
-        // Extract student IDs from GroupStudent objects
-        const studentIds = groupStudents
-          .filter((gs: { deletedAt: string | null }) => !gs.deletedAt)
-          .map((gs: { studentId: string }) => gs.studentId)
-
-        if (studentIds.length === 0) {
-          if (isMounted) {
-            setStudents([])
-            setIsLoading(false)
-          }
-          return
-        }
-
-        // Fetch all students and filter by the student IDs from the group
-        const allStudents = await api.students.getAll()
-        const groupStudentsList = allStudents.filter((s: { id: string }) => studentIds.includes(s.id))
-
-        if (isMounted) {
-          const transformedStudents: Student[] = groupStudentsList.map((student: unknown) => {
-            const s = student as Record<string, unknown>
-            return {
-              id: s.id as string,
-              firstName: s.firstName as string,
-              lastName: s.lastName as string,
-              name: s.name as string,
-              age: s.age as number,
-              birthDate: s.birthDate as string,
-              certificationType: s.certificationType as string,
-              certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
-              graduationDate: s.graduationDate as string,
-              parents: (s.parents || []) as Student['parents'],
-              email: (s.email || undefined) as string | undefined,
-              phone: (s.phone || undefined) as string | undefined,
-              isLeveled: s.isLeveled as boolean,
-              expectedLevel: s.expectedLevel as string | undefined,
-              currentLevel: s.currentLevel as string | undefined,
-              streetAddress: (s.streetAddress || undefined) as string | undefined,
-              city: (s.city || undefined) as string | undefined,
-              state: (s.state || undefined) as string | undefined,
-              country: (s.country || undefined) as string | undefined,
-              zipCode: (s.zipCode || undefined) as string | undefined,
-              isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-            }
-          })
-          setStudents(transformedStudents)
-        }
-      } catch (err) {
-        console.error('Error fetching students by group:', err)
-        if (isMounted) {
-          setError((err as Error).message || 'Failed to load students')
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchStudentsByGroup()
-
-    return () => {
-      isMounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.groupId, userInfo?.schoolId, studentId, schoolId, isStudentOnly])
+  // Group filtering is now handled client-side in filteredAndSortedStudents
+  // The students list is cached via TanStack Query
 
   const handleStudentSelect = (student: Student) => {
     navigate(`/students/${student.id}`)
@@ -599,53 +372,15 @@ export default function StudentsPage() {
     }
 
     const studentId = deactivateConfirmation.studentId
+    const studentName = deactivateConfirmation.studentName
 
-    // Optimistic update
-    setStudents(prevStudents => prevStudents.map(student =>
-      student.id === studentId ? { ...student, isActive: false } : student
-    ))
     setDeactivateConfirmation({ open: false, studentId: '', studentName: '', studentEmail: '' })
     setDeactivateEmailInput('')
 
     try {
-      await api.students.deactivate(studentId)
-      toast.success(t("students.deactivateSuccess", { studentName: deactivateConfirmation.studentName }))
-      // Refresh to get actual state from server
-      const data = schoolId
-        ? await api.schools.getStudents(schoolId)
-        : await api.students.getAll()
-      const transformedStudents: Student[] = data.map((student: unknown) => {
-        const s = student as Record<string, unknown>
-        return {
-          id: s.id as string,
-          firstName: s.firstName as string,
-          lastName: s.lastName as string,
-          name: s.name as string,
-          age: s.age as number,
-          birthDate: s.birthDate as string,
-          certificationType: s.certificationType as string,
-          graduationDate: s.graduationDate as string,
-          parents: (s.parents || []) as Student['parents'],
-          contactPhone: (s.contactPhone || '') as string,
-          email: (s.email || undefined) as string | undefined,
-          isLeveled: s.isLeveled as boolean,
-          expectedLevel: s.expectedLevel as string | undefined,
-          currentLevel: s.currentLevel as string | undefined,
-          address: (s.address || undefined) as string | undefined,
-          streetAddress: (s.streetAddress || undefined) as string | undefined,
-          city: (s.city || undefined) as string | undefined,
-          state: (s.state || undefined) as string | undefined,
-          country: (s.country || undefined) as string | undefined,
-          zipCode: (s.zipCode || undefined) as string | undefined,
-          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-        }
-      })
-      setStudents(transformedStudents)
+      await deactivateStudentMutation.mutateAsync(studentId)
+      toast.success(t("students.deactivateSuccess", { studentName }))
     } catch (err: unknown) {
-      // Revert optimistic update on error
-      setStudents(prevStudents => prevStudents.map(student =>
-        student.id === studentId ? { ...student, isActive: true } : student
-      ))
       const errorMessage = err instanceof Error ? err.message : t("students.deactivateError")
       setError(errorMessage)
       toast.error(errorMessage)
@@ -662,49 +397,13 @@ export default function StudentsPage() {
 
   const confirmReactivateStudent = async () => {
     const studentId = reactivateConfirmation.studentId
+    const studentName = reactivateConfirmation.studentName
+
+    setReactivateConfirmation({ open: false, studentId: '', studentName: '' })
 
     try {
-      await api.students.reactivate(studentId)
-      toast.success(t("students.reactivateSuccess", { studentName: reactivateConfirmation.studentName }))
-      setReactivateConfirmation({ open: false, studentId: '', studentName: '' })
-
-      // Refresh student data
-      if (selectedStudent) {
-        const updatedStudent = await api.students.getById(studentId)
-        setSelectedStudent(updatedStudent as Student)
-      }
-
-      // Refresh students list
-      const data = schoolId
-        ? await api.schools.getStudents(schoolId)
-        : await api.students.getAll()
-      const transformedStudents: Student[] = data.map((student: unknown) => {
-        const s = student as Record<string, unknown>
-        return {
-          id: s.id as string,
-          firstName: s.firstName as string,
-          lastName: s.lastName as string,
-          name: s.name as string,
-          age: s.age as number,
-          birthDate: s.birthDate as string,
-          certificationType: s.certificationType as string,
-          graduationDate: s.graduationDate as string,
-          parents: (s.parents || []) as Student['parents'],
-          contactPhone: (s.contactPhone || '') as string,
-          email: (s.email || undefined) as string | undefined,
-          isLeveled: s.isLeveled as boolean,
-          expectedLevel: s.expectedLevel as string | undefined,
-          currentLevel: s.currentLevel as string | undefined,
-          address: (s.address || undefined) as string | undefined,
-          streetAddress: (s.streetAddress || undefined) as string | undefined,
-          city: (s.city || undefined) as string | undefined,
-          state: (s.state || undefined) as string | undefined,
-          country: (s.country || undefined) as string | undefined,
-          zipCode: (s.zipCode || undefined) as string | undefined,
-          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-        }
-      })
-      setStudents(transformedStudents)
+      await reactivateStudentMutation.mutateAsync(studentId)
+      toast.success(t("students.reactivateSuccess", { studentName }))
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t("students.reactivateError")
       setError(errorMessage)
@@ -732,42 +431,15 @@ export default function StudentsPage() {
       return
     }
 
+    const studentId = deleteConfirmation.studentId
+    const studentName = deleteConfirmation.studentName
+
+    setDeleteConfirmation({ open: false, studentId: '', studentName: '', studentEmail: '' })
+    setDeleteEmailInput('')
+
     try {
-      await api.students.delete(deleteConfirmation.studentId)
-      toast.success(t("students.deleteSuccess", { studentName: deleteConfirmation.studentName }))
-      // Refresh students list
-      const data = schoolId
-        ? await api.schools.getStudents(schoolId)
-        : await api.students.getAll()
-      const transformedStudents: Student[] = data.map((student: unknown) => {
-        const s = student as Record<string, unknown>
-        return {
-          id: s.id as string,
-          firstName: s.firstName as string,
-          lastName: s.lastName as string,
-          name: s.name as string,
-          age: s.age as number,
-          birthDate: s.birthDate as string,
-          certificationType: s.certificationType as string,
-          graduationDate: s.graduationDate as string,
-          parents: (s.parents || []) as Student['parents'],
-          contactPhone: (s.contactPhone || '') as string,
-          email: (s.email || undefined) as string | undefined,
-          isLeveled: s.isLeveled as boolean,
-          expectedLevel: s.expectedLevel as string | undefined,
-          currentLevel: s.currentLevel as string | undefined,
-          address: (s.address || undefined) as string | undefined,
-          streetAddress: (s.streetAddress || undefined) as string | undefined,
-          city: (s.city || undefined) as string | undefined,
-          state: (s.state || undefined) as string | undefined,
-          country: (s.country || undefined) as string | undefined,
-          zipCode: (s.zipCode || undefined) as string | undefined,
-          isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-        }
-      })
-      setStudents(transformedStudents)
-      setDeleteConfirmation({ open: false, studentId: '', studentName: '', studentEmail: '' })
-      setDeleteEmailInput('')
+      await deleteStudentMutation.mutateAsync(studentId)
+      toast.success(t("students.deleteSuccess", { studentName }))
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : t("students.deleteError")
       setError(errorMessage)
@@ -802,37 +474,7 @@ export default function StudentsPage() {
     if (!targetSchoolId) {
       throw new Error("No se pudo determinar la escuela")
     }
-    await api.students.create({ ...data, schoolId: targetSchoolId })
-    // Reload students and count
-    const studentsData = schoolId
-      ? await api.schools.getStudents(targetSchoolId)
-      : await api.students.getAll()
-    const transformedStudents: Student[] = studentsData.map((student: unknown) => {
-      const s = student as Record<string, unknown>
-      return {
-        id: s.id as string,
-        firstName: s.firstName as string,
-        lastName: s.lastName as string,
-        name: s.name as string,
-        age: s.age as number,
-        birthDate: s.birthDate as string,
-        certificationType: s.certificationType as string,
-        graduationDate: s.graduationDate as string,
-        parents: (s.parents || []) as Student['parents'],
-        email: (s.email || undefined) as string | undefined,
-        phone: (s.phone || undefined) as string | undefined,
-        isLeveled: s.isLeveled as boolean,
-        expectedLevel: s.expectedLevel as string | undefined,
-        currentLevel: s.currentLevel as string | undefined,
-        streetAddress: (s.streetAddress || undefined) as string | undefined,
-        city: (s.city || undefined) as string | undefined,
-        state: (s.state || undefined) as string | undefined,
-        country: (s.country || undefined) as string | undefined,
-        zipCode: (s.zipCode || undefined) as string | undefined,
-        isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-      }
-    })
-    setStudents(transformedStudents)
+    await createStudentMutation.mutateAsync({ ...data, schoolId: targetSchoolId })
     const countData = await api.schools.getStudentsCount(targetSchoolId)
     setStudentsCount(countData.count)
   }
@@ -862,46 +504,10 @@ export default function StudentsPage() {
   }) => {
     if (!editingStudent) return
 
-    // Update student and get the updated response (which includes certificationTypeId)
-    const updatedStudentData = await api.students.update(editingStudent.id, data)
-    const s = updatedStudentData as Record<string, unknown>
-
-    // Transform the updated student data
-    const updatedStudent: Student = {
-      id: s.id as string,
-      firstName: s.firstName as string,
-      lastName: s.lastName as string,
-      name: s.name as string,
-      age: s.age as number,
-      birthDate: s.birthDate as string,
-      certificationType: s.certificationType as string,
-      certificationTypeId: (s.certificationTypeId as string | undefined) || undefined,
-      graduationDate: s.graduationDate as string,
-      parents: (s.parents || []) as Student['parents'],
-      email: (s.email || undefined) as string | undefined,
-      phone: (s.phone || undefined) as string | undefined,
-      isLeveled: s.isLeveled as boolean,
-      expectedLevel: s.expectedLevel as string | undefined,
-      currentLevel: s.currentLevel as string | undefined,
-      streetAddress: (s.streetAddress || undefined) as string | undefined,
-      city: (s.city || undefined) as string | undefined,
-      state: (s.state || undefined) as string | undefined,
-      country: (s.country || undefined) as string | undefined,
-      zipCode: (s.zipCode || undefined) as string | undefined,
-      isActive: (s.isActive !== undefined ? s.isActive : true) as boolean,
-    }
-
-    // Update the students list
-    setStudents(prevStudents =>
-      prevStudents.map(student =>
-        student.id === updatedStudent.id ? updatedStudent : student
-      )
-    )
-
-    // Update selected student if it's the one being edited
-    if (selectedStudent?.id === editingStudent.id) {
-      setSelectedStudent(updatedStudent)
-    }
+    await updateStudentMutation.mutateAsync({
+      id: editingStudent.id,
+      data,
+    })
 
     setEditingStudent(null)
   }
