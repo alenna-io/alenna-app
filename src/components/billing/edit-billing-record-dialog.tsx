@@ -183,6 +183,11 @@ export function EditBillingRecordDialog({
 
     try {
       setLoading(true)
+      console.log('[EditBillingRecordDialog] Updating record:', record.id)
+      console.log('[EditBillingRecordDialog] Record student name:', record.studentName)
+      console.log('[EditBillingRecordDialog] Discount adjustments:', discountAdjustments)
+      console.log('[EditBillingRecordDialog] Extra charges:', extraCharges)
+      
       await api.billing.update(record.id, {
         effectiveTuitionAmount: tuition,
         discountAdjustments: discountAdjustments.map(adj => ({
@@ -195,10 +200,12 @@ export function EditBillingRecordDialog({
           description: charge.description || undefined,
         })),
       })
+      console.log('[EditBillingRecordDialog] Update successful')
       toast.success(t("billing.recordUpdated") || "Billing record updated successfully")
       onOpenChange(false)
       onSuccess()
     } catch (error: unknown) {
+      console.error('[EditBillingRecordDialog] Update failed:', error)
       const errorMessage = error instanceof Error ? error.message : t("billing.failedToUpdateRecord") || "Failed to update billing record"
       toast.error(errorMessage)
     } finally {

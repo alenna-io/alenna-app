@@ -2,9 +2,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/string-utils"
-import { Users } from "lucide-react"
-
 import type { Parent } from "@/types/student"
+import { useTranslation } from "react-i18next"
 
 interface ParentProfileDialogProps {
   open: boolean
@@ -18,6 +17,8 @@ export function ParentProfileDialog({
   parent,
 }: ParentProfileDialogProps) {
 
+  const { t } = useTranslation()
+
   const fullName = parent.firstName && parent.lastName
     ? `${parent.firstName} ${parent.lastName}`
     : parent.name
@@ -27,11 +28,10 @@ export function ParentProfileDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Perfil del Padre/Madre
+            {t("students.profileTitle")}
           </DialogTitle>
           <DialogDescription>
-            Información del padre/madre del estudiante
+            {t("students.profileDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -40,7 +40,7 @@ export function ParentProfileDialog({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-16 w-16 bg-primary-soft border-2 border-primary/30">
                   <AvatarFallback className="text-lg">
                     {getInitials(fullName)}
                   </AvatarFallback>
@@ -65,26 +65,26 @@ export function ParentProfileDialog({
           {/* Personal Information - Full Width */}
           <Card>
             <CardHeader>
-              <CardTitle>Información Personal</CardTitle>
+              <CardTitle>{t("students.personalInfo")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Nombre
+                    {t("users.firstName")}
                   </label>
-                  <p className="text-sm mt-1">{parent.firstName || parent.name.split(' ')[0] || 'No especificado'}</p>
+                  <p className="text-sm mt-1">{parent.firstName || parent.name.split(' ')[0] || t("common.notSpecified")}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
-                    Apellido
+                    {t("users.lastName")}
                   </label>
-                  <p className="text-sm mt-1">{parent.lastName || parent.name.split(' ').slice(1).join(' ') || 'No especificado'}</p>
+                  <p className="text-sm mt-1">{parent.lastName || parent.name.split(' ').slice(1).join(' ') || t("common.notSpecified")}</p>
                 </div>
                 {parent.email && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      Email
+                      {t("users.email")}
                     </label>
                     <p className="text-sm mt-1 break-all">{parent.email}</p>
                   </div>
@@ -92,7 +92,7 @@ export function ParentProfileDialog({
                 {parent.phone && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      Teléfono
+                      {t("students.phone")}
                     </label>
                     <p className="text-sm mt-1">{parent.phone}</p>
                   </div>
@@ -100,14 +100,14 @@ export function ParentProfileDialog({
                 {parent.relationship && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      Relación con el Estudiante
+                      {t("students.relationship")}
                     </label>
                     <p className="text-sm mt-1">{parent.relationship}</p>
                   </div>
                 )}
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium text-muted-foreground">
-                    ID de Usuario
+                    {t("users.userId")}
                   </label>
                   <p className="text-xs font-mono bg-muted p-2 rounded mt-1 break-all">
                     {parent.id}

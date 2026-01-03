@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/ui/page-header"
 import { BackButton } from "@/components/ui/back-button"
 import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
-import { Progress } from "@/components/ui/progress"
+import { Loading } from "@/components/ui/loading"
 import { toast } from "sonner"
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -786,26 +786,16 @@ export default function CreateStudentWizardPage() {
     { number: 4, title: t("groups.preview"), description: t("students.step4Description") },
   ]
 
+  if (isLoadingUser || isLoading) {
+    return (
+      <div className="flex min-h-[90%] items-center justify-center">
+        <Loading variant="button" size="lg" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen">
-      {/* Loading Overlay */}
-      {(isLoadingUser || isLoading) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">{t("common.loading") || "Loading"}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {t("wizard.pleaseWait") || "Please wait..."}
-                  </p>
-                </div>
-                <Progress indeterminate className="h-2" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
       <div className="w-full p-3 space-y-6">
         {/* Back button - only show on mobile */}
         <div className="md:hidden">
@@ -1315,29 +1305,6 @@ export default function CreateStudentWizardPage() {
                     {errors.expectedLevel && <p className="text-sm text-destructive mt-1">{errors.expectedLevel}</p>}
                   </Field>
                 )}
-
-                {/* Billing Information (Optional) */}
-                <Separator className="my-6" />
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2">{t("students.billingInfo") || "Billing Information (Optional)"}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {t("students.billingInfoDescription") || "Set a custom base amount for this student. If not provided, the school's default tuition amount will be used."}
-                    </p>
-                  </div>
-                  <Field>
-                    <FieldLabel htmlFor="billingBaseAmount">{t("students.billingBaseAmount") || "Base Tuition Amount (Optional)"}</FieldLabel>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      id="billingBaseAmount"
-                      value={formData.billingBaseAmount}
-                      onChange={(e) => setFormData({ ...formData, billingBaseAmount: e.target.value })}
-                      placeholder={t("students.billingBaseAmountPlaceholder") || "Leave empty to use school default"}
-                    />
-                  </Field>
-                </div>
               </div>
             )}
 

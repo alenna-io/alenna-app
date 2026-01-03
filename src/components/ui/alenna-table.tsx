@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronLeft, ChevronRight, ChevronsUpDown, Columns } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronsUpDown, Columns, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 
@@ -26,7 +26,7 @@ export interface AlennaTableColumn<T> {
 }
 
 export interface AlennaTableAction<T> {
-  label: string
+  label: string | ((item: T) => string)
   icon?: React.ReactNode
   onClick: (item: T) => void
   variant?: 'default' | 'destructive'
@@ -47,6 +47,7 @@ export interface AlennaTableProps<T> {
     onPageSizeChange?: (size: number) => void
   }
   loading?: boolean
+  refetching?: boolean
   emptyState?: {
     icon?: React.ReactNode | null
     title?: string | null
@@ -68,6 +69,7 @@ export function AlennaTable<T>({
   actions,
   pagination,
   loading = false,
+  refetching = false,
   emptyState,
   onRowClick,
   sortField,
@@ -218,8 +220,12 @@ export function AlennaTable<T>({
         >
           <button
             type="button"
-            onClick={() => onSort && onSort(typedColumn.key)}
-            className="inline-flex items-center text-[0.8rem] font-semibold text-foreground hover:text-primary transition-colors cursor-pointer text-left"
+            onClick={() => !refetching && onSort && onSort(typedColumn.key)}
+            disabled={refetching}
+            className={cn(
+              "inline-flex items-center text-[0.8rem] font-semibold text-foreground hover:text-primary transition-colors text-left",
+              refetching ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            )}
           >
             {typedColumn.label}
             {getSortIcon(typedColumn.key)}
@@ -244,7 +250,7 @@ export function AlennaTable<T>({
   const renderRow = (item: T, index: number) => {
     const rowId = getRowId ? getRowId(item) : `row-${index}`
     const actionItems = actions?.map(action => ({
-      label: action.label,
+      label: typeof action.label === 'function' ? action.label(item) : action.label,
       icon: action.icon,
       onClick: () => action.onClick(item),
       variant: action.variant,
@@ -532,7 +538,14 @@ export function AlennaTable<T>({
   }
 
   return (
-    <Card className="rounded-md border border-border/50 shadow-sm">
+    <Card className="rounded-md border border-border/50 shadow-sm relative">
+      {/* Subtle refetching indicator */}
+      {refetching && !loading && (
+        <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded-md bg-background/95 backdrop-blur-sm border border-border px-2 py-1 shadow-sm">
+          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading...</span>
+        </div>
+      )}
       {enableColumnSelector && renderColumnSelector()}
       <CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -549,6 +562,12 @@ export function AlennaTable<T>({
                     {renderSkeletonRow()}
                   </React.Fragment>
                 ))
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={displayColumns.length} className="h-32 text-center text-muted-foreground">
+                    {t("common.noItemsFound")}
+                  </td>
+                </tr>
               ) : (
                 data.map((item, index) => renderRow(item, index))
               )}

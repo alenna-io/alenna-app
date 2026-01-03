@@ -42,6 +42,7 @@ const DialogContent = React.forwardRef<
         className
       )}
       style={DIALOG_POINTER_FIX_STYLE}
+      onInteractOutside={(e) => e.preventDefault()}
       {...props}
     >
       {children}

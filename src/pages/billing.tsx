@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { Badge } from "@/components/ui/badge"
-import { DollarSign, TrendingUp, Users, Plus, CheckCircle2, Send, X, Pencil, RefreshCw } from "lucide-react"
+import { DollarSign, TrendingUp, Users, Plus, CheckCircle2, Send, X, Pencil, RefreshCw, List } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { SearchBar } from "@/components/ui/search-bar"
@@ -16,6 +16,8 @@ import { PartialPaymentDialog } from "@/components/billing/partial-payment-dialo
 import { PaymentHistoryDialog } from "@/components/billing/payment-history-dialog"
 import { EditBillingRecordDialog } from "@/components/billing/edit-billing-record-dialog"
 import { usePersistedState } from "@/hooks/use-table-state"
+import { SubtleLoadingIndicator } from "@/components/ui/subtle-loading-indicator"
+import { useDebounce } from "@/hooks/use-debounce"
 
 interface BillingRecord {
   id: string
@@ -93,12 +95,14 @@ export default function BillingPage() {
   const [recordsTotal, setRecordsTotal] = React.useState(0)
   const [students, setStudents] = React.useState<Student[]>([])
   const [dashboardData, setDashboardData] = React.useState<DashboardData | null>(null)
-  const [isLoading, setIsLoading] = React.useState(true)
+  const [isInitialLoading, setIsInitialLoading] = React.useState(true)
+  const [isRefetching, setIsRefetching] = React.useState(false)
   const [isLoadingDashboard, setIsLoadingDashboard] = React.useState(false)
   const [isLoadingTable, setIsLoadingTable] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [generatingBills, setGeneratingBills] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
   const tableId = "billing"
   const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
@@ -170,11 +174,11 @@ export default function BillingPage() {
     loadingRef.current = true
     try {
       // Only set initial loading on first load
-      if (isLoading) {
-        setIsLoading(true)
-      } else {
+      if (isInitialLoading) {
         setIsLoadingDashboard(true)
         setIsLoadingTable(true)
+      } else {
+        setIsRefetching(true)
       }
       setError(null)
 
@@ -186,6 +190,7 @@ export default function BillingPage() {
         api.billing.getAggregatedFinancials(filterParams),
         api.billing.getRecords({
           ...filterParams,
+          studentName: debouncedSearchTerm || undefined,
           offset,
           limit: itemsPerPage,
           sortField: sortField || undefined,
@@ -239,13 +244,14 @@ export default function BillingPage() {
       setError(errorMessage)
       toast.error(errorMessage)
     } finally {
-      setIsLoading(false)
+      setIsInitialLoading(false)
+      setIsRefetching(false)
       setIsLoadingDashboard(false)
       setIsLoadingTable(false)
       loadingRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, currentPage, sortField, sortDirection, buildFilterParams, isLoading])
+  }, [filters, currentPage, sortField, sortDirection, debouncedSearchTerm, buildFilterParams, isInitialLoading])
 
   React.useEffect(() => {
     loadBillingData()
@@ -380,11 +386,23 @@ export default function BillingPage() {
     try {
       await api.billing.update(recordId, { taxableBillStatus: newBillStatus })
       toast.success(t("billing.statusUpdated"))
+      // Silently refresh dashboard cards without loading state
+      await refreshDashboardSilently()
     } catch (err: unknown) {
       // Revert on error
       setRecords(records)
       const errorMessage = err instanceof Error ? err.message : "Failed to update status"
       toast.error(errorMessage)
+    }
+  }
+
+  const refreshDashboardSilently = async () => {
+    try {
+      const filterParams = buildFilterParams(filters)
+      const aggregatedData = await api.billing.getAggregatedFinancials(filterParams)
+      setDashboardData(aggregatedData || null)
+    } catch (err: unknown) {
+      console.error('Failed to refresh dashboard silently:', err)
     }
   }
 
@@ -413,6 +431,8 @@ export default function BillingPage() {
         paymentMethod: 'manual',
       })
       toast.success(t("billing.paymentRecorded"))
+      // Silently refresh dashboard cards without loading state
+      await refreshDashboardSilently()
     } catch (err: unknown) {
       // Revert on error
       setRecords(records)
@@ -552,18 +572,10 @@ export default function BillingPage() {
     return <span className="text-muted-foreground">—</span>
   }
 
-  // Filter records by search term only (backend handles other filters)
-  const filteredRecords = React.useMemo(() => {
-    if (!searchTerm) return records
-    const searchLower = searchTerm.toLowerCase()
-    return records.filter((record) => {
-      const matchesName = record.studentName?.toLowerCase().includes(searchLower)
-      const matchesMonth = getMonthName(record.billingMonth, record.billingYear).toLowerCase().includes(searchLower)
-      return matchesName || matchesMonth
-    })
-  }, [records, searchTerm, getMonthName])
+  // Backend handles all filtering including search
+  const filteredRecords = records
 
-  // Pagination - backend handles pagination, but we still need to filter by search
+  // Pagination - backend handles everything
   const totalPages = Math.ceil(recordsTotal / itemsPerPage)
   const paginatedRecords = filteredRecords
 
@@ -693,7 +705,7 @@ export default function BillingPage() {
     return result
   }, [filters])
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -751,6 +763,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
+      <SubtleLoadingIndicator loading={isRefetching} />
       <div className="flex items-center justify-between">
         <PageHeader
           moduleKey="billing"
@@ -1096,7 +1109,7 @@ export default function BillingPage() {
               },
               {
                 label: t("billing.paymentHistory"),
-                icon: <DollarSign className="h-4 w-4" />,
+                icon: <List className="h-4 w-4" />,
                 onClick: (record) => {
                   setSelectedRecordForHistory(record)
                   setPaymentHistoryDialogOpen(true)
@@ -1123,6 +1136,7 @@ export default function BillingPage() {
             }}
             getRowId={(record) => record.id}
             loading={isLoadingTable}
+            refetching={isRefetching}
             tableId={tableId}
           />
         )}
@@ -1132,19 +1146,7 @@ export default function BillingPage() {
           onOpenChange={setEditDialogOpen}
           record={selectedRecordForEdit}
           onSuccess={async () => {
-            if (selectedRecordForEdit) {
-              try {
-                const updatedRecord = await api.billing.getById(selectedRecordForEdit.id)
-                if (updatedRecord) {
-                  const updatedRecords = records.map(r =>
-                    r.id === selectedRecordForEdit.id ? updatedRecord : r
-                  )
-                  setRecords(updatedRecords)
-                }
-              } catch {
-                await loadBillingData()
-              }
-            }
+            await loadBillingData()
           }}
         />
         <PartialPaymentDialog
