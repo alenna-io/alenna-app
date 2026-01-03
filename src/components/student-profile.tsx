@@ -328,7 +328,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                       key={parent.id}
                       className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
                     >
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-10 w-10 border-2 border-primary/30 bg-primary-soft">
                         <AvatarFallback>
                           {getInitials(parent.name)}
                         </AvatarFallback>
@@ -340,7 +340,7 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                         </p>
                       </div>
                       <Button
-                        variant="outline"
+                        variant="primary-soft"
                         size="sm"
                         className="ml-auto cursor-pointer"
                         onClick={() => {

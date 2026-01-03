@@ -26,7 +26,7 @@ export interface AlennaTableColumn<T> {
 }
 
 export interface AlennaTableAction<T> {
-  label: string
+  label: string | ((item: T) => string)
   icon?: React.ReactNode
   onClick: (item: T) => void
   variant?: 'default' | 'destructive'
@@ -250,7 +250,7 @@ export function AlennaTable<T>({
   const renderRow = (item: T, index: number) => {
     const rowId = getRowId ? getRowId(item) : `row-${index}`
     const actionItems = actions?.map(action => ({
-      label: action.label,
+      label: typeof action.label === 'function' ? action.label(item) : action.label,
       icon: action.icon,
       onClick: () => action.onClick(item),
       variant: action.variant,

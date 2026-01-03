@@ -659,6 +659,12 @@ export const billingApi = {
     taxableBillRequired?: boolean;
   }, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  updateStudentBillingConfig: (studentId: string, data: {
+    requiresTaxableInvoice?: boolean;
+  }, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/billing-config`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  getStudentBillingConfig: (studentId: string, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/billing-config`, token),
   getRecurringCharges: (studentId: string, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/recurring-charges`, token),
   createRecurringCharge: (studentId: string, data: {
@@ -1428,6 +1434,17 @@ export function useApi() {
       }) => {
         const token = await getToken();
         return billingApi.updateStudentScholarship(studentId, data, token);
+      },
+      updateStudentBillingConfig: async (studentId: string, data: {
+        studentId?: string;
+        requiresTaxableInvoice?: boolean;
+      }) => {
+        const token = await getToken();
+        return billingApi.updateStudentBillingConfig(studentId, data, token);
+      },
+      getStudentBillingConfig: async (studentId: string) => {
+        const token = await getToken();
+        return billingApi.getStudentBillingConfig(studentId, token);
       },
       getRecurringCharges: async (studentId: string) => {
         const token = await getToken();
