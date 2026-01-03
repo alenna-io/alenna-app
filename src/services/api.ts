@@ -490,6 +490,7 @@ export const billingApi = {
     billingYear?: number;
     paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
     studentId?: string;
+    studentName?: string;
     schoolYearId?: string;
     offset?: number;
     limit?: number;
@@ -504,6 +505,7 @@ export const billingApi = {
       if (filters.billingYear) params.append('billingYear', filters.billingYear.toString());
       if (filters.paymentStatus) params.append('paymentStatus', filters.paymentStatus);
       if (filters.studentId) params.append('studentId', filters.studentId);
+      if (filters.studentName) params.append('studentName', filters.studentName);
       if (filters.schoolYearId) params.append('schoolYearId', filters.schoolYearId);
       if (filters.offset !== undefined) params.append('offset', filters.offset.toString());
       if (filters.limit !== undefined) params.append('limit', filters.limit.toString());
@@ -621,6 +623,26 @@ export const billingApi = {
     apiFetch(`/billing/tuition-types/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
   deleteTuitionType: (id: string, token: string | null) =>
     apiFetch(`/billing/tuition-types/${id}`, token, { method: 'DELETE' }),
+  getStudentsWithBillingConfig: (params: {
+    search?: string;
+    tuitionTypeId?: string;
+    hasScholarship?: string;
+    sortField?: string;
+    sortDirection?: 'asc' | 'desc';
+    offset?: number;
+    limit?: number;
+  }, token: string | null) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.tuitionTypeId && params.tuitionTypeId !== 'all') query.append('tuitionTypeId', params.tuitionTypeId);
+    if (params.hasScholarship && params.hasScholarship !== 'all') query.append('hasScholarship', params.hasScholarship);
+    if (params.sortField) query.append('sortField', params.sortField);
+    if (params.sortDirection) query.append('sortDirection', params.sortDirection);
+    if (params.offset !== undefined) query.append('offset', params.offset.toString());
+    if (params.limit !== undefined) query.append('limit', params.limit.toString());
+    const queryString = query.toString();
+    return apiFetch(`/billing/students/config${queryString ? '?' + queryString : ''}`, token);
+  },
   getStudentScholarship: (studentId: string, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/scholarship`, token),
   createStudentScholarship: (studentId: string, data: {
@@ -637,6 +659,22 @@ export const billingApi = {
     taxableBillRequired?: boolean;
   }, token: string | null) =>
     apiFetch(`/billing/students/${studentId}/scholarship`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  getRecurringCharges: (studentId: string, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/recurring-charges`, token),
+  createRecurringCharge: (studentId: string, data: {
+    description: string;
+    amount: number;
+    expiresAt: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/recurring-charges`, token, { method: 'POST', body: JSON.stringify(data) }),
+  updateRecurringCharge: (studentId: string, id: string, data: {
+    description?: string;
+    amount?: number;
+    expiresAt?: string;
+  }, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/recurring-charges/${id}`, token, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRecurringCharge: (studentId: string, id: string, token: string | null) =>
+    apiFetch(`/billing/students/${studentId}/recurring-charges/${id}`, token, { method: 'DELETE' }),
   getMetrics: (token: string | null, filters?: {
     startDate?: string;
     endDate?: string;
@@ -672,7 +710,7 @@ export const characterTraitsApi = {
     const query = params.toString();
     return apiFetch(`/schools/me/character-traits${query ? '?' + query : ''}`, token || null);
   },
-  getById: (id: string, token: string | null) => 
+  getById: (id: string, token: string | null) =>
     apiFetch(`/schools/me/character-traits/${id}`, token),
   getByMonth: (schoolYearId: string, month: number, token: string | null) => {
     const params = new URLSearchParams();
@@ -1348,6 +1386,18 @@ export function useApi() {
         const token = await getToken();
         return billingApi.deleteTuitionType(id, token);
       },
+      getStudentsWithBillingConfig: async (params: {
+        search?: string;
+        tuitionTypeId?: string;
+        hasScholarship?: string;
+        sortField?: string;
+        sortDirection?: 'asc' | 'desc';
+        offset?: number;
+        limit?: number;
+      }) => {
+        const token = await getToken();
+        return billingApi.getStudentsWithBillingConfig(params, token);
+      },
       getStudentScholarship: async (studentId: string) => {
         const token = await getToken();
         try {
@@ -1379,6 +1429,30 @@ export function useApi() {
         const token = await getToken();
         return billingApi.updateStudentScholarship(studentId, data, token);
       },
+      getRecurringCharges: async (studentId: string) => {
+        const token = await getToken();
+        return billingApi.getRecurringCharges(studentId, token);
+      },
+      createRecurringCharge: async (studentId: string, data: {
+        description: string;
+        amount: number;
+        expiresAt: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.createRecurringCharge(studentId, data, token);
+      },
+      updateRecurringCharge: async (studentId: string, id: string, data: {
+        description?: string;
+        amount?: number;
+        expiresAt?: string;
+      }) => {
+        const token = await getToken();
+        return billingApi.updateRecurringCharge(studentId, id, data, token);
+      },
+      deleteRecurringCharge: async (studentId: string, id: string) => {
+        const token = await getToken();
+        return billingApi.deleteRecurringCharge(studentId, id, token);
+      },
       getAggregatedFinancials: async (filters?: {
         startDate?: string;
         endDate?: string;
@@ -1398,6 +1472,7 @@ export function useApi() {
         billingYear?: number;
         paymentStatus?: 'pending' | 'delayed' | 'partial_payment' | 'paid';
         studentId?: string;
+        studentName?: string;
         schoolYearId?: string;
         offset?: number;
         limit?: number;
