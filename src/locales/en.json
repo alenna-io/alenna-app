@@ -1232,7 +1232,11 @@
     "overflowPacesTitle": "Overflow Paces",
     "overflowPacesDescription": "The following paces could not be redistributed to any remaining quarter",
     "cannotMovePaceSequentialOrder": "Cannot move Lecture: This action would break the sequential order of lectures.",
-    "cannotAddPaceSequentialOrder": "Cannot add Lecture: This action would break the sequential order of lectures."
+    "cannotAddPaceSequentialOrder": "Cannot add Lecture: This action would break the sequential order of lectures.",
+    "editGrade": "Edit Grade",
+    "viewHistory": "View History",
+    "markIncomplete": "Mark Incomplete",
+    "markComplete": "Mark Complete"
   },
   "quarters": {
     "title": "Quarter Management",

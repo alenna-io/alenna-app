@@ -31,6 +31,15 @@ interface QuarterlyTableProps {
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
 }
 
+type OptionsMenuState = {
+  subject: string
+  weekIndex: number
+  x: number
+  y: number
+  placement?: 'left' | 'right'
+}
+
+
 // Subject-specific color mapping with soft pastel backgrounds
 const getSubjectColor = (subjectName: string) => {
   const normalizedSubject = subjectName.toLowerCase().trim()
@@ -85,7 +94,7 @@ export function ACEQuarterlyTable({
   const [alertDialog, setAlertDialog] = React.useState<{ title: string, message: string } | null>(null)
   const [confirmAddDialog, setConfirmAddDialog] = React.useState<{ subject: string, weekIndex: number, weekCount: number } | null>(null)
   const [overloadRememberUntil, setOverloadRememberUntil] = React.useState<number | null>(null)
-  const [optionsMenu, setOptionsMenu] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
+  const [optionsMenu, setOptionsMenu] = React.useState<OptionsMenuState | null>(null)
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
   const optionsMenuRef = React.useRef<HTMLDivElement>(null)
@@ -392,7 +401,7 @@ export function ACEQuarterlyTable({
   }, [data, subjects])
 
   return (
-    <>
+    <div className='relative'>
       <Card className={`${isActive ? "border-primary border-2" : "border-border/50"} transition-all duration-200`}>
         <CardHeader className="p-4 md:p-5 lg:p-6 border-b border-border/30">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
@@ -761,10 +770,40 @@ export function ACEQuarterlyTable({
                                 ))}
                                 {!isReadOnly && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
                                   <button
+                                    // onClick={(e) => {
+                                    //   e.stopPropagation()
+                                    //   const button = e.currentTarget
+                                    //   const parent = button.offsetParent as HTMLElement
+
+                                    //   setOptionsMenu({
+                                    //     subject,
+                                    //     weekIndex,
+                                    //     x: parent.offsetLeft + parent.offsetWidth,
+                                    //     y: parent.offsetTop
+                                    //   })
+                                    // }}
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      const rect = e.currentTarget.getBoundingClientRect()
-                                      setOptionsMenu({ subject, weekIndex, x: rect.right, y: rect.top })
+
+                                      const button = e.currentTarget
+                                      const parent = button.offsetParent as HTMLElement
+                                      const rect = button.getBoundingClientRect()
+
+                                      const MENU_WIDTH = 180
+                                      const GAP = 60
+
+                                      const spaceRight = window.innerWidth - rect.right
+                                      const placeRight = spaceRight > MENU_WIDTH + GAP
+
+                                      setOptionsMenu({
+                                        subject,
+                                        weekIndex,
+                                        x: placeRight
+                                          ? parent.offsetLeft + parent.offsetWidth
+                                          : parent.offsetLeft - MENU_WIDTH + GAP,
+                                        y: parent.offsetTop,
+                                        placement: placeRight ? 'right' : 'left'
+                                      })
                                     }}
                                     className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
                                   >
@@ -871,83 +910,85 @@ export function ACEQuarterlyTable({
       </div>
 
       {/* Options Menu Popup */}
-      {optionsMenu && (
-        <div
-          ref={optionsMenuRef}
-          className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
-          style={{ left: `${optionsMenu.x}px`, top: `${optionsMenu.y}px` }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              if (pace) {
-                handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
-                setOptionsMenu(null)
-              }
-            }}
-            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
+      {
+        optionsMenu && (
+          <div
+            ref={optionsMenuRef}
+            className="absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+            style={{ left: `${optionsMenu.x}px`, top: `${optionsMenu.y}px` }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <Edit className="h-4 w-4" />
-            Editar Nota
-          </button>
-          {(() => {
-            const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-            const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-            return pace?.isCompleted
-          })() && (
-              <button
-                onClick={() => {
-                  onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
+            <button
+              onClick={() => {
+                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+                if (pace) {
+                  handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
                   setOptionsMenu(null)
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-                Marcar Incompleto
-              </button>
-            )}
-          <button
-            onClick={() => {
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
+            >
+              <Edit className="h-4 w-4" />
+              {t("projections.editGrade")}
+            </button>
+            {(() => {
               const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
               const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
-                setHistoryDialog({
-                  subject: optionsMenu.subject,
-                  weekIndex: optionsMenu.weekIndex,
-                  paceNumber: pace.number,
-                  history: pace.gradeHistory
-                })
-                setOptionsMenu(null)
-              }
-            }}
-            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={(() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              return !pace?.gradeHistory || pace.gradeHistory.length === 0
-            })()}
-          >
-            <History className="h-4 w-4" />
-            Ver Historial
-          </button>
-          <button
-            onClick={() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              if (pace) {
-                handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
-                setOptionsMenu(null)
-              }
-            }}
-            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-          >
-            <Trash2 className="h-4 w-4" />
-            Eliminar
-          </button>
-        </div>
-      )}
+              return pace?.isCompleted
+            })() && (
+                <button
+                  onClick={() => {
+                    onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
+                    setOptionsMenu(null)
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                  {t("projections.markIncomplete")}
+                </button>
+              )}
+            <button
+              onClick={() => {
+                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+                if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
+                  setHistoryDialog({
+                    subject: optionsMenu.subject,
+                    weekIndex: optionsMenu.weekIndex,
+                    paceNumber: pace.number,
+                    history: pace.gradeHistory
+                  })
+                  setOptionsMenu(null)
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={(() => {
+                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+                return !pace?.gradeHistory || pace.gradeHistory.length === 0
+              })()}
+            >
+              <History className="h-4 w-4" />
+              {t("projections.viewHistory")}
+            </button>
+            <button
+              onClick={() => {
+                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+                if (pace) {
+                  handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
+                  setOptionsMenu(null)
+                }
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("common.delete")}
+            </button>
+          </div>
+        )
+      }
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
@@ -1015,35 +1056,37 @@ export function ACEQuarterlyTable({
       </Dialog>
 
       {/* Touch Drag Preview for iPad/Mobile */}
-      {touchDragPreview && (
-        <div
-          ref={touchDragPreviewRef}
-          style={{
-            position: 'fixed',
-            left: `${touchDragPreview.x}px`,
-            top: `${touchDragPreview.y}px`,
-            transform: 'translate(-50%, -50%) rotate(5deg)',
-            pointerEvents: 'none',
-            zIndex: 10000,
-            padding: '8px 12px',
-            background: touchDragPreview.isCompleted
-              ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-              : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
-            border: touchDragPreview.isCompleted
-              ? '2px solid #059669'
-              : '2px solid #9ca3af',
-            borderRadius: '6px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: touchDragPreview.isCompleted ? '#ffffff' : '#1f2937',
-            opacity: '0.95',
-          }}
-        >
-          {touchDragPreview.paceNumber}
-        </div>
-      )}
+      {
+        touchDragPreview && (
+          <div
+            ref={touchDragPreviewRef}
+            style={{
+              position: 'fixed',
+              left: `${touchDragPreview.x}px`,
+              top: `${touchDragPreview.y}px`,
+              transform: 'translate(-50%, -50%) rotate(5deg)',
+              pointerEvents: 'none',
+              zIndex: 10000,
+              padding: '8px 12px',
+              background: touchDragPreview.isCompleted
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                : 'linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%)',
+              border: touchDragPreview.isCompleted
+                ? '2px solid #059669'
+                : '2px solid #9ca3af',
+              borderRadius: '6px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+              fontFamily: 'monospace',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: touchDragPreview.isCompleted ? '#ffffff' : '#1f2937',
+              opacity: '0.95',
+            }}
+          >
+            {touchDragPreview.paceNumber}
+          </div>
+        )
+      }
 
       {/* Failed Attempts Dialog */}
       <Dialog open={failedAttemptsDialog} onOpenChange={setFailedAttemptsDialog}>
@@ -1115,6 +1158,6 @@ export function ACEQuarterlyTable({
         variant="default"
         onConfirm={() => confirmOverloadAdd(false)}
       />
-    </>
+    </div >
   );
 }

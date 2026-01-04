@@ -605,16 +605,16 @@ export default function ACEProjectionPage() {
         toast.success(t("projections.lessonMarkedIncomplete"))
       }
 
-      // Reload projection data to ensure consistency
-      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-      setProjectionDetail(detail)
-      const convertedData = {
-        Q1: convertQuarterData(detail.quarters.Q1),
-        Q2: convertQuarterData(detail.quarters.Q2),
-        Q3: convertQuarterData(detail.quarters.Q3),
-        Q4: convertQuarterData(detail.quarters.Q4),
-      }
-      setProjectionData(convertedData)
+      // // Reload projection data to ensure consistency
+      // const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
+      // setProjectionDetail(detail)
+      // const convertedData = {
+      //   Q1: convertQuarterData(detail.quarters.Q1),
+      //   Q2: convertQuarterData(detail.quarters.Q2),
+      //   Q3: convertQuarterData(detail.quarters.Q3),
+      //   Q4: convertQuarterData(detail.quarters.Q4),
+      // }
+      // setProjectionData(convertedData)
     } catch (err) {
       console.error('Error actualizando Lección:', err)
       const message = err instanceof Error ? err.message : 'Error al actualizar lección'
@@ -625,21 +625,6 @@ export default function ACEProjectionPage() {
         title: t("projections.errorUpdatingLessonTitle"),
         message
       })
-
-      // ROLLBACK: Reload data to revert UI on error
-      try {
-        const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-        setProjectionDetail(detail)
-        const convertedData = {
-          Q1: convertQuarterData(detail.quarters.Q1),
-          Q2: convertQuarterData(detail.quarters.Q2),
-          Q3: convertQuarterData(detail.quarters.Q3),
-          Q4: convertQuarterData(detail.quarters.Q4),
-        }
-        setProjectionData(convertedData)
-      } catch (reloadErr) {
-        console.error('Error reloading after failed toggle:', reloadErr)
-      }
     }
   }
 
@@ -651,7 +636,7 @@ export default function ACEProjectionPage() {
         student: projectionDetail ? {
           id: projectionDetail.studentId,
           name: projectionDetail.student.fullName,
-          currentGrade: projectionDetail.student.currentLevel || "N/A",
+          currentGrade: projectionDetail.student.currentLevel || "-",
           schoolYear: projectionDetail.schoolYear,
         } : null
       }
@@ -906,7 +891,7 @@ export default function ACEProjectionPage() {
   const student = projectionDetail ? {
     id: projectionDetail.studentId,
     name: projectionDetail.student.fullName,
-    currentGrade: projectionDetail.student.currentLevel || 'N/A',
+    currentGrade: projectionDetail.student.currentLevel || null,
     schoolYear: projectionDetail.schoolYear,
   } : {
     id: '',
@@ -1024,7 +1009,9 @@ export default function ACEProjectionPage() {
             {/* Minimal Student Info */}
             <div className="flex items-center gap-2">
               <p className="text-xl text-gray-700">{student.name}</p>
-              <Badge variant="primary-soft" className="text-sm">{student.currentGrade}</Badge>
+              {student.currentGrade && (
+                <Badge variant="primary-soft" className="text-sm">{student.currentGrade}</Badge>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">

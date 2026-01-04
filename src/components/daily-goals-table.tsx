@@ -435,7 +435,7 @@ export function DailyGoalsTable({
                                   ? "bg-green-500 border-green-500"
                                   : "bg-white border-border hover:border-green-400"
                                   }`}
-                                title={groupedData.data[category]?.[dayIndex]?.isCompleted ? "Marcar incompleto" : "Marcar completo"}
+                                title={groupedData.data[category]?.[dayIndex]?.isCompleted ? t("dailyGoals.markIncomplete") : t("dailyGoals.markComplete")}
                                 disabled={!canToggleGoal}
                               >
                                 {groupedData.data[category]?.[dayIndex]?.isCompleted && (
