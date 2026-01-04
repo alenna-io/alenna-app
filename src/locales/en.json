@@ -1358,6 +1358,7 @@
   },
   "lectures": {
     "title": "Lectures",
+    "addSubject": "Add Subject",
     "description": "Browse and search the lectures catalog",
     "filters": "Filters",
     "code": "Code",
@@ -1372,7 +1373,9 @@
     "searchPlaceholder": "Search by name, code, or subject...",
     "noLecturesFound": "No lectures found",
     "noLecturesDescription": "Try adjusting your filters or search term",
-    "lectures": "lectures"
+    "lectures": "lectures",
+    "noLectures": "No lectures found",
+    "noResults": "No results found"
   },
   "passwordSetup": {
     "title": "Set Password",

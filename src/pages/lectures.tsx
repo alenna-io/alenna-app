@@ -108,9 +108,25 @@ export default function LecturesPage() {
   }, [subjects])
 
   const handleSubjectCreated = async () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.lectures.all })
-    queryClient.invalidateQueries({ queryKey: queryKeys.subjects.all })
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.lectures.all,
+    })
+
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.subjects.all,
+    })
+
+    setFilters({
+      category: 'all',
+      level: 'all',
+      subject: 'all',
+    })
+    setSearchTerm('')
+    setCurrentPage(1)
+
   }
+
+
 
   // Filter lectures by filters and search term (using AND logic for all filters)
   const filteredLectures = React.useMemo(() => {
@@ -245,7 +261,7 @@ export default function LecturesPage() {
           />
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Subject
+            {t("lectures.addSubject") || "Add Subject"}
           </Button>
         </div>
       </div>

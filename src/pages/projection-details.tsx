@@ -513,17 +513,6 @@ export default function ACEProjectionPage() {
       }
 
       toast.success(t("projections.lessonMoved"))
-
-      // Optionally reload to ensure consistency with backend
-      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-      setProjectionDetail(detail)
-      const convertedData = {
-        Q1: convertQuarterData(detail.quarters.Q1),
-        Q2: convertQuarterData(detail.quarters.Q2),
-        Q3: convertQuarterData(detail.quarters.Q3),
-        Q4: convertQuarterData(detail.quarters.Q4),
-      }
-      setProjectionData(convertedData)
     } catch (err) {
       console.error('Error moving Lecture:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to move Lecture'
@@ -1085,7 +1074,7 @@ export default function ACEProjectionPage() {
         const isElective = pacePickerContext.subject.startsWith('Elective: ')
         // For electives, extract the sub-subject name (remove "Elective: " prefix)
         const subSubjectName = isElective ? pacePickerContext.subject.replace('Elective: ', '') : undefined
-        
+
         return (
           <PacePickerDialog
             open={pacePickerOpen}
