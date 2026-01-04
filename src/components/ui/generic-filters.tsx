@@ -277,7 +277,7 @@ export function GenericFilters<T extends Record<string, string>>({
                                   return (
                                     <CommandItem
                                       key={option.value}
-                                      value={option.value}
+                                      value={`${option.label} ${option.value}`}
                                       onSelect={() => {
                                         handleFilterChange(field.key as keyof T, option.value)
                                         setOpenPopovers(prev => ({ ...prev, [field.key]: false }))

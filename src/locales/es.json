@@ -1237,7 +1237,11 @@
     "overflowPacesTitle": "PACEs en Exceso",
     "overflowPacesDescription": "Los siguientes PACEs no pudieron ser redistribuidos a ningún bloque restante",
     "cannotMovePaceSequentialOrder": "No se puede mover la Lección: Esta acción rompería el orden secuencial de las lecciones.",
-    "cannotAddPaceSequentialOrder": "No se puede agregar la Lección: Esta acción rompería el orden secuencial de las lecciones."
+    "cannotAddPaceSequentialOrder": "No se puede agregar la Lección: Esta acción rompería el orden secuencial de las lecciones.",
+    "editGrade": "Editar Calificación",
+    "viewHistory": "Ver Historial",
+    "markIncomplete": "Marcar Incompleto",
+    "markComplete": "Marcar Completo"
   },
   "quarters": {
     "title": "Gestión de Bloques",

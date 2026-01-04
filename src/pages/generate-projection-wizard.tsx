@@ -391,38 +391,14 @@ export default function GenerateProjectionWizardPage() {
           return false
         }
 
-        // Debug: Log all subjects to see their state
-        console.log('[Validation Debug] All subjects:', formData.subjects)
-
         const invalidSubjects = formData.subjects.filter(
           (s) => {
             const isInvalid = !s.subSubjectId || !s.startPace || !s.endPace || s.startPace >= s.endPace || s.startPace < 1 || s.endPace < 1 || !Number.isInteger(s.startPace) || !Number.isInteger(s.endPace)
-            if (isInvalid) {
-              console.log('[Validation Debug] Invalid subject found:', {
-                subSubjectId: s.subSubjectId,
-                subSubjectName: s.subSubjectName,
-                startPace: s.startPace,
-                endPace: s.endPace,
-                startPaceType: typeof s.startPace,
-                endPaceType: typeof s.endPace,
-                checks: {
-                  hasSubSubjectId: !!s.subSubjectId,
-                  hasStartPace: !!s.startPace,
-                  hasEndPace: !!s.endPace,
-                  startLessThanEnd: s.startPace < s.endPace,
-                  startAtLeast1: s.startPace >= 1,
-                  endAtLeast1: s.endPace >= 1,
-                  startIsInteger: Number.isInteger(s.startPace),
-                  endIsInteger: Number.isInteger(s.endPace),
-                }
-              })
-            }
             return isInvalid
           }
         )
 
         if (invalidSubjects.length > 0) {
-          console.log('[Validation Debug] Invalid subjects count:', invalidSubjects.length)
           const invalidSubjectNames = invalidSubjects.map(s => {
             const issues = []
             if (!s.subSubjectId) issues.push('materia no seleccionada')
@@ -438,7 +414,6 @@ export default function GenerateProjectionWizardPage() {
           return false
         }
 
-        console.log('[Validation Debug] All subjects are valid')
         return true
       }
       case 3:
