@@ -649,7 +649,11 @@ export default function GenerateProjectionWizardPage() {
   }
 
   if (isLoadingUser || loading) {
-    return <Loading variant='button' />
+    return (
+      <div className="flex min-h-[90%] items-center justify-center">
+        <Loading variant="button" size="lg" />
+      </div>
+    )
   }
 
   const steps = [
@@ -709,66 +713,6 @@ export default function GenerateProjectionWizardPage() {
             ))}
           </div>
         </div>
-
-
-        {/* Loading Overlay */}
-        {isGenerating && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 min-h-screen">
-            <div className="w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95 duration-300">
-              <Card className="border-2 border-[#8B5CF6]/20 shadow-2xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
-                <CardContent className="p-8">
-                  <div className="space-y-6">
-                    {/* Animated Spinner */}
-                    <div className="flex justify-center">
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full border-4 border-[#8B5CF6]/20"></div>
-                        <div className="relative w-16 h-16 rounded-full border-4 border-transparent border-t-[#8B5CF6] border-r-[#8B5CF6] animate-spin">
-                          <div className="absolute inset-0 rounded-full border-4 border-transparent border-b-[#7C3AED] border-l-[#7C3AED] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-6 h-6 rounded-full bg-[#8B5CF6] animate-pulse"></div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Text Content */}
-                    <div className="text-center space-y-2">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
-                        {t("wizard.generating")}
-                      </h3>
-                      <p className="text-sm text-muted-foreground animate-in fade-in-0 slide-in-from-bottom-2 duration-700 delay-150">
-                        {t("wizard.pleaseWait")}
-                      </p>
-                    </div>
-
-                    {/* Animated Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="relative h-3 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-[#8B5CF6] via-[#7C3AED] to-[#8B5CF6] rounded-full"
-                          style={{
-                            backgroundSize: '200% 100%',
-                            animation: 'progress 2s ease-in-out infinite',
-                          }}
-                        ></div>
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
-                          style={{
-                            animation: 'shimmer-overlay 2s ease-in-out infinite',
-                          }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span className="animate-pulse">Procesando...</span>
-                        <span className="animate-pulse" style={{ animationDelay: '0.3s' }}>Por favor espera</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
 
         {/* Step Content */}
         <Card className="mb-6 bg-white rounded-lg shadow-sm">

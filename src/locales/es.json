@@ -1365,6 +1365,7 @@
   },
   "lectures": {
     "title": "Lecciones",
+    "addSubject": "Agregar Materia",
     "description": "Explora y busca en el catálogo de lecciones",
     "filters": "Filtros",
     "code": "Código",
@@ -1379,7 +1380,9 @@
     "searchPlaceholder": "Buscar por nombre, código o materia...",
     "noLecturesFound": "No se encontraron lecciones",
     "noLecturesDescription": "Intenta ajustar tus filtros o término de búsqueda",
-    "lectures": "lecciones"
+    "lectures": "lecciones",
+    "noLectures": "No se encontraron lecciones",
+    "noResults": "No se encontraron resultados"
   },
   "passwordSetup": {
     "title": "Establecer Contraseña",
