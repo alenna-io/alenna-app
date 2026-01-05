@@ -19,14 +19,27 @@ interface StudentProfileProps {
   isParentView?: boolean
   isStudentView?: boolean
   canManage?: boolean
-  canEdit?: boolean
+  canEdit?: boolean,
+  hasConfirmedDangerZoneAction?: { deactivate: boolean, reactivate: boolean, delete: boolean }
   onEdit?: (student: Student) => void
   onDeactivate?: (student: Student) => void
   onReactivate?: (student: Student) => void
   onDelete?: (student: Student) => void
 }
 
-export function StudentProfile({ student, onBack, isParentView = false, isStudentView = false, canManage = false, canEdit = false, onEdit, onDeactivate, onReactivate, onDelete }: StudentProfileProps) {
+export function StudentProfile({
+  student,
+  onBack,
+  isParentView = false,
+  isStudentView = false,
+  canManage = false,
+  canEdit = false,
+  hasConfirmedDangerZoneAction = { deactivate: false, reactivate: false, delete: false },
+  onEdit,
+  onDeactivate,
+  onReactivate,
+  onDelete
+}: StudentProfileProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { hasModule } = useModuleAccess()
@@ -386,11 +399,13 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                   {
                     title: t("students.deactivate"),
                     description: t("students.deactivateDescription"),
-                    buttonText: t("students.deactivate"),
+                    buttonText: hasConfirmedDangerZoneAction.deactivate ? t("students.deactivating") : t("students.deactivate"),
                     buttonVariant: "outline" as const,
                     buttonClassName: "bg-red-100 border-red-300! text-red-700 hover:bg-red-200 hover:text-red-700",
                     borderClassName: "border-red-300!",
-                    onClick: () => onDeactivate(student),
+                    onClick: () => {
+                      onDeactivate(student)
+                    },
                   },
                 ]
                 : []),
@@ -399,11 +414,13 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                   {
                     title: t("students.reactivate"),
                     description: t("students.reactivateDescription"),
-                    buttonText: t("students.reactivate"),
+                    buttonText: hasConfirmedDangerZoneAction.reactivate ? t("students.reactivating") : t("students.reactivate"),
                     buttonVariant: "outline" as const,
                     buttonClassName: "bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100",
                     borderClassName: "border-l-blue-300",
-                    onClick: () => onReactivate(student),
+                    onClick: () => {
+                      onReactivate(student)
+                    },
                   },
                 ]
                 : []),
@@ -412,11 +429,13 @@ export function StudentProfile({ student, onBack, isParentView = false, isStuden
                   {
                     title: t("students.delete"),
                     description: t("students.deleteDescription"),
-                    buttonText: t("students.delete"),
+                    buttonText: hasConfirmedDangerZoneAction.delete ? t("students.deleting") : t("students.delete"),
                     buttonVariant: "destructive" as const,
                     buttonClassName: "bg-red-600 hover:bg-red-700 text-white",
                     borderClassName: "border-l-red-300",
-                    onClick: () => onDelete(student),
+                    onClick: () => {
+                      onDelete(student)
+                    },
                   },
                 ]
                 : []),

@@ -8,11 +8,7 @@ import { LecturesFilters } from "@/components/lectures-filters"
 import { SearchBar } from "@/components/ui/search-bar"
 import { LecturesTable } from "@/components/lectures-table"
 import { usePersistedState } from "@/hooks/use-table-state"
-import { CreateSubjectDialog } from "@/components/create-subject-dialog"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import { useLectures, useSubjects, queryKeys } from "@/hooks/queries"
-import { useQueryClient } from "@tanstack/react-query"
+import { useLectures, useSubjects } from "@/hooks/queries"
 
 interface PaceCatalogItem {
   id: string
@@ -37,7 +33,6 @@ interface SubSubject {
 
 export default function LecturesPage() {
   const { t } = useTranslation()
-  const queryClient = useQueryClient()
 
   const { data: allLecturesData = [], isLoading: isLoadingLectures, error: lecturesError } = useLectures()
   const { data: subjectsData = [], isLoading: isLoadingSubjects, error: subjectsError } = useSubjects()
@@ -57,7 +52,6 @@ export default function LecturesPage() {
   const [sortDirection, setSortDirection] = usePersistedState<"asc" | "desc">("sortDirection", "asc", tableId)
   const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
   const itemsPerPage = 10
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false)
 
   // Get unique categories and levels from subjects
   const categories = React.useMemo(() => {
@@ -71,62 +65,6 @@ export default function LecturesPage() {
     subjects.forEach(s => levs.add(s.levelId))
     return Array.from(levs).sort()
   }, [subjects])
-
-  // Extract unique categories with IDs and levels with IDs for the dialog
-  const categoriesWithIds = React.useMemo(() => {
-    const categoryMap = new Map<string, { id: string; name: string }>()
-    subjects.forEach(s => {
-      if (!categoryMap.has(s.categoryName) && s.categoryId) {
-        categoryMap.set(s.categoryName, {
-          id: s.categoryId,
-          name: s.categoryName,
-        })
-      }
-    })
-    return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name))
-  }, [subjects])
-
-  const levelsWithIds = React.useMemo(() => {
-    const levelMap = new Map<string, { id: string; name: string; number?: number }>()
-    subjects.forEach(s => {
-      if (!levelMap.has(s.levelId)) {
-        levelMap.set(s.levelId, {
-          id: s.levelId,
-          name: s.levelName || s.levelId,
-          number: s.levelNumber,
-        })
-      }
-    })
-    return Array.from(levelMap.values()).sort((a, b) => {
-      if (a.number !== undefined && b.number !== undefined) {
-        return a.number - b.number
-      }
-      if (a.number !== undefined) return -1
-      if (b.number !== undefined) return 1
-      return a.name.localeCompare(b.name)
-    })
-  }, [subjects])
-
-  const handleSubjectCreated = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.lectures.all,
-    })
-
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.subjects.all,
-    })
-
-    setFilters({
-      category: 'all',
-      level: 'all',
-      subject: 'all',
-    })
-    setSearchTerm('')
-    setCurrentPage(1)
-
-  }
-
-
 
   // Filter lectures by filters and search term (using AND logic for all filters)
   const filteredLectures = React.useMemo(() => {
@@ -259,20 +197,8 @@ export default function LecturesPage() {
             description={t("lectures.description") || "Browse and search the lectures catalog"}
             className="flex-1"
           />
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t("lectures.addSubject") || "Add Subject"}
-          </Button>
         </div>
       </div>
-
-      <CreateSubjectDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={handleSubjectCreated}
-        categories={categoriesWithIds}
-        levels={levelsWithIds}
-      />
 
       {/* Search */}
       <SearchBar
