@@ -759,17 +759,6 @@ export default function ACEProjectionPage() {
       })
 
       toast.success(t("projections.lessonAdded"))
-
-      // Reload projection data to get the real ID and any server-side changes
-      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-      setProjectionDetail(detail)
-      const convertedData = {
-        Q1: convertQuarterData(detail.quarters.Q1),
-        Q2: convertQuarterData(detail.quarters.Q2),
-        Q3: convertQuarterData(detail.quarters.Q3),
-        Q4: convertQuarterData(detail.quarters.Q4),
-      }
-      setProjectionData(convertedData)
     } catch (err) {
       console.error('Error agregando Lección:', err)
       const errorMessage = err instanceof Error ? err.message : t("projections.errorAddingLesson")
@@ -826,17 +815,6 @@ export default function ACEProjectionPage() {
       await api.projections.removePace(studentId, projectionId, paceId)
 
       toast.success(t("projections.lessonDeleted"))
-
-      // Reload projection data to ensure consistency
-      const detail: ProjectionDetail = await api.projections.getDetail(studentId, projectionId)
-      setProjectionDetail(detail)
-      const convertedData = {
-        Q1: convertQuarterData(detail.quarters.Q1),
-        Q2: convertQuarterData(detail.quarters.Q2),
-        Q3: convertQuarterData(detail.quarters.Q3),
-        Q4: convertQuarterData(detail.quarters.Q4),
-      }
-      setProjectionData(convertedData)
     } catch (err) {
       console.error('Error eliminando Lección:', err)
       const errorMessage = err instanceof Error ? err.message : t("projections.errorDeletingLesson")
