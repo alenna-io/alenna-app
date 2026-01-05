@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { GraduationCap, AlertTriangle, Calendar } from "lucide-react"
+import { AlertTriangle, Calendar } from "lucide-react"
 import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar"
@@ -523,10 +523,9 @@ export function StudentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
             {student ? t("students.editStudent") : t("students.createStudent")}
           </DialogTitle>
           <DialogDescription>

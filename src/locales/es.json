@@ -1365,7 +1365,8 @@
     "defaultGroupName": "Grupo por Defecto",
     "deleteAssignmentSuccess": "Estudiante removido del grupo exitosamente",
     "deleteAssignmentError": "Error al remover estudiante del grupo",
-    "removeFromGroup": "Remover del Grupo"
+    "removeFromGroup": "Remover del Grupo",
+    "assignmentSuccess": "Asignación exitosa al grupo"
   },
   "lectures": {
     "title": "Lecciones",

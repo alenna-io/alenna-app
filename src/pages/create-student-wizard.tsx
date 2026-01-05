@@ -38,6 +38,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { queryKeys } from "@/hooks/queries/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 
 type WizardStep = 1 | 2 | 3 | 4
 
@@ -154,6 +156,8 @@ export default function CreateStudentWizardPage() {
   const [parent2DropdownOpen, setParent2DropdownOpen] = React.useState(false)
   const [parent1SearchTerm, setParent1SearchTerm] = React.useState("")
   const [parent2SearchTerm, setParent2SearchTerm] = React.useState("")
+
+  const queryClient = useQueryClient()
 
   const [formData, setFormData] = React.useState({
     firstName: "",
@@ -775,6 +779,9 @@ export default function CreateStudentWizardPage() {
         toast.error(errorMessage)
       }
     } finally {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.students.all,
+      })
       setIsSaving(false)
     }
   }
