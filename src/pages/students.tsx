@@ -37,6 +37,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { usePersistedState } from "@/hooks/use-table-state"
+import { queryKeys } from "@/hooks/queries/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface Filters extends Record<string, string> {
   certificationType: string
@@ -86,6 +88,11 @@ export default function StudentsPage() {
   const [deleteConfirmation, setDeleteConfirmation] = React.useState<{ open: boolean; studentId: string; studentName: string; studentEmail: string }>({ open: false, studentId: '', studentName: '', studentEmail: '' })
   const [deactivateEmailInput, setDeactivateEmailInput] = React.useState('')
   const [deleteEmailInput, setDeleteEmailInput] = React.useState('')
+  const [hasConfirmedDangerZoneAction, setHasConfirmedDangerZoneAction] = React.useState<{
+    deactivate: boolean
+    reactivate: boolean
+    delete: boolean
+  }>({ deactivate: false, reactivate: false, delete: false })
   const itemsPerPage = 10
 
   const roleNames = React.useMemo(() => userInfo?.roles.map(role => role.name) ?? [], [userInfo])
@@ -95,6 +102,8 @@ export default function StudentsPage() {
   const isParentOnly = hasRole('PARENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
   const isStudentOnly = hasRole('STUDENT') && !hasRole('TEACHER') && !hasRole('ADMIN') && !hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
   const isSchoolAdmin = hasRole('SCHOOL_ADMIN') && !hasRole('SUPERADMIN')
+
+  const queryClient = useQueryClient()
 
   // Redirect super admins - they should not access the students page
   React.useEffect(() => {
@@ -366,6 +375,7 @@ export default function StudentsPage() {
   }
 
   const confirmDeactivateStudent = async () => {
+    setHasConfirmedDangerZoneAction({ deactivate: true, reactivate: false, delete: false })
     if (deactivateConfirmation.studentEmail && deactivateEmailInput !== deactivateConfirmation.studentEmail) {
       setError(t("users.emailMismatchError"))
       return
@@ -384,6 +394,9 @@ export default function StudentsPage() {
       const errorMessage = err instanceof Error ? err.message : t("students.deactivateError")
       setError(errorMessage)
       toast.error(errorMessage)
+    } finally {
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(studentId) })
+      setHasConfirmedDangerZoneAction({ deactivate: false, reactivate: false, delete: false })
     }
   }
 
@@ -396,6 +409,7 @@ export default function StudentsPage() {
   }
 
   const confirmReactivateStudent = async () => {
+    setHasConfirmedDangerZoneAction({ deactivate: false, reactivate: true, delete: false })
     const studentId = reactivateConfirmation.studentId
     const studentName = reactivateConfirmation.studentName
 
@@ -408,6 +422,10 @@ export default function StudentsPage() {
       const errorMessage = err instanceof Error ? err.message : t("students.reactivateError")
       setError(errorMessage)
       toast.error(errorMessage)
+    }
+    finally {
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.detail(studentId) })
+      setHasConfirmedDangerZoneAction({ deactivate: false, reactivate: false, delete: false })
     }
   }
 
@@ -426,6 +444,7 @@ export default function StudentsPage() {
   }
 
   const confirmDeleteStudent = async () => {
+    setHasConfirmedDangerZoneAction({ deactivate: false, reactivate: false, delete: true })
     if (deleteEmailInput !== deleteConfirmation.studentEmail) {
       setError(t("users.emailMismatchError"))
       return
@@ -444,6 +463,9 @@ export default function StudentsPage() {
       const errorMessage = err instanceof Error ? err.message : t("students.deleteError")
       setError(errorMessage)
       toast.error(errorMessage)
+    } finally {
+      setHasConfirmedDangerZoneAction({ deactivate: false, reactivate: false, delete: false })
+      navigate('/students')
     }
   }
 
@@ -572,6 +594,7 @@ export default function StudentsPage() {
           isParentView={parentOnly}
           canManage={canEditStudent || canDeleteStudent}
           canEdit={canEditStudent}
+          hasConfirmedDangerZoneAction={hasConfirmedDangerZoneAction}
           onEdit={canEditStudent ? (student) => setEditingStudent(student) : undefined}
           onDeactivate={canDeleteStudent ? handleDeactivateStudent : undefined}
           onReactivate={canDeleteStudent ? handleReactivateStudent : undefined}
@@ -620,7 +643,7 @@ export default function StudentsPage() {
 
         {/* Deactivate Confirmation Dialog */}
         <Dialog open={deactivateConfirmation.open} onOpenChange={(open) => setDeactivateConfirmation({ ...deactivateConfirmation, open })}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-red-600">{t("students.deactivateConfirm")}</DialogTitle>
             </DialogHeader>
@@ -668,7 +691,7 @@ export default function StudentsPage() {
 
         {/* Reactivate Confirmation Dialog */}
         <Dialog open={reactivateConfirmation.open} onOpenChange={(open) => setReactivateConfirmation({ ...reactivateConfirmation, open })}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-green-600">{t("students.reactivateConfirm")}</DialogTitle>
             </DialogHeader>
@@ -697,7 +720,7 @@ export default function StudentsPage() {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ ...deleteConfirmation, open })}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-red-600">{t("students.deleteConfirm")}</DialogTitle>
             </DialogHeader>
@@ -747,8 +770,8 @@ export default function StudentsPage() {
   // PAGE LOADING: Show skeleton table when loading students data
   if (isLoading) {
     return (
-      <Loading 
-        variant="list-page" 
+      <Loading
+        variant="list-page"
         showCreateButton={userInfo?.permissions.includes('students.create') ?? false}
         view={view}
         showFilters={true}
