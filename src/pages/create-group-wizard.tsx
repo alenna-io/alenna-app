@@ -19,6 +19,8 @@ import { useUser } from "@/contexts/UserContext"
 import { useModuleAccess } from "@/hooks/useModuleAccess"
 import { Loading } from "@/components/ui/loading"
 import { toast } from "sonner"
+import { queryKeys } from "@/hooks/queries/query-keys"
+import { useQueryClient } from "@tanstack/react-query"
 
 type WizardStep = 1 | 2 | 3
 
@@ -29,6 +31,7 @@ export default function CreateGroupWizardPage() {
   const { userInfo, isLoading: isLoadingUser } = useUser()
   const { hasModule } = useModuleAccess()
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
 
   // Check if teachers module is enabled - required for creating groups
   const hasTeachersModule = hasModule('teachers')
@@ -270,6 +273,9 @@ export default function CreateGroupWizardPage() {
       const err = error as Error
       toast.error(err.message || t("groups.createError"))
     } finally {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groups.all,
+      })
       setIsSaving(false)
     }
   }
@@ -297,9 +303,11 @@ export default function CreateGroupWizardPage() {
   return (
     <div className="min-h-screen">
       <div className="w-full p-3 space-y-6">
-        <BackButton to={initialTeacherId && schoolYear ? `/groups/${schoolYear.id}/${initialTeacherId}` : "/groups"}>
-          {initialTeacherId ? t("common.back") : t("groups.backToGroups")}
-        </BackButton>
+        <div className="md:hidden">
+          <BackButton to={initialTeacherId && schoolYear ? `/groups/${schoolYear.id}/${initialTeacherId}` : "/groups"}>
+            {initialTeacherId ? t("common.back") : t("groups.backToGroups")}
+          </BackButton>
+        </div>
 
         <PageHeader
           title={initialTeacherId ? t("groups.addStudents") : t("groups.createGroup")}

@@ -1358,7 +1358,8 @@
     "deleteAssignmentSuccess": "Student removed from group successfully",
     "deleteAssignmentError": "Failed to remove student from group",
     "searchStudentsPlaceholder": "Search students by name...",
-    "removeFromGroup": "Remove from Group"
+    "removeFromGroup": "Remove from Group",
+    "assignmentSuccess": "Assignment successful to group"
   },
   "lectures": {
     "title": "Lectures",
