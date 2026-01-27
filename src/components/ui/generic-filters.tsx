@@ -25,7 +25,6 @@ import { X, Filter, ChevronDown, ChevronUp, Check, ChevronsUpDown } from "lucide
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import { includesIgnoreAccents } from "@/lib/string-utils"
-import { MonthYearPicker } from "@/components/billing/month-year-picker"
 
 export interface FilterField {
   key: string
@@ -329,15 +328,6 @@ export function GenericFilters<T extends Record<string, string>>({
                       placeholder={field.placeholder}
                       className={cn(
                         "w-full h-10 px-3 py-2 border border-input bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-200 cursor-text hover:border-primary/50",
-                        isFilterActive && "border-primary/30 bg-primary-soft/30"
-                      )}
-                    />
-                  ) : field.type === "monthyear" ? (
-                    <MonthYearPicker
-                      value={currentValue || "all"}
-                      onChange={(value) => handleFilterChange(field.key as keyof T, value)}
-                      placeholder={field.placeholder}
-                      className={cn(
                         isFilterActive && "border-primary/30 bg-primary-soft/30"
                       )}
                     />

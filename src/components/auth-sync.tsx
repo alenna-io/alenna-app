@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useApi } from '@/services/api';
 import { Loading } from '@/components/ui/loading';
-import { ErrorAlert } from '@/components/ui/error-alert';
 
 interface AuthSyncProps {
   children: React.ReactNode;
@@ -10,31 +8,23 @@ interface AuthSyncProps {
 
 export function AuthSync({ children }: AuthSyncProps) {
   const { isSignedIn } = useAuth();
-  const api = useApi();
   const [syncStatus, setSyncStatus] = useState<'loading' | 'synced' | 'error'>('loading');
-  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
+    // MVP: Fake auth sync - just wait a bit then mark as synced
     if (!isSignedIn) {
       setSyncStatus('loading');
       return;
     }
 
-    // Sync user with backend when signed in
+    // Fake sync - simulate API call
     const syncUser = async () => {
-      try {
-        await api.auth.syncUser();
-        setSyncStatus('synced');
-      } catch (error) {
-        console.error('Failed to sync user with backend:', error);
-        const errorMsg = error instanceof Error ? error.message : 'Failed to sync user';
-        setErrorMessage(errorMsg);
-        setSyncStatus('error');
-      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setSyncStatus('synced');
     };
 
     syncUser();
-  }, [isSignedIn, api.auth]);
+  }, [isSignedIn]);
 
   // Loading state - use spinner, not full-screen skeleton
   if (syncStatus === 'loading') {
@@ -45,21 +35,7 @@ export function AuthSync({ children }: AuthSyncProps) {
     );
   }
 
-  // Error state - user not found in database
-  if (syncStatus === 'error') {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="max-w-md">
-          <ErrorAlert
-            title="Account Not Found"
-            message={`${errorMessage}. Please contact your administrator to set up your account.`}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Success - user is synced
+  // Success - user is synced (faked for MVP)
   return <>{children}</>;
 }
 

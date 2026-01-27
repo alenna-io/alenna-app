@@ -72,6 +72,38 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log('[UserContext] Starting fetch on mobile, API_BASE_URL:', API_BASE_URL)
       }
 
+      // MVP: Fake auth info - return mock user data
+      // TODO: Replace with real API call when auth endpoint is available
+      const mockUserInfo: UserInfo = {
+        id: 'mock-user-id',
+        email: 'user@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        fullName: 'Test User',
+        schoolId: 'mock-school-id',
+        schoolName: 'Alenna',
+        roles: [
+          { id: 'role-1', name: 'SCHOOL_ADMIN', displayName: 'School Admin' }
+        ],
+        createdPassword: true,
+      }
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      setUserInfo(mockUserInfo)
+      try {
+        sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(mockUserInfo))
+        sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, String(new Date().getTime()))
+      } catch (e) {
+        console.warn('[UserContext] Failed to save mock user info to sessionStorage:', e)
+      }
+
+      if (showLoading) {
+        setIsLoading(false)
+      }
+
+      /* Original code (commented out for MVP - uncomment when real auth endpoint is ready)
       let token: string | null = null
       try {
         token = await getToken()
@@ -92,7 +124,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No authentication token received from Clerk')
       }
 
-      // Add cache-busting timestamp to prevent caching
       const timestamp = new Date().getTime()
       const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
 
@@ -197,6 +228,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
       }
+      */
     } catch (err) {
       // Enhanced error logging with full details
       const errorDetails = {
@@ -285,6 +317,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUser() {
   const context = React.useContext(UserContext)
   if (!context) {
