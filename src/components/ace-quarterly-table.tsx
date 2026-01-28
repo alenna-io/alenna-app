@@ -24,6 +24,8 @@ interface QuarterlyTableProps {
   isReadOnly?: boolean // Read-only mode for parents
   isQuarterClosed?: boolean // Whether this quarter is closed
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
+  subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
+  categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -73,7 +75,9 @@ export function ACEQuarterlyTable({
   isActive = false,
   isReadOnly = false,
   isQuarterClosed = false,
-  subjectToCategory: _subjectToCategory, // eslint-disable-line @typescript-eslint/no-unused-vars
+  subjectToCategory,
+  subjectToCategoryDisplayOrder,
+  categoryCounts,
   onPaceDrop,
   onPaceToggle,
   onWeekClick,
@@ -81,6 +85,28 @@ export function ACEQuarterlyTable({
   onDeletePace
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
+
+  const getDisplayName = (subjectName: string): string => {
+    if (!subjectToCategory) return subjectName
+    const categoryName = subjectToCategory.get(subjectName)
+    if (!categoryName) return subjectName
+
+    // Always show subject name for electives
+    if (categoryName === 'Electives') return subjectName
+
+    // Check if there are multiple subjects from the same category in this quarter
+    if (categoryCounts) {
+      const quarterCategoryCounts = categoryCounts.get(quarter)
+      if (quarterCategoryCounts) {
+        const count = quarterCategoryCounts.get(categoryName) || 0
+        // If multiple subjects share the same category, show subject name to distinguish them
+        if (count > 1) return subjectName
+      }
+    }
+
+    // Single subject from this category, show category name
+    return categoryName
+  }
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const dragImageRef = React.useRef<HTMLDivElement | null>(null)
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
@@ -98,7 +124,20 @@ export function ACEQuarterlyTable({
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
   const optionsMenuRef = React.useRef<HTMLDivElement>(null)
-  const subjects = Object.keys(data)
+
+  // Sort subjects by category displayOrder
+  const subjects = React.useMemo(() => {
+    const subjectList = Object.keys(data)
+    if (!subjectToCategoryDisplayOrder) {
+      return subjectList
+    }
+    return subjectList.sort((a, b) => {
+      const orderA = subjectToCategoryDisplayOrder.get(a) ?? 999
+      const orderB = subjectToCategoryDisplayOrder.get(b) ?? 999
+      return orderA - orderB
+    })
+  }, [data, subjectToCategoryDisplayOrder])
+
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
 
@@ -488,14 +527,14 @@ export function ACEQuarterlyTable({
                 {subjects.map((subject) => (
                   <tr
                     key={subject}
-                    className={`transition-colors group border-b border-border last:border-b-0 ${getSubjectColor(subject).bg} hover:opacity-80`}
+                    className={`transition-colors group border-b border-border last:border-b-0 bg-card hover:opacity-80`}
                   >
                     <td
-                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] ${getSubjectColor(subject).bg} ${getSubjectColor(subject).text} text-xs md:text-sm`}
+                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subject).text} text-xs md:text-sm`}
                     >
                       <div className="flex flex-col">
                         <span className={`text-xs md:text-sm font-semibold ${getSubjectColor(subject).text}`}>
-                          {subject}
+                          {getDisplayName(subject)}
                         </span>
                       </div>
                     </td>

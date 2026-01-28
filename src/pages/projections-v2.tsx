@@ -23,10 +23,8 @@ interface ProjectionWithStudent {
   id: string
   studentId: string
   schoolYear: string
-  startDate: string
-  endDate: string
   isActive: boolean
-  notes?: string
+  totalPaces: number
   createdAt: string
   updatedAt: string
   student: {
@@ -37,40 +35,6 @@ interface ProjectionWithStudent {
   }
 }
 
-const FAKE_PROJECTIONS: ProjectionWithStudent[] = [
-  {
-    id: "proj-1",
-    studentId: "student-1",
-    schoolYear: "2024-2025",
-    startDate: "2024-08-01T00:00:00.000Z",
-    endDate: "2025-05-31T00:00:00.000Z",
-    isActive: true,
-    createdAt: "2024-08-01T00:00:00.000Z",
-    updatedAt: "2024-08-01T00:00:00.000Z",
-    student: {
-      id: "student-1",
-      firstName: "John",
-      lastName: "Doe",
-      name: "John Doe",
-    },
-  },
-  {
-    id: "proj-2",
-    studentId: "student-2",
-    schoolYear: "2024-2025",
-    startDate: "2024-08-01T00:00:00.000Z",
-    endDate: "2025-05-31T00:00:00.000Z",
-    isActive: true,
-    createdAt: "2024-08-01T00:00:00.000Z",
-    updatedAt: "2024-08-01T00:00:00.000Z",
-    student: {
-      id: "student-2",
-      firstName: "Jane",
-      lastName: "Smith",
-      name: "Jane Smith",
-    },
-  },
-]
 
 export default function ProjectionsPageV2() {
   const navigate = useNavigate()
@@ -97,6 +61,11 @@ export default function ProjectionsPageV2() {
   const [filters, setFilters] = usePersistedState<{ schoolYear: string }>("filters", {
     schoolYear: "all"
   }, tableId)
+
+  const getSchoolYearNameById = React.useCallback((id: string): string => {
+    const year = schoolYears.find(sy => sy.id === id)
+    return year?.name || id
+  }, [schoolYears])
   const [sortField, setSortField] = usePersistedState<"firstName" | "lastName">("sortField", "lastName", tableId)
   const [sortDirection, setSortDirection] = usePersistedState<"asc" | "desc">("sortDirection", "asc", tableId)
   const [currentPage, setCurrentPage] = usePersistedState("currentPage", 1, tableId)
@@ -115,11 +84,27 @@ export default function ProjectionsPageV2() {
           }))
           setSchoolYears(years)
 
-          const active = years.find(sy => sy.isActive)
-          if (active && filters.schoolYear === "all") {
-            setFilters({ schoolYear: active.name })
-          } else if (years.length > 0 && filters.schoolYear === "all") {
-            setFilters({ schoolYear: years[0].name })
+          // If current filter is a name (from old persisted state), find matching ID
+          if (filters.schoolYear && filters.schoolYear !== "all") {
+            const matchingYear = years.find(sy => sy.name === filters.schoolYear || sy.id === filters.schoolYear)
+            if (matchingYear && matchingYear.id !== filters.schoolYear) {
+              setFilters({ schoolYear: matchingYear.id })
+            } else if (!matchingYear) {
+              // If no match found, reset to active year or first year
+              const active = years.find(sy => sy.isActive)
+              if (active) {
+                setFilters({ schoolYear: active.id })
+              } else if (years.length > 0) {
+                setFilters({ schoolYear: years[0].id })
+              }
+            }
+          } else {
+            const active = years.find(sy => sy.isActive)
+            if (active && filters.schoolYear === "all") {
+              setFilters({ schoolYear: active.id })
+            } else if (years.length > 0 && filters.schoolYear === "all") {
+              setFilters({ schoolYear: years[0].id })
+            }
           }
         }
       } catch (err) {
@@ -139,12 +124,31 @@ export default function ProjectionsPageV2() {
         setIsLoading(true)
         setError(null)
 
-        setProjections(FAKE_PROJECTIONS)
+        const schoolYearFilter = filters.schoolYear && filters.schoolYear !== "all" ? filters.schoolYear : undefined
+        const projectionsData = await api.projections.getList(schoolYearFilter)
+
+        const mappedProjections: ProjectionWithStudent[] = projectionsData.map(proj => ({
+          id: proj.id,
+          studentId: proj.studentId,
+          schoolYear: proj.schoolYear,
+          isActive: proj.status === 'OPEN',
+          totalPaces: proj.totalPaces,
+          createdAt: proj.createdAt,
+          updatedAt: proj.updatedAt,
+          student: {
+            id: proj.student.id,
+            firstName: proj.student.firstName || '',
+            lastName: proj.student.lastName || '',
+            name: `${proj.student.firstName || ''} ${proj.student.lastName || ''}`.trim(),
+          },
+        }))
+
+        setProjections(mappedProjections)
       } catch (err) {
         const error = err as Error
         console.error('Error fetching projections:', error)
         setError(error.message || 'Failed to load projections')
-        toast.error("Note: Projection listing endpoint not yet available. Showing sample data.")
+        toast.error("Error al cargar las proyecciones")
       } finally {
         setIsLoading(false)
       }
@@ -153,25 +157,13 @@ export default function ProjectionsPageV2() {
     if (!isLoadingUser) {
       fetchProjections()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.schoolYear, isLoadingUser])
 
   const isTeacherOrAdmin = checkRole('TEACHER') || checkRole('SCHOOL_ADMIN') || checkRole('PARENT')
 
-  const projectionsByStudent = React.useMemo(() => {
-    const grouped = new Map<string, ProjectionWithStudent>()
-
-    projections.forEach(projection => {
-      const existing = grouped.get(projection.studentId)
-      if (!existing || new Date(projection.createdAt) > new Date(existing.createdAt)) {
-        grouped.set(projection.studentId, projection)
-      }
-    })
-
-    return Array.from(grouped.values())
-  }, [projections])
-
   const sortedProjections = React.useMemo(() => {
-    let filtered = [...projectionsByStudent]
+    let filtered = [...projections]
 
     if (searchTerm) {
       filtered = filtered.filter(projection => {
@@ -199,7 +191,7 @@ export default function ProjectionsPageV2() {
     })
 
     return filtered
-  }, [projectionsByStudent, searchTerm, sortField, sortDirection])
+  }, [projections, searchTerm, sortField, sortDirection])
 
   const totalPages = Math.ceil(sortedProjections.length / itemsPerPage)
   const paginatedProjections = React.useMemo(() => {
@@ -231,26 +223,6 @@ export default function ProjectionsPageV2() {
     navigate("/projections/generate")
   }
 
-  const handleSelectEmpty = () => {
-    setShowCreateDialog(false)
-    toast.info("Empty projection creation coming soon")
-  }
-
-  const handleSelectFromTemplate = () => {
-    setShowCreateDialog(false)
-    toast.info("Template-based projection coming soon")
-  }
-
-  const handleProjectionDelete = async (projection: ProjectionWithStudent) => {
-    try {
-      console.log("Delete projection:", projection.id)
-      toast.error("Delete endpoint not yet available")
-    } catch (error) {
-      console.error("Error deleting projection:", error)
-      toast.error("Error al eliminar la proyección")
-    }
-  }
-
   if (isSuperAdmin) {
     return <Navigate to="/users" replace />
   }
@@ -279,7 +251,7 @@ export default function ProjectionsPageV2() {
       placeholder: t("filters.allYears"),
       options: [
         { value: "all", label: t("filters.allYears") },
-        ...schoolYears.map(sy => ({ value: sy.name, label: sy.name }))
+        ...schoolYears.map(sy => ({ value: sy.id, label: sy.name }))
       ]
     }
   ]
@@ -287,7 +259,8 @@ export default function ProjectionsPageV2() {
   const getActiveFilterLabels = (currentFilters: { schoolYear: string }) => {
     const labels: string[] = []
     if (currentFilters.schoolYear && currentFilters.schoolYear !== "all") {
-      labels.push(`${filterFields[0].label}: ${currentFilters.schoolYear}`)
+      const yearName = getSchoolYearNameById(currentFilters.schoolYear)
+      labels.push(`${filterFields[0].label}: ${yearName}`)
     }
     return labels
   }
@@ -336,7 +309,6 @@ export default function ProjectionsPageV2() {
           <ProjectionsTable
             projections={paginatedProjections}
             onProjectionSelect={handleProjectionSelect}
-            onProjectionDelete={handleProjectionDelete}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
@@ -354,7 +326,7 @@ export default function ProjectionsPageV2() {
                 title={t("projections.noProjections")}
                 description={
                   filters.schoolYear && filters.schoolYear !== "all"
-                    ? t("projections.noProjectionsForYear", { year: filters.schoolYear })
+                    ? t("projections.noProjectionsForYear", { year: getSchoolYearNameById(filters.schoolYear) })
                     : t("projections.noProjectionsFound")
                 }
               />
@@ -367,8 +339,8 @@ export default function ProjectionsPageV2() {
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
         onSelectGenerate={handleSelectGenerate}
-        onSelectEmpty={handleSelectEmpty}
-        onSelectFromTemplate={handleSelectFromTemplate}
+        onSelectEmpty={() => setShowCreateDialog(false)}
+        onSelectFromTemplate={() => setShowCreateDialog(false)}
       />
     </div>
   )

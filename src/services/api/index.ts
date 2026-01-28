@@ -18,6 +18,14 @@ export function useApi() {
         const token = await getToken();
         return projectionsApi.generate(data, token);
       },
+      getList: async (schoolYear?: string) => {
+        const token = await getToken();
+        return projectionsApi.getList(schoolYear, token);
+      },
+      getById: async (projectionId: string) => {
+        const token = await getToken();
+        return projectionsApi.getById(projectionId, token);
+      },
     },
     categories: {
       getAllWithSubjects: async () => {
@@ -46,7 +54,7 @@ export function useApi() {
   };
 }
 
-export type { CreateProjectionInput, GenerateProjectionInput, GenerateProjectionSubject } from './projections';
+export type { CreateProjectionInput, GenerateProjectionInput, GenerateProjectionSubject, ProjectionListItem, ProjectionDetails } from './projections';
 export type { CategoryWithSubjects } from './categories';
 export type { SchoolWithCurrentYear } from './schools';
 export type { Student } from './students';
