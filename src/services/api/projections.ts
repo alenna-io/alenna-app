@@ -88,6 +88,7 @@ export interface ProjectionDetails {
   studentId: string;
   schoolId: string;
   schoolYear: string;
+  schoolYearName: string;
   status: 'OPEN' | 'CLOSED';
   student: {
     id: string;
@@ -123,4 +124,21 @@ export const projectionsApi = {
 
   getById: async (projectionId: string, token: string | null = null): Promise<ProjectionDetails> =>
     apiFetch(`/projections/${projectionId}`, token),
+
+  movePace: async (projectionId: string, paceId: string, data: { quarter: string; week: number }, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/paces/${paceId}/move`, token, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  addPace: async (projectionId: string, data: { paceCatalogId: string; quarter: string; week: number }, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/paces`, token, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deletePace: async (projectionId: string, paceId: string, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/paces/${paceId}`, token, {
+      method: 'DELETE',
+    }),
 };

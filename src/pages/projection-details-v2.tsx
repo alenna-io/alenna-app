@@ -10,6 +10,10 @@ import { useTranslation } from "react-i18next"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
 import type { ProjectionDetails } from "@/services/api/projections"
+import { Button } from "@/components/ui/button"
+import { Move, Edit, X } from "lucide-react"
+import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { toast } from "sonner"
 
 const createEmptyQuarterData = (): QuarterData => ({})
 
@@ -86,6 +90,7 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
       isUnfinished: pace.status === 'UNFINISHED',
       originalQuarter: pace.originalQuarter || undefined,
       originalWeek: pace.originalWeek || undefined,
+      orderIndex: pace.paceCatalog.orderIndex,
       gradeHistory: pace.gradeHistory.map((h: { grade: number; date: string; note: string | null }) => ({
         grade: h.grade,
         date: h.date,
@@ -139,8 +144,17 @@ export default function ProjectionDetailsPageV2() {
   const [projectionInfo, setProjectionInfo] = React.useState<{
     studentName: string
     schoolYear: string
+    schoolYearName: string
     isActive: boolean
   } | null>(null)
+  const [editMode, setEditMode] = React.useState<'view' | 'moving' | 'editing'>('view')
+  const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
+  const [pacePickerContext, setPacePickerContext] = React.useState<{
+    quarter: string
+    subject: string
+    weekIndex: number
+  } | null>(null)
+  const [existingPaceCatalogIds, setExistingPaceCatalogIds] = React.useState<string[]>([])
 
   React.useEffect(() => {
     const fetchProjection = async () => {
@@ -159,9 +173,13 @@ export default function ProjectionDetailsPageV2() {
         setCategoryCounts(categoryCountsMap)
         setTotalPaces(totalPacesCount)
 
+        const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+        setExistingPaceCatalogIds(paceCatalogIds)
+
         setProjectionInfo({
           studentName: `${projection.student.user.firstName || ''} ${projection.student.user.lastName || ''}`.trim(),
           schoolYear: projection.schoolYear,
+          schoolYearName: projection.schoolYearName,
           isActive: projection.status === 'OPEN',
         })
       } catch (err) {
@@ -196,9 +214,13 @@ export default function ProjectionDetailsPageV2() {
         setCategoryCounts(categoryCountsMap)
         setTotalPaces(totalPacesCount)
 
+        const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+        setExistingPaceCatalogIds(paceCatalogIds)
+
         setProjectionInfo({
           studentName: `${projection.student.user.firstName || ''} ${projection.student.user.lastName || ''}`.trim(),
           schoolYear: projection.schoolYear,
+          schoolYearName: projection.schoolYearName,
           isActive: projection.status === 'OPEN',
         })
       } catch (err) {
@@ -213,6 +235,153 @@ export default function ProjectionDetailsPageV2() {
     fetchProjection()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionId])
+
+  const handlePaceMove = React.useCallback(async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
+    if (!projectionId) return
+
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const fromPaceRaw = quarterData[subject][fromWeek]
+
+    const fromPace = Array.isArray(fromPaceRaw) ? null : fromPaceRaw
+    if (!fromPace || !fromPace.id || !fromPace.orderIndex) {
+      toast.error(t("projections.errorMovingLesson") || "Cannot move pace: invalid pace")
+      return
+    }
+
+    const allPacesInSubject: Array<{ orderIndex: number; quarter: string; weekIndex: number }> = []
+    Object.entries(projectionData).forEach(([q, qData]) => {
+      const subjectData = qData[subject]
+      if (subjectData) {
+        subjectData.forEach((pace, idx) => {
+          if (!pace || Array.isArray(pace)) return
+          if (q === quarter && idx === fromWeek) return
+          if (pace.orderIndex !== undefined) {
+            allPacesInSubject.push({ orderIndex: pace.orderIndex, quarter: q, weekIndex: idx })
+          }
+        })
+      }
+    })
+
+    const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+    const targetQuarterIndex = quarterOrder.indexOf(quarter)
+
+    const pacesBeforeTarget = allPacesInSubject.filter(item => {
+      const itemQuarterIndex = quarterOrder.indexOf(item.quarter)
+      const isBefore = itemQuarterIndex < targetQuarterIndex ||
+        (itemQuarterIndex === targetQuarterIndex && item.weekIndex < toWeek)
+      return isBefore
+    })
+
+    for (const paceBefore of pacesBeforeTarget) {
+      if (paceBefore.orderIndex > fromPace.orderIndex) {
+        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+        return
+      }
+    }
+
+    const targetWeekPace = allPacesInSubject.find(item => item.quarter === quarter && item.weekIndex === toWeek)
+    if (targetWeekPace && targetWeekPace.orderIndex > fromPace.orderIndex) {
+      toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+      return
+    }
+
+    try {
+      await api.projections.movePace(projectionId, fromPace.id, {
+        quarter,
+        week: toWeek + 1
+      })
+      toast.success(t("projections.lessonMoved") || "Pace moved successfully")
+
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorMovingLesson") || "Failed to move pace")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId, api, t])
+
+  const handlePaceAdd = React.useCallback(async (quarter: string, _subject: string, weekIndex: number, paceCatalogId: string) => {
+    if (!projectionId) return
+
+    try {
+      await api.projections.addPace(projectionId, {
+        paceCatalogId,
+        quarter,
+        week: weekIndex + 1
+      })
+      toast.success(t("projections.lessonAdded") || "Pace added successfully")
+
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+      setPacePickerOpen(false)
+      setPacePickerContext(null)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorAddingLesson") || "Failed to add pace")
+    }
+  }, [projectionId, api, t])
+
+  const handlePaceDelete = React.useCallback(async (quarter: string, subject: string, weekIndex: number) => {
+    if (!projectionId) return
+
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const pace = quarterData[subject][weekIndex]
+    const paceData = Array.isArray(pace) ? pace[0] : pace
+
+    if (!paceData || !paceData.id) {
+      toast.error(t("projections.errorDeletingLesson") || "Cannot delete pace: pace not found")
+      return
+    }
+
+    if (paceData.grade !== null) {
+      toast.error(t("projections.cannotDeleteGradedPace") || "Cannot delete graded pace")
+      return
+    }
+
+    try {
+      await api.projections.deletePace(projectionId, paceData.id)
+      toast.success(t("projections.lessonDeleted") || "Pace deleted successfully")
+
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorDeletingLesson") || "Failed to delete pace")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId, api, t])
+
+  const handleAddPaceClick = React.useCallback((quarter: string, subject: string, weekIndex: number) => {
+    setPacePickerContext({ quarter, subject, weekIndex })
+    setPacePickerOpen(true)
+  }, [])
+
+  const handlePaceSelect = React.useCallback((paceId: string) => {
+    if (!pacePickerContext) return
+    handlePaceAdd(pacePickerContext.quarter, pacePickerContext.subject, pacePickerContext.weekIndex, paceId)
+  }, [pacePickerContext, handlePaceAdd])
 
   if (loading) {
     return <Loading variant="list-page" />
@@ -251,22 +420,58 @@ export default function ProjectionDetailsPageV2() {
               {projectionInfo.isActive ? t("projections.active") : t("projections.inactive")}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {projectionInfo.schoolYear}
+              {projectionInfo.schoolYearName}
             </span>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold">
-            {totalPaces}
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-2xl font-bold">
+              {totalPaces}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {t("projections.totalPaces")}
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {t("projections.totalPaces")}
-          </div>
+          {projectionInfo.isActive && (
+            <div className="flex items-center gap-2">
+              {editMode === 'view' && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditMode('moving')}
+                    className="flex items-center gap-2"
+                  >
+                    <Move className="h-4 w-4" />
+                    {t("projections.movePaces") || "Move Paces"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditMode('editing')}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    {t("projections.edit") || "Edit"}
+                  </Button>
+                </>
+              )}
+              {(editMode === 'moving' || editMode === 'editing') && (
+                <Button
+                  variant="outline"
+                  onClick={() => setEditMode('view')}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  {t("projections.cancel") || "Cancel"}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <Tabs defaultValue="Q1" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 gap-2">
           <TabsTrigger value="Q1">Q1</TabsTrigger>
           <TabsTrigger value="Q2">Q2</TabsTrigger>
           <TabsTrigger value="Q3">Q3</TabsTrigger>
@@ -280,10 +485,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q1}
                 quarter="Q1"
                 quarterName="Q1"
-                isReadOnly={false}
+                isReadOnly={!projectionInfo.isActive || editMode === 'view'}
+                editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
+                onAddPace={handleAddPaceClick}
+                onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
               />
             </CardContent>
           </Card>
@@ -296,10 +505,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q2}
                 quarter="Q2"
                 quarterName="Q2"
-                isReadOnly={false}
+                isReadOnly={!projectionInfo.isActive || editMode === 'view'}
+                editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
+                onAddPace={handleAddPaceClick}
+                onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
               />
             </CardContent>
           </Card>
@@ -312,10 +525,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q3}
                 quarter="Q3"
                 quarterName="Q3"
-                isReadOnly={false}
+                isReadOnly={!projectionInfo.isActive || editMode === 'view'}
+                editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
+                onAddPace={handleAddPaceClick}
+                onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
               />
             </CardContent>
           </Card>
@@ -328,15 +545,34 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q4}
                 quarter="Q4"
                 quarterName="Q4"
-                isReadOnly={false}
+                isReadOnly={!projectionInfo.isActive || editMode === 'view'}
+                editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
+                onAddPace={handleAddPaceClick}
+                onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
               />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {pacePickerContext && (
+        <PacePickerDialog
+          open={pacePickerOpen}
+          onClose={() => {
+            setPacePickerOpen(false)
+            setPacePickerContext(null)
+          }}
+          onSelect={handlePaceSelect}
+          categoryFilter={subjectToCategory.get(pacePickerContext.subject)}
+          subSubjectFilter={subjectToCategory.get(pacePickerContext.subject) === 'Electives' ? pacePickerContext.subject : undefined}
+          title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 }) || `Add Lesson - ${pacePickerContext.subject}`}
+          existingPaceCatalogIds={existingPaceCatalogIds}
+        />
+      )}
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
 import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 
 interface QuarterlyTableProps {
   quarter: string
@@ -23,13 +24,14 @@ interface QuarterlyTableProps {
   isActive?: boolean // Whether this quarter contains the current week
   isReadOnly?: boolean // Read-only mode for parents
   isQuarterClosed?: boolean // Whether this quarter is closed
+  editMode?: 'view' | 'moving' | 'editing' // Edit mode for projection editing
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
   categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
-  onAddPace?: (quarter: string, subject: string, weekIndex: number, paceNumber: string) => void
+  onAddPace?: (quarter: string, subject: string, weekIndex: number) => void
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
 }
 
@@ -75,6 +77,7 @@ export function ACEQuarterlyTable({
   isActive = false,
   isReadOnly = false,
   isQuarterClosed = false,
+  editMode = 'view',
   subjectToCategory,
   subjectToCategoryDisplayOrder,
   categoryCounts,
@@ -114,12 +117,8 @@ export function ACEQuarterlyTable({
   const touchDragPreviewRef = React.useRef<HTMLDivElement | null>(null)
   const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
-  const [addingPace, setAddingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
-  const [paceNumberInput, setPaceNumberInput] = React.useState("")
   const [deleteDialog, setDeleteDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string } | null>(null)
   const [alertDialog, setAlertDialog] = React.useState<{ title: string, message: string } | null>(null)
-  const [confirmAddDialog, setConfirmAddDialog] = React.useState<{ subject: string, weekIndex: number, weekCount: number } | null>(null)
-  const [overloadRememberUntil, setOverloadRememberUntil] = React.useState<number | null>(null)
   const [optionsMenu, setOptionsMenu] = React.useState<OptionsMenuState | null>(null)
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
@@ -242,76 +241,13 @@ export function ACEQuarterlyTable({
   }
 
   const handleAddPaceClick = (subject: string, weekIndex: number) => {
-    // Directly call onAddPace to open the picker dialog
-    onAddPace?.(quarter, subject, weekIndex, '')
-  }
-
-  const handleAddPaceSubmit = (subject: string, weekIndex: number) => {
-    const newPaceNumber = paceNumberInput.trim()
-
-    if (!newPaceNumber) {
-      setAlertDialog({
-        title: "Campo Requerido",
-        message: "Por favor ingresa un número de Lección"
-      })
-      return
-    }
-
-    // Validate format: must start with 1 and be 4 digits
-    if (!/^1\d{3}$/.test(newPaceNumber)) {
-      setAlertDialog({
-        title: "Formato Inválido",
-        message: "El número de Lección debe tener 4 dígitos y comenzar con 1 (ej: 1001, 1234)"
-      })
-      return
-    }
-
-    // Check if pace already exists in this subject
-    const paceExists = data[subject].some(paceOrArray => {
-      if (!paceOrArray) return false
-      const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
-      return paces.some(pace => pace && pace.number === newPaceNumber)
-    })
-    if (paceExists) {
-      setAlertDialog({
-        title: t("projections.duplicateLesson"),
-        message: t("projections.duplicateLessonMessage", { paceNumber: newPaceNumber, subject })
-      })
-      return
-    }
-
-    // Check overload warning for QUARTER (max 18 per quarter)
-    const currentQuarterPaces = quarterStats.expected
-    const now = Date.now()
-    const shouldShowWarning = !overloadRememberUntil || now > overloadRememberUntil
-
-    if (currentQuarterPaces >= MAX_PACES_PER_QUARTER && shouldShowWarning) {
-      setConfirmAddDialog({ subject, weekIndex, weekCount: currentQuarterPaces })
-      return
-    }
-
-    onAddPace?.(quarter, subject, weekIndex, newPaceNumber)
-    setAddingPace(null)
-    setPaceNumberInput("")
-  }
-
-  const confirmOverloadAdd = (rememberFor10Min: boolean = false) => {
-    if (confirmAddDialog && addingPace) {
-      if (rememberFor10Min) {
-        // Remember choice for 10 minutes
-        const tenMinutesFromNow = Date.now() + (10 * 60 * 1000)
-        setOverloadRememberUntil(tenMinutesFromNow)
-      }
-      onAddPace?.(quarter, addingPace.subject, addingPace.weekIndex, paceNumberInput.trim())
-      setAddingPace(null)
-      setPaceNumberInput("")
-      setConfirmAddDialog(null)
-    }
+    // Call onAddPace to open the picker dialog (no paceNumber needed)
+    onAddPace?.(quarter, subject, weekIndex)
   }
 
   const handleDeletePace = (subject: string, weekIndex: number, paceNumber: string) => {
     setDeleteDialog({ subject, weekIndex, paceNumber })
-    setOptionsMenu(null) // Ensure options menu closes when delete dialog opens
+    setOptionsMenu(null)
   }
 
   const confirmDelete = () => {
@@ -319,11 +255,6 @@ export function ACEQuarterlyTable({
       onDeletePace?.(quarter, deleteDialog.subject, deleteDialog.weekIndex)
       setDeleteDialog(null)
     }
-  }
-
-  const handleAddPaceCancel = () => {
-    setAddingPace(null)
-    setPaceNumberInput("")
   }
 
   // Calculate paces per week for display
@@ -550,9 +481,9 @@ export function ACEQuarterlyTable({
                           data-week-index={weekIndex}
                           data-subject={subject}
                           className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
-                          draggable={!isReadOnly && !isQuarterClosed && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
+                          draggable={!isReadOnly && !isQuarterClosed && editMode === 'moving' && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
+                            if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               setDraggedPace({ subject, weekIndex })
 
                               // Create a custom drag image
@@ -618,7 +549,32 @@ export function ACEQuarterlyTable({
                               dragImageRef.current = null
                             }
 
-                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                            if (!isReadOnly && editMode === 'moving' && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                              const fromPaceRaw = data[subject][draggedPace.weekIndex]
+                              const fromPace = Array.isArray(fromPaceRaw) ? fromPaceRaw[0] : fromPaceRaw
+                              if (fromPace && fromPace.orderIndex !== undefined) {
+                                const targetPaceRaw = data[subject][weekIndex]
+                                const targetPace = Array.isArray(targetPaceRaw) ? targetPaceRaw[0] : targetPaceRaw
+                                if (targetPace && targetPace.orderIndex !== undefined && targetPace.orderIndex < fromPace.orderIndex) {
+                                  toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+                                  setDraggedPace(null)
+                                  return
+                                }
+                                const allPacesInSubject = data[subject]
+                                  .map((pace, idx) => {
+                                    if (!pace || Array.isArray(pace) || idx === draggedPace.weekIndex) return null
+                                    return { orderIndex: pace.orderIndex || 0, weekIndex: idx }
+                                  })
+                                  .filter((item): item is { orderIndex: number; weekIndex: number } => item !== null)
+                                const pacesAfterTarget = allPacesInSubject.filter(item => item.weekIndex >= weekIndex)
+                                for (const paceAfter of pacesAfterTarget) {
+                                  if (paceAfter.orderIndex < fromPace.orderIndex) {
+                                    toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+                                    setDraggedPace(null)
+                                    return
+                                  }
+                                }
+                              }
                               onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                             }
                             setDraggedPace(null)
@@ -644,7 +600,7 @@ export function ACEQuarterlyTable({
                           }}
                           // Touch handlers for mobile/iPad
                           onTouchStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
+                            if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               const touch = e.touches[0]
                               setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
                               // Create drag preview for touch devices
@@ -807,7 +763,7 @@ export function ACEQuarterlyTable({
                                     )}
                                   </div>
                                 ))}
-                                {!isReadOnly && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
+                                {!isReadOnly && editMode === 'editing' && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
                                   <button
                                     // onClick={(e) => {
                                     //   e.stopPropagation()
@@ -851,45 +807,7 @@ export function ACEQuarterlyTable({
                                 )}
                               </div>
                             ) : null
-                          ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
-                            <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={paceNumberInput}
-                                onChange={(e) => {
-                                  const value = e.target.value
-                                  // Only allow numbers and max 4 digits
-                                  if (/^\d{0,4}$/.test(value)) {
-                                    setPaceNumberInput(value)
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
-                                  if (e.key === 'Escape') handleAddPaceCancel()
-                                }}
-                                placeholder="1XXX"
-                                className="w-16 md:w-20 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                                autoFocus
-                              />
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-[#8B5CF6] text-white rounded-md hover:bg-[#7C3AED] transition-colors cursor-pointer shadow-sm"
-                                  title={t("projections.add")}
-                                >
-                                  <Check className="h-3 w-3 md:h-4 md:w-4" />
-                                </button>
-                                <button
-                                  onClick={handleAddPaceCancel}
-                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                  title="Cancelar"
-                                >
-                                  <X className="h-3 w-3 md:h-4 md:w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : !isReadOnly ? (
+                          ) : !isReadOnly && onAddPace ? (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -1011,20 +929,25 @@ export function ACEQuarterlyTable({
               <History className="h-4 w-4" />
               {t("projections.viewHistory")}
             </button>
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace) {
-                  handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t("common.delete")}
-            </button>
+            {editMode === 'editing' && (() => {
+              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
+              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
+              const canDelete = pace && pace.grade === null && onDeletePace
+              if (!canDelete) return null
+              return (
+                <button
+                  onClick={() => {
+                    if (pace) {
+                      handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
+                    }
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {t("common.delete")}
+                </button>
+              )
+            })()}
           </div>
         )
       }
@@ -1186,17 +1109,6 @@ export function ACEQuarterlyTable({
         </DialogContent>
       </Dialog>
 
-      {/* Overload Confirmation Dialog */}
-      <ConfirmationDialog
-        open={!!confirmAddDialog}
-        onOpenChange={(open) => !open && setConfirmAddDialog(null)}
-        title={t("projections.quarterOverload")}
-        message={confirmAddDialog ? t("projections.quarterOverloadMessage", { weekCount: confirmAddDialog.weekCount, maxPaces: MAX_PACES_PER_QUARTER }) : ""}
-        confirmText={t("projections.addAnyway")}
-        cancelText={t("common.cancel")}
-        variant="default"
-        onConfirm={() => confirmOverloadAdd(false)}
-      />
     </div >
   );
 }

@@ -4,6 +4,7 @@ import { categoriesApi } from './categories';
 import { schoolsApi } from './schools';
 import { studentsApi } from './students';
 import { subjectsApi } from './subjects';
+import { paceCatalogApi } from './pace-catalog';
 
 export function useApi() {
   const { getToken } = useAuth();
@@ -25,6 +26,18 @@ export function useApi() {
       getById: async (projectionId: string) => {
         const token = await getToken();
         return projectionsApi.getById(projectionId, token);
+      },
+      movePace: async (projectionId: string, paceId: string, data: { quarter: string; week: number }) => {
+        const token = await getToken();
+        return projectionsApi.movePace(projectionId, paceId, data, token);
+      },
+      addPace: async (projectionId: string, data: { paceCatalogId: string; quarter: string; week: number }) => {
+        const token = await getToken();
+        return projectionsApi.addPace(projectionId, data, token);
+      },
+      deletePace: async (projectionId: string, paceId: string) => {
+        const token = await getToken();
+        return projectionsApi.deletePace(projectionId, paceId, token);
       },
     },
     categories: {
@@ -49,6 +62,12 @@ export function useApi() {
       getSubjectAndNextLevelsWithPaces: async (subjectId: string) => {
         const token = await getToken();
         return subjectsApi.getSubjectAndNextLevelsWithPaces(subjectId, token);
+      },
+    },
+    paceCatalog: {
+      get: async (filters: { category?: string; subSubjectId?: string }) => {
+        const token = await getToken();
+        return paceCatalogApi.get(filters, token);
       },
     },
   };
