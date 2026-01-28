@@ -39,6 +39,14 @@ export function useApi() {
         const token = await getToken();
         return projectionsApi.deletePace(projectionId, paceId, token);
       },
+      updateGrade: async (projectionId: string, paceId: string, data: { grade: number }) => {
+        const token = await getToken();
+        return projectionsApi.updateGrade(projectionId, paceId, data, token);
+      },
+      markUngraded: async (projectionId: string, paceId: string) => {
+        const token = await getToken();
+        return projectionsApi.markUngraded(projectionId, paceId, token);
+      },
     },
     categories: {
       getAllWithSubjects: async () => {

@@ -10,7 +10,8 @@ import { useTranslation } from "react-i18next"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
 import type { ProjectionDetails } from "@/services/api/projections"
-import { Move, Edit } from "lucide-react"
+import { Move, Edit, Eye } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { toast } from "sonner"
 
@@ -147,6 +148,10 @@ export default function ProjectionDetailsPageV2() {
     isActive: boolean
   } | null>(null)
   const [editMode, setEditMode] = React.useState<'view' | 'moving' | 'editing'>('view')
+
+  React.useEffect(() => {
+    console.log('[DEBUG] editMode changed to:', editMode)
+  }, [editMode])
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
     quarter: string
@@ -377,6 +382,70 @@ export default function ProjectionDetailsPageV2() {
     setPacePickerOpen(true)
   }, [])
 
+  const handleGradeUpdate = React.useCallback(async (quarter: string, subject: string, weekIndex: number, grade: number) => {
+    if (!projectionId) return
+
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const pace = quarterData[subject][weekIndex]
+    const paceData = Array.isArray(pace) ? pace[0] : pace
+
+    if (!paceData || !paceData.id) {
+      toast.error(t("projections.errorUpdatingGrade") || "Cannot update grade: pace not found")
+      return
+    }
+
+    try {
+      await api.projections.updateGrade(projectionId, paceData.id, { grade })
+      toast.success(t("projections.gradeUpdated") || "Grade updated successfully")
+
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorUpdatingGrade") || "Failed to update grade")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId, api, t])
+
+  const handleMarkUngraded = React.useCallback(async (quarter: string, subject: string, weekIndex: number) => {
+    if (!projectionId) return
+
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const pace = quarterData[subject][weekIndex]
+    const paceData = Array.isArray(pace) ? pace[0] : pace
+
+    if (!paceData || !paceData.id) {
+      toast.error(t("projections.errorMarkingUngraded") || "Cannot mark as ungraded: pace not found")
+      return
+    }
+
+    try {
+      await api.projections.markUngraded(projectionId, paceData.id)
+      toast.success(t("projections.markedUngraded") || "Pace marked as ungraded")
+
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorMarkingUngraded") || "Failed to mark as ungraded")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId, api, t])
+
   const handlePaceSelect = React.useCallback((paceId: string) => {
     if (!pacePickerContext) return
     handlePaceAdd(pacePickerContext.quarter, pacePickerContext.subject, pacePickerContext.weekIndex, paceId)
@@ -409,7 +478,7 @@ export default function ProjectionDetailsPageV2() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">
             {projectionInfo.studentName}
@@ -422,41 +491,80 @@ export default function ProjectionDetailsPageV2() {
               {projectionInfo.schoolYearName}
             </span>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-2xl font-bold">
-              {totalPaces}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {t("projections.totalPaces")}
+          <div className="text-left">
+            <div className="flex flex-row items-end gap-2">
+              <p className="text-2xl font-bold">{totalPaces}</p>
+              <span className="text-sm text-muted-foreground">
+                {t("projections.totalPaces")}
+              </span>
             </div>
           </div>
         </div>
+        <div className="flex items-center gap-4">
+          {projectionInfo.isActive && (
+            <div className="flex flex-col items-end gap-2">
+              <div className='flex flex-col items-start gap-2'>
+                <span className="text-xs font-bold text-black">
+                  {t("projections.mode") || "Mode"}
+                </span>
+                <Tabs
+                  value={editMode}
+                  defaultValue="view"
+                  onValueChange={(value) => {
+                    console.log('[DEBUG] Tabs onValueChange called with:', value)
+                    setEditMode(value as 'view' | 'moving' | 'editing')
+                  }}
+                  className="w-auto"
+                >
+                  <TabsList className="h-8 p-0.5 bg-[#8B5CF6]/10">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger
+                          value="view"
+                          className="h-7 px-2.5 text-sm transition-all duration-200"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("projections.view") || "View"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger
+                          value="moving"
+                          className="h-7 px-2.5 text-sm transition-all duration-200"
+                        >
+                          <Move className="h-4 w-4" />
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("projections.movePaces") || "Move Lessons"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <TabsTrigger
+                          value="editing"
+                          className="h-7 px-2.5 text-sm transition-all duration-200"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </TabsTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{t("projections.edit") || "Edit"}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {projectionInfo.isActive && (
-        <div className="flex flex-col items-start gap-2">
-          <span className="text-sm font-bold">
-            {t("projections.mode") || "Mode"}
-          </span>
-          <Tabs value={editMode} onValueChange={(value) => setEditMode(value as 'view' | 'moving' | 'editing')} className="w-auto">
-            <TabsList className="h-8 p-0.5 bg-[#8B5CF6]/10">
-              <TabsTrigger value="view" className="h-7 px-2.5 text-sm transition-all duration-200">
-                {t("projections.view") || "View"}
-              </TabsTrigger>
-              <TabsTrigger value="moving" className="h-7 px-2.5 text-sm transition-all duration-200">
-                <Move className="h-3 w-3 mr-1.5" />
-                {t("projections.movePaces") || "Move"}
-              </TabsTrigger>
-              <TabsTrigger value="editing" className="h-7 px-2.5 text-sm transition-all duration-200">
-                <Edit className="h-3 w-3 mr-1.5" />
-                {t("projections.edit") || "Edit"}
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
+
 
       <Tabs defaultValue="Q1" className="w-full">
         <TabsList className="grid w-full grid-cols-4 gap-2">
@@ -479,8 +587,10 @@ export default function ProjectionDetailsPageV2() {
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
-                onAddPace={handleAddPaceClick}
+                onAddPace={editMode === 'moving' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
+                onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
+                onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
               />
             </CardContent>
           </Card>
@@ -499,8 +609,10 @@ export default function ProjectionDetailsPageV2() {
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
-                onAddPace={handleAddPaceClick}
+                onAddPace={editMode === 'moving' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
+                onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
+                onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
               />
             </CardContent>
           </Card>
@@ -519,8 +631,10 @@ export default function ProjectionDetailsPageV2() {
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
-                onAddPace={handleAddPaceClick}
+                onAddPace={editMode === 'moving' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
+                onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
+                onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
               />
             </CardContent>
           </Card>
@@ -539,8 +653,10 @@ export default function ProjectionDetailsPageV2() {
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
-                onAddPace={handleAddPaceClick}
+                onAddPace={editMode === 'moving' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
+                onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
+                onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
               />
             </CardContent>
           </Card>

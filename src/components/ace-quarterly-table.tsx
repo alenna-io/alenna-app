@@ -11,7 +11,16 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu"
+import { GradeEditDialog } from "@/components/grade-edit-dialog"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -33,15 +42,10 @@ interface QuarterlyTableProps {
   onWeekClick?: (quarter: string, week: number) => void
   onAddPace?: (quarter: string, subject: string, weekIndex: number) => void
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
+  onGradeUpdate?: (quarter: string, subject: string, weekIndex: number, grade: number) => void
+  onMarkUngraded?: (quarter: string, subject: string, weekIndex: number) => void
 }
 
-type OptionsMenuState = {
-  subject: string
-  weekIndex: number
-  x: number
-  y: number
-  placement?: 'left' | 'right'
-}
 
 
 // Subject-specific color mapping with soft pastel backgrounds
@@ -82,10 +86,11 @@ export function ACEQuarterlyTable({
   subjectToCategoryDisplayOrder,
   categoryCounts,
   onPaceDrop,
-  onPaceToggle,
   onWeekClick,
   onAddPace,
-  onDeletePace
+  onDeletePace,
+  onGradeUpdate,
+  onMarkUngraded
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
 
@@ -115,14 +120,12 @@ export function ACEQuarterlyTable({
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
   const [touchDragPreview, setTouchDragPreview] = React.useState<{ paceNumber: string; isCompleted: boolean; x: number; y: number } | null>(null)
   const touchDragPreviewRef = React.useRef<HTMLDivElement | null>(null)
-  const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
-  const [gradeInput, setGradeInput] = React.useState("")
   const [deleteDialog, setDeleteDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string } | null>(null)
   const [alertDialog, setAlertDialog] = React.useState<{ title: string, message: string } | null>(null)
-  const [optionsMenu, setOptionsMenu] = React.useState<OptionsMenuState | null>(null)
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
-  const optionsMenuRef = React.useRef<HTMLDivElement>(null)
+  const [gradeEditDialog, setGradeEditDialog] = React.useState<{ subject: string, weekIndex: number, currentGrade: number | null } | null>(null)
+  const [dropdownOpen, setDropdownOpen] = React.useState<{ subject: string, weekIndex: number } | null>(null)
 
   // Sort subjects by category displayOrder
   const subjects = React.useMemo(() => {
@@ -140,58 +143,6 @@ export function ACEQuarterlyTable({
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
 
-  // Adjust options menu position to keep it on screen
-  React.useEffect(() => {
-    if (optionsMenu && optionsMenuRef.current) {
-      const menu = optionsMenuRef.current
-      const menuRect = menu.getBoundingClientRect()
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-
-      let { x, y } = optionsMenu
-
-      // Adjust horizontal position if menu goes off right edge
-      if (x + menuRect.width > viewportWidth) {
-        x = viewportWidth - menuRect.width - 10 // 10px padding from edge
-      }
-
-      // Adjust vertical position if menu goes off bottom edge
-      if (y + menuRect.height > viewportHeight) {
-        y = viewportHeight - menuRect.height - 10 // 10px padding from edge
-      }
-
-      // Ensure menu doesn't go off left edge
-      if (x < 10) {
-        x = 10
-      }
-
-      // Ensure menu doesn't go off top edge
-      if (y < 10) {
-        y = 10
-      }
-
-      // Update position if it changed
-      if (x !== optionsMenu.x || y !== optionsMenu.y) {
-        setOptionsMenu({ ...optionsMenu, x, y })
-      }
-    }
-  }, [optionsMenu])
-
-  // Close options menu on click outside
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      // Don't close if clicking inside a dialog/modal
-      const target = e.target as HTMLElement
-      if (target.closest('[role="alertdialog"]') || target.closest('[role="dialog"]')) {
-        return
-      }
-      setOptionsMenu(null)
-    }
-    if (optionsMenu) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [optionsMenu])
 
   // Prevent body scroll when modal is open
   React.useEffect(() => {
@@ -205,28 +156,11 @@ export function ACEQuarterlyTable({
     }
   }, [historyDialog])
 
-  const handlePaceClick = (subject: string, weekIndex: number, pace: { number: string; grade: number | null; isCompleted: boolean }) => {
-    setEditingPace({ subject, weekIndex })
-    setGradeInput(pace.grade !== null ? pace.grade.toString() : "")
-  }
-
-  const handleEditGrade = (subject: string, weekIndex: number, currentGrade: number | null) => {
-    setEditingPace({ subject, weekIndex })
-    setGradeInput(currentGrade !== null ? currentGrade.toString() : "")
-  }
-
-  const handleGradeSubmit = (subject: string, weekIndex: number) => {
-    const grade = parseInt(gradeInput)
-    if (grade >= 0 && grade <= 100) {
-      onPaceToggle?.(quarter, subject, weekIndex, grade)
-      setEditingPace(null)
-      setGradeInput("")
+  const handleGradeSave = (grade: number) => {
+    if (gradeEditDialog) {
+      onGradeUpdate?.(quarter, gradeEditDialog.subject, gradeEditDialog.weekIndex, grade)
+      setGradeEditDialog(null)
     }
-  }
-
-  const handleGradeCancel = () => {
-    setEditingPace(null)
-    setGradeInput("")
   }
 
   const getGradeColor = (grade: number | null) => {
@@ -247,7 +181,6 @@ export function ACEQuarterlyTable({
 
   const handleDeletePace = (subject: string, weekIndex: number, paceNumber: string) => {
     setDeleteDialog({ subject, weekIndex, paceNumber })
-    setOptionsMenu(null)
   }
 
   const confirmDelete = () => {
@@ -406,9 +339,9 @@ export function ACEQuarterlyTable({
               )}
               <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs lg:text-sm">
                 {isQuarterComplete ? (
-                  <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
+                  <CheckCircle2 className="h-2 w-2 md:h-4 md:w-4 text-green-600" />
                 ) : (
-                  <XCircle className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                  <XCircle className="h-2 w-2 md:h-4 md:w-4 text-orange-500" />
                 )}
                 <span className="font-medium">
                   {quarterStats.completed} / {quarterStats.expected}
@@ -522,8 +455,9 @@ export function ACEQuarterlyTable({
                             }
                           }}
                           onDragOver={(e) => {
-                            if (draggedPace && draggedPace.subject === subject) {
+                            if (editMode === 'moving' && draggedPace && draggedPace.subject === subject) {
                               e.preventDefault()
+                              e.stopPropagation()
                               e.dataTransfer.dropEffect = 'move'
                               // Add visual feedback to drop target
                               if (draggedPace.weekIndex !== weekIndex) {
@@ -538,44 +472,47 @@ export function ACEQuarterlyTable({
                             e.currentTarget.style.borderColor = ''
                           }}
                           onDrop={(e) => {
-                            e.preventDefault()
-                            // Remove visual feedback
-                            e.currentTarget.style.backgroundColor = ''
-                            e.currentTarget.style.borderColor = ''
+                            if (editMode === 'moving') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              // Remove visual feedback
+                              e.currentTarget.style.backgroundColor = ''
+                              e.currentTarget.style.borderColor = ''
 
-                            // Clean up drag image
-                            if (dragImageRef.current && dragImageRef.current.parentNode) {
-                              document.body.removeChild(dragImageRef.current)
-                              dragImageRef.current = null
-                            }
+                              // Clean up drag image
+                              if (dragImageRef.current && dragImageRef.current.parentNode) {
+                                document.body.removeChild(dragImageRef.current)
+                                dragImageRef.current = null
+                              }
 
-                            if (!isReadOnly && editMode === 'moving' && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
-                              const fromPaceRaw = data[subject][draggedPace.weekIndex]
-                              const fromPace = Array.isArray(fromPaceRaw) ? fromPaceRaw[0] : fromPaceRaw
-                              if (fromPace && fromPace.orderIndex !== undefined) {
-                                const targetPaceRaw = data[subject][weekIndex]
-                                const targetPace = Array.isArray(targetPaceRaw) ? targetPaceRaw[0] : targetPaceRaw
-                                if (targetPace && targetPace.orderIndex !== undefined && targetPace.orderIndex < fromPace.orderIndex) {
-                                  toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
-                                  setDraggedPace(null)
-                                  return
-                                }
-                                const allPacesInSubject = data[subject]
-                                  .map((pace, idx) => {
-                                    if (!pace || Array.isArray(pace) || idx === draggedPace.weekIndex) return null
-                                    return { orderIndex: pace.orderIndex || 0, weekIndex: idx }
-                                  })
-                                  .filter((item): item is { orderIndex: number; weekIndex: number } => item !== null)
-                                const pacesAfterTarget = allPacesInSubject.filter(item => item.weekIndex >= weekIndex)
-                                for (const paceAfter of pacesAfterTarget) {
-                                  if (paceAfter.orderIndex < fromPace.orderIndex) {
+                              if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                                const fromPaceRaw = data[subject][draggedPace.weekIndex]
+                                const fromPace = Array.isArray(fromPaceRaw) ? fromPaceRaw[0] : fromPaceRaw
+                                if (fromPace && fromPace.orderIndex !== undefined) {
+                                  const targetPaceRaw = data[subject][weekIndex]
+                                  const targetPace = Array.isArray(targetPaceRaw) ? targetPaceRaw[0] : targetPaceRaw
+                                  if (targetPace && targetPace.orderIndex !== undefined && targetPace.orderIndex < fromPace.orderIndex) {
                                     toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
                                     setDraggedPace(null)
                                     return
                                   }
+                                  const allPacesInSubject = data[subject]
+                                    .map((pace, idx) => {
+                                      if (!pace || Array.isArray(pace) || idx === draggedPace.weekIndex) return null
+                                      return { orderIndex: pace.orderIndex || 0, weekIndex: idx }
+                                    })
+                                    .filter((item): item is { orderIndex: number; weekIndex: number } => item !== null)
+                                  const pacesAfterTarget = allPacesInSubject.filter(item => item.weekIndex >= weekIndex)
+                                  for (const paceAfter of pacesAfterTarget) {
+                                    if (paceAfter.orderIndex < fromPace.orderIndex) {
+                                      toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+                                      setDraggedPace(null)
+                                      return
+                                    }
+                                  }
+                                  onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                                 }
                               }
-                              onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
                             }
                             setDraggedPace(null)
                           }}
@@ -689,122 +626,139 @@ export function ACEQuarterlyTable({
                           }}
                         >
                           {primaryPace ? (
-                            editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                              <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2 min-w-[140px] md:min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={gradeInput}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value)
-                                    if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                      setGradeInput(e.target.value)
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                    if (e.key === 'Escape') handleGradeCancel()
-                                  }}
-                                  placeholder="0-100"
-                                  className="w-14 md:w-16 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  autoFocus
-                                />
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-green-500 text-white rounded-xs hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Guardar"
-                                  >
-                                    <Check className="h-3 w-3 md:h-4 md:w-4" />
-                                  </button>
-                                  <button
-                                    onClick={handleGradeCancel}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-xs hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Cancelar"
-                                  >
-                                    <X className="h-3 w-3 md:h-4 md:w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : paces.length > 0 ? (
+                            paces.length > 0 ? (
                               <div className="relative flex flex-col items-center gap-1 w-full group/pace">
-                                {paces.map((pace, paceIdx) => (
-                                  <div
-                                    key={paceIdx}
-                                    className={`inline-flex flex-col items-center ${!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // Don't allow editing unfinished copies in their original quarter
-                                      if (!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
-                                        handlePaceClick(subject, weekIndex, pace)
-                                      }
-                                    }}
-                                  >
-                                    <Badge
-                                      variant={
-                                        pace.isUnfinished && pace.originalQuarter === quarter
-                                          ? "status-unfinished"
-                                          : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                            ? "status-failed"
-                                            : pace.isCompleted
-                                              ? "status-completed"
-                                              : "outline"
-                                      }
-                                      className="font-mono text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 cursor-pointer transition-all"
-                                      title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
+                                {paces.map((pace, paceIdx) => {
+                                  const paceGrade = pace.isUnfinished && pace.originalQuarter === quarter ? null : pace.grade
+                                  const gradeBgColor = paceGrade !== null
+                                    ? paceGrade >= 80
+                                      ? "bg-green-50"
+                                      : "bg-red-50"
+                                    : ""
+
+                                  const paceContent = (
+                                    <div
+                                      className={`inline-flex flex-col items-center ${editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''} ${gradeBgColor} rounded-xs p-1 transition-colors`}
+                                      onClick={(e) => {
+                                        if (editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
+                                          e.stopPropagation()
+                                          const newDropdownState = { subject, weekIndex }
+                                          if (dropdownOpen?.subject === subject && dropdownOpen?.weekIndex === weekIndex) {
+                                            setDropdownOpen(null)
+                                          } else {
+                                            setDropdownOpen(newDropdownState)
+                                          }
+                                        }
+                                      }}
                                     >
-                                      {pace.number}
-                                    </Badge>
-                                    {paceIdx === 0 && (
-                                      <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(pace.isUnfinished && pace.originalQuarter === quarter ? null : pace.grade)}`}>
-                                        {pace.isUnfinished && pace.originalQuarter === quarter ? "—" : (pace.grade !== null ? `${pace.grade}%` : "—")}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                                {!isReadOnly && editMode === 'editing' && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
-                                  <button
-                                    // onClick={(e) => {
-                                    //   e.stopPropagation()
-                                    //   const button = e.currentTarget
-                                    //   const parent = button.offsetParent as HTMLElement
+                                      <Badge
+                                        variant={
+                                          pace.isUnfinished && pace.originalQuarter === quarter
+                                            ? "status-unfinished"
+                                            : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                              ? "status-failed"
+                                              : pace.isCompleted
+                                                ? "status-completed"
+                                                : "outline"
+                                        }
+                                        className="font-mono text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 transition-all"
+                                        title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
+                                      >
+                                        {pace.number}
+                                      </Badge>
+                                      {paceIdx === 0 && (
+                                        <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(paceGrade)}`}>
+                                          {paceGrade !== null ? `${paceGrade}%` : "—"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
 
-                                    //   setOptionsMenu({
-                                    //     subject,
-                                    //     weekIndex,
-                                    //     x: parent.offsetLeft + parent.offsetWidth,
-                                    //     y: parent.offsetTop
-                                    //   })
-                                    // }}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-
-                                      const button = e.currentTarget
-                                      const parent = button.offsetParent as HTMLElement
-                                      const rect = button.getBoundingClientRect()
-
-                                      const MENU_WIDTH = 180
-                                      const GAP = 60
-
-                                      const spaceRight = window.innerWidth - rect.right
-                                      const placeRight = spaceRight > MENU_WIDTH + GAP
-
-                                      setOptionsMenu({
-                                        subject,
-                                        weekIndex,
-                                        x: placeRight
-                                          ? parent.offsetLeft + parent.offsetWidth
-                                          : parent.offsetLeft - MENU_WIDTH + GAP,
-                                        y: parent.offsetTop,
-                                        placement: placeRight ? 'right' : 'left'
-                                      })
-                                    }}
-                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-gray-500" />
-                                  </button>
-                                )}
+                                  return (
+                                    editMode === 'editing' ? (
+                                      <DropdownMenu
+                                        key={paceIdx}
+                                        open={dropdownOpen?.subject === subject && dropdownOpen?.weekIndex === weekIndex && paceIdx === 0}
+                                        onOpenChange={(open) => {
+                                          if (open) {
+                                            setDropdownOpen({ subject, weekIndex })
+                                          } else {
+                                            setDropdownOpen(null)
+                                          }
+                                        }}
+                                      >
+                                        <DropdownMenuTrigger asChild>
+                                          {paceContent}
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                          <DropdownMenuLabel>{t("projections.grades") || "Grades"}</DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              setGradeEditDialog({ subject, weekIndex, currentGrade: paceGrade })
+                                              setDropdownOpen(null)
+                                            }}
+                                          >
+                                            <div className="flex justify-between items-center w-full">
+                                              {t("projections.addEditGrade") || "Add/Edit Grade"}
+                                              <Edit className="h-2 w-2 ml-4" />
+                                            </div>
+                                          </DropdownMenuItem>
+                                          {pace.gradeHistory && pace.gradeHistory.length > 0 && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                setHistoryDialog({
+                                                  subject,
+                                                  weekIndex,
+                                                  paceNumber: pace.number,
+                                                  history: (pace.gradeHistory || []) as Array<{ grade: number; date: string; note?: string }>
+                                                })
+                                                setDropdownOpen(null)
+                                              }}
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("projections.viewHistory") || "View History"}
+                                                <History className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                          {paceGrade !== null && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                onMarkUngraded?.(quarter, subject, weekIndex)
+                                                setDropdownOpen(null)
+                                              }}
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("projections.markUngraded") || "Mark as Ungraded"}
+                                                <X className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuLabel>{t("projections.admin") || "Admin"}</DropdownMenuLabel>
+                                          {paceGrade === null && onDeletePace && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                handleDeletePace(subject, weekIndex, pace.number)
+                                                setDropdownOpen(null)
+                                              }}
+                                              className="text-red-600 focus:text-red-600"
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("common.delete") || "Delete"}
+                                                <Trash2 className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    ) : (
+                                      <div key={paceIdx}>
+                                        {paceContent}
+                                      </div>
+                                    )
+                                  )
+                                })}
                               </div>
                             ) : null
                           ) : !isReadOnly && onAddPace ? (
@@ -860,97 +814,12 @@ export function ACEQuarterlyTable({
             <p className="text-lg md:text-2xl font-semibold text-sky-800 tabular-nums">{quarterStats.totalFailed}</p>
             <p className="text-[10px] md:text-xs text-muted flex items-center justify-center gap-1">
               {t("projections.totalFailedAttemptsLabel")}
-              <Info className="h-3 w-3 inline" />
+              <Info className="h-2 w-2 inline" />
             </p>
           </button>
         </div>
       </div>
 
-      {/* Options Menu Popup */}
-      {
-        optionsMenu && (
-          <div
-            ref={optionsMenuRef}
-            className="absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
-            style={{ left: `${optionsMenu.x}px`, top: `${optionsMenu.y}px` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace) {
-                  handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
-            >
-              <Edit className="h-4 w-4" />
-              {t("projections.editGrade")}
-            </button>
-            {(() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              return pace?.isCompleted
-            })() && (
-                <button
-                  onClick={() => {
-                    onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
-                    setOptionsMenu(null)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                  {t("projections.markIncomplete")}
-                </button>
-              )}
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
-                  setHistoryDialog({
-                    subject: optionsMenu.subject,
-                    weekIndex: optionsMenu.weekIndex,
-                    paceNumber: pace.number,
-                    history: pace.gradeHistory
-                  })
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={(() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                return !pace?.gradeHistory || pace.gradeHistory.length === 0
-              })()}
-            >
-              <History className="h-4 w-4" />
-              {t("projections.viewHistory")}
-            </button>
-            {editMode === 'editing' && (() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              const canDelete = pace && pace.grade === null && onDeletePace
-              if (!canDelete) return null
-              return (
-                <button
-                  onClick={() => {
-                    if (pace) {
-                      handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
-                    }
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  {t("common.delete")}
-                </button>
-              )
-            })()}
-          </div>
-        )
-      }
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
@@ -1108,6 +977,19 @@ export function ACEQuarterlyTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      {gradeEditDialog && (
+        <GradeEditDialog
+          open={!!gradeEditDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setGradeEditDialog(null)
+            }
+          }}
+          currentGrade={gradeEditDialog.currentGrade}
+          onSave={handleGradeSave}
+        />
+      )}
 
     </div >
   );

@@ -141,4 +141,15 @@ export const projectionsApi = {
     apiFetch(`/projections/${projectionId}/paces/${paceId}`, token, {
       method: 'DELETE',
     }),
+
+  updateGrade: async (projectionId: string, paceId: string, data: { grade: number }, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/paces/${paceId}/grade`, token, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  markUngraded: async (projectionId: string, paceId: string, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/paces/${paceId}/mark-ungraded`, token, {
+      method: 'PATCH',
+    }),
 };
