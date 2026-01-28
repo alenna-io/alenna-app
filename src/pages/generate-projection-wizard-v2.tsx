@@ -617,31 +617,72 @@ export default function GenerateProjectionWizardPageV2() {
       </div>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-center gap-4 mb-8">
-        {[1, 2, 3].map((step) => (
-          <React.Fragment key={step}>
-            <div
-              className={cn(
-                "flex items-center justify-center w-10 h-10 rounded-full font-semibold transition-colors",
-                currentStep === step
-                  ? "bg-primary text-primary-foreground"
-                  : currentStep > step
-                    ? "bg-green-500 text-white"
-                    : "bg-muted text-muted-foreground"
+      <div className="w-full flex items-center justify-between mb-8">
+        {[1, 2, 3].map((step) => {
+          const stepLabels = [
+            t("projections.step1Title"),
+            t("projections.step2Title"),
+            t("projections.step3Title"),
+          ]
+          const isActive = currentStep === step
+          const isCompleted = currentStep > step
+
+          return (
+            <React.Fragment key={step}>
+              <div className="flex flex-col items-center flex-1">
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 rounded-full font-semibold text-sm transition-all duration-300 relative",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/20"
+                      : isCompleted
+                        ? "bg-green-500 text-white shadow-md shadow-green-500/20 scale-100"
+                        : "bg-muted text-muted-foreground scale-100"
+                  )}
+                >
+                  {isCompleted ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <span className="relative z-10">{step}</span>
+                  )}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-full bg-primary animate-pulse opacity-20" />
+                  )}
+                </div>
+                <div className="mt-2 text-center">
+                  <div
+                    className={cn(
+                      "text-xs font-medium transition-colors duration-300",
+                      isActive
+                        ? "text-primary"
+                        : isCompleted
+                          ? "text-green-600"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    {stepLabels[step - 1]}
+                  </div>
+                </div>
+              </div>
+              {step < 3 && (
+                <div className="flex-1 mx-4 relative">
+                  <div className="h-1 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500 ease-out",
+                        isCompleted
+                          ? "bg-green-500 w-full"
+                          : isActive
+                            ? "bg-primary w-1/2"
+                            : "bg-muted w-0"
+                      )}
+                    />
+                  </div>
+                </div>
               )}
-            >
-              {currentStep > step ? <CheckCircle2 className="h-5 w-5" /> : step}
-            </div>
-            {step < 3 && (
-              <div
-                className={cn(
-                  "h-1 w-16 transition-colors",
-                  currentStep > step ? "bg-green-500" : "bg-muted"
-                )}
-              />
-            )}
-          </React.Fragment>
-        ))}
+            </React.Fragment>
+          )
+        })}
       </div>
 
       {/* Step Components */}

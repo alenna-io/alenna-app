@@ -104,7 +104,7 @@ export function SearchablePicker<T extends SearchablePickerOption>({
           <Button
             variant="outline"
             role="combobox"
-            className="w-full justify-between transition-all duration-200 hover:border-primary/50"
+            className="w-full justify-between transition-all duration-200 !rounded-sm hover:border-primary/50 border border-gray-300 focus:border-primary focus:ring-primary/20"
             disabled={disabled}
           >
             {value ? getDisplayValue(value) : placeholder}

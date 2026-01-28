@@ -4,17 +4,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Trash2, ChevronUp, ChevronDown, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
-import { SubjectPicker } from "@/components/forms/SubjectPicker"
+import { SubjectPicker, SelectField } from "@/components/forms"
 import type { SubjectConfig } from "./types"
 
 interface Subject {
@@ -197,53 +190,39 @@ export const SubjectCard = React.memo(function SubjectCard({
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>{t("projections.startPace")} <span className="text-red-500">*</span></Label>
-                          <Select
-                            value={subject.startPace > 0 ? String(subject.startPace) : ""}
-                            onValueChange={(value) => {
-                              const paceNum = parseInt(value)
-                              onSubjectChange('startPace', paceNum)
-                              if (subject.endPace < paceNum) {
-                                onSubjectChange('endPace', paceNum)
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="cursor-pointer transition-all duration-200 hover:border-primary/50">
-                              <SelectValue placeholder={t("projections.selectStart")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availablePaces.map((paceNum) => (
-                                <SelectItem key={paceNum} value={String(paceNum)}>
-                                  {paceNum}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <SelectField
+                          label={t("projections.startPace")}
+                          required
+                          value={subject.startPace > 0 ? String(subject.startPace) : ""}
+                          onValueChange={(value) => {
+                            const paceNum = parseInt(value)
+                            onSubjectChange('startPace', paceNum)
+                            if (subject.endPace < paceNum) {
+                              onSubjectChange('endPace', paceNum)
+                            }
+                          }}
+                          placeholder={t("projections.selectStart")}
+                          options={availablePaces.map((paceNum) => ({
+                            value: String(paceNum),
+                            label: String(paceNum),
+                          }))}
+                        />
 
-                        <div className="space-y-2">
-                          <Label>{t("projections.endPace")} <span className="text-red-500">*</span></Label>
-                          <Select
-                            value={subject.endPace > 0 ? String(subject.endPace) : ""}
-                            onValueChange={(value) => {
-                              onSubjectChange('endPace', parseInt(value))
-                            }}
-                          >
-                            <SelectTrigger className="cursor-pointer transition-all duration-200 hover:border-primary/50">
-                              <SelectValue placeholder={t("projections.selectEnd")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availablePaces
-                                .filter((paceNum) => paceNum >= subject.startPace)
-                                .map((paceNum) => (
-                                  <SelectItem key={paceNum} value={String(paceNum)}>
-                                    {paceNum}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <SelectField
+                          label={t("projections.endPace")}
+                          required
+                          value={subject.endPace > 0 ? String(subject.endPace) : ""}
+                          onValueChange={(value) => {
+                            onSubjectChange('endPace', parseInt(value))
+                          }}
+                          placeholder={t("projections.selectEnd")}
+                          options={availablePaces
+                            .filter((paceNum) => paceNum >= subject.startPace)
+                            .map((paceNum) => ({
+                              value: String(paceNum),
+                              label: String(paceNum),
+                            }))}
+                        />
                       </div>
 
                       {subject.startPace > 0 && subject.endPace > 0 && selectedPaceRange.length > 0 && (

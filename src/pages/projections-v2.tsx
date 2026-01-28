@@ -111,14 +111,14 @@ export default function ProjectionsPageV2() {
           const years = schoolData.schoolYears.map(sy => ({
             id: sy.id,
             name: sy.name,
-            isActive: sy.status === 'ACTIVE',
+            isActive: sy.status === 'CURRENT_YEAR',
           }))
           setSchoolYears(years)
 
           const active = years.find(sy => sy.isActive)
-          if (active) {
+          if (active && filters.schoolYear === "all") {
             setFilters({ schoolYear: active.name })
-          } else if (years.length > 0) {
+          } else if (years.length > 0 && filters.schoolYear === "all") {
             setFilters({ schoolYear: years[0].name })
           }
         }
@@ -130,7 +130,8 @@ export default function ProjectionsPageV2() {
     if (!isLoadingUser) {
       fetchSchoolData()
     }
-  }, [isLoadingUser, api, setFilters])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingUser])
 
   React.useEffect(() => {
     const fetchProjections = async () => {

@@ -115,14 +115,16 @@ export const Step2SelectSubjects = React.memo(function Step2SelectSubjects({
         })}
 
         {subjects.length < 6 && (
-          <Button
-            variant="outline"
-            onClick={onAddSubject}
-            className="w-auto"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t("projections.addSubject")}
-          </Button>
+          <div className="flex justify-center mt-6">
+            <Button
+              variant="primary-soft"
+              onClick={onAddSubject}
+              className="w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t("projections.addSubject")}
+            </Button>
+          </div>
         )}
 
         <div className="flex justify-end gap-2">

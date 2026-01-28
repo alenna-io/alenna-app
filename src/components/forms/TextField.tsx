@@ -40,7 +40,8 @@ export function TextField({
         placeholder={placeholder}
         disabled={disabled}
         className={cn(
-          "transition-all duration-200 hover:border-primary/50",
+          "transition-all duration-200 hover:border-primary/50 border-gray-300",
+          "focus:border-primary focus:ring-primary/20",
           error ? "border-destructive" : ""
         )}
       />

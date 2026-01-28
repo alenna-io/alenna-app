@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface SelectFieldProps {
   label: string
@@ -34,7 +35,10 @@ export function SelectField({
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="cursor-pointer transition-all duration-200 hover:border-primary/50">
+        <SelectTrigger className={cn(
+          "cursor-pointer transition-all duration-200 hover:border-primary/50 border-gray-300",
+          "focus:border-primary focus:ring-primary/20"
+        )}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

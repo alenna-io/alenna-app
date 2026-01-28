@@ -1,14 +1,11 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, ChevronRight, ChevronsUpDown } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { cn } from "@/lib/utils"
+import { ChevronRight } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { Student } from "@/services/api"
+import { StudentPicker } from "@/components/forms/StudentPicker"
 
 interface Step1SelectStudentProps {
   students: Student[]
@@ -39,19 +36,11 @@ export function Step1SelectStudent({
 }: Step1SelectStudentProps) {
   const { t } = useTranslation()
 
-  const filteredStudents = React.useMemo(() => {
-    if (!studentSearchTerm) return students
-    const searchLower = studentSearchTerm.toLowerCase()
-    return students.filter(s => {
-      const firstName = s.user?.firstName?.toLowerCase() || ""
-      const lastName = s.user?.lastName?.toLowerCase() || ""
-      return firstName.includes(searchLower) || lastName.includes(searchLower)
-    })
-  }, [students, studentSearchTerm])
-
-  const selectedStudent = React.useMemo(() => {
-    return students.find(s => s.id === selectedStudentId)
-  }, [students, selectedStudentId])
+  const getStudentName = React.useCallback((studentId: string): string => {
+    const student = students.find(s => s.id === studentId)
+    if (!student) return ""
+    return `${student.user?.firstName || ""} ${student.user?.lastName || ""}`.trim()
+  }, [students])
 
   return (
     <Card className="border-0 shadow-none">
@@ -66,56 +55,19 @@ export function Step1SelectStudent({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>{t("common.student")} <span className="text-red-500">*</span></Label>
-          <Popover open={openStudentPopover} onOpenChange={onOpenPopoverChange}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="w-full justify-between transition-all duration-200 hover:border-primary/50"
-              >
-                {selectedStudent
-                  ? `${selectedStudent.user?.firstName} ${selectedStudent.user?.lastName}`
-                  : t("projections.selectStudent")}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
-              <Command>
-                <CommandInput
-                  placeholder={t("projections.searchStudent")}
-                  value={studentSearchTerm}
-                  onValueChange={onSearchChange}
-                  className="cursor-pointer"
-                />
-                <CommandList>
-                  <CommandEmpty>{t("projections.noStudentsFound")}</CommandEmpty>
-                  <CommandGroup>
-                    {filteredStudents.map((student) => (
-                      <CommandItem
-                        key={student.id}
-                        value={`${student.user?.firstName} ${student.user?.lastName}`}
-                        onSelect={() => {
-                          onStudentSelect(student.id)
-                          onOpenPopoverChange(false)
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedStudentId === student.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <span>{student.user?.firstName} {student.user?.lastName}</span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
+        <StudentPicker
+          label={t("common.student")}
+          required
+          value={selectedStudentId}
+          onValueChange={onStudentSelect}
+          placeholder={t("projections.selectStudent")}
+          students={students}
+          searchTerm={studentSearchTerm}
+          onSearchChange={onSearchChange}
+          open={openStudentPopover}
+          onOpenChange={onOpenPopoverChange}
+          getStudentName={getStudentName}
+        />
 
         <div className="flex justify-end gap-2">
           <Button

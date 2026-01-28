@@ -162,6 +162,17 @@
     "endPaceMustBeGreater": "La lección final debe ser mayor o igual a la lección inicial",
     "category": "Categoría",
     "extendToNext1Level": "Extender al siguiente nivel",
-    "extendToNext2Levels": "Extender a los siguientes 2 niveles"
+    "extendToNext2Levels": "Extender a los siguientes 2 niveles",
+    "createDialogTitle": "Crear Proyección",
+    "createDialogDescription": "Crea una proyección para un estudiante.",
+    "generateAutomaticTitle": "Generar Proyección Automática",
+    "generateAutomaticDescription": "El sistema generará automáticamente una proyección basada en las materias y lecciones que elijas. Puedes personalizar todo.",
+    "fromTemplateTitle": "Desde Plantilla",
+    "fromTemplateDescription": "Crea una proyección rápidamente usando una plantilla predefinida. Selecciona estudiante y plantilla.",
+    "emptyProjectionTitle": "Crear Proyección Vacía",
+    "emptyProjectionDescription": "Crea una proyección sin lecciones. Podrás agregar lecciones manualmente después.",
+    "createFromTemplateTitle": "Crear Proyección desde Plantilla",
+    "createFromTemplateDescription": "Selecciona un estudiante y una plantilla para crear la proyección rápidamente",
+    "createEmptyTitle": "Crear Proyección Vacía"
   }
 }
