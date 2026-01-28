@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loading } from "@/components/ui/loading"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -227,10 +226,6 @@ export default function ProjectionsPageV2() {
     return <Navigate to="/users" replace />
   }
 
-  if (isLoading || isLoadingUser) {
-    return <Loading variant="list-page" showCreateButton={true} view="table" showFilters={true} />
-  }
-
   if (!isTeacherOrAdmin) {
     return (
       <div className="space-y-6">
@@ -298,14 +293,31 @@ export default function ProjectionsPageV2() {
       />
 
       {error && (
-        <ErrorAlert
-          title="Error al cargar proyecciones"
-          message={error}
-        />
+        <div className="max-w-2xl">
+          <ErrorAlert
+            title={t("errors.loadProjectionsFailed")}
+            message={error}
+            isNetworkError={error.toLowerCase().includes('failed to fetch') || error.toLowerCase().includes('network error')}
+          />
+        </div>
       )}
 
       {!error && (
-        sortedProjections.length > 0 ? (
+        isLoading || isLoadingUser ? (
+          <ProjectionsTable
+            projections={[]}
+            onProjectionSelect={handleProjectionSelect}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            currentPage={currentPage}
+            totalPages={0}
+            totalItems={0}
+            onPageChange={setCurrentPage}
+            tableId={tableId}
+            loading={true}
+          />
+        ) : sortedProjections.length > 0 ? (
           <ProjectionsTable
             projections={paginatedProjections}
             onProjectionSelect={handleProjectionSelect}
@@ -317,6 +329,7 @@ export default function ProjectionsPageV2() {
             totalItems={sortedProjections.length}
             onPageChange={setCurrentPage}
             tableId={tableId}
+            loading={false}
           />
         ) : (
           <Card>

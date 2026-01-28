@@ -5,7 +5,6 @@ import { Loading } from "@/components/ui/loading"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import type { QuarterData, PaceData } from "@/types/pace"
-import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "react-i18next"
 import { ErrorAlert } from "@/components/ui/error-alert"
@@ -153,7 +152,6 @@ export default function ProjectionDetailsPageV2() {
 
         const projection = await api.projections.getById(projectionId)
 
-        // Transform projection data to quarter structure
         const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
         setProjectionData(quarters)
         setSubjectToCategory(subjectCategoryMap)
@@ -170,7 +168,6 @@ export default function ProjectionDetailsPageV2() {
         const error = err as Error
         console.error('Error fetching projection:', error)
         setError(error.message || 'Failed to load projection')
-        toast.error("Error al cargar la proyección")
       } finally {
         setLoading(false)
       }
@@ -182,16 +179,57 @@ export default function ProjectionDetailsPageV2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionId])
 
+  const handleRetry = React.useCallback(() => {
+    if (!projectionId) return
+
+    const fetchProjection = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const projection = await api.projections.getById(projectionId)
+
+        const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+        setProjectionData(quarters)
+        setSubjectToCategory(subjectCategoryMap)
+        setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+        setCategoryCounts(categoryCountsMap)
+        setTotalPaces(totalPacesCount)
+
+        setProjectionInfo({
+          studentName: `${projection.student.user.firstName || ''} ${projection.student.user.lastName || ''}`.trim(),
+          schoolYear: projection.schoolYear,
+          isActive: projection.status === 'OPEN',
+        })
+      } catch (err) {
+        const error = err as Error
+        console.error('Error fetching projection:', error)
+        setError(error.message || 'Failed to load projection')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProjection()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId])
+
   if (loading) {
     return <Loading variant="list-page" />
   }
 
   if (error) {
+    const isNetworkError = error.toLowerCase().includes('failed to fetch') ||
+      error.toLowerCase().includes('network error') ||
+      error.toLowerCase().includes('networkerror')
+
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-2xl mx-auto">
         <ErrorAlert
-          title="Error al cargar la proyección"
+          title={t("errors.loadProjectionFailed")}
           message={error}
+          onRetry={handleRetry}
+          isNetworkError={isNetworkError}
         />
       </div>
     )

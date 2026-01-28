@@ -112,6 +112,14 @@
     "descriptionTooLong": "La descripción no puede tener más de {{max}} caracteres",
     "descriptionTooShort": "La descripción no puede tener menos de {{min}} caracteres"
   },
+  "errors": {
+    "error": "Error",
+    "networkError": "Error de Conexión",
+    "networkErrorMessage": "No se pudo conectar al servidor. Por favor verifica tu conexión a internet e intenta de nuevo.",
+    "retry": "Intentar de Nuevo",
+    "loadProjectionFailed": "Error al cargar la proyección",
+    "loadProjectionsFailed": "Error al cargar las proyecciones"
+  },
   "sidebar": {
     "home": "Inicio",
     "projections": "Proyecciones"

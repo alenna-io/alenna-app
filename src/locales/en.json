@@ -112,6 +112,14 @@
     "descriptionTooLong": "The description cannot be longer than {{max}} characters",
     "descriptionTooShort": "The description cannot be shorter than {{min}} characters"
   },
+  "errors": {
+    "error": "Error",
+    "networkError": "Connection Error",
+    "networkErrorMessage": "Unable to connect to the server. Please check your internet connection and try again.",
+    "retry": "Try Again",
+    "loadProjectionFailed": "Error loading projection",
+    "loadProjectionsFailed": "Error loading projections"
+  },
   "sidebar": {
     "home": "Home",
     "projections": "Projections"
