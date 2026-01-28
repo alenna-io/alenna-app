@@ -216,6 +216,11 @@
     "totalFailedAttemptsLabel": "Total de Intentos Fallidos",
     "quarterOverload": "Sobrecarga del Trimestre",
     "quarterOverloadMessage": "Este trimestre ya tiene {{weekCount}} lecciones. El máximo recomendado es {{maxPaces}} lecciones por trimestre. ¿Deseas agregar esta lección de todos modos?",
-    "addAnyway": "Agregar de Todos Modos"
+    "addAnyway": "Agregar de Todos Modos",
+    "movePaces": "Mover Lecciones",
+    "edit": "Editar",
+    "cancel": "Cancelar",
+    "mode": "Modo",
+    "view": "Vista"
   }
 }

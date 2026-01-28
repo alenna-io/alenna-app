@@ -59,7 +59,7 @@ const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
     <div
       ref={ref}
       className={cn(
-        "inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground gap-2",
+        "inline-flex h-10 items-center justify-center rounded-xs bg-muted p-1 text-muted-foreground gap-2",
         className
       )}
       {...props}
@@ -83,7 +83,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         type="button"
         data-state={isActive ? "active" : "inactive"}
         className={cn(
-          "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:border data-[state=inactive]:border-border/50 data-[state=inactive]:bg-[#8B5CF6]/10 cursor-pointer",
+          "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-xs px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-500 cursor-pointer",
           className
         )}
         onClick={() => setValue(value)}

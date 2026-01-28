@@ -10,8 +10,7 @@ import { useTranslation } from "react-i18next"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
 import type { ProjectionDetails } from "@/services/api/projections"
-import { Button } from "@/components/ui/button"
-import { Move, Edit, X } from "lucide-react"
+import { Move, Edit } from "lucide-react"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { toast } from "sonner"
 
@@ -433,42 +432,31 @@ export default function ProjectionDetailsPageV2() {
               {t("projections.totalPaces")}
             </div>
           </div>
-          {projectionInfo.isActive && (
-            <div className="flex items-center gap-2">
-              {editMode === 'view' && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditMode('moving')}
-                    className="flex items-center gap-2"
-                  >
-                    <Move className="h-4 w-4" />
-                    {t("projections.movePaces") || "Move Paces"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditMode('editing')}
-                    className="flex items-center gap-2"
-                  >
-                    <Edit className="h-4 w-4" />
-                    {t("projections.edit") || "Edit"}
-                  </Button>
-                </>
-              )}
-              {(editMode === 'moving' || editMode === 'editing') && (
-                <Button
-                  variant="outline"
-                  onClick={() => setEditMode('view')}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  {t("projections.cancel") || "Cancel"}
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {projectionInfo.isActive && (
+        <div className="flex flex-col items-start gap-2">
+          <span className="text-sm font-bold">
+            {t("projections.mode") || "Mode"}
+          </span>
+          <Tabs value={editMode} onValueChange={(value) => setEditMode(value as 'view' | 'moving' | 'editing')} className="w-auto">
+            <TabsList className="h-8 p-0.5 bg-[#8B5CF6]/10">
+              <TabsTrigger value="view" className="h-7 px-2.5 text-sm transition-all duration-200">
+                {t("projections.view") || "View"}
+              </TabsTrigger>
+              <TabsTrigger value="moving" className="h-7 px-2.5 text-sm transition-all duration-200">
+                <Move className="h-3 w-3 mr-1.5" />
+                {t("projections.movePaces") || "Move"}
+              </TabsTrigger>
+              <TabsTrigger value="editing" className="h-7 px-2.5 text-sm transition-all duration-200">
+                <Edit className="h-3 w-3 mr-1.5" />
+                {t("projections.edit") || "Edit"}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
 
       <Tabs defaultValue="Q1" className="w-full">
         <TabsList className="grid w-full grid-cols-4 gap-2">

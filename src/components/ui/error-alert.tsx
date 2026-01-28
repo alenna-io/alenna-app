@@ -34,7 +34,7 @@ export function ErrorAlert({
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-xl border-2 transition-all duration-300",
+      "relative overflow-hidden rounded-xs border-2 transition-all duration-300",
       detectedNetworkError
         ? "bg-gradient-to-br from-red-50 via-red-50/95 to-orange-50/50 border-red-300/60"
         : "bg-gradient-to-br from-red-50 via-red-50/95 to-red-50/80 border-red-300/60",
@@ -44,7 +44,7 @@ export function ErrorAlert({
 
       <div className="relative p-6 flex items-start gap-4">
         <div className={cn(
-          "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center",
+          "flex-shrink-0 w-12 h-12 rounded-xs flex items-center justify-center",
           detectedNetworkError
             ? "bg-red-100 ring-4 ring-red-200/50"
             : "bg-red-100 ring-4 ring-red-200/50"

@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority"
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium press-scale disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer rounded-full",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium press-scale disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer rounded-xs",
   {
     variants: {
       variant: {
@@ -22,9 +22,9 @@ export const buttonVariants = cva(
         default: "h-10 px-5 py-2.5 has-[>svg]:px-4",
         sm: "h-8 gap-1.5 px-3.5 has-[>svg]:px-2.5 text-xs font-medium",
         lg: "h-12 px-7 has-[>svg]:px-5 text-base font-medium",
-        icon: "size-10 rounded-full",
-        "icon-sm": "size-8 rounded-full",
-        "icon-lg": "size-12 rounded-full",
+        icon: "size-10 rounded-xs",
+        "icon-sm": "size-8 rounded-xs",
+        "icon-lg": "size-12 rounded-xs",
       },
     },
     defaultVariants: {

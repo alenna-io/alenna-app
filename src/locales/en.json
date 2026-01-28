@@ -219,6 +219,11 @@
     "totalFailedAttemptsLabel": "Total Failed Attempts",
     "quarterOverload": "Quarter Overload",
     "quarterOverloadMessage": "This quarter already has {{weekCount}} lessons. The recommended maximum is {{maxPaces}} lessons per quarter. Do you want to add this lesson anyway?",
-    "addAnyway": "Add Anyway"
+    "addAnyway": "Add Anyway",
+    "movePaces": "Move Lessons",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "mode": "Mode",
+    "view": "View"
   }
 }

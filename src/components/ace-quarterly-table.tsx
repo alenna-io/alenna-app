@@ -421,7 +421,7 @@ export function ACEQuarterlyTable({
           </div>
         </CardHeader>
         <CardContent className="p-0! md:p-6">
-          <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xl">
+          <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xs">
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="bg-muted/30">
@@ -713,14 +713,14 @@ export function ACEQuarterlyTable({
                                 <div className="flex gap-1">
                                   <button
                                     onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
+                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-green-500 text-white rounded-xs hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
                                     title="Guardar"
                                   >
                                     <Check className="h-3 w-3 md:h-4 md:w-4" />
                                   </button>
                                   <button
                                     onClick={handleGradeCancel}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
+                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-xs hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
                                     title="Cancelar"
                                   >
                                     <X className="h-3 w-3 md:h-4 md:w-4" />
@@ -836,26 +836,26 @@ export function ACEQuarterlyTable({
       {/* Summary */}
       <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-primary bg-muted/50 overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-primary bg-muted/50 overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.expected}</p>
             <p className="text-[10px] md:text-xs text-muted">{t("projections.scheduled")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-progress relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#059669] relative z-10 tabular-nums">{quarterStats.completed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.completed")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-highlight relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#D97706] relative z-10 tabular-nums">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.pending")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-summary relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-summary relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#E11D48] relative z-10 tabular-nums">{quarterStats.failed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.failed")}</p>
           </div>
           <button
             onClick={() => setFailedAttemptsDialog(true)}
             disabled={quarterStats.totalFailed === 0}
-            className="text-center p-2 md:p-3 rounded-xl color-zone-status bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-center p-2 md:p-3 rounded-md color-zone-status bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             <p className="text-lg md:text-2xl font-semibold text-sky-800 tabular-nums">{quarterStats.totalFailed}</p>
             <p className="text-[10px] md:text-xs text-muted flex items-center justify-center gap-1">

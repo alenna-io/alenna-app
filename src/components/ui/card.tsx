@@ -10,7 +10,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl text-card-foreground",
+      "rounded-xs text-card-foreground",
       !className?.includes("bg-transparent") && "card-soft",
       !className?.includes("bg-transparent") && "hover-lift",
       variant === "gradient-wash" && "card-gradient-wash",
