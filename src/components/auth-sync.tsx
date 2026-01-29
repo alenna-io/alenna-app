@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { Loading } from '@/components/ui/loading';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AuthSyncProps {
   children: React.ReactNode;
@@ -30,7 +30,7 @@ export function AuthSync({ children }: AuthSyncProps) {
   if (syncStatus === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loading variant="button" size="lg" />
+        <Spinner className="size-8 text-primary" />
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react"
 import { useApi, type CategoryWithSubjects, type GenerateProjectionSubject, type Student, type SubjectWithPaces } from "@/services/api"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/ui/page-header"
-import { Loading } from "@/components/ui/loading"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useUser } from "@/contexts/UserContext"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
@@ -603,7 +603,27 @@ export default function GenerateProjectionWizardPageV2() {
   }
 
   if (loading || isLoadingUser) {
-    return <Loading variant="list-page" />
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          moduleKey="projections"
+          title={t("projections.generateProjection")}
+          description={t("projections.generateDescription")}
+        />
+        <div className="w-full flex items-center justify-between mb-8">
+          {[1, 2, 3].map((step) => (
+            <React.Fragment key={step}>
+              <div className="flex flex-col items-center flex-1">
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <Skeleton className="h-4 w-20 mt-2" />
+              </div>
+              {step < 3 && <div className="flex-1 mx-4"><Skeleton className="h-1 w-full" /></div>}
+            </React.Fragment>
+          ))}
+        </div>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    )
   }
 
   return (

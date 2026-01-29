@@ -14,11 +14,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import type { ProjectionMonthlyAssignment } from "@/services/api/monthly-assignment"
+import { Spinner } from "@/components/ui/spinner"
 
 interface ProjectionMonthlyAssignmentsProps {
   quarter: string
   monthlyAssignments: ProjectionMonthlyAssignment[]
   isEditing: boolean
+  loadingActions?: Map<string, boolean>
   onGradeUpdate: (monthlyAssignmentId: string, grade: number) => Promise<void>
   onMarkUngraded: (monthlyAssignmentId: string) => Promise<void>
 }
@@ -27,6 +29,7 @@ export function ProjectionMonthlyAssignments({
   quarter,
   monthlyAssignments,
   isEditing,
+  loadingActions = new Map(),
   onGradeUpdate,
   onMarkUngraded,
 }: ProjectionMonthlyAssignmentsProps) {
@@ -107,8 +110,11 @@ export function ProjectionMonthlyAssignments({
                   {assignment.grade !== null && (
                     <Badge
                       variant={assignment.status === "COMPLETED" ? "default" : "destructive"}
-                      className="text-xs"
+                      className="text-xs flex items-center gap-1"
                     >
+                      {loadingActions.get(`monthly-grade-${assignment.id}`) && (
+                        <Spinner className="size-2" />
+                      )}
                       {assignment.grade}%
                     </Badge>
                   )}
@@ -127,16 +133,26 @@ export function ProjectionMonthlyAssignments({
                           size="sm"
                           onClick={() => handleOpenGradeDialog(assignment)}
                           className="h-8 px-2"
+                          disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
                         >
-                          {t("monthlyAssignments.editGrade") || "Edit"}
+                          {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
+                            <Spinner className="size-3" />
+                          ) : (
+                            t("monthlyAssignments.editGrade") || "Edit"
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleMarkUngraded(assignment)}
                           className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                          disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
                         >
-                          <Undo2 className="h-4 w-4" />
+                          {loadingActions.get(`monthly-ungraded-${assignment.id}`) ? (
+                            <Spinner className="size-3" />
+                          ) : (
+                            <Undo2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </>
                     ) : (
@@ -145,8 +161,13 @@ export function ProjectionMonthlyAssignments({
                         size="sm"
                         onClick={() => handleOpenGradeDialog(assignment)}
                         className="h-8"
+                        disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true}
                       >
-                        {t("monthlyAssignments.addGrade") || "Add Grade"}
+                        {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
+                          <Spinner className="size-3" />
+                        ) : (
+                          t("monthlyAssignments.addGrade") || "Add Grade"
+                        )}
                       </Button>
                     )}
                   </div>

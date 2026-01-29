@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Loading } from "@/components/ui/loading"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { DailyGoalsTable } from "@/components/daily-goals-table"
 import { Button } from "@/components/ui/button"
@@ -292,7 +292,39 @@ export default function DailyGoalsPage() {
   }
 
   if (loading) {
-    return <Loading variant="list-page" />
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {t("dailyGoals.title") || "Daily Goals"}
+            </h1>
+            <Skeleton className="h-4 w-32 mt-1" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="soft"
+              disabled
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="default"
+              disabled
+              className="flex items-center gap-2"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <Card className="bg-transparent border-none">
+          <CardContent className="p-0">
+            <Skeleton className="h-96 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   const error = queryError ? (queryError as Error).message : null

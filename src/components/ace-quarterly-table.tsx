@@ -24,6 +24,7 @@ import { GradeEditDialog } from "@/components/grade-edit-dialog"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 interface QuarterlyTableProps {
   quarter: string
@@ -37,6 +38,7 @@ interface QuarterlyTableProps {
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
   subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
   categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
+  loadingActions?: Map<string, boolean> // Map of loading action keys to boolean
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -85,6 +87,7 @@ export function ACEQuarterlyTable({
   subjectToCategory,
   subjectToCategoryDisplayOrder,
   categoryCounts,
+  loadingActions = new Map(),
   onPaceDrop,
   onWeekClick,
   onAddPace,
@@ -93,6 +96,10 @@ export function ACEQuarterlyTable({
   onMarkUngraded
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
+
+  const isActionLoading = (key: string): boolean => {
+    return loadingActions.get(key) === true
+  }
 
   const getDisplayName = (subjectName: string): string => {
     if (!subjectToCategory) return subjectName
@@ -408,12 +415,21 @@ export function ACEQuarterlyTable({
                       const paces = isArray ? paceOrArray : (paceOrArray ? [paceOrArray] : [])
                       const primaryPace = paces[0] || null
 
+                      // Check for move loading states
+                      const moveLoadingKeys = Array.from(loadingActions.keys()).filter(key => key.startsWith(`move-${quarter}-${subject}-`))
+                      const isMoveLoading = moveLoadingKeys.some(key => {
+                        const parts = key.split('-')
+                        const fromWeek = parseInt(parts[3])
+                        const toWeek = parseInt(parts[4])
+                        return (fromWeek === weekIndex || toWeek === weekIndex)
+                      })
+
                       return (
                         <td
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
+                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors relative`}
                           draggable={!isReadOnly && !isQuarterClosed && editMode === 'moving' && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
                             if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
@@ -625,6 +641,11 @@ export function ACEQuarterlyTable({
                             setTouchDragPreview(null)
                           }}
                         >
+                          {isMoveLoading && (
+                            <div className="absolute top-1 right-1 z-10">
+                              <Spinner className="size-3 text-primary" />
+                            </div>
+                          )}
                           {primaryPace ? (
                             paces.length > 0 ? (
                               <div className="relative flex flex-col items-center gap-1 w-full group/pace">
@@ -636,9 +657,16 @@ export function ACEQuarterlyTable({
                                       : "bg-red-50"
                                     : ""
 
+                                  const gradeLoadingKey = pace.id ? `grade-${pace.id}` : null
+                                  const ungradedLoadingKey = pace.id ? `ungraded-${pace.id}` : null
+                                  const deleteLoadingKey = `delete-${quarter}-${subject}-${weekIndex}`
+                                  const isGradeLoading = gradeLoadingKey ? isActionLoading(gradeLoadingKey) : false
+                                  const isUngradedLoading = ungradedLoadingKey ? isActionLoading(ungradedLoadingKey) : false
+                                  const isDeleteLoading = isActionLoading(deleteLoadingKey)
+
                                   const paceContent = (
                                     <div
-                                      className={`inline-flex flex-col items-center ${editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''} ${gradeBgColor} rounded-xs p-1 transition-colors`}
+                                      className={`inline-flex flex-col items-center ${editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''} ${gradeBgColor} rounded-xs p-1 transition-colors relative`}
                                       onClick={(e) => {
                                         if (editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
                                           e.stopPropagation()
@@ -651,6 +679,11 @@ export function ACEQuarterlyTable({
                                         }
                                       }}
                                     >
+                                      {(isGradeLoading || isUngradedLoading || isDeleteLoading) && (
+                                        <div className="absolute -top-1 -right-1 z-10">
+                                          <Spinner className="size-3 text-primary" />
+                                        </div>
+                                      )}
                                       <Badge
                                         variant={
                                           pace.isUnfinished && pace.originalQuarter === quarter
@@ -667,7 +700,8 @@ export function ACEQuarterlyTable({
                                         {pace.number}
                                       </Badge>
                                       {paceIdx === 0 && (
-                                        <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(paceGrade)}`}>
+                                        <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(paceGrade)} flex items-center gap-1`}>
+                                          {isGradeLoading && <Spinner className="size-2" />}
                                           {paceGrade !== null ? `${paceGrade}%` : "—"}
                                         </span>
                                       )}
@@ -767,11 +801,16 @@ export function ACEQuarterlyTable({
                                 e.stopPropagation()
                                 handleAddPaceClick(subject, weekIndex)
                               }}
-                              className="h-full w-full min-h-[32px] md:min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
+                              className="h-full w-full min-h-[32px] md:min-h-[40px] flex items-center justify-center transition-all cursor-pointer group relative"
                             >
-                              <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
-                                +
-                              </span>
+                              {isActionLoading(`add-${quarter}-${subject}-${weekIndex}`) && (
+                                <Spinner className="size-4 text-primary" />
+                              )}
+                              {!isActionLoading(`add-${quarter}-${subject}-${weekIndex}`) && (
+                                <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
+                                  +
+                                </span>
+                              )}
                             </div>
                           ) : null}
                         </td>

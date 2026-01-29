@@ -1,7 +1,7 @@
 import * as React from "react"
 import { PageHeader } from "@/components/ui/page-header"
 import { ErrorAlert } from "@/components/ui/error-alert"
-import { Loading } from "@/components/ui/loading"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -170,7 +170,92 @@ export default function MonthlyAssignmentsPage() {
   }
 
   if (isLoadingUser || isLoading) {
-    return <Loading variant="list-page" />
+    return (
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+        <PageHeader
+          moduleKey="monthlyAssignments"
+          title={t("monthlyAssignments.title") || "Monthly Assignments"}
+          description={t("monthlyAssignments.description") || "Manage monthly assignments for each quarter"}
+        />
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-black">
+            {t("monthlyAssignments.quarter") || "Quarter"}
+          </span>
+          <Tabs value={activeQuarter} onValueChange={setActiveQuarter} className="w-auto">
+            <TabsList className="h-8 p-0.5 bg-[#8B5CF6]/10">
+              {QUARTERS.map((quarter) => (
+                <TabsTrigger
+                  key={quarter}
+                  value={quarter}
+                  className="h-7 px-2.5 text-sm transition-all duration-200"
+                >
+                  {quarter}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pb-4">
+              <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <span className="break-words">
+                  {t("monthlyAssignments.assignmentsForQuarter") || "Assignments for"} {activeQuarter}
+                </span>
+              </CardTitle>
+              <Button
+                size="sm"
+                onClick={() => setShowAddTemplateDialog(true)}
+                className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto"
+                disabled
+              >
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="text-xs sm:text-sm">
+                  {t("monthlyAssignments.addAssignment") || "Add Assignment"}
+                </span>
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <Percent className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                <span className="break-words">
+                  {t("monthlyAssignments.gradeWeight") || "Grade Weight for"} {activeQuarter}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor={`percentage-${activeQuarter}`} className="text-sm sm:text-base">
+                    {t("monthlyAssignments.percentageLabel") || "Monthly Assignments Weight (%)"}
+                  </Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Skeleton className="h-10 w-20 sm:w-24" />
+                    <span className="text-muted-foreground text-sm sm:text-base">%</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   if (error) {

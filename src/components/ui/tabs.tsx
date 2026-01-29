@@ -35,13 +35,8 @@ const Tabs: React.FC<TabsProps> = ({
   const isControlled = controlledValue !== undefined
   const value = isControlled ? controlledValue : internalValue
 
-  React.useEffect(() => {
-    console.log('[DEBUG] Tabs component - value:', value, 'isControlled:', isControlled, 'defaultValue:', defaultValue, 'controlledValue:', controlledValue, 'internalValue:', internalValue)
-  }, [value, isControlled, defaultValue, controlledValue, internalValue])
-
   const setValue = React.useCallback(
     (newValue: string) => {
-      console.log('[DEBUG] Tabs setValue called - newValue:', newValue, 'isControlled:', isControlled, 'current value:', value)
       if (!isControlled) {
         setInternalValue(newValue)
       }
@@ -83,12 +78,9 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const isActive = activeValue === value
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      console.log('[DEBUG] TabsTrigger handleClick - value:', value, 'activeValue:', activeValue, 'isActive:', isActive)
       setValue(value)
       onClick?.(e)
     }
-
-    console.log('[DEBUG] TabsTrigger render - value:', value, 'activeValue:', activeValue, 'isActive:', isActive)
 
     return (
       <button
@@ -97,8 +89,8 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         data-state={isActive ? "active" : "inactive"}
         className={cn(
           "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-xs px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer",
-          isActive 
-            ? "bg-[#8B5CF6] text-white shadow-sm" 
+          isActive
+            ? "bg-[#8B5CF6] text-white shadow-sm"
             : "bg-transparent text-gray-500",
           className
         )}
