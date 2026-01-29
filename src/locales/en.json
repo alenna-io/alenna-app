@@ -320,5 +320,16 @@
     "markedUngraded": "Assignment marked as ungraded",
     "errorMarkingUngraded":"Error marking assignment as ungraded",
     "editGrade": "Edit Grade"
+  },
+  "passwordSetup": {
+    "title": "Set Password",
+    "description": "Please set a password for your account",
+    "password": "Password",
+    "passwordPlaceholder": "Minimum 12 characters",
+    "passwordHint": "Must have at least 12 characters, including uppercase, lowercase, numbers, and special characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
+    "setupPassword": "Set Password",
+    "settingUp": "Setting up..."
   }
 }

@@ -7,6 +7,7 @@ import { subjectsApi } from './subjects';
 import { paceCatalogApi } from './pace-catalog';
 import { dailyGoalsApi } from './daily-goals';
 import { monthlyAssignmentsApi } from './monthly-assignment';
+import { authApi } from './auth';
 
 export function useApi() {
   const { getToken } = useAuth();
@@ -130,6 +131,12 @@ export function useApi() {
       markUngraded: async (projectionId: string, monthlyAssignmentId: string) => {
         const token = await getToken();
         return monthlyAssignmentsApi.markUngraded(projectionId, monthlyAssignmentId, token);
+      },
+    },
+    auth: {
+      updatePassword: async (password: string) => {
+        const token = await getToken();
+        return authApi.updatePassword(password, token);
       },
     },
   };

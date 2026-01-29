@@ -72,38 +72,145 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log('[UserContext] Starting fetch on mobile, API_BASE_URL:', API_BASE_URL)
       }
 
-      // MVP: Fake auth info - return mock user data
-      // TODO: Replace with real API call when auth endpoint is available
-      const mockUserInfo: UserInfo = {
-        id: 'mock-user-id',
-        email: 'user@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        fullName: 'Test User',
-        schoolId: 'mock-school-id',
-        schoolName: 'Alenna',
-        roles: [
-          { id: 'role-1', name: 'SCHOOL_ADMIN', displayName: 'School Admin' }
-        ],
-        createdPassword: true,
+      // Get authentication token
+      let token: string | null = null
+      try {
+        token = await getToken()
+        if (isMobile) {
+          console.log('[UserContext] Token obtained:', token ? 'Yes (length: ' + token.length + ')' : 'No')
+        }
+      } catch (tokenError) {
+        const tokenErrorMsg = tokenError instanceof Error ? tokenError.message : String(tokenError)
+        console.error('[UserContext] Failed to get token:', {
+          error: tokenErrorMsg,
+          errorType: tokenError?.constructor?.name,
+          errorString: String(tokenError),
+        })
+        throw new Error(`Failed to get authentication token: ${tokenErrorMsg}`)
       }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 100))
+      if (!token) {
+        throw new Error('No authentication token received from Clerk')
+      }
 
-      setUserInfo(mockUserInfo)
+      const timestamp = new Date().getTime()
+      const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
+
+      console.log('[UserContext] Fetching user info from:', url)
+
+      let response: Response
       try {
-        sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(mockUserInfo))
-        sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, String(new Date().getTime()))
+        response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+          cache: 'no-store',
+        })
+      } catch (fetchError) {
+        // Network error - fetch failed completely
+        const fetchErrorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError)
+        const networkError = {
+          type: 'NetworkError',
+          message: fetchErrorMsg,
+          name: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+          toString: String(fetchError),
+        }
+        console.error('[UserContext] Network error fetching user info:', networkError)
+        throw new Error(`Network error: ${fetchErrorMsg}. Check your internet connection and API URL.`)
+      }
+
+      console.log('[UserContext] Response status:', response.status, response.statusText)
+
+      if (!response.ok) {
+        let errorBody = ''
+        try {
+          errorBody = await response.text()
+        } catch {
+          // Ignore error reading body
+        }
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          body: errorBody,
+        }
+        console.error('[UserContext] HTTP error response:', errorDetails)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ' - ' + errorBody : ''}`)
+      }
+
+      let info: UserInfo
+      try {
+        info = await response.json()
+      } catch (parseError) {
+        const parseErrorMsg = parseError instanceof Error ? parseError.message : String(parseError)
+        console.error('[UserContext] Failed to parse JSON response:', {
+          error: parseErrorMsg,
+          responseText: await response.text().catch(() => 'Could not read response'),
+        })
+        throw new Error(`Failed to parse response: ${parseErrorMsg}`)
+      }
+
+      // Validate that we have the required fields
+      if (!info || !info.id || !info.email) {
+        console.error('[UserContext] Invalid user info received:', info)
+        throw new Error('Invalid user info received from server')
+      }
+
+      // Debug logging for createdPassword
+      console.log('[UserContext] User info loaded:', {
+        id: info.id,
+        email: info.email,
+        fullName: info.fullName,
+        schoolName: info.schoolName,
+        createdPassword: info.createdPassword,
+        createdPasswordType: typeof info.createdPassword,
+        roles: info.roles?.map((r: { name: string }) => r.name),
+      })
+
+      // Log user info for debugging (only on mobile/devices)
+      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        console.log('[UserContext] User info loaded on mobile:', {
+          id: info.id,
+          email: info.email,
+          fullName: info.fullName,
+          schoolName: info.schoolName,
+          createdPassword: info.createdPassword,
+          roles: info.roles?.map((r: { name: string }) => r.name),
+        })
+      }
+
+      setUserInfo(info)
+
+      // Update i18n language if user has a language preference
+      if (info.language && (info.language === 'es' || info.language === 'en')) {
+        try {
+          // Dynamically import i18n to avoid circular dependencies
+          import('@/lib/i18n').then(({ updateLanguageFromUser }) => {
+            updateLanguageFromUser(info.language);
+          });
+        } catch (e) {
+          console.warn('[UserContext] Failed to update language:', e);
+        }
+      }
+
+      // Persist to sessionStorage
+      try {
+        sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(info))
+        sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, Date.now().toString())
       } catch (e) {
-        console.warn('[UserContext] Failed to save mock user info to sessionStorage:', e)
+        console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
       }
 
       if (showLoading) {
         setIsLoading(false)
       }
 
-      /* Original code (commented out for MVP - uncomment when real auth endpoint is ready)
+      /* Original code (commented out - now using real API)
       let token: string | null = null
       try {
         token = await getToken()

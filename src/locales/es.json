@@ -322,5 +322,29 @@
     "markedUngraded": "Asignación marcada como no calificada",
     "errorMarkingUngraded":"Error al marcar la asignación como sin calificar",
     "editGrade": "Editar Calificación"
+  },
+  "passwordSetup": {
+    "title": "Crear Contraseña",
+    "description": "Por favor crea una contraseña para tu cuenta",
+    "password": "Contraseña",
+    "passwordPlaceholder": "Mínimo 12 caracteres",
+    "passwordHint": "Debe tener al menos 12 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales",
+    "confirmPassword": "Confirmar Contraseña",
+    "confirmPasswordPlaceholder": "Repite la contraseña",
+    "setupPassword": "Crear Contraseña",
+    "settingUp": "Creando...",
+    "validPassword": "Contraseña válida",
+    "errors": {
+      "minLength": "La contraseña debe tener al menos 12 caracteres",
+      "uppercase": "La contraseña debe contener al menos una letra mayúscula",
+      "lowercase": "La contraseña debe contener al menos una letra minúscula",
+      "number": "La contraseña debe contener al menos un número",
+      "specialChar": "La contraseña debe contener al menos un carácter especial (!@#$%^&*...)",
+      "tooSimple": "La contraseña es demasiado simple. Usa una combinación más compleja",
+      "sequential": "La contraseña no debe contener secuencias obvias",
+      "mismatch": "Las contraseñas no coinciden"
+    },
+    "success": "Contraseña establecida exitosamente",
+    "error": "Error al establecer la contraseña. Por favor intenta de nuevo."
   }
 }
