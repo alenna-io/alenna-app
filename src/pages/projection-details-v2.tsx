@@ -13,7 +13,9 @@ import type { ProjectionDetails } from "@/services/api/projections"
 import { Move, Edit, Eye } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
+import { ProjectionMonthlyGoals } from "@/components/projection-monthly-goals"
 import { toast } from "sonner"
+import type { ProjectionMonthlyGoal } from "@/services/api/monthly-goals"
 
 const createEmptyQuarterData = (): QuarterData => ({})
 
@@ -160,6 +162,7 @@ export default function ProjectionDetailsPageV2() {
     weekIndex: number
   } | null>(null)
   const [existingPaceCatalogIds, setExistingPaceCatalogIds] = React.useState<string[]>([])
+  const [monthlyGoals, setMonthlyGoals] = React.useState<ProjectionMonthlyGoal[]>([])
 
   React.useEffect(() => {
     const fetchProjection = async () => {
@@ -180,6 +183,13 @@ export default function ProjectionDetailsPageV2() {
 
         const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
         setExistingPaceCatalogIds(paceCatalogIds)
+
+        try {
+          const goals = await api.monthlyGoals.getByProjection(projectionId)
+          setMonthlyGoals(goals)
+        } catch {
+          setMonthlyGoals([])
+        }
 
         setProjectionInfo({
           studentName: `${projection.student.user.firstName || ''} ${projection.student.user.lastName || ''}`.trim(),
@@ -452,6 +462,38 @@ export default function ProjectionDetailsPageV2() {
     handlePaceAdd(pacePickerContext.quarter, pacePickerContext.subject, pacePickerContext.weekIndex, paceId)
   }, [pacePickerContext, handlePaceAdd])
 
+  const handleMonthlyGoalGradeUpdate = React.useCallback(async (monthlyGoalId: string, grade: number) => {
+    if (!projectionId) return
+
+    try {
+      await api.monthlyGoals.updateGrade(projectionId, monthlyGoalId, { grade })
+      toast.success(t("monthlyGoals.gradeUpdated") || "Grade updated successfully")
+
+      const goals = await api.monthlyGoals.getByProjection(projectionId)
+      setMonthlyGoals(goals)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("monthlyGoals.errorUpdatingGrade") || "Failed to update grade")
+    }
+     
+  }, [projectionId, api, t])
+
+  const handleMonthlyGoalMarkUngraded = React.useCallback(async (monthlyGoalId: string) => {
+    if (!projectionId) return
+
+    try {
+      await api.monthlyGoals.markUngraded(projectionId, monthlyGoalId)
+      toast.success(t("monthlyGoals.markedUngraded") || "Marked as ungraded")
+
+      const goals = await api.monthlyGoals.getByProjection(projectionId)
+      setMonthlyGoals(goals)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("monthlyGoals.errorMarkingUngraded") || "Failed to mark as ungraded")
+    }
+     
+  }, [projectionId, api, t])
+
   if (loading) {
     return <Loading variant="list-page" />
   }
@@ -595,6 +637,13 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
+          <ProjectionMonthlyGoals
+            quarter="Q1"
+            monthlyGoals={monthlyGoals}
+            isEditing={editMode === 'editing'}
+            onGradeUpdate={handleMonthlyGoalGradeUpdate}
+            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+          />
         </TabsContent>
 
         <TabsContent value="Q2" className="mt-6">
@@ -621,6 +670,13 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
+          <ProjectionMonthlyGoals
+            quarter="Q2"
+            monthlyGoals={monthlyGoals}
+            isEditing={editMode === 'editing'}
+            onGradeUpdate={handleMonthlyGoalGradeUpdate}
+            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+          />
         </TabsContent>
 
         <TabsContent value="Q3" className="mt-6">
@@ -647,6 +703,13 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
+          <ProjectionMonthlyGoals
+            quarter="Q3"
+            monthlyGoals={monthlyGoals}
+            isEditing={editMode === 'editing'}
+            onGradeUpdate={handleMonthlyGoalGradeUpdate}
+            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+          />
         </TabsContent>
 
         <TabsContent value="Q4" className="mt-6">
@@ -673,6 +736,13 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
+          <ProjectionMonthlyGoals
+            quarter="Q4"
+            monthlyGoals={monthlyGoals}
+            isEditing={editMode === 'editing'}
+            onGradeUpdate={handleMonthlyGoalGradeUpdate}
+            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+          />
         </TabsContent>
       </Tabs>
 

@@ -6,6 +6,7 @@ import { studentsApi } from './students';
 import { subjectsApi } from './subjects';
 import { paceCatalogApi } from './pace-catalog';
 import { dailyGoalsApi } from './daily-goals';
+import { monthlyGoalsApi } from './monthly-goals';
 
 export function useApi() {
   const { getToken } = useAuth();
@@ -95,6 +96,40 @@ export function useApi() {
       markComplete: async (dailyGoalId: string, isCompleted: boolean) => {
         const token = await getToken();
         return dailyGoalsApi.markComplete(dailyGoalId, isCompleted, token);
+      },
+    },
+    monthlyGoals: {
+      getBySchoolYear: async (schoolYearId: string) => {
+        const token = await getToken();
+        return monthlyGoalsApi.getBySchoolYear(schoolYearId, token);
+      },
+      createTemplate: async (schoolYearId: string, data: Parameters<typeof monthlyGoalsApi.createTemplate>[1]) => {
+        const token = await getToken();
+        return monthlyGoalsApi.createTemplate(schoolYearId, data, token);
+      },
+      updateTemplate: async (templateId: string, data: Parameters<typeof monthlyGoalsApi.updateTemplate>[1]) => {
+        const token = await getToken();
+        return monthlyGoalsApi.updateTemplate(templateId, data, token);
+      },
+      deleteTemplate: async (templateId: string) => {
+        const token = await getToken();
+        return monthlyGoalsApi.deleteTemplate(templateId, token);
+      },
+      createPercentage: async (schoolYearId: string, data: Parameters<typeof monthlyGoalsApi.createPercentage>[1]) => {
+        const token = await getToken();
+        return monthlyGoalsApi.createPercentage(schoolYearId, data, token);
+      },
+      getByProjection: async (projectionId: string) => {
+        const token = await getToken();
+        return monthlyGoalsApi.getByProjection(projectionId, token);
+      },
+      updateGrade: async (projectionId: string, monthlyGoalId: string, data: Parameters<typeof monthlyGoalsApi.updateGrade>[2]) => {
+        const token = await getToken();
+        return monthlyGoalsApi.updateGrade(projectionId, monthlyGoalId, data, token);
+      },
+      markUngraded: async (projectionId: string, monthlyGoalId: string) => {
+        const token = await getToken();
+        return monthlyGoalsApi.markUngraded(projectionId, monthlyGoalId, token);
       },
     },
   };

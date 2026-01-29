@@ -21,6 +21,7 @@ import ProjectionsPageV2 from '@/pages/projections-v2'
 import GenerateProjectionWizardPageV2 from '@/pages/generate-projection-wizard-v2'
 import ProjectionDetailsPageV2 from '@/pages/projection-details-v2'
 import DailyGoalsPage from '@/pages/daily-goals-page'
+import MonthlyGoalsPage from '@/pages/monthly-goals-page'
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -89,6 +90,8 @@ export default function App() {
             <Route path="projections/generate" element={<GenerateProjectionWizardPageV2 />} />
             <Route path="students/:studentId/projections/:projectionId/v2" element={<ProjectionDetailsPageV2 />} />
             <Route path="students/:studentId/projections/:projectionId/v2/:quarter/week/:week" element={<DailyGoalsPage />} />
+            {/* Monthly Goals routes */}
+            <Route path="monthly-goals" element={<MonthlyGoalsPage />} />
             {/* Configuration routes */}
             <Route path="configuration" element={<ConfigurationPage />} />
             <Route path="configuration/language" element={<ConfigurationLanguagePage />} />

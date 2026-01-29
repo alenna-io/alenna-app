@@ -334,7 +334,7 @@ export function DailyGoalsTable({
                                 </Badge>
                               )}
                               <div
-                                onClick={() => hasGoal ? handleExistingGoalClick(category, dayIndex) : handleGoalClick(category, dayIndex)}
+                                onClick={() => hasGoal ? handleExistingGoalClick() : handleGoalClick(category, dayIndex)}
                                 className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                               >
                                 <span className={`text-sm font-mono text-center ${goal?.isCompleted ? "line-through text-muted-foreground" : ""
