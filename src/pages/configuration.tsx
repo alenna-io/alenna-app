@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/loading";
 import { PageHeader } from "@/components/ui/page-header";
 import { ChevronRight, Languages } from "lucide-react";
-import { useApi } from "@/services/api";
-import type { ModuleData } from "@/services/api";
+// TODO: Define ModuleData type when API is available
+interface ModuleData {
+  actions: string[];
+}
 import { useTranslation } from "react-i18next";
 
 interface ConfigModule {
@@ -23,7 +25,6 @@ interface ConfigModule {
 
 export default function ConfigurationPage() {
   const navigate = useNavigate();
-  const api = useApi();
   const { t } = useTranslation();
   const [userPermissions, setUserPermissions] = React.useState<Set<string>>(new Set());
   const [loading, setLoading] = React.useState(true);
@@ -46,8 +47,9 @@ export default function ConfigurationPage() {
   React.useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        // Fetch user's modules to get permissions
-        const modules = await api.modules.getUserModules();
+        // TODO: Re-implement when modules API is available
+        const modules = [] as ModuleData[];
+        // const modules = await api.modules.getUserModules();
         const allPermissions = new Set<string>();
         modules.forEach((module: ModuleData) => {
           module.actions.forEach((action: string) => allPermissions.add(action));
@@ -61,7 +63,7 @@ export default function ConfigurationPage() {
     };
 
     fetchUserInfo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const hasPermission = (permission: string) => {

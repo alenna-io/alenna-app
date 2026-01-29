@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useApi } from '../services/api';
-import type { Quarter } from '../services/api';
+// TODO: Define Quarter type when API is available
+interface Quarter {
+  name: string;
+  status?: 'open' | 'gracePeriod' | 'closed';
+  canClose?: boolean;
+}
 
 export interface QuarterStatus {
   quarter: Quarter;
@@ -9,7 +13,6 @@ export interface QuarterStatus {
 }
 
 export function useQuarterStatus(schoolYearId: string | null) {
-  const api = useApi();
   const [quarters, setQuarters] = useState<QuarterStatus[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +27,9 @@ export function useQuarterStatus(schoolYearId: string | null) {
       setLoading(true);
       setError(null);
       try {
-        const data = await api.quarters.getStatus(schoolYearId) as Quarter[];
+        // TODO: Re-implement when quarters API is available
+        const data = [] as Quarter[];
+        // const data = await api.quarters.getStatus(schoolYearId) as Quarter[];
         const statusQuarters: QuarterStatus[] = data.map(q => ({
           quarter: q,
           status: q.status || 'open',
@@ -39,7 +44,7 @@ export function useQuarterStatus(schoolYearId: string | null) {
     };
 
     fetchStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [schoolYearId]); // api is stable from useApi hook, no need to include it
 
   const getQuarterStatus = (quarterName: string): QuarterStatus | null => {

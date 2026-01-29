@@ -14,6 +14,7 @@ export interface PaceData {
   originalQuarter?: string // Original quarter where unfinished pace was located
   originalWeek?: number // Original week where unfinished pace was located
   gradeHistory?: GradeHistory[] // History of all grades for this PACE
+  orderIndex?: number // Order index for sequential validation
 }
 
 export type WeekPaces = (PaceData | null | PaceData[])[] // Array of 9 weeks, can have single pace, array of paces, or null

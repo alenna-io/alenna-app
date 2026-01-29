@@ -303,11 +303,32 @@ export function AlennaTable<T>({
   const renderSkeletonRow = () => {
     return (
       <tr>
-        {displayColumns.map((column) => (
-          <td key={column.key} className="p-4 align-middle first:px-6 first:py-3">
-            <AlennaSkeleton height="20px" width="80%" variant="text" />
-          </td>
-        ))}
+        {displayColumns.map((column) => {
+          // Special handling for avatar/name columns (first column often has avatar)
+          if (column.key === 'firstName' || column.key === 'name') {
+            return (
+              <td key={column.key} className="p-4 align-middle first:px-6 first:py-3">
+                <div className="flex items-center gap-4">
+                  <AlennaSkeleton height="32px" width="32px" variant="circular" />
+                  <AlennaSkeleton height="16px" width="120px" variant="text" />
+                </div>
+              </td>
+            )
+          }
+          // Special handling for badge/status columns
+          if (column.key === 'status') {
+            return (
+              <td key={column.key} className="p-4 align-middle first:px-6 first:py-3">
+                <AlennaSkeleton height="24px" width="80px" variant="rectangular" />
+              </td>
+            )
+          }
+          return (
+            <td key={column.key} className="p-4 align-middle first:px-6 first:py-3">
+              <AlennaSkeleton height="20px" width="80%" variant="text" />
+            </td>
+          )
+        })}
       </tr>
     )
   }

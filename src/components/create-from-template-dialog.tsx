@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { useApi } from "@/services/api"
+import { useApi, type GenerateProjectionSubject } from "@/services/api"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Loader2 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-interface Student {
+interface StudentDisplay {
   id: string
   firstName: string
   lastName: string
@@ -53,7 +53,7 @@ export function CreateFromTemplateDialog({
   const api = useApi()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [students, setStudents] = React.useState<Student[]>([])
+  const [students, setStudents] = React.useState<StudentDisplay[]>([])
   const [templates, setTemplates] = React.useState<Template[]>([])
   const [loading, setLoading] = React.useState(false)
   const [isCreating, setIsCreating] = React.useState(false)
@@ -75,11 +75,23 @@ export function CreateFromTemplateDialog({
         setLoading(true)
         setError(null)
         try {
+          // TODO: Re-implement when API methods are available
           const [studentsData, templatesData] = await Promise.all([
-            api.students.getAll(),
-            api.projectionTemplates.getAll(), // Get all templates, not filtered by level
+            api.students.getEnrolledWithoutOpenProjection(),
+            Promise.resolve([] as Template[]), // api.projectionTemplates.getAll() - not implemented
           ])
-          setStudents(studentsData as Student[])
+          // Map API Student type to component's expected format
+          const mappedStudents: StudentDisplay[] = studentsData.map(s => ({
+            id: s.id,
+            firstName: s.user?.firstName || '',
+            lastName: s.user?.lastName || '',
+            name: s.user?.firstName && s.user?.lastName
+              ? `${s.user.firstName} ${s.user.lastName}`
+              : s.user?.email || '',
+            expectedLevel: undefined, // TODO: Add when available in API
+            currentLevel: undefined, // TODO: Add when available in API
+          }))
+          setStudents(mappedStudents)
           setTemplates(templatesData as Template[])
         } catch (error) {
           console.error("Error fetching data:", error)
@@ -124,39 +136,22 @@ export function CreateFromTemplateDialog({
 
     setIsCreating(true)
     try {
-      let projection: { id: string; studentId: string }
-
-      // Check if this is a default template (L1-L8)
-      if (selectedTemplate?.isDefault) {
-        // Use the special endpoint for default templates (fixed pairing)
-        projection = await api.projections.generateFromDefaultTemplate({
-          studentId: formData.studentId,
-          schoolYear: activeSchoolYear.name,
-          templateId: formData.templateId,
-        }) as { id: string; studentId: string }
-      } else {
-        // Use the dynamic algorithm for custom templates
-        const template = await api.projectionTemplates.getById(formData.templateId)
-
-        if (!template || !template.subjects) {
-          throw new Error("La plantilla no contiene materias")
-        }
-
-        const payload = {
-          studentId: formData.studentId,
-          schoolYear: activeSchoolYear.name,
-          subjects: template.subjects.map((s: { subSubjectId: string; subSubjectName: string; startPace: number; endPace: number; skipPaces?: number[]; notPairWith?: string[] }) => ({
-            subSubjectId: s.subSubjectId,
-            subSubjectName: s.subSubjectName,
-            startPace: s.startPace,
-            endPace: s.endPace,
-            skipPaces: s.skipPaces || [],
-            notPairWith: s.notPairWith || [],
-          })),
-        }
-
-        projection = await api.projections.generate(payload) as { id: string; studentId: string }
+      // TODO: Re-implement when API methods are available
+      // For now, use the generate method with a placeholder payload
+      // This will need to be fixed when projection templates are implemented
+      const userInfo = await api.schools.getWithCurrentYear()
+      if (!userInfo?.schoolYears?.[0]) {
+        throw new Error("No hay un año escolar activo")
       }
+
+      const payload = {
+        studentId: formData.studentId,
+        schoolYear: activeSchoolYear.name,
+        schoolId: userInfo.id,
+        subjects: [] as GenerateProjectionSubject[], // TODO: Get from template when available
+      }
+
+      const projection = await api.projections.generate(payload) as { id: string; studentId: string }
 
       toast.success(t("projections.createdFromTemplateSuccess"))
       onSuccess()

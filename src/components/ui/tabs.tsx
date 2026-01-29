@@ -42,7 +42,7 @@ const Tabs: React.FC<TabsProps> = ({
       }
       onValueChange?.(newValue)
     },
-    [isControlled, onValueChange]
+    [isControlled, onValueChange, value]
   )
 
   return (
@@ -59,7 +59,7 @@ const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
     <div
       ref={ref}
       className={cn(
-        "inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+        "inline-flex h-10 items-center justify-center rounded-xs bg-muted p-1 text-muted-foreground gap-2",
         className
       )}
       {...props}
@@ -73,9 +73,14 @@ interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ className, value, ...props }, ref) => {
+  ({ className, value, onClick, ...props }, ref) => {
     const { value: activeValue, setValue } = useTabsContext()
     const isActive = activeValue === value
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      setValue(value)
+      onClick?.(e)
+    }
 
     return (
       <button
@@ -83,10 +88,13 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         type="button"
         data-state={isActive ? "active" : "inactive"}
         className={cn(
-          "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=active]:bg-[#8B5CF6] data-[state=active]:text-white data-[state=active]:shadow-sm cursor-pointer",
+          "inline-flex min-w-[80px] items-center justify-center whitespace-nowrap rounded-xs px-3 py-1.5 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer",
+          isActive
+            ? "bg-[#8B5CF6] text-white shadow-sm"
+            : "bg-transparent text-gray-500",
           className
         )}
-        onClick={() => setValue(value)}
+        onClick={handleClick}
         {...props}
       />
     )

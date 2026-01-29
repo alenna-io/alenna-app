@@ -30,13 +30,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           return parsed
         } else {
           // Clear corrupted/incomplete cached data
-          console.warn('[UserContext] Cached user info is incomplete, clearing it')
           sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
           sessionStorage.removeItem(USER_INFO_TIMESTAMP_KEY)
         }
       }
-    } catch (e) {
-      console.warn('[UserContext] Failed to load user info from sessionStorage:', e)
+    } catch {
       // Clear corrupted cached data
       try {
         sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
@@ -65,13 +63,116 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
       setError(null)
 
-      // Enhanced logging for mobile
-      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-      if (isMobile) {
-        console.log('[UserContext] Starting fetch on mobile, API_BASE_URL:', API_BASE_URL)
+      // Get authentication token
+      let token: string | null = null
+      try {
+        token = await getToken()
+      } catch (tokenError) {
+        const tokenErrorMsg = tokenError instanceof Error ? tokenError.message : String(tokenError)
+        console.error('[UserContext] Failed to get token:', {
+          error: tokenErrorMsg,
+          errorType: tokenError?.constructor?.name,
+          errorString: String(tokenError),
+        })
+        throw new Error(`Failed to get authentication token: ${tokenErrorMsg}`)
       }
 
+      if (!token) {
+        throw new Error('No authentication token received from Clerk')
+      }
+
+      const timestamp = new Date().getTime()
+      const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
+
+      let response: Response
+      try {
+        response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+          cache: 'no-store',
+        })
+      } catch (fetchError) {
+        // Network error - fetch failed completely
+        const fetchErrorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError)
+        const networkError = {
+          type: 'NetworkError',
+          message: fetchErrorMsg,
+          name: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined,
+          toString: String(fetchError),
+        }
+        console.error('[UserContext] Network error fetching user info:', networkError)
+        throw new Error(`Network error: ${fetchErrorMsg}. Check your internet connection and API URL.`)
+      }
+
+      if (!response.ok) {
+        let errorBody = ''
+        try {
+          errorBody = await response.text()
+        } catch {
+          // Ignore error reading body
+        }
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          body: errorBody,
+        }
+        console.error('[UserContext] HTTP error response:', errorDetails)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ' - ' + errorBody : ''}`)
+      }
+
+      let info: UserInfo
+      try {
+        info = await response.json()
+      } catch (parseError) {
+        const parseErrorMsg = parseError instanceof Error ? parseError.message : String(parseError)
+        console.error('[UserContext] Failed to parse JSON response:', {
+          error: parseErrorMsg,
+          responseText: await response.text().catch(() => 'Could not read response'),
+        })
+        throw new Error(`Failed to parse response: ${parseErrorMsg}`)
+      }
+
+      // Validate that we have the required fields
+      if (!info || !info.id || !info.email) {
+        console.error('[UserContext] Invalid user info received:', info)
+        throw new Error('Invalid user info received from server')
+      }
+
+
+      setUserInfo(info)
+
+      // Update i18n language if user has a language preference
+      if (info.language && (info.language === 'es' || info.language === 'en')) {
+        try {
+          // Dynamically import i18n to avoid circular dependencies
+          import('@/lib/i18n').then(({ updateLanguageFromUser }) => {
+            updateLanguageFromUser(info.language);
+          });
+        } catch {
+          // Silently fail if language update fails
+        }
+      }
+
+      // Persist to sessionStorage
+      try {
+        sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(info))
+        sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, Date.now().toString())
+      } catch {
+        // Silently fail if sessionStorage is unavailable
+      }
+
+      if (showLoading) {
+        setIsLoading(false)
+      }
+
+      /* Original code (commented out - now using real API)
       let token: string | null = null
       try {
         token = await getToken()
@@ -92,7 +193,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No authentication token received from Clerk')
       }
 
-      // Add cache-busting timestamp to prevent caching
       const timestamp = new Date().getTime()
       const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
 
@@ -197,6 +297,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
       }
+      */
     } catch (err) {
       // Enhanced error logging with full details
       const errorDetails = {
@@ -209,19 +310,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         ...(err instanceof TypeError && { typeError: true }),
       }
 
-      console.error('[UserContext] Error loading user info - Full details:', errorDetails)
-
-      // Also log to mobile debug panel with more context
-      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-      if (isMobile) {
-        console.error('[UserContext] Mobile error details:', {
-          errorMessage: errorDetails.message,
-          errorName: errorDetails.name,
-          errorType: errorDetails.type,
-          API_BASE_URL,
-          hasToken: !!getToken,
-          userAgent: navigator.userAgent,
-        })
+      // Log error details for debugging (only in development)
+      if (import.meta.env.DEV) {
+        console.error('[UserContext] Error loading user info:', errorDetails)
       }
 
       const message = err instanceof Error ? err.message : 'Failed to load user info'
@@ -255,7 +346,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     fetchUserInfo(shouldShowLoading).catch((err) => {
       // If fetch fails and we have cached data, keep using it
-      console.error('[UserContext] Failed to fetch user info, using cached data if available:', err)
       if (isMounted && !userInfo) {
         // Only set error if we don't have cached data
         setError(err instanceof Error ? err.message : 'Failed to load user info')
@@ -285,6 +375,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUser() {
   const context = React.useContext(UserContext)
   if (!context) {

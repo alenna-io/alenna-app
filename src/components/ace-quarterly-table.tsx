@@ -11,9 +11,20 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, MoreVertical, Edit, Check, X, History, Info } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu"
+import { GradeEditDialog } from "@/components/grade-edit-dialog"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 interface QuarterlyTableProps {
   quarter: string
@@ -23,21 +34,20 @@ interface QuarterlyTableProps {
   isActive?: boolean // Whether this quarter contains the current week
   isReadOnly?: boolean // Read-only mode for parents
   isQuarterClosed?: boolean // Whether this quarter is closed
+  editMode?: 'view' | 'moving' | 'editing' // Edit mode for projection editing
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
+  subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
+  categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
+  loadingActions?: Map<string, boolean> // Map of loading action keys to boolean
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
-  onAddPace?: (quarter: string, subject: string, weekIndex: number, paceNumber: string) => void
+  onAddPace?: (quarter: string, subject: string, weekIndex: number) => void
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
+  onGradeUpdate?: (quarter: string, subject: string, weekIndex: number, grade: number) => void
+  onMarkUngraded?: (quarter: string, subject: string, weekIndex: number) => void
 }
 
-type OptionsMenuState = {
-  subject: string
-  weekIndex: number
-  x: number
-  y: number
-  placement?: 'left' | 'right'
-}
 
 
 // Subject-specific color mapping with soft pastel backgrounds
@@ -73,87 +83,100 @@ export function ACEQuarterlyTable({
   isActive = false,
   isReadOnly = false,
   isQuarterClosed = false,
-  subjectToCategory: _subjectToCategory, // eslint-disable-line @typescript-eslint/no-unused-vars
+  editMode = 'view',
+  subjectToCategory,
+  subjectToCategoryDisplayOrder,
+  loadingActions = new Map(),
   onPaceDrop,
-  onPaceToggle,
   onWeekClick,
   onAddPace,
-  onDeletePace
+  onDeletePace,
+  onGradeUpdate,
+  onMarkUngraded
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
+
+  const isActionLoading = (key: string): boolean => {
+    return loadingActions.get(key) === true
+  }
+
+  const getDisplayName = (displayKey: string): string => {
+    // displayKey is now either a category name (for non-Electives) or subject name (for Electives)
+    if (!subjectToCategory) return displayKey
+
+    // Check if displayKey is a category name by seeing if any subject maps to it
+    const isCategoryName = Array.from(subjectToCategory.values()).includes(displayKey)
+
+    if (isCategoryName && displayKey !== 'Electives') {
+      // displayKey is a category name (non-Electives)
+      // Return the category name as-is
+      return displayKey
+    } else {
+      // displayKey is a subject name (Electives)
+      // For Electives, return the subject name
+      return displayKey
+    }
+  }
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const dragImageRef = React.useRef<HTMLDivElement | null>(null)
   const [touchStart, setTouchStart] = React.useState<{ subject: string, weekIndex: number, x: number, y: number } | null>(null)
   const [touchDragPreview, setTouchDragPreview] = React.useState<{ paceNumber: string; isCompleted: boolean; x: number; y: number } | null>(null)
   const touchDragPreviewRef = React.useRef<HTMLDivElement | null>(null)
-  const [editingPace, setEditingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
-  const [gradeInput, setGradeInput] = React.useState("")
-  const [addingPace, setAddingPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
-  const [paceNumberInput, setPaceNumberInput] = React.useState("")
   const [deleteDialog, setDeleteDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string } | null>(null)
   const [alertDialog, setAlertDialog] = React.useState<{ title: string, message: string } | null>(null)
-  const [confirmAddDialog, setConfirmAddDialog] = React.useState<{ subject: string, weekIndex: number, weekCount: number } | null>(null)
-  const [overloadRememberUntil, setOverloadRememberUntil] = React.useState<number | null>(null)
-  const [optionsMenu, setOptionsMenu] = React.useState<OptionsMenuState | null>(null)
   const [historyDialog, setHistoryDialog] = React.useState<{ subject: string, weekIndex: number, paceNumber: string, history: Array<{ grade: number, date: string, note?: string }> } | null>(null)
   const [failedAttemptsDialog, setFailedAttemptsDialog] = React.useState<boolean>(false)
-  const optionsMenuRef = React.useRef<HTMLDivElement>(null)
-  const subjects = Object.keys(data)
+  const [gradeEditDialog, setGradeEditDialog] = React.useState<{ subject: string, weekIndex: number, currentGrade: number | null } | null>(null)
+  const [dropdownOpen, setDropdownOpen] = React.useState<{ subject: string, weekIndex: number } | null>(null)
+
+  // Sort display keys (category names for non-Electives, subject names for Electives) by category displayOrder
+  const subjects = React.useMemo(() => {
+    const displayKeyList = Object.keys(data)
+    if (!subjectToCategoryDisplayOrder || !subjectToCategory) {
+      return displayKeyList
+    }
+    return displayKeyList.sort((a, b) => {
+      // Get display order for each key
+      // For category names (non-Electives), find any subject in that category
+      // For subject names (Electives), use the subject directly
+      let orderA = 999
+      let orderB = 999
+
+      // Check if 'a' is a category name or subject name
+      const isCategoryA = Array.from(subjectToCategory.values()).includes(a) && a !== 'Electives'
+      if (isCategoryA) {
+        // Find any subject in this category
+        for (const [subject, category] of subjectToCategory.entries()) {
+          if (category === a) {
+            orderA = subjectToCategoryDisplayOrder.get(subject) ?? 999
+            break
+          }
+        }
+      } else {
+        // It's a subject name (Electives)
+        orderA = subjectToCategoryDisplayOrder.get(a) ?? 999
+      }
+
+      // Same for 'b'
+      const isCategoryB = Array.from(subjectToCategory.values()).includes(b) && b !== 'Electives'
+      if (isCategoryB) {
+        for (const [subject, category] of subjectToCategory.entries()) {
+          if (category === b) {
+            orderB = subjectToCategoryDisplayOrder.get(subject) ?? 999
+            break
+          }
+        }
+      } else {
+        orderB = subjectToCategoryDisplayOrder.get(b) ?? 999
+      }
+
+      return orderA - orderB
+    })
+  }, [data, subjectToCategoryDisplayOrder, subjectToCategory])
+
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
 
-  // Adjust options menu position to keep it on screen
-  React.useEffect(() => {
-    if (optionsMenu && optionsMenuRef.current) {
-      const menu = optionsMenuRef.current
-      const menuRect = menu.getBoundingClientRect()
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-
-      let { x, y } = optionsMenu
-
-      // Adjust horizontal position if menu goes off right edge
-      if (x + menuRect.width > viewportWidth) {
-        x = viewportWidth - menuRect.width - 10 // 10px padding from edge
-      }
-
-      // Adjust vertical position if menu goes off bottom edge
-      if (y + menuRect.height > viewportHeight) {
-        y = viewportHeight - menuRect.height - 10 // 10px padding from edge
-      }
-
-      // Ensure menu doesn't go off left edge
-      if (x < 10) {
-        x = 10
-      }
-
-      // Ensure menu doesn't go off top edge
-      if (y < 10) {
-        y = 10
-      }
-
-      // Update position if it changed
-      if (x !== optionsMenu.x || y !== optionsMenu.y) {
-        setOptionsMenu({ ...optionsMenu, x, y })
-      }
-    }
-  }, [optionsMenu])
-
-  // Close options menu on click outside
-  React.useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      // Don't close if clicking inside a dialog/modal
-      const target = e.target as HTMLElement
-      if (target.closest('[role="alertdialog"]') || target.closest('[role="dialog"]')) {
-        return
-      }
-      setOptionsMenu(null)
-    }
-    if (optionsMenu) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [optionsMenu])
 
   // Prevent body scroll when modal is open
   React.useEffect(() => {
@@ -167,28 +190,11 @@ export function ACEQuarterlyTable({
     }
   }, [historyDialog])
 
-  const handlePaceClick = (subject: string, weekIndex: number, pace: { number: string; grade: number | null; isCompleted: boolean }) => {
-    setEditingPace({ subject, weekIndex })
-    setGradeInput(pace.grade !== null ? pace.grade.toString() : "")
-  }
-
-  const handleEditGrade = (subject: string, weekIndex: number, currentGrade: number | null) => {
-    setEditingPace({ subject, weekIndex })
-    setGradeInput(currentGrade !== null ? currentGrade.toString() : "")
-  }
-
-  const handleGradeSubmit = (subject: string, weekIndex: number) => {
-    const grade = parseInt(gradeInput)
-    if (grade >= 0 && grade <= 100) {
-      onPaceToggle?.(quarter, subject, weekIndex, grade)
-      setEditingPace(null)
-      setGradeInput("")
+  const handleGradeSave = (grade: number) => {
+    if (gradeEditDialog) {
+      onGradeUpdate?.(quarter, gradeEditDialog.subject, gradeEditDialog.weekIndex, grade)
+      setGradeEditDialog(null)
     }
-  }
-
-  const handleGradeCancel = () => {
-    setEditingPace(null)
-    setGradeInput("")
   }
 
   const getGradeColor = (grade: number | null) => {
@@ -203,76 +209,12 @@ export function ACEQuarterlyTable({
   }
 
   const handleAddPaceClick = (subject: string, weekIndex: number) => {
-    // Directly call onAddPace to open the picker dialog
-    onAddPace?.(quarter, subject, weekIndex, '')
-  }
-
-  const handleAddPaceSubmit = (subject: string, weekIndex: number) => {
-    const newPaceNumber = paceNumberInput.trim()
-
-    if (!newPaceNumber) {
-      setAlertDialog({
-        title: "Campo Requerido",
-        message: "Por favor ingresa un número de Lección"
-      })
-      return
-    }
-
-    // Validate format: must start with 1 and be 4 digits
-    if (!/^1\d{3}$/.test(newPaceNumber)) {
-      setAlertDialog({
-        title: "Formato Inválido",
-        message: "El número de Lección debe tener 4 dígitos y comenzar con 1 (ej: 1001, 1234)"
-      })
-      return
-    }
-
-    // Check if pace already exists in this subject
-    const paceExists = data[subject].some(paceOrArray => {
-      if (!paceOrArray) return false
-      const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
-      return paces.some(pace => pace && pace.number === newPaceNumber)
-    })
-    if (paceExists) {
-      setAlertDialog({
-        title: t("projections.duplicateLesson"),
-        message: t("projections.duplicateLessonMessage", { paceNumber: newPaceNumber, subject })
-      })
-      return
-    }
-
-    // Check overload warning for QUARTER (max 18 per quarter)
-    const currentQuarterPaces = quarterStats.expected
-    const now = Date.now()
-    const shouldShowWarning = !overloadRememberUntil || now > overloadRememberUntil
-
-    if (currentQuarterPaces >= MAX_PACES_PER_QUARTER && shouldShowWarning) {
-      setConfirmAddDialog({ subject, weekIndex, weekCount: currentQuarterPaces })
-      return
-    }
-
-    onAddPace?.(quarter, subject, weekIndex, newPaceNumber)
-    setAddingPace(null)
-    setPaceNumberInput("")
-  }
-
-  const confirmOverloadAdd = (rememberFor10Min: boolean = false) => {
-    if (confirmAddDialog && addingPace) {
-      if (rememberFor10Min) {
-        // Remember choice for 10 minutes
-        const tenMinutesFromNow = Date.now() + (10 * 60 * 1000)
-        setOverloadRememberUntil(tenMinutesFromNow)
-      }
-      onAddPace?.(quarter, addingPace.subject, addingPace.weekIndex, paceNumberInput.trim())
-      setAddingPace(null)
-      setPaceNumberInput("")
-      setConfirmAddDialog(null)
-    }
+    // Call onAddPace to open the picker dialog (no paceNumber needed)
+    onAddPace?.(quarter, subject, weekIndex)
   }
 
   const handleDeletePace = (subject: string, weekIndex: number, paceNumber: string) => {
     setDeleteDialog({ subject, weekIndex, paceNumber })
-    setOptionsMenu(null) // Ensure options menu closes when delete dialog opens
   }
 
   const confirmDelete = () => {
@@ -280,11 +222,6 @@ export function ACEQuarterlyTable({
       onDeletePace?.(quarter, deleteDialog.subject, deleteDialog.weekIndex)
       setDeleteDialog(null)
     }
-  }
-
-  const handleAddPaceCancel = () => {
-    setAddingPace(null)
-    setPaceNumberInput("")
   }
 
   // Calculate paces per week for display
@@ -436,9 +373,9 @@ export function ACEQuarterlyTable({
               )}
               <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs lg:text-sm">
                 {isQuarterComplete ? (
-                  <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
+                  <CheckCircle2 className="h-2 w-2 md:h-4 md:w-4 text-green-600" />
                 ) : (
-                  <XCircle className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                  <XCircle className="h-2 w-2 md:h-4 md:w-4 text-orange-500" />
                 )}
                 <span className="font-medium">
                   {quarterStats.completed} / {quarterStats.expected}
@@ -451,7 +388,7 @@ export function ACEQuarterlyTable({
           </div>
         </CardHeader>
         <CardContent className="p-0! md:p-6">
-          <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xl">
+          <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xs">
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="bg-muted/30">
@@ -473,7 +410,6 @@ export function ACEQuarterlyTable({
                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
                           <span className={`text-xs md:text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
                             {t("projections.week")} {week}
-                            {currentWeek === week && " ✓"}
                           </span>
                           <span className="text-[9px] md:text-[10px] text-muted-foreground">
                             {weekPaceCount} {t("projections.lessons")}
@@ -488,14 +424,14 @@ export function ACEQuarterlyTable({
                 {subjects.map((subject) => (
                   <tr
                     key={subject}
-                    className={`transition-colors group border-b border-border last:border-b-0 ${getSubjectColor(subject).bg} hover:opacity-80`}
+                    className={`transition-colors group border-b border-border last:border-b-0 bg-card hover:opacity-80`}
                   >
                     <td
-                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] ${getSubjectColor(subject).bg} ${getSubjectColor(subject).text} text-xs md:text-sm`}
+                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subject).text} text-xs md:text-sm`}
                     >
                       <div className="flex flex-col">
                         <span className={`text-xs md:text-sm font-semibold ${getSubjectColor(subject).text}`}>
-                          {subject}
+                          {getDisplayName(subject)}
                         </span>
                       </div>
                     </td>
@@ -505,15 +441,24 @@ export function ACEQuarterlyTable({
                       const paces = isArray ? paceOrArray : (paceOrArray ? [paceOrArray] : [])
                       const primaryPace = paces[0] || null
 
+                      // Check for move loading states
+                      const moveLoadingKeys = Array.from(loadingActions.keys()).filter(key => key.startsWith(`move-${quarter}-${subject}-`))
+                      const isMoveLoading = moveLoadingKeys.some(key => {
+                        const parts = key.split('-')
+                        const fromWeek = parseInt(parts[3])
+                        const toWeek = parseInt(parts[4])
+                        return (fromWeek === weekIndex || toWeek === weekIndex)
+                      })
+
                       return (
                         <td
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors`}
-                          draggable={!isReadOnly && !isQuarterClosed && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
+                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-green-100 border-green-300 border-l-2" : ""} transition-colors relative`}
+                          draggable={!isReadOnly && !isQuarterClosed && editMode === 'moving' && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
+                            if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               setDraggedPace({ subject, weekIndex })
 
                               // Create a custom drag image
@@ -552,8 +497,9 @@ export function ACEQuarterlyTable({
                             }
                           }}
                           onDragOver={(e) => {
-                            if (draggedPace && draggedPace.subject === subject) {
+                            if (editMode === 'moving' && draggedPace && draggedPace.subject === subject) {
                               e.preventDefault()
+                              e.stopPropagation()
                               e.dataTransfer.dropEffect = 'move'
                               // Add visual feedback to drop target
                               if (draggedPace.weekIndex !== weekIndex) {
@@ -568,19 +514,47 @@ export function ACEQuarterlyTable({
                             e.currentTarget.style.borderColor = ''
                           }}
                           onDrop={(e) => {
-                            e.preventDefault()
-                            // Remove visual feedback
-                            e.currentTarget.style.backgroundColor = ''
-                            e.currentTarget.style.borderColor = ''
+                            if (editMode === 'moving') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              // Remove visual feedback
+                              e.currentTarget.style.backgroundColor = ''
+                              e.currentTarget.style.borderColor = ''
 
-                            // Clean up drag image
-                            if (dragImageRef.current && dragImageRef.current.parentNode) {
-                              document.body.removeChild(dragImageRef.current)
-                              dragImageRef.current = null
-                            }
+                              // Clean up drag image
+                              if (dragImageRef.current && dragImageRef.current.parentNode) {
+                                document.body.removeChild(dragImageRef.current)
+                                dragImageRef.current = null
+                              }
 
-                            if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
-                              onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
+                              if (!isReadOnly && draggedPace && draggedPace.subject === subject && draggedPace.weekIndex !== weekIndex) {
+                                const fromPaceRaw = data[subject][draggedPace.weekIndex]
+                                const fromPace = Array.isArray(fromPaceRaw) ? fromPaceRaw[0] : fromPaceRaw
+                                if (fromPace && fromPace.orderIndex !== undefined) {
+                                  const targetPaceRaw = data[subject][weekIndex]
+                                  const targetPace = Array.isArray(targetPaceRaw) ? targetPaceRaw[0] : targetPaceRaw
+                                  if (targetPace && targetPace.orderIndex !== undefined && targetPace.orderIndex < fromPace.orderIndex) {
+                                    toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+                                    setDraggedPace(null)
+                                    return
+                                  }
+                                  const allPacesInSubject = data[subject]
+                                    .map((pace, idx) => {
+                                      if (!pace || Array.isArray(pace) || idx === draggedPace.weekIndex) return null
+                                      return { orderIndex: pace.orderIndex || 0, weekIndex: idx }
+                                    })
+                                    .filter((item): item is { orderIndex: number; weekIndex: number } => item !== null)
+                                  const pacesAfterTarget = allPacesInSubject.filter(item => item.weekIndex >= weekIndex)
+                                  for (const paceAfter of pacesAfterTarget) {
+                                    if (paceAfter.orderIndex < fromPace.orderIndex) {
+                                      toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+                                      setDraggedPace(null)
+                                      return
+                                    }
+                                  }
+                                  onPaceDrop?.(quarter, subject, draggedPace.weekIndex, weekIndex)
+                                }
+                              }
                             }
                             setDraggedPace(null)
                           }}
@@ -605,7 +579,7 @@ export function ACEQuarterlyTable({
                           }}
                           // Touch handlers for mobile/iPad
                           onTouchStart={(e) => {
-                            if (!isReadOnly && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
+                            if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
                               const touch = e.touches[0]
                               setTouchStart({ subject, weekIndex, x: touch.clientX, y: touch.clientY })
                               // Create drag preview for touch devices
@@ -693,174 +667,176 @@ export function ACEQuarterlyTable({
                             setTouchDragPreview(null)
                           }}
                         >
+                          {isMoveLoading && (
+                            <div className="absolute top-1 right-1 z-10">
+                              <Spinner className="size-3 text-primary" />
+                            </div>
+                          )}
                           {primaryPace ? (
-                            editingPace?.subject === subject && editingPace?.weekIndex === weekIndex ? (
-                              <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2 min-w-[140px] md:min-w-[180px]" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={gradeInput}
-                                  onChange={(e) => {
-                                    const val = parseInt(e.target.value)
-                                    if (e.target.value === '' || (val >= 0 && val <= 100)) {
-                                      setGradeInput(e.target.value)
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleGradeSubmit(subject, weekIndex)
-                                    if (e.key === 'Escape') handleGradeCancel()
-                                  }}
-                                  placeholder="0-100"
-                                  className="w-14 md:w-16 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  autoFocus
-                                />
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleGradeSubmit(subject, weekIndex)}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Guardar"
-                                  >
-                                    <Check className="h-3 w-3 md:h-4 md:w-4" />
-                                  </button>
-                                  <button
-                                    onClick={handleGradeCancel}
-                                    className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                    title="Cancelar"
-                                  >
-                                    <X className="h-3 w-3 md:h-4 md:w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : paces.length > 0 ? (
+                            paces.length > 0 ? (
                               <div className="relative flex flex-col items-center gap-1 w-full group/pace">
-                                {paces.map((pace, paceIdx) => (
-                                  <div
-                                    key={paceIdx}
-                                    className={`inline-flex flex-col items-center ${!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // Don't allow editing unfinished copies in their original quarter
-                                      if (!isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
-                                        handlePaceClick(subject, weekIndex, pace)
-                                      }
-                                    }}
-                                  >
-                                    <Badge
-                                      variant={
-                                        pace.isUnfinished && pace.originalQuarter === quarter
-                                          ? "status-unfinished"
-                                          : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
-                                            ? "status-failed"
-                                            : pace.isCompleted
-                                              ? "status-completed"
-                                              : "outline"
-                                      }
-                                      className="font-mono text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 cursor-pointer transition-all"
-                                      title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
+                                {paces.map((pace, paceIdx) => {
+                                  const paceGrade = pace.isUnfinished && pace.originalQuarter === quarter ? null : pace.grade
+                                  const gradeBgColor = paceGrade !== null
+                                    ? paceGrade >= 80
+                                      ? "bg-green-50"
+                                      : "bg-red-50"
+                                    : ""
+
+                                  const gradeLoadingKey = pace.id ? `grade-${pace.id}` : null
+                                  const ungradedLoadingKey = pace.id ? `ungraded-${pace.id}` : null
+                                  const deleteLoadingKey = `delete-${quarter}-${subject}-${weekIndex}`
+                                  const isGradeLoading = gradeLoadingKey ? isActionLoading(gradeLoadingKey) : false
+                                  const isUngradedLoading = ungradedLoadingKey ? isActionLoading(ungradedLoadingKey) : false
+                                  const isDeleteLoading = isActionLoading(deleteLoadingKey)
+
+                                  const paceContent = (
+                                    <div
+                                      className={`inline-flex flex-col items-center ${editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter) ? 'cursor-pointer' : ''} ${gradeBgColor} rounded-xs p-1 transition-colors relative`}
+                                      onClick={(e) => {
+                                        if (editMode === 'editing' && !isReadOnly && !isArray && !(pace.isUnfinished && pace.originalQuarter === quarter)) {
+                                          e.stopPropagation()
+                                          const newDropdownState = { subject, weekIndex }
+                                          if (dropdownOpen?.subject === subject && dropdownOpen?.weekIndex === weekIndex) {
+                                            setDropdownOpen(null)
+                                          } else {
+                                            setDropdownOpen(newDropdownState)
+                                          }
+                                        }
+                                      }}
                                     >
-                                      {pace.number}
-                                    </Badge>
-                                    {paceIdx === 0 && (
-                                      <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(pace.isUnfinished && pace.originalQuarter === quarter ? null : pace.grade)}`}>
-                                        {pace.isUnfinished && pace.originalQuarter === quarter ? "—" : (pace.grade !== null ? `${pace.grade}%` : "—")}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                                {!isReadOnly && !isArray && primaryPace && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter) && (
-                                  <button
-                                    // onClick={(e) => {
-                                    //   e.stopPropagation()
-                                    //   const button = e.currentTarget
-                                    //   const parent = button.offsetParent as HTMLElement
+                                      {(isGradeLoading || isUngradedLoading || isDeleteLoading) && (
+                                        <div className="absolute -top-1 -right-1 z-10">
+                                          <Spinner className="size-3 text-primary" />
+                                        </div>
+                                      )}
+                                      <Badge
+                                        variant={
+                                          pace.isUnfinished && pace.originalQuarter === quarter
+                                            ? "status-unfinished"
+                                            : pace.isFailed || (pace.isCompleted && isPaceFailing(pace.grade))
+                                              ? "status-failed"
+                                              : pace.isCompleted
+                                                ? "status-completed"
+                                                : "outline"
+                                        }
+                                        className="font-mono text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 transition-all"
+                                        title={pace.isUnfinished && pace.originalQuarter === quarter ? (pace.originalQuarter ? t("projections.unfinishedPace", { originalQuarter: pace.originalQuarter }) : t("projections.unfinishedPace")) : undefined}
+                                      >
+                                        {pace.number}
+                                      </Badge>
+                                      {paceIdx === 0 && (
+                                        <span className={`text-[10px] md:text-xs mt-0.5 ${getGradeColor(paceGrade)} flex items-center gap-1`}>
+                                          {isGradeLoading && <Spinner className="size-2" />}
+                                          {paceGrade !== null ? `${paceGrade}%` : "—"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
 
-                                    //   setOptionsMenu({
-                                    //     subject,
-                                    //     weekIndex,
-                                    //     x: parent.offsetLeft + parent.offsetWidth,
-                                    //     y: parent.offsetTop
-                                    //   })
-                                    // }}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-
-                                      const button = e.currentTarget
-                                      const parent = button.offsetParent as HTMLElement
-                                      const rect = button.getBoundingClientRect()
-
-                                      const MENU_WIDTH = 180
-                                      const GAP = 60
-
-                                      const spaceRight = window.innerWidth - rect.right
-                                      const placeRight = spaceRight > MENU_WIDTH + GAP
-
-                                      setOptionsMenu({
-                                        subject,
-                                        weekIndex,
-                                        x: placeRight
-                                          ? parent.offsetLeft + parent.offsetWidth
-                                          : parent.offsetLeft - MENU_WIDTH + GAP,
-                                        y: parent.offsetTop,
-                                        placement: placeRight ? 'right' : 'left'
-                                      })
-                                    }}
-                                    className="absolute right-1 opacity-0 group-hover/pace:opacity-100 transition-opacity cursor-pointer p-1 hover:bg-gray-100 rounded"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-gray-500" />
-                                  </button>
-                                )}
+                                  return (
+                                    editMode === 'editing' ? (
+                                      <DropdownMenu
+                                        key={paceIdx}
+                                        open={dropdownOpen?.subject === subject && dropdownOpen?.weekIndex === weekIndex && paceIdx === 0}
+                                        onOpenChange={(open) => {
+                                          if (open) {
+                                            setDropdownOpen({ subject, weekIndex })
+                                          } else {
+                                            setDropdownOpen(null)
+                                          }
+                                        }}
+                                      >
+                                        <DropdownMenuTrigger asChild>
+                                          {paceContent}
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                          <DropdownMenuLabel>{t("projections.grades") || "Grades"}</DropdownMenuLabel>
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              setGradeEditDialog({ subject, weekIndex, currentGrade: paceGrade })
+                                              setDropdownOpen(null)
+                                            }}
+                                          >
+                                            <div className="flex justify-between items-center w-full">
+                                              {t("projections.addEditGrade") || "Add/Edit Grade"}
+                                              <Edit className="h-2 w-2 ml-4" />
+                                            </div>
+                                          </DropdownMenuItem>
+                                          {pace.gradeHistory && pace.gradeHistory.length > 0 && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                setHistoryDialog({
+                                                  subject,
+                                                  weekIndex,
+                                                  paceNumber: pace.number,
+                                                  history: (pace.gradeHistory || []) as Array<{ grade: number; date: string; note?: string }>
+                                                })
+                                                setDropdownOpen(null)
+                                              }}
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("projections.viewHistory") || "View History"}
+                                                <History className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                          {paceGrade !== null && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                onMarkUngraded?.(quarter, subject, weekIndex)
+                                                setDropdownOpen(null)
+                                              }}
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("projections.markUngraded") || "Mark as Ungraded"}
+                                                <X className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuLabel>{t("projections.admin") || "Admin"}</DropdownMenuLabel>
+                                          {paceGrade === null && onDeletePace && (
+                                            <DropdownMenuItem
+                                              onClick={() => {
+                                                handleDeletePace(subject, weekIndex, pace.number)
+                                                setDropdownOpen(null)
+                                              }}
+                                              className="text-red-600 focus:text-red-600"
+                                            >
+                                              <div className="flex justify-between items-center w-full">
+                                                {t("common.delete") || "Delete"}
+                                                <Trash2 className="h-2 w-2 ml-4" />
+                                              </div>
+                                            </DropdownMenuItem>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    ) : (
+                                      <div key={paceIdx}>
+                                        {paceContent}
+                                      </div>
+                                    )
+                                  )
+                                })}
                               </div>
                             ) : null
-                          ) : addingPace?.subject === subject && addingPace?.weekIndex === weekIndex ? (
-                            <div className="inline-flex flex-col items-center gap-1.5 md:gap-2 p-1.5 md:p-2" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={paceNumberInput}
-                                onChange={(e) => {
-                                  const value = e.target.value
-                                  // Only allow numbers and max 4 digits
-                                  if (/^\d{0,4}$/.test(value)) {
-                                    setPaceNumberInput(value)
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleAddPaceSubmit(subject, weekIndex)
-                                  if (e.key === 'Escape') handleAddPaceCancel()
-                                }}
-                                placeholder="1XXX"
-                                className="w-16 md:w-20 px-1.5 md:px-2 py-0.5 md:py-1 text-center text-xs md:text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
-                                autoFocus
-                              />
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleAddPaceSubmit(subject, weekIndex)}
-                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-[#8B5CF6] text-white rounded-md hover:bg-[#7C3AED] transition-colors cursor-pointer shadow-sm"
-                                  title={t("projections.add")}
-                                >
-                                  <Check className="h-3 w-3 md:h-4 md:w-4" />
-                                </button>
-                                <button
-                                  onClick={handleAddPaceCancel}
-                                  className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                                  title="Cancelar"
-                                >
-                                  <X className="h-3 w-3 md:h-4 md:w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : !isReadOnly ? (
+                          ) : !isReadOnly && onAddPace ? (
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleAddPaceClick(subject, weekIndex)
                               }}
-                              className="h-full w-full min-h-[32px] md:min-h-[40px] flex items-center justify-center transition-all cursor-pointer group"
+                              className="h-full w-full min-h-[32px] md:min-h-[40px] flex items-center justify-center transition-all cursor-pointer group relative"
                             >
-                              <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
-                                +
-                              </span>
+                              {isActionLoading(`add-${quarter}-${subject}-${weekIndex}`) && (
+                                <Spinner className="size-4 text-primary" />
+                              )}
+                              {!isActionLoading(`add-${quarter}-${subject}-${weekIndex}`) && (
+                                <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all leading-0">
+                                  +
+                                </span>
+                              )}
                             </div>
                           ) : null}
                         </td>
@@ -879,116 +855,36 @@ export function ACEQuarterlyTable({
       {/* Summary */}
       <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-primary bg-muted/50 overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-primary bg-muted/50 overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-primary tabular-nums">{quarterStats.expected}</p>
             <p className="text-[10px] md:text-xs text-muted">{t("projections.scheduled")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-progress relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#059669] relative z-10 tabular-nums">{quarterStats.completed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.completed")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-highlight relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#D97706] relative z-10 tabular-nums">{quarterStats.expected - quarterStats.completed - quarterStats.failed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.pending")}</p>
           </div>
-          <div className="text-center p-2 md:p-3 rounded-xl color-zone-summary relative overflow-hidden">
+          <div className="text-center p-2 md:p-3 rounded-md color-zone-summary relative overflow-hidden">
             <p className="text-lg md:text-2xl font-semibold text-[#E11D48] relative z-10 tabular-nums">{quarterStats.failed}</p>
             <p className="text-[10px] md:text-xs text-muted relative z-10">{t("projections.failed")}</p>
           </div>
           <button
             onClick={() => setFailedAttemptsDialog(true)}
             disabled={quarterStats.totalFailed === 0}
-            className="text-center p-2 md:p-3 rounded-xl color-zone-status bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-center p-2 md:p-3 rounded-md color-zone-status bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
           >
             <p className="text-lg md:text-2xl font-semibold text-sky-800 tabular-nums">{quarterStats.totalFailed}</p>
             <p className="text-[10px] md:text-xs text-muted flex items-center justify-center gap-1">
               {t("projections.totalFailedAttemptsLabel")}
-              <Info className="h-3 w-3 inline" />
+              <Info className="h-2 w-2 inline" />
             </p>
           </button>
         </div>
       </div>
 
-      {/* Options Menu Popup */}
-      {
-        optionsMenu && (
-          <div
-            ref={optionsMenuRef}
-            className="absolute bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
-            style={{ left: `${optionsMenu.x}px`, top: `${optionsMenu.y}px` }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace) {
-                  handleEditGrade(optionsMenu.subject, optionsMenu.weekIndex, pace.grade)
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
-            >
-              <Edit className="h-4 w-4" />
-              {t("projections.editGrade")}
-            </button>
-            {(() => {
-              const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-              const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-              return pace?.isCompleted
-            })() && (
-                <button
-                  onClick={() => {
-                    onPaceToggle?.(quarter, optionsMenu.subject, optionsMenu.weekIndex)
-                    setOptionsMenu(null)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                  {t("projections.markIncomplete")}
-                </button>
-              )}
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace && pace.gradeHistory && pace.gradeHistory.length > 0) {
-                  setHistoryDialog({
-                    subject: optionsMenu.subject,
-                    weekIndex: optionsMenu.weekIndex,
-                    paceNumber: pace.number,
-                    history: pace.gradeHistory
-                  })
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={(() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                return !pace?.gradeHistory || pace.gradeHistory.length === 0
-              })()}
-            >
-              <History className="h-4 w-4" />
-              {t("projections.viewHistory")}
-            </button>
-            <button
-              onClick={() => {
-                const paceOrArray = data[optionsMenu.subject][optionsMenu.weekIndex]
-                const pace = Array.isArray(paceOrArray) ? paceOrArray[0] : paceOrArray
-                if (pace) {
-                  handleDeletePace(optionsMenu.subject, optionsMenu.weekIndex, pace.number)
-                  setOptionsMenu(null)
-                }
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t("common.delete")}
-            </button>
-          </div>
-        )
-      }
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog
@@ -1147,17 +1043,19 @@ export function ACEQuarterlyTable({
         </DialogContent>
       </Dialog>
 
-      {/* Overload Confirmation Dialog */}
-      <ConfirmationDialog
-        open={!!confirmAddDialog}
-        onOpenChange={(open) => !open && setConfirmAddDialog(null)}
-        title={t("projections.quarterOverload")}
-        message={confirmAddDialog ? t("projections.quarterOverloadMessage", { weekCount: confirmAddDialog.weekCount, maxPaces: MAX_PACES_PER_QUARTER }) : ""}
-        confirmText={t("projections.addAnyway")}
-        cancelText={t("common.cancel")}
-        variant="default"
-        onConfirm={() => confirmOverloadAdd(false)}
-      />
+      {gradeEditDialog && (
+        <GradeEditDialog
+          open={!!gradeEditDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setGradeEditDialog(null)
+            }
+          }}
+          currentGrade={gradeEditDialog.currentGrade}
+          onSave={handleGradeSave}
+        />
+      )}
+
     </div >
   );
 }

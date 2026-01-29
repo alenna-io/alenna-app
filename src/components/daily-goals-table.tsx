@@ -2,10 +2,13 @@ import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Check, X, Edit2, History } from "lucide-react"
+import { Check, History } from "lucide-react"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { sortCategoriesByOrder } from "@/utils/category-order"
+import { DailyGoalAddModal } from "./daily-goal-add-modal"
+import { DailyGoalNoteModal } from "./daily-goal-note-modal"
+import { DailyGoalActionsMenu } from "./daily-goal-actions-menu"
 
 interface DailyGoalsTableProps {
   quarter: string
@@ -46,10 +49,10 @@ export function DailyGoalsTable({
     t("dailyGoals.thursday"),
     t("dailyGoals.friday")
   ]
-  const [editingCell, setEditingCell] = React.useState<{ subject: string, dayIndex: number } | null>(null)
-  const [editValue, setEditValue] = React.useState("")
-  const [editingNotes, setEditingNotes] = React.useState<{ subject: string, dayIndex: number } | null>(null)
-  const [notesValue, setNotesValue] = React.useState("")
+  const [addGoalModalOpen, setAddGoalModalOpen] = React.useState(false)
+  const [addGoalModalContext, setAddGoalModalContext] = React.useState<{ subject: string, dayIndex: number } | null>(null)
+  const [noteModalOpen, setNoteModalOpen] = React.useState(false)
+  const [noteModalContext, setNoteModalContext] = React.useState<{ subject: string, dayIndex: number } | null>(null)
   const [notesHistory, setNotesHistory] = React.useState<{ subject: string, dayIndex: number, history: Array<{ text: string, completedDate: string }> } | null>(null)
 
   const isEditable = Boolean(onGoalUpdate)
@@ -207,80 +210,40 @@ export function DailyGoalsTable({
   const handleGoalClick = (subject: string, dayIndex: number) => {
     if (!onGoalUpdate) return
     const currentGoal = groupedData.data[subject]?.[dayIndex]
-    const currentValue = currentGoal?.text || ""
-    setEditingCell({ subject, dayIndex })
-    setEditValue(currentValue)
-  }
-
-  const handleGoalSubmit = () => {
-    if (editingCell) {
-      if (!onGoalUpdate) {
-        setEditingCell(null)
-        setEditValue("")
-        return
-      }
-      // Only submit if the value is valid (1-1000, ST, or T)
-      const trimmedValue = editValue.trim()
-      const isValid =
-        trimmedValue === "" ||
-        /^st$/i.test(trimmedValue) ||
-        /^t$/i.test(trimmedValue) ||
-        /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
-        /^[1-9]\d{0,3}$/.test(trimmedValue)
-
-      if (isValid) {
-        onGoalUpdate?.(editingCell.subject, editingCell.dayIndex, editValue)
-        setEditingCell(null)
-        setEditValue("")
-      }
-      // If invalid, don't submit (user can cancel or fix the input)
+    if (currentGoal?.text) {
+      return
     }
+    setAddGoalModalContext({ subject, dayIndex })
+    setAddGoalModalOpen(true)
   }
 
-  const handleGoalCancel = () => {
-    setEditingCell(null)
-    setEditValue("")
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleGoalSubmit()
-    } else if (e.key === 'Escape') {
-      handleGoalCancel()
+  const handleGoalSave = (text: string) => {
+    if (addGoalModalContext && onGoalUpdate) {
+      onGoalUpdate(addGoalModalContext.subject, addGoalModalContext.dayIndex, text)
     }
+    setAddGoalModalContext(null)
   }
 
-  const handleNotesClick = (subject: string, dayIndex: number) => {
+  const handleExistingGoalClick = () => {
+    if (!onGoalUpdate && !onNotesUpdate && !onGoalToggle) return
+  }
+
+  const handleAddNote = (subject: string, dayIndex: number) => {
     if (!onNotesUpdate) return
-    const currentNotes = groupedData.data[subject]?.[dayIndex]?.notes || ""
-    setEditingNotes({ subject, dayIndex })
-    setNotesValue(currentNotes)
+    setNoteModalContext({ subject, dayIndex })
+    setNoteModalOpen(true)
   }
 
-  const handleNotesSubmit = () => {
-    if (editingNotes) {
-      if (!onNotesUpdate) {
-        setEditingNotes(null)
-        setNotesValue("")
-        return
-      }
-      onNotesUpdate?.(editingNotes.subject, editingNotes.dayIndex, notesValue)
-      setEditingNotes(null)
-      setNotesValue("")
+  const handleNoteSave = (notes: string) => {
+    if (noteModalContext && onNotesUpdate) {
+      onNotesUpdate(noteModalContext.subject, noteModalContext.dayIndex, notes)
     }
+    setNoteModalContext(null)
   }
 
-  const handleNotesCancel = () => {
-    setEditingNotes(null)
-    setNotesValue("")
-  }
-
-  const handleNotesKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleNotesSubmit()
-    } else if (e.key === 'Escape') {
-      handleNotesCancel()
+  const handleMarkComplete = (subject: string, dayIndex: number) => {
+    if (onGoalToggle) {
+      onGoalToggle(subject, dayIndex)
     }
   }
 
@@ -338,180 +301,83 @@ export function DailyGoalsTable({
                       key={category}
                       className="p-2 text-center align-middle border-l border-border"
                     >
-                      {editingCell?.subject === category && editingCell?.dayIndex === dayIndex ? (
-                        <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
-                          <div className="w-full">
-                            {(() => {
-                              const trimmedValue = editValue.trim()
-                              const isValid =
-                                trimmedValue === "" ||
-                                /^st$/i.test(trimmedValue) ||
-                                /^t$/i.test(trimmedValue) ||
-                                /^[1-9]\d{0,3}-[1-9]\d{0,3}$/.test(trimmedValue) ||
-                                /^[1-9]\d{0,3}$/.test(trimmedValue)
+                      {(() => {
+                        const goal = groupedData.data[category]?.[dayIndex]
+                        const hasGoal = goal?.text
 
-                              return (
-                                <>
-                                  <input
-                                    type="text"
-                                    value={editValue}
-                                    onChange={(e) => setEditValue(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    placeholder={t("dailyGoals.inputPlaceholder")}
-                                    className={`w-full px-2 py-1 text-center text-sm border rounded focus:outline-none focus:ring-2 ${editValue && !isValid
-                                      ? 'border-red-500 focus:ring-red-500 bg-red-50'
-                                      : 'focus:ring-primary'
-                                      }`}
-                                    autoFocus
-                                  />
-                                  <div className={`text-xs mt-1 text-center ${editValue && !isValid ? 'text-red-500' : 'text-gray-500'
-                                    }`}>
-                                    {editValue && !isValid
-                                      ? t("dailyGoals.invalidFormat")
-                                      : t("dailyGoals.formatHint")
+                        return (
+                          <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
+                            <div className="flex items-center justify-center w-full gap-2">
+                              {hasGoal && canToggleGoal && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (canToggleGoal) {
+                                      onGoalToggle?.(category, dayIndex)
                                     }
-                                  </div>
-                                </>
-                              )
-                            })()}
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={handleGoalSubmit}
-                              className="flex items-center justify-center w-8 h-8 bg-green-700 text-white rounded-md hover:bg-green-600 transition-colors cursor-pointer shadow-sm"
-                              title={t("common.save")}
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={handleGoalCancel}
-                              className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors cursor-pointer shadow-sm"
-                              title={t("common.cancel")}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : editingNotes?.subject === category && editingNotes?.dayIndex === dayIndex ? (
-                        <div className="flex flex-col items-center gap-1 p-1" onClick={(e) => e.stopPropagation()}>
-                          <textarea
-                            value={notesValue}
-                            onChange={(e) => setNotesValue(e.target.value)}
-                            onKeyDown={handleNotesKeyDown}
-                            placeholder={t("dailyGoals.notePendingPlaceholder")}
-                            className="w-full px-2 py-1 text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary bg-card text-foreground placeholder-muted-foreground resize-none"
-                            rows={2}
-                            autoFocus
-                          />
-                          <div className="flex gap-1">
-                            <button
-                              onClick={handleNotesSubmit}
-                              className="flex items-center justify-center w-8 h-8 bg-[#8B5CF6] text-white rounded hover:bg-[#7C3AED] transition-colors cursor-pointer"
-                              title={t("common.save")}
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={handleNotesCancel}
-                              className="flex items-center justify-center w-8 h-8 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors cursor-pointer"
-                              title={t("common.cancel")}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
-                          <div className="flex items-center justify-center w-full gap-2">
-                            {groupedData.data[category]?.[dayIndex]?.text && canToggleGoal && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (canToggleGoal) {
-                                    onGoalToggle?.(category, dayIndex)
-                                  }
-                                }}
-                                className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${groupedData.data[category]?.[dayIndex]?.isCompleted
-                                  ? "bg-green-500 border-green-500"
-                                  : "bg-white border-border hover:border-green-400"
-                                  }`}
-                                title={groupedData.data[category]?.[dayIndex]?.isCompleted ? t("dailyGoals.markIncomplete") : t("dailyGoals.markComplete")}
-                                disabled={!canToggleGoal}
+                                  }}
+                                  className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${goal?.isCompleted
+                                    ? "bg-green-500 border-green-500"
+                                    : "bg-white border-border hover:border-green-400"
+                                    }`}
+                                  title={goal?.isCompleted ? t("dailyGoals.markIncomplete") : t("dailyGoals.markComplete")}
+                                  disabled={!canToggleGoal}
+                                >
+                                  {goal?.isCompleted && (
+                                    <Check className="h-3 w-3 text-white" />
+                                  )}
+                                </button>
+                              )}
+                              {hasGoal && !canToggleGoal && goal?.isCompleted && (
+                                <Badge variant="status-completed">
+                                  <Check className="h-3 w-3" />
+                                </Badge>
+                              )}
+                              <div
+                                onClick={() => hasGoal ? handleExistingGoalClick() : handleGoalClick(category, dayIndex)}
+                                className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                               >
-                                {groupedData.data[category]?.[dayIndex]?.isCompleted && (
-                                  <Check className="h-3 w-3 text-white" />
-                                )}
-                              </button>
-                            )}
-                            {groupedData.data[category]?.[dayIndex]?.text && !canToggleGoal && groupedData.data[category]?.[dayIndex]?.isCompleted && (
-                              <Badge variant="status-completed">
-                                <Check className="h-3 w-3" />
-                              </Badge>
-                            )}
-                            <div
-                              onClick={() => handleGoalClick(category, dayIndex)}
-                              className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
-                            >
-                              <span className={`text-sm font-mono text-center ${groupedData.data[category]?.[dayIndex]?.isCompleted ? "line-through text-muted-foreground" : ""
-                                }`}>
-                                {groupedData.data[category]?.[dayIndex]?.text || (
-                                  <span className="text-muted-foreground/50 text-xs">
-                                    {isEditable ? t("dailyGoals.add") : '—'}
-                                  </span>
-                                )}
-                              </span>
-                            </div>
-                            {groupedData.data[category]?.[dayIndex]?.text && (canEditNotes || (groupedData.data[category]?.[dayIndex]?.notesHistory?.length ?? 0) > 0) && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  const goal = groupedData.data[category]?.[dayIndex]
-                                  if (goal?.notesHistory && goal.notesHistory.length > 0 && !goal.notes) {
-                                    // Show history if there's history and no active note
-                                    setNotesHistory({
-                                      subject: category,
-                                      dayIndex,
-                                      history: goal.notesHistory
-                                    })
-                                  } else if (canEditNotes) {
-                                    // Otherwise edit/add note
-                                    handleNotesClick(category, dayIndex)
-                                  }
-                                }}
-                                className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-sm ${groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted
-                                  ? "bg-red-500 hover:bg-red-600 text-white"
-                                  : (groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0)
-                                    ? "bg-orange-500 hover:bg-orange-600 text-white"
-                                    : "bg-gray-200 hover:bg-gray-300 text-gray-600"
-                                  }`}
-                                title={
-                                  groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted
-                                    ? t("dailyGoals.editNote")
-                                    : (groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0)
-                                      ? t("dailyGoals.viewNotesHistory")
-                                      : t("dailyGoals.addNote")
-                                }
-                              >
-                                {groupedData.data[category]?.[dayIndex]?.notesHistory && groupedData.data[category]?.[dayIndex]?.notesHistory.length > 0 && !groupedData.data[category]?.[dayIndex]?.notes ? (
-                                  <History className="h-4 w-4" />
-                                ) : (
-                                  <Edit2 className="h-4 w-4" />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                          {groupedData.data[category]?.[dayIndex]?.notes && !groupedData.data[category]?.[dayIndex]?.notesCompleted && (
-                            <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
-                              <div className="flex-1">
-                                <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">{t("dailyGoals.pending")}</p>
-                                <p className="text-sm font-medium leading-tight">
-                                  {groupedData.data[category]?.[dayIndex]?.notes}
-                                </p>
+                                <span className={`text-sm font-mono text-center ${goal?.isCompleted ? "line-through text-muted-foreground" : ""
+                                  }`}>
+                                  {goal?.text || (
+                                    <span className="text-muted-foreground/50 text-xs">
+                                      {isEditable ? t("dailyGoals.add") : '—'}
+                                    </span>
+                                  )}
+                                </span>
                               </div>
+                              {hasGoal && (isEditable || canEditNotes || (goal?.notesHistory?.length ?? 0) > 0) && (
+                                <DailyGoalActionsMenu
+                                  onAddNote={() => {
+                                    const goalData = groupedData.data[category]?.[dayIndex]
+                                    if (goalData?.notesHistory && goalData.notesHistory.length > 0 && !goalData.notes) {
+                                      setNotesHistory({
+                                        subject: category,
+                                        dayIndex,
+                                        history: goalData.notesHistory
+                                      })
+                                    } else {
+                                      handleAddNote(category, dayIndex)
+                                    }
+                                  }}
+                                  onMarkComplete={() => handleMarkComplete(category, dayIndex)}
+                                  isCompleted={goal?.isCompleted || false}
+                                />
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
+                            {goal?.notes && !goal?.notesCompleted && (
+                              <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
+                                <div className="flex-1">
+                                  <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">{t("dailyGoals.pending")}</p>
+                                  <p className="text-sm font-medium leading-tight">
+                                    {goal.notes}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </td>
                   ))}
                   <td className="p-2 text-center align-middle border-l border-border bg-primary/10">
@@ -549,6 +415,25 @@ export function DailyGoalsTable({
           </div>
         </div>
       </CardContent>
+
+      {/* Add Goal Modal */}
+      {addGoalModalContext && (
+        <DailyGoalAddModal
+          open={addGoalModalOpen}
+          onOpenChange={setAddGoalModalOpen}
+          onSave={handleGoalSave}
+        />
+      )}
+
+      {/* Add Note Modal */}
+      {noteModalContext && (
+        <DailyGoalNoteModal
+          open={noteModalOpen}
+          onOpenChange={setNoteModalOpen}
+          currentNote={groupedData.data[noteModalContext.subject]?.[noteModalContext.dayIndex]?.notes}
+          onSave={handleNoteSave}
+        />
+      )}
 
       {/* Notes History Dialog */}
       <Dialog open={!!notesHistory} onOpenChange={(open) => !open && setNotesHistory(null)}>
