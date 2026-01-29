@@ -1,0 +1,375 @@
+import * as React from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { Loading } from "@/components/ui/loading"
+import { ErrorAlert } from "@/components/ui/error-alert"
+import { DailyGoalsTable } from "@/components/daily-goals-table"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useApi } from "@/services/api"
+import { useTranslation } from "react-i18next"
+import { Card, CardContent } from "@/components/ui/card"
+import { useDailyGoals, useCreateDailyGoal, useAddNoteToDailyGoal, useMarkDailyGoalComplete } from "@/hooks/queries/use-daily-goals"
+import { toast } from "sonner"
+import { calculatePagesFromGoalText } from "@/utils/daily-goal-pages"
+
+export default function DailyGoalsPage() {
+  const { studentId, projectionId, quarter, week } = useParams()
+  const navigate = useNavigate()
+  const api = useApi()
+  const { t } = useTranslation()
+
+  const [subjectToCategory, setSubjectToCategory] = React.useState<Map<string, string>>(new Map())
+  const [subjects, setSubjects] = React.useState<string[]>([])
+
+  const currentQuarter = quarter || 'Q1'
+  const currentWeek = week ? parseInt(week, 10) : 1
+
+  const { data: goalsData, isLoading: loading, error: queryError } = useDailyGoals(
+    studentId,
+    projectionId,
+    currentQuarter,
+    currentWeek
+  )
+
+  const createDailyGoalMutation = useCreateDailyGoal()
+  const addNoteMutation = useAddNoteToDailyGoal()
+  const markCompleteMutation = useMarkDailyGoalComplete()
+
+  const dayTotals = React.useMemo(() => {
+    if (!goalsData) return [0, 0, 0, 0, 0];
+
+    const totals = [0, 0, 0, 0, 0];
+
+    if (!subjectToCategory || subjectToCategory.size === 0) {
+      Object.values(goalsData).forEach((subjectGoals) => {
+        subjectGoals.forEach((goal, dayIndex) => {
+          if (goal?.text && dayIndex >= 0 && dayIndex < 5) {
+            totals[dayIndex] += calculatePagesFromGoalText(goal.text);
+          }
+        });
+      });
+    } else {
+      const categoryGroups = new Map<string, string[]>();
+      subjects.forEach(subject => {
+        if (subjectToCategory.has(subject)) {
+          const category = subjectToCategory.get(subject)!;
+          if (!categoryGroups.has(category)) {
+            categoryGroups.set(category, []);
+          }
+          categoryGroups.get(category)!.push(subject);
+        } else {
+          if (!categoryGroups.has(subject)) {
+            categoryGroups.set(subject, []);
+          }
+          categoryGroups.get(subject)!.push(subject);
+        }
+      });
+
+      categoryGroups.forEach((subjectsInCategory) => {
+        for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+          const goalsForDay: Array<{ text: string }> = [];
+
+          subjectsInCategory.forEach(subject => {
+            const goal = goalsData[subject]?.[dayIndex];
+            if (goal?.text) {
+              goalsForDay.push(goal);
+            }
+          });
+
+          if (goalsForDay.length > 0) {
+            if (goalsForDay.length === 1) {
+              totals[dayIndex] += calculatePagesFromGoalText(goalsForDay[0].text);
+            } else {
+              const uniqueTexts = new Set(goalsForDay.map(g => g.text));
+              uniqueTexts.forEach(text => {
+                totals[dayIndex] += calculatePagesFromGoalText(text);
+              });
+            }
+          }
+        }
+      });
+    }
+
+    return totals;
+  }, [goalsData, subjects, subjectToCategory]);
+
+  React.useEffect(() => {
+    const loadProjection = async () => {
+      if (!projectionId) return
+
+      try {
+        const projection = await api.projections.getById(projectionId)
+
+        const subjectCategoryMap = new Map<string, string>()
+        const subjectDisplayOrderMap = new Map<string, number>()
+
+        projection.projectionPaces.forEach((pace) => {
+          const subjectName = pace.paceCatalog.subject.name
+          const categoryName = pace.paceCatalog.subject.category.name
+          const categoryDisplayOrder = pace.paceCatalog.subject.category.displayOrder
+
+          if (!subjectCategoryMap.has(subjectName)) {
+            subjectCategoryMap.set(subjectName, categoryName)
+            subjectDisplayOrderMap.set(subjectName, categoryDisplayOrder)
+          }
+        })
+
+        setSubjectToCategory(subjectCategoryMap)
+
+        const uniqueSubjects = Array.from(subjectCategoryMap.keys())
+        const sortedSubjects = uniqueSubjects.sort((a, b) => {
+          const orderA = subjectDisplayOrderMap.get(a) || 0
+          const orderB = subjectDisplayOrderMap.get(b) || 0
+          if (orderA !== orderB) {
+            return orderA - orderB
+          }
+          return a.localeCompare(b)
+        })
+
+        setSubjects(sortedSubjects)
+      } catch (err) {
+        console.error('Error loading projection:', err)
+      }
+    }
+
+    loadProjection()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionId])
+
+  const getPrevWeek = () => {
+    if (currentWeek > 1) {
+      return { quarter: currentQuarter, week: currentWeek - 1 }
+    } else {
+      const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+      const currentIndex = quarterOrder.indexOf(currentQuarter)
+      if (currentIndex > 0) {
+        return { quarter: quarterOrder[currentIndex - 1], week: 9 }
+      }
+    }
+    return null
+  }
+
+  const getNextWeek = () => {
+    if (currentWeek < 9) {
+      return { quarter: currentQuarter, week: currentWeek + 1 }
+    } else {
+      const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+      const currentIndex = quarterOrder.indexOf(currentQuarter)
+      if (currentIndex < 3) {
+        return { quarter: quarterOrder[currentIndex + 1], week: 1 }
+      }
+    }
+    return null
+  }
+
+  const handleNavigateWeek = (targetQuarter: string, targetWeek: number) => {
+    if (!studentId || !projectionId) return
+    navigate(`/students/${studentId}/projections/${projectionId}/v2/${targetQuarter}/week/${targetWeek}`)
+  }
+
+  const getQuarterName = (q: string) => {
+    const quarterLabels: { [key: string]: string } = {
+      'Q1': t("dailyGoals.quarterLabelQ1") || "First Quarter",
+      'Q2': t("dailyGoals.quarterLabelQ2") || "Second Quarter",
+      'Q3': t("dailyGoals.quarterLabelQ3") || "Third Quarter",
+      'Q4': t("dailyGoals.quarterLabelQ4") || "Fourth Quarter",
+    }
+    return quarterLabels[q] || q
+  }
+
+  const getSubjectFromCategory = (categoryOrSubject: string): string => {
+    if (subjects.includes(categoryOrSubject)) {
+      return categoryOrSubject
+    }
+    const subjectInCategory = subjects.find(subject => {
+      const category = subjectToCategory.get(subject)
+      return category === categoryOrSubject
+    })
+    return subjectInCategory || categoryOrSubject
+  }
+
+  const handleGoalUpdate = async (categoryOrSubject: string, dayIndex: number, text: string) => {
+    if (!projectionId || !studentId) return
+
+    const subject = getSubjectFromCategory(categoryOrSubject)
+
+    try {
+      await createDailyGoalMutation.mutateAsync({
+        projectionId,
+        subject,
+        quarter: currentQuarter,
+        week: currentWeek,
+        dayOfWeek: dayIndex + 1,
+        text,
+        studentId,
+      })
+      toast.success(t("dailyGoals.goalCreated") || "Daily goal created successfully")
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("dailyGoals.errorCreatingGoal") || "Failed to create daily goal")
+    }
+  }
+
+  const findGoalInData = (categoryOrSubject: string, dayIndex: number) => {
+    if (!goalsData) return null
+
+    const subject = getSubjectFromCategory(categoryOrSubject)
+    let goal = goalsData[subject]?.[dayIndex]
+
+    if (goal?.id) {
+      return goal
+    }
+
+    if (subjectToCategory.has(subject)) {
+      const category = subjectToCategory.get(subject)!
+      if (category === categoryOrSubject) {
+        return goal
+      }
+    }
+
+    const subjectsInCategory = Array.from(subjectToCategory.entries())
+      .filter(([, cat]) => cat === categoryOrSubject)
+      .map(([subj]) => subj)
+
+    for (const subj of subjectsInCategory) {
+      goal = goalsData[subj]?.[dayIndex]
+      if (goal?.id) {
+        return goal
+      }
+    }
+
+    return goal
+  }
+
+  const handleNotesUpdate = async (categoryOrSubject: string, dayIndex: number, notes: string) => {
+    if (!goalsData || !studentId) return
+
+    const goal = findGoalInData(categoryOrSubject, dayIndex)
+    if (!goal?.id) return
+
+    try {
+      await addNoteMutation.mutateAsync({
+        dailyGoalId: goal.id,
+        notes,
+        studentId,
+        projectionId,
+        quarter: currentQuarter,
+        week: currentWeek,
+      })
+      toast.success(t("dailyGoals.noteAdded") || "Note added successfully")
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("dailyGoals.errorAddingNote") || "Failed to add note")
+      console.error('Error adding note:', err)
+    }
+  }
+
+  const handleGoalToggle = async (categoryOrSubject: string, dayIndex: number) => {
+    if (!goalsData || !studentId) return
+
+    const goal = findGoalInData(categoryOrSubject, dayIndex)
+    if (!goal?.id) return
+
+    try {
+      await markCompleteMutation.mutateAsync({
+        dailyGoalId: goal.id,
+        isCompleted: !goal.isCompleted,
+        studentId,
+        projectionId,
+        quarter: currentQuarter,
+        week: currentWeek,
+      })
+      toast.success(
+        goal.isCompleted
+          ? (t("dailyGoals.goalMarkedIncomplete") || "Goal marked as incomplete")
+          : (t("dailyGoals.goalMarkedComplete") || "Goal marked as complete")
+      )
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("dailyGoals.errorMarkingComplete") || "Failed to update goal")
+      console.error('Error marking goal complete:', err)
+    }
+  }
+
+  if (loading) {
+    return <Loading variant="list-page" />
+  }
+
+  const error = queryError ? (queryError as Error).message : null
+  if (error) {
+    const isNetworkError = error.toLowerCase().includes('failed to fetch') ||
+      error.toLowerCase().includes('network error') ||
+      error.toLowerCase().includes('networkerror')
+
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <ErrorAlert
+          title={t("errors.loadDailyGoalsFailed") || "Failed to load daily goals"}
+          message={error}
+          isNetworkError={isNetworkError}
+        />
+      </div>
+    )
+  }
+
+  const prevWeek = getPrevWeek()
+  const nextWeek = getNextWeek()
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {t("dailyGoals.title") || "Daily Goals"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {getQuarterName(currentQuarter)} - {t("projections.week")} {currentWeek}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="soft"
+            onClick={() => {
+              if (prevWeek) {
+                handleNavigateWeek(prevWeek.quarter, prevWeek.week)
+              }
+            }}
+            disabled={!prevWeek}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => {
+              if (nextWeek) {
+                handleNavigateWeek(nextWeek.quarter, nextWeek.week)
+              }
+            }}
+            disabled={!nextWeek}
+            className="flex items-center gap-2"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Card className="bg-transparent border-none">
+        <CardContent className="p-0">
+          <DailyGoalsTable
+            quarter={currentQuarter}
+            quarterName={getQuarterName(currentQuarter)}
+            week={currentWeek}
+            data={goalsData || {}}
+            subjects={subjects}
+            subjectToCategory={subjectToCategory}
+            onGoalUpdate={handleGoalUpdate}
+            onNotesUpdate={handleNotesUpdate}
+            onGoalToggle={handleGoalToggle}
+            dayTotals={dayTotals}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

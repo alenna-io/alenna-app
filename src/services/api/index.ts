@@ -5,6 +5,7 @@ import { schoolsApi } from './schools';
 import { studentsApi } from './students';
 import { subjectsApi } from './subjects';
 import { paceCatalogApi } from './pace-catalog';
+import { dailyGoalsApi } from './daily-goals';
 
 export function useApi() {
   const { getToken } = useAuth();
@@ -76,6 +77,24 @@ export function useApi() {
       get: async (filters: { category?: string; subSubjectId?: string }) => {
         const token = await getToken();
         return paceCatalogApi.get(filters, token);
+      },
+    },
+    dailyGoals: {
+      get: async (projectionId: string, quarter: string, week: number) => {
+        const token = await getToken();
+        return dailyGoalsApi.get(projectionId, quarter, week, token);
+      },
+      create: async (projectionId: string, subject: string, quarter: string, week: number, dayOfWeek: number, text: string) => {
+        const token = await getToken();
+        return dailyGoalsApi.create(projectionId, subject, quarter, week, dayOfWeek, text, token);
+      },
+      addNote: async (dailyGoalId: string, notes: string) => {
+        const token = await getToken();
+        return dailyGoalsApi.addNote(dailyGoalId, notes, token);
+      },
+      markComplete: async (dailyGoalId: string, isCompleted: boolean) => {
+        const token = await getToken();
+        return dailyGoalsApi.markComplete(dailyGoalId, isCompleted, token);
       },
     },
   };

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loading } from "@/components/ui/loading"
 import { ACEQuarterlyTable } from "@/components/ace-quarterly-table"
@@ -125,7 +125,8 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
 }
 
 export default function ProjectionDetailsPageV2() {
-  const { projectionId } = useParams()
+  const { projectionId, studentId } = useParams()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const api = useApi()
 
@@ -483,21 +484,17 @@ export default function ProjectionDetailsPageV2() {
           <h1 className="text-2xl font-bold">
             {projectionInfo.studentName}
           </h1>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-3 mt-2">
             <Badge variant={projectionInfo.isActive ? "default" : "secondary"}>
               {projectionInfo.isActive ? t("projections.active") : t("projections.inactive")}
             </Badge>
             <span className="text-sm text-muted-foreground">
               {projectionInfo.schoolYearName}
             </span>
-          </div>
-          <div className="text-left">
-            <div className="flex flex-row items-end gap-2">
-              <p className="text-2xl font-bold">{totalPaces}</p>
-              <span className="text-sm text-muted-foreground">
-                {t("projections.totalPaces")}
-              </span>
-            </div>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{totalPaces}</span> {t("projections.totalPaces")}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -591,6 +588,10 @@ export default function ProjectionDetailsPageV2() {
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
                 onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
+                onWeekClick={(quarter, week) => {
+                  if (!studentId || !projectionId) return
+                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                }}
               />
             </CardContent>
           </Card>
@@ -613,6 +614,10 @@ export default function ProjectionDetailsPageV2() {
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
                 onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
+                onWeekClick={(quarter, week) => {
+                  if (!studentId || !projectionId) return
+                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                }}
               />
             </CardContent>
           </Card>
@@ -635,6 +640,10 @@ export default function ProjectionDetailsPageV2() {
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
                 onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
+                onWeekClick={(quarter, week) => {
+                  if (!studentId || !projectionId) return
+                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                }}
               />
             </CardContent>
           </Card>
@@ -657,6 +666,10 @@ export default function ProjectionDetailsPageV2() {
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
                 onGradeUpdate={editMode === 'editing' ? handleGradeUpdate : undefined}
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
+                onWeekClick={(quarter, week) => {
+                  if (!studentId || !projectionId) return
+                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                }}
               />
             </CardContent>
           </Card>

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/services/api'
 import { queryKeys } from './query-keys'
-import type { DailyGoalData } from '@/services/api'
 
 export function useDailyGoals(
   studentId: string | undefined,
@@ -19,53 +18,129 @@ export function useDailyGoals(
       week || 0
     ),
     queryFn: async () => {
-      if (!studentId || !projectionId || !quarter || week === undefined) {
+      if (!projectionId || !quarter || week === undefined) {
         return null
       }
-      return api.dailyGoals.get(studentId, projectionId, quarter, week) as Promise<DailyGoalData>
+      return api.dailyGoals.get(projectionId, quarter, week);
     },
-    enabled: !!studentId && !!projectionId && !!quarter && week !== undefined,
+    enabled: !!projectionId && !!quarter && week !== undefined,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
   })
 }
 
-export function useUpdateDailyGoal() {
+export function useCreateDailyGoal() {
   const api = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({
-      studentId,
       projectionId,
-      goalId,
-      data,
+      subject,
+      quarter,
+      week,
+      dayOfWeek,
+      text,
     }: {
-      studentId: string
       projectionId: string
-      goalId: string
-      data: {
-        subject?: string
-        quarter?: string
-        week?: number
-        dayOfWeek?: number
-        text?: string
-        isCompleted?: boolean
-        notes?: string
-        notesCompleted?: boolean
-      }
+      subject: string
+      quarter: string
+      week: number
+      dayOfWeek: number
+      text: string
+      studentId?: string
     }) => {
-      return api.dailyGoals.update(studentId, projectionId, goalId, data)
+      return api.dailyGoals.create(projectionId, subject, quarter, week, dayOfWeek, text)
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dailyGoals.detail(
-          variables.studentId,
-          variables.projectionId,
-          variables.data.quarter || '',
-          variables.data.week || 0
-        ),
-      })
+      if (variables.studentId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.detail(
+            variables.studentId,
+            variables.projectionId,
+            variables.quarter,
+            variables.week
+          ),
+        })
+      } else {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.all,
+        })
+      }
+    },
+  })
+}
+
+export function useAddNoteToDailyGoal() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      dailyGoalId,
+      notes,
+    }: {
+      dailyGoalId: string
+      notes: string
+      studentId?: string
+      projectionId?: string
+      quarter?: string
+      week?: number
+    }) => {
+      return api.dailyGoals.addNote(dailyGoalId, notes)
+    },
+    onSuccess: (_, variables) => {
+      if (variables.studentId && variables.projectionId && variables.quarter && variables.week !== undefined) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.detail(
+            variables.studentId,
+            variables.projectionId,
+            variables.quarter,
+            variables.week
+          ),
+        })
+      } else {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.all,
+        })
+      }
+    },
+  })
+}
+
+export function useMarkDailyGoalComplete() {
+  const api = useApi()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      dailyGoalId,
+      isCompleted,
+    }: {
+      dailyGoalId: string
+      isCompleted: boolean
+      studentId?: string
+      projectionId?: string
+      quarter?: string
+      week?: number
+    }) => {
+      return api.dailyGoals.markComplete(dailyGoalId, isCompleted)
+    },
+    onSuccess: (_, variables) => {
+      if (variables.studentId && variables.projectionId && variables.quarter && variables.week !== undefined) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.detail(
+            variables.studentId,
+            variables.projectionId,
+            variables.quarter,
+            variables.week
+          ),
+        })
+      } else {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.dailyGoals.all,
+        })
+      }
     },
   })
 }
