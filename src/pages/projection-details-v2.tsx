@@ -632,7 +632,7 @@ export default function ProjectionDetailsPageV2() {
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
                 onWeekClick={(quarter, week) => {
                   if (!studentId || !projectionId) return
-                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
               />
             </CardContent>
@@ -665,7 +665,7 @@ export default function ProjectionDetailsPageV2() {
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
                 onWeekClick={(quarter, week) => {
                   if (!studentId || !projectionId) return
-                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
               />
             </CardContent>
@@ -698,7 +698,7 @@ export default function ProjectionDetailsPageV2() {
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
                 onWeekClick={(quarter, week) => {
                   if (!studentId || !projectionId) return
-                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
               />
             </CardContent>
@@ -731,7 +731,7 @@ export default function ProjectionDetailsPageV2() {
                 onMarkUngraded={editMode === 'editing' ? handleMarkUngraded : undefined}
                 onWeekClick={(quarter, week) => {
                   if (!studentId || !projectionId) return
-                  navigate(`/students/${studentId}/projections/${projectionId}/v2/${quarter}/week/${week}`)
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
               />
             </CardContent>

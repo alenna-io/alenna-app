@@ -212,7 +212,7 @@ export default function ProjectionsPageV2() {
   }
 
   const handleProjectionSelect = (projection: ProjectionWithStudent) => {
-    navigate(`/students/${projection.studentId}/projections/${projection.id}/v2`, {
+    navigate(`/students/${projection.studentId}/projections/${projection.id}`, {
       state: { fromProjectionsList: true, studentName: projection.student.name }
     })
   }

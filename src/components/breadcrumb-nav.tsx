@@ -19,6 +19,7 @@ export function BreadcrumbNav() {
   const { userInfo } = useUser()
   const [breadcrumbs, setBreadcrumbs] = React.useState<BreadcrumbItem[]>([])
   const [userName, setUserName] = React.useState<string | null>(null)
+  const [studentName, setStudentName] = React.useState<string | null>(null)
 
   // Check if user is school admin
   const isSchoolAdmin = React.useMemo(() => {
@@ -143,6 +144,44 @@ export function BreadcrumbNav() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, isSchoolAdmin])
 
+  // Fetch student name when on daily goals page or projection detail page
+  React.useEffect(() => {
+    const pathSegments = location.pathname.split('/').filter(Boolean)
+    const studentsIndex = pathSegments.indexOf('students')
+    const projectionsIndex = pathSegments.indexOf('projections')
+
+    if (studentsIndex !== -1 && projectionsIndex !== -1 && projectionsIndex === studentsIndex + 2) {
+      const studentId = pathSegments[studentsIndex + 1]
+      const projectionId = pathSegments[projectionsIndex + 1]
+      const quarterIndex = pathSegments.findIndex((seg, idx) => idx > projectionsIndex && seg.match(/^Q[1-4]$/))
+      const weekIndex = pathSegments.findIndex((seg, idx) => seg === 'week' && idx > (quarterIndex >= 0 ? quarterIndex : projectionsIndex))
+
+      // Check if this is a daily goals page or projection detail page
+      const isDailyGoalsPage = quarterIndex !== -1 && weekIndex !== -1
+      const isProjectionDetailPage = !isDailyGoalsPage && studentId && projectionId
+
+      if ((isDailyGoalsPage || isProjectionDetailPage) && projectionId) {
+        const fetchStudentName = async () => {
+          try {
+            const projection = await api.projections.getById(projectionId)
+            const name = projection.student.user.firstName && projection.student.user.lastName
+              ? `${projection.student.user.firstName} ${projection.student.user.lastName}`
+              : projection.student.user.email || t("breadcrumbs.detail")
+            setStudentName(name)
+          } catch {
+            setStudentName(null)
+          }
+        }
+        fetchStudentName()
+      } else {
+        setStudentName(null)
+      }
+    } else {
+      setStudentName(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
   React.useEffect(() => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
     const locationState = location.state as { fromProjectionsList?: boolean; studentName?: string; fromTeachers?: boolean } | null
@@ -197,11 +236,61 @@ export function BreadcrumbNav() {
     // Special case: Daily goals page - extract projection detail path for quarter/week breadcrumbs
     // Path: /students/:studentId/projections/:projectionId/:quarter/week/:week
     let projectionDetailPath: string | null = null
+    let isDailyGoalsPage = false
+    let dailyGoalsStudentId: string | null = null
+    let dailyGoalsQuarter: string | null = null
+    let dailyGoalsWeek: string | null = null
+
     if (studentsIndex !== -1 && projectionsIndex !== -1 && projectionsIndex === studentsIndex + 2) {
       const studentId = pathSegments[studentsIndex + 1]
       const projectionId = pathSegments[projectionsIndex + 1]
       if (studentId && projectionId) {
         projectionDetailPath = `/students/${studentId}/projections/${projectionId}`
+
+        // Check if this is a daily goals page (has quarter and week segments)
+        const quarterIndex = pathSegments.findIndex((seg, idx) => idx > projectionsIndex && seg.match(/^Q[1-4]$/))
+        const weekIndex = pathSegments.findIndex((seg, idx) => seg === 'week' && idx > (quarterIndex >= 0 ? quarterIndex : projectionsIndex))
+
+        if (quarterIndex !== -1 && weekIndex !== -1 && weekIndex < pathSegments.length - 1) {
+          isDailyGoalsPage = true
+          dailyGoalsStudentId = studentId
+          dailyGoalsQuarter = pathSegments[quarterIndex]
+          dailyGoalsWeek = pathSegments[weekIndex + 1]
+        }
+      }
+    }
+
+    // Special case: Daily goals page breadcrumbs
+    if (isDailyGoalsPage && dailyGoalsStudentId && dailyGoalsQuarter && dailyGoalsWeek) {
+      const quarterNum = dailyGoalsQuarter.charAt(1)
+      const items: BreadcrumbItem[] = [
+        { label: t("breadcrumbs.projections"), path: '/projections' },
+        { label: studentName || t("breadcrumbs.detail"), path: projectionDetailPath || `/students/${dailyGoalsStudentId}/projections` },
+        { label: t("breadcrumbs.quarter", { quarter: quarterNum }), path: projectionDetailPath || '' },
+        { label: t("breadcrumbs.week", { week: dailyGoalsWeek }), path: location.pathname },
+      ]
+      setBreadcrumbs(items)
+      return
+    }
+
+    // Special case: Projection detail page (not from projections list, not daily goals)
+    // Path: /students/:studentId/projections/:projectionId
+    if (studentsIndex !== -1 && projectionsIndex !== -1 && projectionsIndex === studentsIndex + 2) {
+      const studentId = pathSegments[studentsIndex + 1]
+      const projectionId = pathSegments[projectionsIndex + 1]
+      // Check if this is just the projection detail page (no quarter/week after)
+      const hasQuarterOrWeek = pathSegments.some((seg, idx) =>
+        idx > projectionsIndex && (seg.match(/^Q[1-4]$/) || seg === 'week')
+      )
+
+      if (studentId && projectionId && !hasQuarterOrWeek) {
+        // Show: Proyecciones > <student_name>
+        // studentName is fetched in the useEffect above
+        setBreadcrumbs([
+          { label: t("breadcrumbs.projections"), path: '/projections' },
+          { label: studentName || t("breadcrumbs.detail"), path: location.pathname }
+        ])
+        return
       }
     }
 
@@ -343,7 +432,7 @@ export function BreadcrumbNav() {
     }
 
     setBreadcrumbs(items)
-  }, [location.pathname, location.state, t, userName, userInfo?.schoolId, isSchoolAdmin])
+  }, [location.pathname, location.state, t, userName, studentName, userInfo?.schoolId, isSchoolAdmin])
 
   // Don't show breadcrumbs on home page
   if (location.pathname === '/' || breadcrumbs.length === 0) {

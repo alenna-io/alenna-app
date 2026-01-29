@@ -127,6 +127,12 @@
     "projections": "Proyecciones",
     "monthlyAssignments": "Asignaciones"
   },
+  "breadcrumbs": {
+    "projections": "Proyecciones",
+    "monthlyAssignments": "Asignaciones Mensuales",
+    "quarter": "Bloque {{quarter}}",
+    "week": "Semana {{week}}"
+  },
   "projections": {
     "title": "Proyecciones",
     "createProjection": "Crear Proyección",

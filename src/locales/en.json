@@ -127,7 +127,10 @@
     "monthlyAssignments": "Monthly Assignments"
   },
   "breadcrumbs": {
-    "projections": "Projections"
+    "projections": "Projections",
+    "monthlyAssignments": "Monthly Assignments",
+    "quarter": "Quarter {{quarter}}",
+    "week": "Week {{week}}"
   },
   "projections": {
     "title": "Projections",

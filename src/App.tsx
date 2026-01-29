@@ -88,8 +88,8 @@ export default function App() {
             {/* Projections routes*/}
             <Route path="projections" element={<ProjectionsPageV2 />} />
             <Route path="projections/generate" element={<GenerateProjectionWizardPageV2 />} />
-            <Route path="students/:studentId/projections/:projectionId/v2" element={<ProjectionDetailsPageV2 />} />
-            <Route path="students/:studentId/projections/:projectionId/v2/:quarter/week/:week" element={<DailyGoalsPage />} />
+            <Route path="students/:studentId/projections/:projectionId" element={<ProjectionDetailsPageV2 />} />
+            <Route path="students/:studentId/projections/:projectionId/:quarter/week/:week" element={<DailyGoalsPage />} />
             {/* Monthly Goals routes */}
             <Route path="monthly-assignments" element={<MonthlyAssignmentsPage />} />
             {/* Configuration routes */}
