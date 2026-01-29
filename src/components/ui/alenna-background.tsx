@@ -60,7 +60,7 @@ export function AlennaBackground({
   return (
     <div
       className={cn(
-        "fixed inset-0 -z-10 pointer-events-none overflow-hidden",
+        "fixed inset-0 -z-10 pointer-events-none overflow-hidden w-full",
         shouldAnimate && "animate-background-drift",
         className
       )}

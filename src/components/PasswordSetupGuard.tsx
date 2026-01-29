@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Navigate, useLocation } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
-import { Loading } from "@/components/ui/loading"
+import { Spinner } from "@/components/ui/spinner"
 
 interface PasswordSetupGuardProps {
   children: React.ReactNode
@@ -15,11 +15,11 @@ export function PasswordSetupGuard({ children }: PasswordSetupGuardProps) {
   const { userInfo, isLoading } = useUser()
   const location = useLocation()
 
-  // Show loading while fetching user info - use spinner button variant
+  // Show loading while fetching user info - use spinner
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loading variant="button" size="lg" />
+        <Spinner className="size-8 text-primary" />
       </div>
     )
   }
@@ -30,7 +30,9 @@ export function PasswordSetupGuard({ children }: PasswordSetupGuardProps) {
   }
 
   // Check if user needs to set password
-  if (userInfo.createdPassword === false) {
+  // Handle both false and undefined/null cases
+  if (userInfo.createdPassword === false || userInfo.createdPassword === undefined || userInfo.createdPassword === null) {
+
     // Allow access to password setup page itself
     if (location.pathname === "/setup-password") {
       return <>{children}</>

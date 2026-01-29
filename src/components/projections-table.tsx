@@ -11,10 +11,8 @@ interface ProjectionWithStudent {
   id: string
   studentId: string
   schoolYear: string
-  startDate: string
-  endDate: string
   isActive: boolean
-  notes?: string
+  totalPaces: number
   createdAt: string
   updatedAt: string
   student: {
@@ -37,6 +35,7 @@ interface ProjectionsTableProps {
   totalItems: number
   onPageChange: (page: number) => void
   tableId?: string
+  loading?: boolean
 }
 
 export function ProjectionsTable({
@@ -50,7 +49,8 @@ export function ProjectionsTable({
   totalPages,
   totalItems,
   onPageChange,
-  tableId
+  tableId,
+  loading = false
 }: ProjectionsTableProps) {
   const { t } = useTranslation()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
@@ -97,6 +97,15 @@ export function ProjectionsTable({
           {projection.isActive ? t("projections.active") : t("projections.inactive")}
         </Badge>
       )
+    },
+    {
+      key: 'totalPaces',
+      label: t("projections.totalPaces"),
+      render: (projection) => (
+        <div className="text-sm text-foreground">
+          {projection.totalPaces}
+        </div>
+      )
     }
   ]
 
@@ -126,14 +135,14 @@ export function ProjectionsTable({
         columns={columns}
         data={projections}
         actions={actions}
-        pagination={{
+        pagination={loading ? undefined : {
           currentPage,
           totalPages,
           totalItems,
           pageSize: 10,
           onPageChange
         }}
-        emptyState={{
+        emptyState={loading ? undefined : {
           icon: <BookOpen className="h-12 w-12 text-muted-foreground" />,
           message: t("projections.noProjectionsFound")
         }}
@@ -147,6 +156,7 @@ export function ProjectionsTable({
         }}
         getRowId={(projection) => projection.id}
         tableId={tableId}
+        loading={loading}
       />
 
       <ConfirmationDialog

@@ -3,14 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useApi } from "@/services/api";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import { Languages } from "lucide-react";
 
 export default function ConfigurationLanguagePage() {
   const { t, i18n } = useTranslation();
-  const api = useApi();
   const { userInfo, refetch } = useUser();
   const [currentLanguage, setCurrentLanguage] = React.useState<string>(i18n.language);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -37,8 +35,8 @@ export default function ConfigurationLanguagePage() {
       // Try to save to backend (optional - if it fails, language is still changed locally)
       if (userInfo?.id) {
         try {
-          // Use updateMyProfile endpoint which doesn't require users.update permission
-          await api.updateMyProfile({ language: newLanguage });
+          // TODO: Re-implement when updateMyProfile is available
+          // await api.updateMyProfile({ language: newLanguage });
           // Refetch user info to get updated language
           await refetch();
         } catch (error) {
