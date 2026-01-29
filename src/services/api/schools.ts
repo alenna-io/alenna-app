@@ -26,7 +26,37 @@ export interface SchoolWithCurrentYear {
   }>;
 }
 
+export interface CurrentWeekInfo {
+  schoolYear: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    quarters: Array<{
+      id: string;
+      name: string;
+      startDate: string;
+      endDate: string;
+      order: number;
+      weeksCount: number;
+    }>;
+  };
+  currentQuarter: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    order: number;
+    weeksCount: number;
+  } | null;
+  currentWeek: number | null;
+  weekStartDate: string | null;
+  weekEndDate: string | null;
+}
+
 export const schoolsApi = {
   getWithCurrentYear: async (token: string | null): Promise<SchoolWithCurrentYear | null> =>
     apiFetch('/schools', token),
+  getCurrentWeek: async (token: string | null): Promise<CurrentWeekInfo | null> =>
+    apiFetch('/schools/current-week', token),
 };

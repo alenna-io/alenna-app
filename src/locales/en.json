@@ -110,7 +110,11 @@
     "pageNotFoundContactAdmin": "If you believe this is an error, contact your administrator.",
     "pageNotFoundBackToHome": "Back to Home",
     "descriptionTooLong": "The description cannot be longer than {{max}} characters",
-    "descriptionTooShort": "The description cannot be shorter than {{min}} characters"
+    "descriptionTooShort": "The description cannot be shorter than {{min}} characters",
+    "quarterLabelQ1": "First Quarter",
+    "quarterLabelQ2": "Second Quarter",
+    "quarterLabelQ3": "Third Quarter",
+    "quarterLabelQ4": "Fourth Quarter"
   },
   "errors": {
     "error": "Error",
@@ -248,14 +252,18 @@
     "lessonAdded": "Lesson added successfully",
     "errorAddingLesson": "Error adding lesson",
     "markedUngraded": "Lesson marked as ungraded",
-    "errorMarkingUngraded": "Error marking lesson as ungraded"
+    "errorMarkingUngraded": "Error marking lesson as ungraded",
+    "addLesson": "Add Lesson",
+    "cannotMovePaceSequentialOrder": "Cannot break the sequence of lessons",
+    "cannotAddPaceOrderIndex": "Cannot add lesson: cannot place lesson with order {{newOrder}} before lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
+    "cannotAddPaceOrderIndexAtPosition": "Cannot add lesson: cannot place lesson with order {{newOrder}} at position that already has lesson with order {{existingOrder}}",
+    "cannotAddPaceOrderIndexAfter": "Cannot add lesson: cannot place lesson with order {{newOrder}} after lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
+    "cannotMovePaceOrderIndex": "Cannot move lesson: cannot place lesson with order {{newOrder}} before lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
+    "cannotMovePaceOrderIndexAtPosition": "Cannot move lesson: cannot place lesson with order {{newOrder}} at position that already has lesson with order {{existingOrder}}",
+    "cannotMovePaceOrderIndexAfter": "Cannot move lesson: cannot place lesson with order {{newOrder}} after lesson with order {{existingOrder}} (at {{quarter}} week {{week}})"
   },
   "dailyGoals": {
     "title": "Daily Goals",
-    "quarterLabelQ1": "First Quarter",
-    "quarterLabelQ2": "Second Quarter",
-    "quarterLabelQ3": "Third Quarter",
-    "quarterLabelQ4": "Fourth Quarter",
     "prevWeek": "Previous Week",
     "nextWeek": "Next Week",
     "day": "Day",

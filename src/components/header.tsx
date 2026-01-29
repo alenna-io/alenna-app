@@ -61,53 +61,23 @@ export function Header() {
     )
   }
 
-  // If no current quarter found, try to find the closest quarter (fallback logic)
-  let activeQuarter = currentWeekInfo?.currentQuarter
-  let activeWeek = currentWeekInfo?.currentWeek || 0
+  // Use the current week info from the API
+  const activeQuarter = currentWeekInfo?.currentQuarter
+  const activeWeek = currentWeekInfo?.currentWeek || 0
 
-  if (!activeQuarter && currentWeekInfo?.schoolYear?.quarters) {
-    // Find the quarter that's currently happening or the most recent one
-    const today = new Date()
-    const sortedQuarters = [...currentWeekInfo.schoolYear.quarters].sort((a, b) => a.order - b.order)
-
-    for (const quarter of sortedQuarters) {
-      const startDate = new Date(quarter.startDate)
-      const endDate = new Date(quarter.endDate)
-
-      // If today is within this quarter (inclusive of end date)
-      if (today >= startDate && today <= endDate) {
-        activeQuarter = quarter
-        // Calculate which week we're in
-        const daysDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        activeWeek = Math.floor(daysDiff / 7) + 1
-        break
-      }
-
-      // If we're before the start of this quarter, use the previous quarter's last week
-      if (today < startDate && quarter.order > 1) {
-        const prevQuarter = sortedQuarters[quarter.order - 2]
-        if (prevQuarter) {
-          activeQuarter = prevQuarter
-          activeWeek = prevQuarter.weeksCount || 9
-        }
-        break
-      }
-    }
-  }
-
-  const currentWeekInQuarter = activeQuarter ? activeWeek : 0
+  const currentWeekInQuarter = activeWeek
   const quarterOrder = activeQuarter?.order || 0
-  const currentSchoolWeek = activeWeek
+  const currentSchoolWeek = activeWeek && quarterOrder
     ? ((quarterOrder - 1) * 9) + activeWeek
     : 0
 
   // Get translated quarter name
   const getQuarterLabel = (quarterName: string) => {
     const quarterLabels: { [key: string]: string } = {
-      'Q1': t("monthlyAssignments.quarterLabelQ1"),
-      'Q2': t("monthlyAssignments.quarterLabelQ2"),
-      'Q3': t("monthlyAssignments.quarterLabelQ3"),
-      'Q4': t("monthlyAssignments.quarterLabelQ4"),
+      'Q1': t("common.quarterLabelQ1"),
+      'Q2': t("common.quarterLabelQ2"),
+      'Q3': t("common.quarterLabelQ3"),
+      'Q4': t("common.quarterLabelQ4"),
     }
     return quarterLabels[quarterName] || activeQuarter?.displayName || quarterName
   }

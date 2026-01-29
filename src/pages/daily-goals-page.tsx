@@ -164,7 +164,7 @@ export default function DailyGoalsPage() {
 
   const handleNavigateWeek = (targetQuarter: string, targetWeek: number) => {
     if (!studentId || !projectionId) return
-    navigate(`/students/${studentId}/projections/${projectionId}/v2/${targetQuarter}/week/${targetWeek}`)
+    navigate(`/students/${studentId}/projections/${projectionId}/${targetQuarter}/week/${targetWeek}`)
   }
 
   const getQuarterName = (q: string) => {

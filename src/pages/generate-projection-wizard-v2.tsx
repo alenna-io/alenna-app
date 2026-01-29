@@ -557,7 +557,7 @@ export default function GenerateProjectionWizardPageV2() {
 
       const result = await api.projections.generate(generateInput)
       toast.success(t("projections.generatedSuccessfully"))
-      navigate(`/students/${formData.studentId}/projections/${result.id}/v2`)
+      navigate(`/students/${formData.studentId}/projections/${result.id}`)
     } catch (error) {
       console.error("Error generating projection:", error)
       let errorMessage = t("projections.errorGenerating") || "Error al generar la proyección. Por favor, inténtalo de nuevo."

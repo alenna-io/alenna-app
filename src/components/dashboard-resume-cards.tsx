@@ -103,10 +103,10 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
 
   const getQuarterLabel = (quarterName: string) => {
     const quarterLabels: { [key: string]: string } = {
-      'Q1': t("monthlyAssignments.quarterLabelQ1"),
-      'Q2': t("monthlyAssignments.quarterLabelQ2"),
-      'Q3': t("monthlyAssignments.quarterLabelQ3"),
-      'Q4': t("monthlyAssignments.quarterLabelQ4"),
+      'Q1': t("common.quarterLabelQ1"),
+      'Q2': t("common.quarterLabelQ2"),
+      'Q3': t("common.quarterLabelQ3"),
+      'Q4': t("common.quarterLabelQ4"),
     }
     return quarterLabels[quarterName] || currentWeekInfo?.currentQuarter?.displayName || quarterName
   }

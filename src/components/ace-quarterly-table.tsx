@@ -86,7 +86,6 @@ export function ACEQuarterlyTable({
   editMode = 'view',
   subjectToCategory,
   subjectToCategoryDisplayOrder,
-  categoryCounts,
   loadingActions = new Map(),
   onPaceDrop,
   onWeekClick,
@@ -101,26 +100,22 @@ export function ACEQuarterlyTable({
     return loadingActions.get(key) === true
   }
 
-  const getDisplayName = (subjectName: string): string => {
-    if (!subjectToCategory) return subjectName
-    const categoryName = subjectToCategory.get(subjectName)
-    if (!categoryName) return subjectName
+  const getDisplayName = (displayKey: string): string => {
+    // displayKey is now either a category name (for non-Electives) or subject name (for Electives)
+    if (!subjectToCategory) return displayKey
 
-    // Always show subject name for electives
-    if (categoryName === 'Electives') return subjectName
+    // Check if displayKey is a category name by seeing if any subject maps to it
+    const isCategoryName = Array.from(subjectToCategory.values()).includes(displayKey)
 
-    // Check if there are multiple subjects from the same category in this quarter
-    if (categoryCounts) {
-      const quarterCategoryCounts = categoryCounts.get(quarter)
-      if (quarterCategoryCounts) {
-        const count = quarterCategoryCounts.get(categoryName) || 0
-        // If multiple subjects share the same category, show subject name to distinguish them
-        if (count > 1) return subjectName
-      }
+    if (isCategoryName && displayKey !== 'Electives') {
+      // displayKey is a category name (non-Electives)
+      // Return the category name as-is
+      return displayKey
+    } else {
+      // displayKey is a subject name (Electives)
+      // For Electives, return the subject name
+      return displayKey
     }
-
-    // Single subject from this category, show category name
-    return categoryName
   }
   const [draggedPace, setDraggedPace] = React.useState<{ subject: string, weekIndex: number } | null>(null)
   const dragImageRef = React.useRef<HTMLDivElement | null>(null)
@@ -134,18 +129,50 @@ export function ACEQuarterlyTable({
   const [gradeEditDialog, setGradeEditDialog] = React.useState<{ subject: string, weekIndex: number, currentGrade: number | null } | null>(null)
   const [dropdownOpen, setDropdownOpen] = React.useState<{ subject: string, weekIndex: number } | null>(null)
 
-  // Sort subjects by category displayOrder
+  // Sort display keys (category names for non-Electives, subject names for Electives) by category displayOrder
   const subjects = React.useMemo(() => {
-    const subjectList = Object.keys(data)
-    if (!subjectToCategoryDisplayOrder) {
-      return subjectList
+    const displayKeyList = Object.keys(data)
+    if (!subjectToCategoryDisplayOrder || !subjectToCategory) {
+      return displayKeyList
     }
-    return subjectList.sort((a, b) => {
-      const orderA = subjectToCategoryDisplayOrder.get(a) ?? 999
-      const orderB = subjectToCategoryDisplayOrder.get(b) ?? 999
+    return displayKeyList.sort((a, b) => {
+      // Get display order for each key
+      // For category names (non-Electives), find any subject in that category
+      // For subject names (Electives), use the subject directly
+      let orderA = 999
+      let orderB = 999
+
+      // Check if 'a' is a category name or subject name
+      const isCategoryA = Array.from(subjectToCategory.values()).includes(a) && a !== 'Electives'
+      if (isCategoryA) {
+        // Find any subject in this category
+        for (const [subject, category] of subjectToCategory.entries()) {
+          if (category === a) {
+            orderA = subjectToCategoryDisplayOrder.get(subject) ?? 999
+            break
+          }
+        }
+      } else {
+        // It's a subject name (Electives)
+        orderA = subjectToCategoryDisplayOrder.get(a) ?? 999
+      }
+
+      // Same for 'b'
+      const isCategoryB = Array.from(subjectToCategory.values()).includes(b) && b !== 'Electives'
+      if (isCategoryB) {
+        for (const [subject, category] of subjectToCategory.entries()) {
+          if (category === b) {
+            orderB = subjectToCategoryDisplayOrder.get(subject) ?? 999
+            break
+          }
+        }
+      } else {
+        orderB = subjectToCategoryDisplayOrder.get(b) ?? 999
+      }
+
       return orderA - orderB
     })
-  }, [data, subjectToCategoryDisplayOrder])
+  }, [data, subjectToCategoryDisplayOrder, subjectToCategory])
 
   const weeks = Array.from({ length: 9 }, (_, i) => i + 1)
   const MAX_PACES_PER_QUARTER = 18 // Max 18 PACEs per quarter for nivelated students
@@ -383,7 +410,6 @@ export function ACEQuarterlyTable({
                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
                           <span className={`text-xs md:text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
                             {t("projections.week")} {week}
-                            {currentWeek === week && " ✓"}
                           </span>
                           <span className="text-[9px] md:text-[10px] text-muted-foreground">
                             {weekPaceCount} {t("projections.lessons")}
@@ -429,7 +455,7 @@ export function ACEQuarterlyTable({
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-mint-soft/20" : ""} transition-colors relative`}
+                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-green-100 border-green-300 border-l-2" : ""} transition-colors relative`}
                           draggable={!isReadOnly && !isQuarterClosed && editMode === 'moving' && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
                             if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
@@ -807,7 +833,7 @@ export function ACEQuarterlyTable({
                                 <Spinner className="size-4 text-primary" />
                               )}
                               {!isActionLoading(`add-${quarter}-${subject}-${weekIndex}`) && (
-                                <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all group-hover:scale-125">
+                                <span className="text-lg md:text-xl text-primary/0 group-hover:text-primary/80 transition-all leading-0">
                                   +
                                 </span>
                               )}

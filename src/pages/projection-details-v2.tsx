@@ -60,6 +60,11 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     const categoryName = pace.paceCatalog.subject.category.name
     const categoryDisplayOrder = pace.paceCatalog.subject.category.displayOrder
     const weekIndex = pace.week - 1 // Convert to 0-based index
+    const isElectivesCategory = categoryName === 'Electives'
+
+    // For non-Electives categories, group by category name (all subjects in same category share one row)
+    // For Electives, group by subject name (each elective subject gets its own row)
+    const displayKey = isElectivesCategory ? subjectName : categoryName
 
     // Store subject to category mapping
     if (!subjectToCategory.has(subjectName)) {
@@ -73,8 +78,10 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     }
     const quarterCategoryCounts = categoryCounts.get(quarter)!
 
-    // Count unique subjects per category in this quarter
-    if (!quarters[quarter][subjectName]) {
+    // Count unique display keys per category in this quarter
+    // For non-Electives, this counts categories (should be 1 per category)
+    // For Electives, this counts subjects (can be multiple)
+    if (!quarters[quarter][displayKey]) {
       const currentCount = quarterCategoryCounts.get(categoryName) || 0
       quarterCategoryCounts.set(categoryName, currentCount + 1)
     }
@@ -100,20 +107,20 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
       })),
     }
 
-    // Initialize subject array if it doesn't exist
-    if (!quarters[quarter][subjectName]) {
-      quarters[quarter][subjectName] = Array(9).fill(null)
+    // Initialize display key array if it doesn't exist
+    if (!quarters[quarter][displayKey]) {
+      quarters[quarter][displayKey] = Array(9).fill(null)
     }
 
     // Handle multiple paces in the same week (array)
-    const existingPace = quarters[quarter][subjectName][weekIndex]
+    const existingPace = quarters[quarter][displayKey][weekIndex]
     if (existingPace === null) {
-      quarters[quarter][subjectName][weekIndex] = paceData
+      quarters[quarter][displayKey][weekIndex] = paceData
     } else if (Array.isArray(existingPace)) {
       existingPace.push(paceData)
     } else {
       // Convert single pace to array
-      quarters[quarter][subjectName][weekIndex] = [existingPace, paceData]
+      quarters[quarter][displayKey][weekIndex] = [existingPace, paceData]
     }
   })
 
@@ -161,6 +168,36 @@ export default function ProjectionDetailsPageV2() {
   const [existingPaceCatalogIds, setExistingPaceCatalogIds] = React.useState<string[]>([])
   const [monthlyAssignments, setMonthlyAssignments] = React.useState<ProjectionMonthlyAssignment[]>([])
   const [loadingActions, setLoadingActions] = React.useState<Map<string, boolean>>(new Map())
+  const [currentWeekInfo, setCurrentWeekInfo] = React.useState<{
+    currentQuarter: string | null
+    currentWeek: number | null
+  }>({ currentQuarter: null, currentWeek: null })
+  const [selectedTab, setSelectedTab] = React.useState<string>('Q1')
+  const defaultTabSetRef = React.useRef(false)
+
+  React.useEffect(() => {
+    const fetchCurrentWeek = async () => {
+      try {
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        if (weekInfo?.currentQuarter) {
+          const quarterName = weekInfo.currentQuarter.name
+          setCurrentWeekInfo({
+            currentQuarter: quarterName,
+            currentWeek: weekInfo.currentWeek,
+          })
+          // Only set default tab once, before user has interacted
+          if (!defaultTabSetRef.current) {
+            setSelectedTab(quarterName)
+            defaultTabSetRef.current = true
+          }
+        }
+      } catch {
+        // Silently fail - not critical
+      }
+    }
+    fetchCurrentWeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   React.useEffect(() => {
     const fetchProjection = async () => {
@@ -249,6 +286,105 @@ export default function ProjectionDetailsPageV2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionId])
 
+  // Helper function to translate backend error messages
+  const translateError = React.useCallback((errorMessage: string): string => {
+    // Pattern: "Cannot add pace: cannot place pace with orderIndex X before pace with orderIndex Y (at Q1 week 4)" or "(at 1 week 4)"
+    // Match both "Q1" and "1" formats for quarter - make regex case-insensitive
+    const addPaceBeforeMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) before pace with orderIndex (\d+) \(at (Q?\d+) week (\d+)\)/i)
+    if (addPaceBeforeMatch) {
+      const quarterRaw = addPaceBeforeMatch[3]
+      const quarter = quarterRaw.startsWith('Q') ? quarterRaw : `Q${quarterRaw}`
+      try {
+        const translated = t("projections.cannotAddPaceOrderIndex", {
+          newOrder: addPaceBeforeMatch[1],
+          existingOrder: addPaceBeforeMatch[2],
+          quarter: quarter,
+          week: addPaceBeforeMatch[4]
+        })
+        // Check if translation was successful (not the key itself)
+        if (translated && !translated.includes("projections.cannotAddPaceOrderIndex")) {
+          return translated
+        }
+      } catch {
+        // If translation fails, continue to next pattern
+      }
+    }
+
+    // Pattern: "Cannot add pace: cannot place pace with orderIndex X at position that already has pace with orderIndex Y"
+    const addPaceAtPositionMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) at position that already has pace with orderIndex (\d+)/i)
+    if (addPaceAtPositionMatch) {
+      const translated = t("projections.cannotAddPaceOrderIndexAtPosition", {
+        newOrder: addPaceAtPositionMatch[1],
+        existingOrder: addPaceAtPositionMatch[2]
+      })
+      if (translated && translated !== "projections.cannotAddPaceOrderIndexAtPosition") {
+        return translated
+      }
+    }
+
+    // Pattern: "Cannot add pace: cannot place pace with orderIndex X after pace with orderIndex Y (at Q1 week 4)" or "(at 1 week 4)"
+    const addPaceAfterMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) after pace with orderIndex (\d+) \(at (Q?\d+) week (\d+)\)/i)
+    if (addPaceAfterMatch) {
+      const quarterRaw = addPaceAfterMatch[3]
+      const quarter = quarterRaw.startsWith('Q') ? quarterRaw : `Q${quarterRaw}`
+      const translated = t("projections.cannotAddPaceOrderIndexAfter", {
+        newOrder: addPaceAfterMatch[1],
+        existingOrder: addPaceAfterMatch[2],
+        quarter: quarter,
+        week: addPaceAfterMatch[4]
+      })
+      if (translated && translated !== "projections.cannotAddPaceOrderIndexAfter") {
+        return translated
+      }
+    }
+
+    // Pattern: "Cannot move pace: cannot place pace with orderIndex X before pace with orderIndex Y (at Q1 week 4)" or "(at 1 week 4)"
+    const movePaceBeforeMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) before pace with orderIndex (\d+) \(at (Q?\d+) week (\d+)\)/i)
+    if (movePaceBeforeMatch) {
+      const quarterRaw = movePaceBeforeMatch[3]
+      const quarter = quarterRaw.startsWith('Q') ? quarterRaw : `Q${quarterRaw}`
+      const translated = t("projections.cannotMovePaceOrderIndex", {
+        newOrder: movePaceBeforeMatch[1],
+        existingOrder: movePaceBeforeMatch[2],
+        quarter: quarter,
+        week: movePaceBeforeMatch[4]
+      })
+      if (translated && translated !== "projections.cannotMovePaceOrderIndex") {
+        return translated
+      }
+    }
+
+    // Pattern: "Cannot move pace: cannot place pace with orderIndex X at position that already has pace with orderIndex Y"
+    const movePaceAtPositionMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) at position that already has pace with orderIndex (\d+)/i)
+    if (movePaceAtPositionMatch) {
+      const translated = t("projections.cannotMovePaceOrderIndexAtPosition", {
+        newOrder: movePaceAtPositionMatch[1],
+        existingOrder: movePaceAtPositionMatch[2]
+      })
+      if (translated && translated !== "projections.cannotMovePaceOrderIndexAtPosition") {
+        return translated
+      }
+    }
+
+    // Pattern: "Cannot move pace: cannot place pace with orderIndex X after pace with orderIndex Y (at Q1 week 4)" or "(at 1 week 4)"
+    const movePaceAfterMatch = errorMessage.match(/cannot place pace with orderIndex (\d+) after pace with orderIndex (\d+) \(at (Q?\d+) week (\d+)\)/i)
+    if (movePaceAfterMatch) {
+      const quarterRaw = movePaceAfterMatch[3]
+      const quarter = quarterRaw.startsWith('Q') ? quarterRaw : `Q${quarterRaw}`
+      const translated = t("projections.cannotMovePaceOrderIndexAfter", {
+        newOrder: movePaceAfterMatch[1],
+        existingOrder: movePaceAfterMatch[2],
+        quarter: quarter,
+        week: movePaceAfterMatch[4]
+      })
+      if (translated && translated !== "projections.cannotMovePaceOrderIndexAfter") {
+        return translated
+      }
+    }
+
+    return errorMessage
+  }, [t])
+
   const handlePaceMove = React.useCallback(async (quarter: string, subject: string, fromWeek: number, toWeek: number) => {
     if (!projectionId) return
 
@@ -264,44 +400,44 @@ export default function ProjectionDetailsPageV2() {
     const loadingKey = `move-${quarter}-${subject}-${fromWeek}-${toWeek}`
     setLoadingActions(prev => new Map(prev).set(loadingKey, true))
 
-    const allPacesInSubject: Array<{ orderIndex: number; quarter: string; weekIndex: number }> = []
-    Object.entries(projectionData).forEach(([q, qData]) => {
-      const subjectData = qData[subject]
-      if (subjectData) {
-        subjectData.forEach((pace, idx) => {
-          if (!pace || Array.isArray(pace)) return
-          if (q === quarter && idx === fromWeek) return
-          if (pace.orderIndex !== undefined) {
-            allPacesInSubject.push({ orderIndex: pace.orderIndex, quarter: q, weekIndex: idx })
-          }
-        })
-      }
-    })
-
-    const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
-    const targetQuarterIndex = quarterOrder.indexOf(quarter)
-
-    const pacesBeforeTarget = allPacesInSubject.filter(item => {
-      const itemQuarterIndex = quarterOrder.indexOf(item.quarter)
-      const isBefore = itemQuarterIndex < targetQuarterIndex ||
-        (itemQuarterIndex === targetQuarterIndex && item.weekIndex < toWeek)
-      return isBefore
-    })
-
-    for (const paceBefore of pacesBeforeTarget) {
-      if (paceBefore.orderIndex > fromPace.orderIndex) {
-        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
-        return
-      }
-    }
-
-    const targetWeekPace = allPacesInSubject.find(item => item.quarter === quarter && item.weekIndex === toWeek)
-    if (targetWeekPace && targetWeekPace.orderIndex > fromPace.orderIndex) {
-      toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
-      return
-    }
-
     try {
+      const allPacesInSubject: Array<{ orderIndex: number; quarter: string; weekIndex: number }> = []
+      Object.entries(projectionData).forEach(([q, qData]) => {
+        const subjectData = qData[subject]
+        if (subjectData) {
+          subjectData.forEach((pace, idx) => {
+            if (!pace || Array.isArray(pace)) return
+            if (q === quarter && idx === fromWeek) return
+            if (pace.orderIndex !== undefined) {
+              allPacesInSubject.push({ orderIndex: pace.orderIndex, quarter: q, weekIndex: idx })
+            }
+          })
+        }
+      })
+
+      const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+      const targetQuarterIndex = quarterOrder.indexOf(quarter)
+
+      const pacesBeforeTarget = allPacesInSubject.filter(item => {
+        const itemQuarterIndex = quarterOrder.indexOf(item.quarter)
+        const isBefore = itemQuarterIndex < targetQuarterIndex ||
+          (itemQuarterIndex === targetQuarterIndex && item.weekIndex < toWeek)
+        return isBefore
+      })
+
+      for (const paceBefore of pacesBeforeTarget) {
+        if (paceBefore.orderIndex > fromPace.orderIndex) {
+          toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+          throw new Error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+        }
+      }
+
+      const targetWeekPace = allPacesInSubject.find(item => item.quarter === quarter && item.weekIndex === toWeek)
+      if (targetWeekPace && targetWeekPace.orderIndex > fromPace.orderIndex) {
+        toast.error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+        throw new Error(t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order")
+      }
+
       await api.projections.movePace(projectionId, fromPace.id, {
         quarter,
         week: toWeek + 1
@@ -319,7 +455,8 @@ export default function ProjectionDetailsPageV2() {
       setExistingPaceCatalogIds(paceCatalogIds)
     } catch (err) {
       const error = err as Error
-      toast.error(error.message || t("projections.errorMovingLesson") || "Failed to move pace")
+      const translatedMessage = translateError(error.message)
+      toast.error(translatedMessage || t("projections.errorMovingLesson") || "Failed to move pace")
     } finally {
       setLoadingActions(prev => {
         const next = new Map(prev)
@@ -328,7 +465,7 @@ export default function ProjectionDetailsPageV2() {
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectionId, api, t])
+  }, [projectionId, api, t, translateError])
 
   const handlePaceAdd = React.useCallback(async (quarter: string, _subject: string, weekIndex: number, paceCatalogId: string) => {
     if (!projectionId) return
@@ -357,7 +494,10 @@ export default function ProjectionDetailsPageV2() {
       setPacePickerContext(null)
     } catch (err) {
       const error = err as Error
-      toast.error(error.message || t("projections.errorAddingLesson") || "Failed to add pace")
+      const translatedMessage = translateError(error.message)
+      // Use translated message if it's different from original, otherwise use fallback
+      const finalMessage = translatedMessage !== error.message ? translatedMessage : (t("projections.errorAddingLesson") || "Failed to add pace")
+      toast.error(finalMessage)
     } finally {
       setLoadingActions(prev => {
         const next = new Map(prev)
@@ -365,7 +505,7 @@ export default function ProjectionDetailsPageV2() {
         return next
       })
     }
-  }, [projectionId, api, t])
+  }, [projectionId, api, t, translateError])
 
   const handlePaceDelete = React.useCallback(async (quarter: string, subject: string, weekIndex: number) => {
     if (!projectionId) return
@@ -577,7 +717,7 @@ export default function ProjectionDetailsPageV2() {
             </div>
           </div>
         </div>
-        <Tabs defaultValue="Q1" className="w-full">
+        <Tabs defaultValue={selectedTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 gap-2">
             <TabsTrigger value="Q1">Q1</TabsTrigger>
             <TabsTrigger value="Q2">Q2</TabsTrigger>
@@ -699,7 +839,6 @@ export default function ProjectionDetailsPageV2() {
                   value={editMode}
                   defaultValue="view"
                   onValueChange={(value) => {
-                    console.log('[DEBUG] Tabs onValueChange called with:', value)
                     setEditMode(value as 'view' | 'moving' | 'editing')
                   }}
                   className="w-auto"
@@ -757,7 +896,7 @@ export default function ProjectionDetailsPageV2() {
 
 
 
-      <Tabs defaultValue="Q1" className="w-full">
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 gap-2">
           <TabsTrigger value="Q1">Q1</TabsTrigger>
           <TabsTrigger value="Q2">Q2</TabsTrigger>
@@ -772,6 +911,8 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q1}
                 quarter="Q1"
                 quarterName="Q1"
+                currentWeek={currentWeekInfo.currentQuarter === 'Q1' ? currentWeekInfo.currentWeek || undefined : undefined}
+                isActive={currentWeekInfo.currentQuarter === 'Q1'}
                 isReadOnly={!projectionInfo.isActive || editMode === 'view'}
                 editMode={editMode}
                 subjectToCategory={subjectToCategory}
@@ -807,11 +948,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q2}
                 quarter="Q2"
                 quarterName="Q2"
+                currentWeek={currentWeekInfo.currentQuarter === 'Q2' ? currentWeekInfo.currentWeek || undefined : undefined}
+                isActive={currentWeekInfo.currentQuarter === 'Q2'}
                 isReadOnly={!projectionInfo.isActive || editMode === 'view'}
                 editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                loadingActions={loadingActions}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
                 onAddPace={editMode === 'editing' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
@@ -840,11 +984,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q3}
                 quarter="Q3"
                 quarterName="Q3"
+                currentWeek={currentWeekInfo.currentQuarter === 'Q3' ? currentWeekInfo.currentWeek || undefined : undefined}
+                isActive={currentWeekInfo.currentQuarter === 'Q3'}
                 isReadOnly={!projectionInfo.isActive || editMode === 'view'}
                 editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                loadingActions={loadingActions}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
                 onAddPace={editMode === 'editing' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
@@ -873,11 +1020,14 @@ export default function ProjectionDetailsPageV2() {
                 data={projectionData.Q4}
                 quarter="Q4"
                 quarterName="Q4"
+                currentWeek={currentWeekInfo.currentQuarter === 'Q4' ? currentWeekInfo.currentWeek || undefined : undefined}
+                isActive={currentWeekInfo.currentQuarter === 'Q4'}
                 isReadOnly={!projectionInfo.isActive || editMode === 'view'}
                 editMode={editMode}
                 subjectToCategory={subjectToCategory}
                 subjectToCategoryDisplayOrder={subjectToCategoryDisplayOrder}
                 categoryCounts={categoryCounts}
+                loadingActions={loadingActions}
                 onPaceDrop={editMode === 'moving' ? handlePaceMove : undefined}
                 onAddPace={editMode === 'editing' ? handleAddPaceClick : undefined}
                 onDeletePace={editMode === 'editing' ? handlePaceDelete : undefined}
@@ -908,8 +1058,24 @@ export default function ProjectionDetailsPageV2() {
             setPacePickerContext(null)
           }}
           onSelect={handlePaceSelect}
-          categoryFilter={subjectToCategory.get(pacePickerContext.subject)}
-          subSubjectFilter={subjectToCategory.get(pacePickerContext.subject) === 'Electives' ? pacePickerContext.subject : undefined}
+          categoryFilter={(() => {
+            // pacePickerContext.subject is now either a category name (non-Electives) or subject name (Electives)
+            const isCategoryName = Array.from(subjectToCategory.values()).includes(pacePickerContext.subject) && pacePickerContext.subject !== 'Electives'
+            if (isCategoryName) {
+              // It's a category name, use it directly
+              return pacePickerContext.subject
+            } else {
+              // It's a subject name (Electives), look up the category
+              return subjectToCategory.get(pacePickerContext.subject) || undefined
+            }
+          })()}
+          subSubjectFilter={(() => {
+            // For Electives, use the subject name (which is the key)
+            const category = Array.from(subjectToCategory.values()).includes(pacePickerContext.subject) && pacePickerContext.subject !== 'Electives'
+              ? pacePickerContext.subject
+              : subjectToCategory.get(pacePickerContext.subject)
+            return category === 'Electives' ? pacePickerContext.subject : undefined
+          })()}
           title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 }) || `Add Lesson - ${pacePickerContext.subject}`}
           existingPaceCatalogIds={existingPaceCatalogIds}
         />

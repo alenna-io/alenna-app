@@ -63,6 +63,12 @@ export function useApi() {
         return schoolsApi.getWithCurrentYear(token);
       },
     },
+    schoolYears: {
+      getCurrentWeek: async () => {
+        const token = await getToken();
+        return schoolsApi.getCurrentWeek(token);
+      },
+    },
     students: {
       getEnrolledWithoutOpenProjection: async () => {
         const token = await getToken();
@@ -144,7 +150,7 @@ export function useApi() {
 
 export type { CreateProjectionInput, GenerateProjectionInput, GenerateProjectionSubject, ProjectionListItem, ProjectionDetails } from './projections';
 export type { CategoryWithSubjects } from './categories';
-export type { SchoolWithCurrentYear } from './schools';
+export type { SchoolWithCurrentYear, CurrentWeekInfo } from './schools';
 export type { Student } from './students';
 export type { SubjectWithPaces } from './subjects';
 export type { UserInfo } from './types';

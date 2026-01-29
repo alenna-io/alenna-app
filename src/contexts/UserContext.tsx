@@ -30,13 +30,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           return parsed
         } else {
           // Clear corrupted/incomplete cached data
-          console.warn('[UserContext] Cached user info is incomplete, clearing it')
           sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
           sessionStorage.removeItem(USER_INFO_TIMESTAMP_KEY)
         }
       }
-    } catch (e) {
-      console.warn('[UserContext] Failed to load user info from sessionStorage:', e)
+    } catch {
       // Clear corrupted cached data
       try {
         sessionStorage.removeItem(USER_INFO_STORAGE_KEY)
@@ -65,20 +63,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
       setError(null)
 
-      // Enhanced logging for mobile
-      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-
-      if (isMobile) {
-        console.log('[UserContext] Starting fetch on mobile, API_BASE_URL:', API_BASE_URL)
-      }
-
       // Get authentication token
       let token: string | null = null
       try {
         token = await getToken()
-        if (isMobile) {
-          console.log('[UserContext] Token obtained:', token ? 'Yes (length: ' + token.length + ')' : 'No')
-        }
       } catch (tokenError) {
         const tokenErrorMsg = tokenError instanceof Error ? tokenError.message : String(tokenError)
         console.error('[UserContext] Failed to get token:', {
@@ -95,8 +83,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       const timestamp = new Date().getTime()
       const url = `${API_BASE_URL}/auth/info?t=${timestamp}`
-
-      console.log('[UserContext] Fetching user info from:', url)
 
       let response: Response
       try {
@@ -123,8 +109,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.error('[UserContext] Network error fetching user info:', networkError)
         throw new Error(`Network error: ${fetchErrorMsg}. Check your internet connection and API URL.`)
       }
-
-      console.log('[UserContext] Response status:', response.status, response.statusText)
 
       if (!response.ok) {
         let errorBody = ''
@@ -161,28 +145,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Invalid user info received from server')
       }
 
-      // Debug logging for createdPassword
-      console.log('[UserContext] User info loaded:', {
-        id: info.id,
-        email: info.email,
-        fullName: info.fullName,
-        schoolName: info.schoolName,
-        createdPassword: info.createdPassword,
-        createdPasswordType: typeof info.createdPassword,
-        roles: info.roles?.map((r: { name: string }) => r.name),
-      })
-
-      // Log user info for debugging (only on mobile/devices)
-      if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        console.log('[UserContext] User info loaded on mobile:', {
-          id: info.id,
-          email: info.email,
-          fullName: info.fullName,
-          schoolName: info.schoolName,
-          createdPassword: info.createdPassword,
-          roles: info.roles?.map((r: { name: string }) => r.name),
-        })
-      }
 
       setUserInfo(info)
 
@@ -193,8 +155,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           import('@/lib/i18n').then(({ updateLanguageFromUser }) => {
             updateLanguageFromUser(info.language);
           });
-        } catch (e) {
-          console.warn('[UserContext] Failed to update language:', e);
+        } catch {
+          // Silently fail if language update fails
         }
       }
 
@@ -202,8 +164,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       try {
         sessionStorage.setItem(USER_INFO_STORAGE_KEY, JSON.stringify(info))
         sessionStorage.setItem(USER_INFO_TIMESTAMP_KEY, Date.now().toString())
-      } catch (e) {
-        console.warn('[UserContext] Failed to save user info to sessionStorage:', e)
+      } catch {
+        // Silently fail if sessionStorage is unavailable
       }
 
       if (showLoading) {
@@ -348,19 +310,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         ...(err instanceof TypeError && { typeError: true }),
       }
 
-      console.error('[UserContext] Error loading user info - Full details:', errorDetails)
-
-      // Also log to mobile debug panel with more context
-      const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-      if (isMobile) {
-        console.error('[UserContext] Mobile error details:', {
-          errorMessage: errorDetails.message,
-          errorName: errorDetails.name,
-          errorType: errorDetails.type,
-          API_BASE_URL,
-          hasToken: !!getToken,
-          userAgent: navigator.userAgent,
-        })
+      // Log error details for debugging (only in development)
+      if (import.meta.env.DEV) {
+        console.error('[UserContext] Error loading user info:', errorDetails)
       }
 
       const message = err instanceof Error ? err.message : 'Failed to load user info'
@@ -394,7 +346,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     fetchUserInfo(shouldShowLoading).catch((err) => {
       // If fetch fails and we have cached data, keep using it
-      console.error('[UserContext] Failed to fetch user info, using cached data if available:', err)
       if (isMounted && !userInfo) {
         // Only set error if we don't have cached data
         setError(err instanceof Error ? err.message : 'Failed to load user info')
