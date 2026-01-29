@@ -118,11 +118,13 @@
     "networkErrorMessage": "Unable to connect to the server. Please check your internet connection and try again.",
     "retry": "Try Again",
     "loadProjectionFailed": "Error loading projection",
-    "loadProjectionsFailed": "Error loading projections"
+    "loadProjectionsFailed": "Error loading projections",
+    "loadMonthlyAssignmentsFailed": "Failed to load monthly assignments"
   },
   "sidebar": {
     "home": "Home",
-    "projections": "Projections"
+    "projections": "Projections",
+    "monthlyAssignments": "Monthly Assignments"
   },
   "breadcrumbs": {
     "projections": "Projections"
@@ -283,5 +285,37 @@
     "note": "Note",
     "notePlaceholder": "Missing page 10",
     "pending": "Note"
+  },
+  "monthlyAssignments": {
+    "title": "Monthly Assignments",
+    "description": "Manage monthly assignments for each quarter",
+    "assignmentsForQuarter": "Assignments for",
+    "addAssignment": "Add Assignment",
+    "noAssignments": "No monthly assignments for this quarter yet",
+    "templateCreated": "Monthly assignment created",
+    "errorCreatingTemplate": "Failed to create monthly assignment",
+    "templateDeleted": "Monthly assignment deleted",
+    "errorDeletingTemplate": "Failed to delete monthly assignment",
+    "invalidPercentage": "Percentage must be between 0 and 99",
+    "percentageSaved": "Percentage saved",
+    "errorSavingPercentage": "Failed to save percentage",
+    "gradeWeight": "Grade Weight for",
+    "percentageLabel": "Monthly Assignments Weight (%)",
+    "percentageDescription": "This percentage will be deducted from the paces average for the final grade calculation.",
+    "gradeCalculation": "Grade Calculation",
+    "pacesWeight": "Paces Average",
+    "monthlyAssignmentsWeight": "Monthly Assignments Average",
+    "addAssignmentTitle": "Add Monthly Assignment",
+    "assignmentName": "Assignment Name",
+    "assignmentNamePlaceholder": "e.g., Oral Report, Verse of the Month",
+    "quarter": "Select Quarter",
+    "pending": "Pending",
+    "addGrade": "Add Grade",
+    "approved": "Approved",
+    "gradeUpdated": "Grade updated successfully",
+    "errorUpdatingGrade":"Error updating grade",
+    "markedUngraded": "Assignment marked as ungraded",
+    "errorMarkingUngraded":"Error marking assignment as ungraded",
+    "editGrade": "Edit Grade"
   }
 }

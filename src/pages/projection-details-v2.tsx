@@ -13,9 +13,9 @@ import type { ProjectionDetails } from "@/services/api/projections"
 import { Move, Edit, Eye } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
-import { ProjectionMonthlyGoals } from "@/components/projection-monthly-goals"
+import { ProjectionMonthlyAssignments } from "@/components/projection-monthly-assignments"
 import { toast } from "sonner"
-import type { ProjectionMonthlyGoal } from "@/services/api/monthly-goals"
+import type { ProjectionMonthlyAssignment } from "@/services/api/monthly-assignment"
 
 const createEmptyQuarterData = (): QuarterData => ({})
 
@@ -162,7 +162,7 @@ export default function ProjectionDetailsPageV2() {
     weekIndex: number
   } | null>(null)
   const [existingPaceCatalogIds, setExistingPaceCatalogIds] = React.useState<string[]>([])
-  const [monthlyGoals, setMonthlyGoals] = React.useState<ProjectionMonthlyGoal[]>([])
+  const [monthlyAssignments, setMonthlyAssignments] = React.useState<ProjectionMonthlyAssignment[]>([])
 
   React.useEffect(() => {
     const fetchProjection = async () => {
@@ -185,10 +185,10 @@ export default function ProjectionDetailsPageV2() {
         setExistingPaceCatalogIds(paceCatalogIds)
 
         try {
-          const goals = await api.monthlyGoals.getByProjection(projectionId)
-          setMonthlyGoals(goals)
+          const assignments = await api.monthlyAssignments.getByProjection(projectionId)
+          setMonthlyAssignments(assignments)
         } catch {
-          setMonthlyGoals([])
+          setMonthlyAssignments([])
         }
 
         setProjectionInfo({
@@ -462,36 +462,36 @@ export default function ProjectionDetailsPageV2() {
     handlePaceAdd(pacePickerContext.quarter, pacePickerContext.subject, pacePickerContext.weekIndex, paceId)
   }, [pacePickerContext, handlePaceAdd])
 
-  const handleMonthlyGoalGradeUpdate = React.useCallback(async (monthlyGoalId: string, grade: number) => {
+  const handleMonthlyAssignmentGradeUpdate = React.useCallback(async (monthlyAssignmentId: string, grade: number) => {
     if (!projectionId) return
 
     try {
-      await api.monthlyGoals.updateGrade(projectionId, monthlyGoalId, { grade })
-      toast.success(t("monthlyGoals.gradeUpdated") || "Grade updated successfully")
+      await api.monthlyAssignments.updateGrade(projectionId, monthlyAssignmentId, { grade })
+      toast.success(t("monthlyAssignments.gradeUpdated") || "Grade updated successfully")
 
-      const goals = await api.monthlyGoals.getByProjection(projectionId)
-      setMonthlyGoals(goals)
+      const assignments = await api.monthlyAssignments.getByProjection(projectionId)
+      setMonthlyAssignments(assignments)
     } catch (err) {
       const error = err as Error
-      toast.error(error.message || t("monthlyGoals.errorUpdatingGrade") || "Failed to update grade")
+      toast.error(error.message || t("monthlyAssignments.errorUpdatingGrade") || "Failed to update grade")
     }
-     
+
   }, [projectionId, api, t])
 
-  const handleMonthlyGoalMarkUngraded = React.useCallback(async (monthlyGoalId: string) => {
+  const handleMonthlyAssignmentMarkUngraded = React.useCallback(async (monthlyAssignmentId: string) => {
     if (!projectionId) return
 
     try {
-      await api.monthlyGoals.markUngraded(projectionId, monthlyGoalId)
-      toast.success(t("monthlyGoals.markedUngraded") || "Marked as ungraded")
+      await api.monthlyAssignments.markUngraded(projectionId, monthlyAssignmentId)
+      toast.success(t("monthlyAssignments.markedUngraded") || "Marked as ungraded")
 
-      const goals = await api.monthlyGoals.getByProjection(projectionId)
-      setMonthlyGoals(goals)
+      const assignments = await api.monthlyAssignments.getByProjection(projectionId)
+      setMonthlyAssignments(assignments)
     } catch (err) {
       const error = err as Error
-      toast.error(error.message || t("monthlyGoals.errorMarkingUngraded") || "Failed to mark as ungraded")
+      toast.error(error.message || t("monthlyAssignments.errorMarkingUngraded") || "Failed to mark as ungraded")
     }
-     
+
   }, [projectionId, api, t])
 
   if (loading) {
@@ -637,12 +637,12 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
-          <ProjectionMonthlyGoals
+          <ProjectionMonthlyAssignments
             quarter="Q1"
-            monthlyGoals={monthlyGoals}
+            monthlyAssignments={monthlyAssignments}
             isEditing={editMode === 'editing'}
-            onGradeUpdate={handleMonthlyGoalGradeUpdate}
-            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+            onGradeUpdate={handleMonthlyAssignmentGradeUpdate}
+            onMarkUngraded={handleMonthlyAssignmentMarkUngraded}
           />
         </TabsContent>
 
@@ -670,12 +670,12 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
-          <ProjectionMonthlyGoals
+          <ProjectionMonthlyAssignments
             quarter="Q2"
-            monthlyGoals={monthlyGoals}
+            monthlyAssignments={monthlyAssignments}
             isEditing={editMode === 'editing'}
-            onGradeUpdate={handleMonthlyGoalGradeUpdate}
-            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+            onGradeUpdate={handleMonthlyAssignmentGradeUpdate}
+            onMarkUngraded={handleMonthlyAssignmentMarkUngraded}
           />
         </TabsContent>
 
@@ -703,12 +703,12 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
-          <ProjectionMonthlyGoals
+          <ProjectionMonthlyAssignments
             quarter="Q3"
-            monthlyGoals={monthlyGoals}
+            monthlyAssignments={monthlyAssignments}
             isEditing={editMode === 'editing'}
-            onGradeUpdate={handleMonthlyGoalGradeUpdate}
-            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+            onGradeUpdate={handleMonthlyAssignmentGradeUpdate}
+            onMarkUngraded={handleMonthlyAssignmentMarkUngraded}
           />
         </TabsContent>
 
@@ -736,12 +736,12 @@ export default function ProjectionDetailsPageV2() {
               />
             </CardContent>
           </Card>
-          <ProjectionMonthlyGoals
+          <ProjectionMonthlyAssignments
             quarter="Q4"
-            monthlyGoals={monthlyGoals}
+            monthlyAssignments={monthlyAssignments}
             isEditing={editMode === 'editing'}
-            onGradeUpdate={handleMonthlyGoalGradeUpdate}
-            onMarkUngraded={handleMonthlyGoalMarkUngraded}
+            onGradeUpdate={handleMonthlyAssignmentGradeUpdate}
+            onMarkUngraded={handleMonthlyAssignmentMarkUngraded}
           />
         </TabsContent>
       </Tabs>

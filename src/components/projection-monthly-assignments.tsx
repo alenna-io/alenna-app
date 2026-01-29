@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Target, Check, X, Undo2 } from "lucide-react"
+import { Check, X, Undo2 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import {
@@ -13,117 +13,127 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import type { ProjectionMonthlyGoal } from "@/services/api/monthly-goals"
+import type { ProjectionMonthlyAssignment } from "@/services/api/monthly-assignment"
 
-interface ProjectionMonthlyGoalsProps {
+interface ProjectionMonthlyAssignmentsProps {
   quarter: string
-  monthlyGoals: ProjectionMonthlyGoal[]
+  monthlyAssignments: ProjectionMonthlyAssignment[]
   isEditing: boolean
-  onGradeUpdate: (monthlyGoalId: string, grade: number) => Promise<void>
-  onMarkUngraded: (monthlyGoalId: string) => Promise<void>
+  onGradeUpdate: (monthlyAssignmentId: string, grade: number) => Promise<void>
+  onMarkUngraded: (monthlyAssignmentId: string) => Promise<void>
 }
 
-export function ProjectionMonthlyGoals({
+export function ProjectionMonthlyAssignments({
   quarter,
-  monthlyGoals,
+  monthlyAssignments,
   isEditing,
   onGradeUpdate,
   onMarkUngraded,
-}: ProjectionMonthlyGoalsProps) {
+}: ProjectionMonthlyAssignmentsProps) {
   const { t } = useTranslation()
   const [showGradeDialog, setShowGradeDialog] = React.useState(false)
-  const [selectedGoal, setSelectedGoal] = React.useState<ProjectionMonthlyGoal | null>(null)
+  const [selectedAssignment, setSelectedAssignment] = React.useState<ProjectionMonthlyAssignment | null>(null)
   const [gradeInput, setGradeInput] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const goalsForQuarter = React.useMemo(() => {
-    return monthlyGoals.filter((g) => g.monthlyGoalTemplate.quarter === quarter)
-  }, [monthlyGoals, quarter])
+  const assignmentsForQuarter = React.useMemo(() => {
+    return monthlyAssignments.filter((g) => g.monthlyAssignmentTemplate.quarter === quarter)
+  }, [monthlyAssignments, quarter])
 
-  const handleOpenGradeDialog = (goal: ProjectionMonthlyGoal) => {
-    setSelectedGoal(goal)
-    setGradeInput(goal.grade !== null ? String(goal.grade) : "")
+  const handleOpenGradeDialog = (assignment: ProjectionMonthlyAssignment) => {
+    setSelectedAssignment(assignment)
+    setGradeInput(assignment.grade !== null ? String(assignment.grade) : "")
     setShowGradeDialog(true)
   }
 
+  const handleGradeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value === "") {
+      setGradeInput("")
+      return
+    }
+    const numValue = parseInt(value, 10)
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+      setGradeInput(value)
+    }
+  }
+
   const handleSaveGrade = async () => {
-    if (!selectedGoal) return
+    if (!selectedAssignment) return
 
     const grade = parseInt(gradeInput, 10)
-    if (isNaN(grade) || grade < 0 || grade > 100) return
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+      return
+    }
 
     setIsSubmitting(true)
     try {
-      await onGradeUpdate(selectedGoal.id, grade)
+      await onGradeUpdate(selectedAssignment.id, grade)
       setShowGradeDialog(false)
-      setSelectedGoal(null)
+      setSelectedAssignment(null)
       setGradeInput("")
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleMarkUngraded = async (goal: ProjectionMonthlyGoal) => {
-    await onMarkUngraded(goal.id)
+  const handleMarkUngraded = async (assignment: ProjectionMonthlyAssignment) => {
+    await onMarkUngraded(assignment.id)
   }
 
-  if (goalsForQuarter.length === 0) {
+  if (assignmentsForQuarter.length === 0) {
     return null
   }
 
   return (
     <>
-      <Card className="mt-4 border-dashed">
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            {t("monthlyGoals.title") || "Monthly Goals"} - {quarter}
+      <Card className="mt-10 border-dashed p-6">
+        <CardHeader className="p-0">
+          <CardTitle className="text-lg font-medium flex items-center gap-2">
+            {t("monthlyAssignments.title") || "Monthly Assignments"} - {quarter}
           </CardTitle>
         </CardHeader>
-        <CardContent className="py-2">
+        <CardContent className="p-0 mt-6">
           <div className="grid gap-2">
-            {goalsForQuarter.map((goal) => (
+            {assignmentsForQuarter.map((assignment) => (
               <div
-                key={goal.id}
+                key={assignment.id}
                 className={cn(
-                  "flex items-center justify-between p-3 rounded-lg border",
-                  goal.status === "COMPLETED" && "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900",
-                  goal.status === "FAILED" && "bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-900",
-                  goal.status === "PENDING" && "bg-muted/50"
+                  "flex items-center justify-between p-3 rounded-xs border"
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-medium">{goal.monthlyGoalTemplate.name}</span>
-                  {goal.grade !== null && (
+                  <span className="font-medium">{assignment.monthlyAssignmentTemplate.name}</span>
+                  {assignment.grade !== null && (
                     <Badge
-                      variant={goal.status === "COMPLETED" ? "default" : "destructive"}
+                      variant={assignment.status === "COMPLETED" ? "default" : "destructive"}
                       className="text-xs"
                     >
-                      {goal.grade}%
+                      {assignment.grade}%
                     </Badge>
                   )}
-                  {goal.status === "PENDING" && (
+                  {assignment.status === "PENDING" && (
                     <Badge variant="secondary" className="text-xs">
-                      {t("monthlyGoals.pending") || "Pending"}
+                      {t("monthlyAssignments.pending") || "Pending"}
                     </Badge>
                   )}
                 </div>
                 {isEditing && (
                   <div className="flex items-center gap-2">
-                    {goal.grade !== null ? (
+                    {assignment.grade !== null ? (
                       <>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenGradeDialog(goal)}
+                          onClick={() => handleOpenGradeDialog(assignment)}
                           className="h-8 px-2"
                         >
-                          {t("monthlyGoals.editGrade") || "Edit"}
+                          {t("monthlyAssignments.editGrade") || "Edit"}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleMarkUngraded(goal)}
+                          onClick={() => handleMarkUngraded(assignment)}
                           className="h-8 px-2 text-muted-foreground hover:text-foreground"
                         >
                           <Undo2 className="h-4 w-4" />
@@ -133,10 +143,10 @@ export function ProjectionMonthlyGoals({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleOpenGradeDialog(goal)}
+                        onClick={() => handleOpenGradeDialog(assignment)}
                         className="h-8"
                       >
-                        {t("monthlyGoals.addGrade") || "Add Grade"}
+                        {t("monthlyAssignments.addGrade") || "Add Grade"}
                       </Button>
                     )}
                   </div>
@@ -151,7 +161,7 @@ export function ProjectionMonthlyGoals({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedGoal?.monthlyGoalTemplate.name} - {t("monthlyGoals.enterGrade") || "Enter Grade"}
+              {selectedAssignment?.monthlyAssignmentTemplate.name} - {t("monthlyAssignments.enterGrade") || "Enter Grade"}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
@@ -161,9 +171,9 @@ export function ProjectionMonthlyGoals({
                 min={0}
                 max={100}
                 value={gradeInput}
-                onChange={(e) => setGradeInput(e.target.value)}
+                onChange={handleGradeInputChange}
                 placeholder="0-100"
-                className="w-24"
+                className="w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <span className="text-muted-foreground">%</span>
             </div>
@@ -173,14 +183,14 @@ export function ProjectionMonthlyGoals({
                   <>
                     <Check className="h-4 w-4 text-green-600" />
                     <span className="text-sm text-green-600">
-                      {t("monthlyGoals.approved") || "Approved"}
+                      {t("monthlyAssignments.approved") || "Approved"}
                     </span>
                   </>
                 ) : (
                   <>
                     <X className="h-4 w-4 text-red-600" />
                     <span className="text-sm text-red-600">
-                      {t("monthlyGoals.failed") || "Failed"}
+                      {t("monthlyAssignments.failed") || "Failed"}
                     </span>
                   </>
                 )}

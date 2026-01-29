@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, Target, Percent } from "lucide-react"
+import { Plus, Trash2, Percent } from "lucide-react"
 import { useApi } from "@/services/api"
-import type { MonthlyGoalTemplate, QuarterGradePercentage } from "@/services/api/monthly-goals"
+import type { MonthlyAssignmentTemplate, QuarterGradePercentage } from "@/services/api/monthly-assignment"
 import { useUser } from "@/contexts/UserContext"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 
-const QUARTERS = ["Q1", "Q2", "Q3", "Q4", "Q5"] as const
+const QUARTERS = ["Q1", "Q2", "Q3", "Q4"] as const
 
-export default function MonthlyGoalsPage() {
+export default function MonthlyAssignmentsPage() {
   const api = useApi()
   const { isLoading: isLoadingUser } = useUser()
   const { t } = useTranslation()
 
-  const [templates, setTemplates] = React.useState<MonthlyGoalTemplate[]>([])
+  const [templates, setTemplates] = React.useState<MonthlyAssignmentTemplate[]>([])
   const [percentages, setPercentages] = React.useState<QuarterGradePercentage[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -59,12 +59,12 @@ export default function MonthlyGoalsPage() {
   }, [])
 
   React.useEffect(() => {
-    const loadMonthlyGoals = async () => {
+    const loadMonthlyAssignments = async () => {
       if (!schoolYearId) return
 
       setIsLoading(true)
       try {
-        const data = await api.monthlyGoals.getBySchoolYear(schoolYearId)
+        const data = await api.monthlyAssignments.getBySchoolYear(schoolYearId)
         setTemplates(data.templates)
         setPercentages(data.percentages)
 
@@ -74,13 +74,13 @@ export default function MonthlyGoalsPage() {
         })
         setPercentageInputs(initialInputs)
       } catch (err) {
-        console.error("Error loading monthly goals:", err)
-        setError("Failed to load monthly goals")
+        console.error("Error loading monthly assignments:", err)
+        setError("Failed to load monthly assignments")
       } finally {
         setIsLoading(false)
       }
     }
-    loadMonthlyGoals()
+    loadMonthlyAssignments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolYearId])
 
@@ -94,17 +94,17 @@ export default function MonthlyGoalsPage() {
 
     setIsSubmitting(true)
     try {
-      const newTemplate = await api.monthlyGoals.createTemplate(schoolYearId, {
+      const newTemplate = await api.monthlyAssignments.createTemplate(schoolYearId, {
         name: newTemplateName.trim(),
         quarter: activeQuarter,
       })
       setTemplates((prev) => [...prev, newTemplate])
       setNewTemplateName("")
       setShowAddTemplateDialog(false)
-      toast.success(t("monthlyGoals.templateCreated") || "Monthly goal created")
+      toast.success(t("monthlyAssignments.templateCreated") || "Monthly assignment created")
     } catch (err) {
       console.error("Error creating template:", err)
-      toast.error(t("monthlyGoals.errorCreatingTemplate") || "Failed to create monthly goal")
+      toast.error(t("monthlyAssignments.errorCreatingTemplate") || "Failed to create monthly assignment")
     } finally {
       setIsSubmitting(false)
     }
@@ -112,12 +112,29 @@ export default function MonthlyGoalsPage() {
 
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      await api.monthlyGoals.deleteTemplate(templateId)
+      await api.monthlyAssignments.deleteTemplate(templateId)
       setTemplates((prev) => prev.filter((t) => t.id !== templateId))
-      toast.success(t("monthlyGoals.templateDeleted") || "Monthly goal deleted")
+      toast.success(t("monthlyAssignments.templateDeleted") || "Monthly assignment deleted")
     } catch (err) {
       console.error("Error deleting template:", err)
-      toast.error(t("monthlyGoals.errorDeletingTemplate") || "Failed to delete monthly goal")
+      toast.error(t("monthlyAssignments.errorDeletingTemplate") || "Failed to delete monthly assignment")
+    }
+  }
+
+  const handlePercentageChange = (quarter: string, value: string) => {
+    if (value === "") {
+      setPercentageInputs((prev) => ({
+        ...prev,
+        [quarter]: "",
+      }))
+      return
+    }
+    const numValue = parseInt(value, 10)
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 99) {
+      setPercentageInputs((prev) => ({
+        ...prev,
+        [quarter]: value,
+      }))
     }
   }
 
@@ -125,8 +142,8 @@ export default function MonthlyGoalsPage() {
     if (!schoolYearId) return
 
     const value = parseInt(percentageInputs[quarter] || "0", 10)
-    if (isNaN(value) || value < 0 || value > 100) {
-      toast.error(t("monthlyGoals.invalidPercentage") || "Percentage must be between 0 and 100")
+    if (isNaN(value) || value < 0 || value > 99) {
+      toast.error(t("monthlyAssignments.invalidPercentage") || "Percentage must be between 0 and 99")
       return
     }
 
@@ -134,7 +151,7 @@ export default function MonthlyGoalsPage() {
     if (existingPercentage && existingPercentage.percentage === value) return
 
     try {
-      const updated = await api.monthlyGoals.createPercentage(schoolYearId, {
+      const updated = await api.monthlyAssignments.createPercentage(schoolYearId, {
         quarter,
         percentage: value,
       })
@@ -145,10 +162,10 @@ export default function MonthlyGoalsPage() {
         }
         return [...prev, updated]
       })
-      toast.success(t("monthlyGoals.percentageSaved") || "Percentage saved")
+      toast.success(t("monthlyAssignments.percentageSaved") || "Percentage saved")
     } catch (err) {
       console.error("Error saving percentage:", err)
-      toast.error(t("monthlyGoals.errorSavingPercentage") || "Failed to save percentage")
+      toast.error(t("monthlyAssignments.errorSavingPercentage") || "Failed to save percentage")
     }
   }
 
@@ -160,7 +177,7 @@ export default function MonthlyGoalsPage() {
     return (
       <div className="space-y-6 max-w-2xl mx-auto">
         <ErrorAlert
-          title={t("errors.loadMonthlyGoalsFailed") || "Failed to load monthly goals"}
+          title={t("errors.loadMonthlyAssignmentsFailed") || "Failed to load monthly assignments"}
           message={error}
         />
       </div>
@@ -168,64 +185,69 @@ export default function MonthlyGoalsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
       <PageHeader
-        icon={Target}
-        title={t("monthlyGoals.title") || "Monthly Goals"}
-        description={t("monthlyGoals.description") || "Manage monthly assignments for each quarter"}
+        moduleKey="monthlyAssignments"
+        title={t("monthlyAssignments.title") || "Monthly Assignments"}
+        description={t("monthlyAssignments.description") || "Manage monthly assignments for each quarter"}
       />
 
-      <div className="flex gap-2 border-b border-border pb-2">
-        {QUARTERS.map((quarter) => (
-          <button
-            key={quarter}
-            onClick={() => setActiveQuarter(quarter)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium rounded-t-md transition-colors",
-              activeQuarter === quarter
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-          >
-            {quarter}
-          </button>
-        ))}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-bold text-black">
+          {t("monthlyAssignments.quarter") || "Quarter"}
+        </span>
+        <Tabs value={activeQuarter} onValueChange={setActiveQuarter} className="w-auto">
+          <TabsList className="h-8 p-0.5 bg-[#8B5CF6]/10">
+            {QUARTERS.map((quarter) => (
+              <TabsTrigger
+                key={quarter}
+                value={quarter}
+                className="h-7 px-2.5 text-sm transition-all duration-200"
+              >
+                {quarter}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              {t("monthlyGoals.goalsForQuarter") || "Goals for"} {activeQuarter}
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 pb-4">
+            <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+              <span className="break-words">
+                {t("monthlyAssignments.assignmentsForQuarter") || "Assignments for"} {activeQuarter}
+              </span>
             </CardTitle>
             <Button
               size="sm"
               onClick={() => setShowAddTemplateDialog(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto"
             >
-              <Plus className="h-4 w-4" />
-              {t("monthlyGoals.addGoal") || "Add Goal"}
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="text-xs sm:text-sm">
+                {t("monthlyAssignments.addAssignment") || "Add Assignment"}
+              </span>
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {templatesForQuarter.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {t("monthlyGoals.noGoals") || "No monthly goals for this quarter yet"}
+              <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-muted-foreground">
+                {t("monthlyAssignments.noAssignments") || "No monthly assignments for this quarter yet"}
               </div>
             ) : (
               <ul className="space-y-2">
                 {templatesForQuarter.map((template) => (
                   <li
                     key={template.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg gap-2"
                   >
-                    <span className="font-medium">{template.name}</span>
+                    <span className="font-medium text-sm sm:text-base break-words flex-1 min-w-0">{template.name}</span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteTemplate(template.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -238,51 +260,48 @@ export default function MonthlyGoalsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Percent className="h-5 w-5" />
-              {t("monthlyGoals.gradeWeight") || "Grade Weight for"} {activeQuarter}
+            <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
+              <Percent className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+              <span className="break-words">
+                {t("monthlyAssignments.gradeWeight") || "Grade Weight for"} {activeQuarter}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="space-y-4">
               <div>
-                <Label htmlFor={`percentage-${activeQuarter}`}>
-                  {t("monthlyGoals.percentageLabel") || "Monthly Goals Weight (%)"}
+                <Label htmlFor={`percentage-${activeQuarter}`} className="text-sm sm:text-base">
+                  {t("monthlyAssignments.percentageLabel") || "Monthly Assignments Weight (%)"}
                 </Label>
                 <div className="flex items-center gap-2 mt-2">
                   <Input
                     id={`percentage-${activeQuarter}`}
                     type="number"
                     min={0}
-                    max={100}
+                    max={99}
                     value={percentageInputs[activeQuarter] || "0"}
-                    onChange={(e) =>
-                      setPercentageInputs((prev) => ({
-                        ...prev,
-                        [activeQuarter]: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => handlePercentageChange(activeQuarter, e.target.value)}
                     onBlur={() => handlePercentageBlur(activeQuarter)}
-                    className="w-24"
+                    className="w-20 sm:w-24 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
-                  <span className="text-muted-foreground">%</span>
+                  <span className="text-muted-foreground text-sm sm:text-base">%</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {t("monthlyGoals.percentageDescription") ||
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                  {t("monthlyAssignments.percentageDescription") ||
                     "This percentage will be deducted from the paces average for the final grade calculation."}
                 </p>
               </div>
 
               <div className="pt-4 border-t">
-                <h4 className="font-medium mb-2">
-                  {t("monthlyGoals.gradeCalculation") || "Grade Calculation"}
+                <h4 className="font-medium mb-2 text-sm sm:text-base">
+                  {t("monthlyAssignments.gradeCalculation") || "Grade Calculation"}
                 </h4>
-                <div className="text-sm space-y-1 text-muted-foreground">
+                <div className="text-xs sm:text-sm space-y-1 text-muted-foreground">
                   <p>
-                    {t("monthlyGoals.pacesWeight") || "Paces Average"}: {100 - (parseInt(percentageInputs[activeQuarter] || "0", 10) || 0)}%
+                    {t("monthlyAssignments.pacesWeight") || "Paces Average"}: {100 - (parseInt(percentageInputs[activeQuarter] || "0", 10) || 0)}%
                   </p>
                   <p>
-                    {t("monthlyGoals.monthlyGoalsWeight") || "Monthly Goals Average"}: {percentageInputs[activeQuarter] || 0}%
+                    {t("monthlyAssignments.monthlyAssignmentsWeight") || "Monthly Assignments Average"}: {percentageInputs[activeQuarter] || 0}%
                   </p>
                 </div>
               </div>
@@ -295,18 +314,18 @@ export default function MonthlyGoalsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {t("monthlyGoals.addGoalTitle") || "Add Monthly Goal"}
+              {t("monthlyAssignments.addAssignmentTitle") || "Add Monthly Assignment"}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="template-name">
-              {t("monthlyGoals.goalName") || "Goal Name"}
+              {t("monthlyAssignments.assignmentName") || "Assignment Name"}
             </Label>
             <Input
               id="template-name"
               value={newTemplateName}
               onChange={(e) => setNewTemplateName(e.target.value)}
-              placeholder={t("monthlyGoals.goalNamePlaceholder") || "e.g., Oral Report, Verse of the Month"}
+              placeholder={t("monthlyAssignments.assignmentNamePlaceholder") || "e.g., Oral Report, Verse of the Month"}
               className="mt-2"
             />
           </div>

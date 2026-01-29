@@ -35,7 +35,7 @@ export function AppSidebar() {
   const menuItems: MenuItem[] = [
     { title: t("sidebar.home") || "Home", url: "/", icon: "home" },
     { title: t("sidebar.projections") || "Projections", url: "/projections", icon: "projections" },
-    { title: t("sidebar.monthlyGoals") || "Monthly Goals", url: "/monthly-goals", icon: "monthly-goals" },
+    { title: t("sidebar.monthlyAssignments") || "Monthly Assignments", url: "/monthly-assignments", icon: "monthlyAssignments" },
   ]
 
   const schoolName = userInfo?.schoolName || (userInfo ? "Alenna" : "")

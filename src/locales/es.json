@@ -119,11 +119,13 @@
     "networkErrorMessage": "No se pudo conectar al servidor. Por favor verifica tu conexión a internet e intenta de nuevo.",
     "retry": "Intentar de Nuevo",
     "loadProjectionFailed": "Error al cargar la proyección",
-    "loadProjectionsFailed": "Error al cargar las proyecciones"
+    "loadProjectionsFailed": "Error al cargar las proyecciones",
+    "loadMonthlyAssignmentsFailed": "Error al cargar las asignaciones mensuales"
   },
   "sidebar": {
     "home": "Inicio",
-    "projections": "Proyecciones"
+    "projections": "Proyecciones",
+    "monthlyAssignments": "Asignaciones"
   },
   "projections": {
     "title": "Proyecciones",
@@ -281,5 +283,38 @@
     "note": "Nota",
     "notePlaceholder": "Falta pag. 10",
     "pending": "Nota"
+  },
+  "monthlyAssignments": {
+    "title": "Asignaciones Mensuales",
+    "description": "Gestiona las asignaciones mensuales para cada trimestre",
+    "assignmentsForQuarter": "Asignaciones para",
+    "addAssignment": "Agregar Asignación",
+    "noAssignments": "No hay asignaciones mensuales para este trimestre aún",
+    "templateCreated": "Asignación mensual creada",
+    "errorCreatingTemplate": "Error al crear la asignación mensual",
+    "templateDeleted": "Asignación mensual eliminada",
+    "errorDeletingTemplate": "Error al eliminar la asignación mensual",
+    "invalidPercentage": "El porcentaje debe estar entre 0 y 99",
+    "percentageSaved": "Porcentaje guardado",
+    "errorSavingPercentage": "Error al guardar el porcentaje",
+    "gradeWeight": "Peso de Calificación para",
+    "percentageLabel": "Peso de Asignaciones Mensuales (%)",
+    "percentageDescription": "Este porcentaje se deducirá del promedio de lecciones para el cálculo de la calificación final.",
+    "gradeCalculation": "Cálculo de Calificación",
+    "pacesWeight": "Promedio de Lecciones",
+    "monthlyAssignmentsWeight": "Promedio de Asignaciones Mensuales",
+    "addAssignmentTitle": "Agregar Asignación Mensual",
+    "assignmentName": "Nombre de la Asignación",
+    "assignmentNamePlaceholder": "ej., Reporte Oral, Verso del Mes",
+    "quarter": "Seleccionar Bloque",
+    "pending": "Pendiente",
+    "addGrade": "Agregar Calificación",
+    "failed": "Reprobatorio",
+    "approved": "Aprobado",
+    "gradeUpdated": "Calificación actualizada exitosamente",
+    "errorUpdatingGrade":"Error al actualizar la calificación",
+    "markedUngraded": "Asignación marcada como no calificada",
+    "errorMarkingUngraded":"Error al marcar la asignación como sin calificar",
+    "editGrade": "Editar Calificación"
   }
 }
