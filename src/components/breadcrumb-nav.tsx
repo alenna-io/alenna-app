@@ -40,48 +40,9 @@ export function BreadcrumbNav() {
       if (userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         const fetchUserName = async () => {
           try {
-            let user: { id: string; firstName?: string; lastName?: string; email: string } | undefined
-
-            // For school admins, try /me/teachers first to avoid 404 errors
-            if (isSchoolAdmin) {
-              try {
-                const teachers = await api.schools.getMyTeachers()
-                user = teachers.find((t: { id: string }) => t.id === userId)
-                if (user) {
-                  // Found user, exit early
-                  const name = user.firstName && user.lastName
-                    ? `${user.firstName} ${user.lastName}`
-                    : user.email
-                  setUserName(name)
-                  return
-                }
-              } catch {
-                // Silently fail - expected for some cases
-              }
-              // If /me/teachers didn't find the user or failed, just show "Detail"
-              setUserName(null)
-              return
-            } else {
-              // For super admins, try getUsers
-              try {
-                const users = await api.getUsers()
-                user = users.find((u: { id: string }) => u.id === userId)
-              } catch {
-                // If getUsers fails, just show "Detail"
-                setUserName(null)
-                return
-              }
-            }
-
-            if (user) {
-              const name = user.firstName && user.lastName
-                ? `${user.firstName} ${user.lastName}`
-                : user.email
-              setUserName(name)
-            } else {
-              // If user not found in list (e.g., deactivated), just show "Detail" if not found
-              setUserName(null)
-            }
+            // TODO: Re-implement when API methods are available
+            // For now, just show "Detail" for user IDs
+            setUserName(null)
           } catch {
             // Silently fail - just show "Detail" instead
             // Don't log to console to avoid noise from expected permission errors
@@ -100,35 +61,9 @@ export function BreadcrumbNav() {
       if (groupId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         const fetchGroupName = async () => {
           try {
-            // Fetch group by ID to get group name
-            const group = await api.groups.getById(groupId)
-            if (group && !group.deletedAt) {
-              // Use group name if available, otherwise fetch teacher name
-              if (group.name) {
-                setUserName(group.name)
-                return
-              }
-
-              // If no group name, fetch teacher name
-              if (isSchoolAdmin) {
-                try {
-                  const teachers = await api.schools.getMyTeachers()
-                  const teacher = teachers.find((t: { id: string }) => t.id === group.teacherId)
-                  if (teacher) {
-                    const name = teacher.firstName && teacher.lastName
-                      ? `${teacher.firstName} ${teacher.lastName}`
-                      : teacher.email || teacher.fullName || t("breadcrumbs.detail")
-                    setUserName(name)
-                    return
-                  }
-                } catch {
-                  // Silently fail
-                }
-              }
-              setUserName(null)
-            } else {
-              setUserName(null)
-            }
+            // TODO: Re-implement when API methods are available
+            // For now, just show "Detail" for group IDs
+            setUserName(null)
           } catch {
             // Silently fail - just show "Detail" instead
             setUserName(null)
@@ -141,7 +76,7 @@ export function BreadcrumbNav() {
     } else {
       setUserName(null)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [location.pathname, isSchoolAdmin])
 
   // Fetch student name when on daily goals page or projection detail page
@@ -166,7 +101,7 @@ export function BreadcrumbNav() {
             const projection = await api.projections.getById(projectionId)
             const name = projection.student.user.firstName && projection.student.user.lastName
               ? `${projection.student.user.firstName} ${projection.student.user.lastName}`
-              : projection.student.user.email || t("breadcrumbs.detail")
+              : t("breadcrumbs.detail")
             setStudentName(name)
           } catch {
             setStudentName(null)

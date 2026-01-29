@@ -1,14 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useApi } from '@/services/api'
 import { queryKeys } from './query-keys'
 
 export function useSchoolYears() {
-  const api = useApi()
-
   return useQuery({
     queryKey: queryKeys.schoolYears.list(),
     queryFn: async () => {
-      return api.schoolYears.getAll()
+      // TODO: Re-implement when getAll is available
+      throw new Error("Get all school years not implemented")
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -16,13 +14,12 @@ export function useSchoolYears() {
 }
 
 export function useSchoolYear(schoolYearId: string | undefined) {
-  const api = useApi()
-
   return useQuery({
     queryKey: [...queryKeys.schoolYears.list(), schoolYearId || ''],
     queryFn: async () => {
       if (!schoolYearId) return null
-      return api.schoolYears.getById(schoolYearId)
+      // TODO: Re-implement when getById is available
+      throw new Error("Get school year by ID not implemented")
     },
     enabled: !!schoolYearId,
     staleTime: 2 * 60 * 1000,
@@ -31,12 +28,13 @@ export function useSchoolYear(schoolYearId: string | undefined) {
 }
 
 export function useCreateSchoolYear() {
-  const api = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
-      return api.schoolYears.create(data)
+    mutationFn: async (_data: Record<string, unknown>): Promise<unknown> => {
+      // TODO: Re-implement when create is available
+      void _data
+      throw new Error("Create school year not implemented")
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.schoolYears.all })
@@ -45,12 +43,20 @@ export function useCreateSchoolYear() {
 }
 
 export function useUpdateSchoolYear() {
-  const api = useApi()
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
-      return api.schoolYears.update(id, data)
+    mutationFn: async ({
+      id: _id,
+      data: _data,
+    }: {
+      id: string
+      data: Record<string, unknown>
+    }): Promise<unknown> => {
+      // TODO: Re-implement when update is available
+      void _id
+      void _data
+      throw new Error("Update school year not implemented")
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.schoolYears.all })

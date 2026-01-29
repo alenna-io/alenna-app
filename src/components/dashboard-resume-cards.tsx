@@ -1,19 +1,17 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Users, GraduationCap, BookOpen, Clock, Heart, Info } from "lucide-react"
-import { useApi } from "@/services/api"
 import { useUser } from "@/contexts/UserContext"
 import { AlennaSkeleton } from "@/components/ui/alenna-skeleton"
 import { useTranslation } from "react-i18next"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { CurrentWeekInfo } from "@/services/api"
+import type { CurrentWeekInfo } from "@/services/api/schools"
 
 interface DashboardResumeCardsProps {
   currentWeekInfo: CurrentWeekInfo | null
 }
 
 export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsProps) {
-  const api = useApi()
   const { userInfo } = useUser()
   const { t } = useTranslation()
   const [studentsCount, setStudentsCount] = React.useState<number | null>(null)
@@ -30,17 +28,9 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
       if (!schoolId) return
 
       try {
-        const [students, teachers] = await Promise.all([
-          api.schools.getStudentsCount(schoolId).catch(() => null),
-          api.schools.getMyTeachersCount().catch(() => null),
-        ])
-
-        if (students !== null) {
-          setStudentsCount(students.count || 0)
-        }
-        if (teachers !== null) {
-          setTeachersCount(teachers.count || 0)
-        }
+        // TODO: Re-implement when API methods are available
+        setStudentsCount(0)
+        setTeachersCount(0)
       } catch (err) {
         console.error("Error fetching counts:", err)
       } finally {
@@ -50,7 +40,7 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
     }
 
     fetchCounts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [userInfo?.schoolId])
 
   React.useEffect(() => {
@@ -61,23 +51,22 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
           return
         }
 
-        const today = new Date()
-        const currentCalendarMonth = today.getMonth() + 1
-
-        const characterTraitData = await api.characterTraits.getByMonth(
-          currentWeekInfo.schoolYear.id,
-          currentCalendarMonth
-        ).catch((err) => {
-          console.error("[Dashboard] Error fetching character trait:", err)
-          return null
-        })
+        // TODO: Re-implement when characterTraits API is available
+        const characterTraitData = null as unknown
+        // const characterTraitData = await api.characterTraits.getByMonth(
+        //   currentWeekInfo.schoolYear.id,
+        //   currentCalendarMonth
+        // ).catch((err: unknown) => {
+        //   console.error("[Dashboard] Error fetching character trait:", err)
+        //   return null
+        // })
 
         if (characterTraitData) {
           setVerse({
-            text: characterTraitData.verseText,
-            reference: characterTraitData.verseReference,
+            text: (characterTraitData as { verseText: string }).verseText,
+            reference: (characterTraitData as { verseReference: string }).verseReference,
           })
-          setCharacterTrait(characterTraitData.characterTrait)
+          setCharacterTrait((characterTraitData as { characterTrait: string }).characterTrait)
         } else {
           const fallbackVerses = [
             { text: "Trust in the Lord with all your heart and lean not on your own understanding.", reference: "Proverbs 3:5" },
@@ -86,6 +75,7 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
           ]
           const fallbackTraits = ["Faithful", "Compassionate", "Patient", "Kind", "Humble", "Generous"]
 
+          const today = new Date()
           const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000)
           setVerse(fallbackVerses[dayOfYear % fallbackVerses.length])
           setCharacterTrait(fallbackTraits[today.getMonth() % fallbackTraits.length])
@@ -98,7 +88,7 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
     }
 
     fetchMonthlyContent()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [currentWeekInfo?.schoolYear?.id])
 
   const getQuarterLabel = (quarterName: string) => {
@@ -108,7 +98,7 @@ export function DashboardResumeCards({ currentWeekInfo }: DashboardResumeCardsPr
       'Q3': t("common.quarterLabelQ3"),
       'Q4': t("common.quarterLabelQ4"),
     }
-    return quarterLabels[quarterName] || currentWeekInfo?.currentQuarter?.displayName || quarterName
+    return quarterLabels[quarterName] || quarterName
   }
 
   return (

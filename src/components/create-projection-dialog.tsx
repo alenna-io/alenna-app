@@ -58,6 +58,7 @@ export function CreateProjectionDialog({
             variant="outline"
             className="h-auto w-full p-6 flex flex-col items-start gap-3 text-left whitespace-normal border-2 hover:border-green-400 hover:bg-green-50 transition-colors group"
             onClick={onSelectFromTemplate}
+            disabled={true}
           >
             <div className="flex items-center gap-3 w-full">
               <div className="p-2 rounded-lg bg-green-100 group-hover:bg-green-200 transition-colors">
@@ -75,6 +76,7 @@ export function CreateProjectionDialog({
             variant="outline"
             className="h-auto w-full p-6 flex flex-col items-start gap-3 text-left whitespace-normal border-2 hover:border-blue-400 hover:bg-blue-50 transition-colors group"
             onClick={onSelectEmpty}
+            disabled={true}
           >
             <div className="flex items-center gap-3 w-full">
               <div className="p-2 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors">

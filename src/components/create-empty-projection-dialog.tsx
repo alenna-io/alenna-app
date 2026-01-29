@@ -19,7 +19,7 @@ import {
 import { useApi } from "@/services/api"
 import { useTranslation } from "react-i18next"
 
-interface Student {
+interface StudentDisplay {
   id: string
   firstName: string
   lastName: string
@@ -41,7 +41,7 @@ export function CreateEmptyProjectionDialog({
 }: CreateEmptyProjectionDialogProps) {
   const api = useApi()
   const { t } = useTranslation()
-  const [students, setStudents] = React.useState<Student[]>([])
+  const [students, setStudents] = React.useState<StudentDisplay[]>([])
   const [loading, setLoading] = React.useState(false)
   const [isCreating, setIsCreating] = React.useState(false)
 
@@ -56,8 +56,17 @@ export function CreateEmptyProjectionDialog({
       const fetchStudents = async () => {
         setLoading(true)
         try {
-          const studentsData = await api.students.getAll()
-          setStudents(studentsData as Student[])
+          const studentsData = await api.students.getEnrolledWithoutOpenProjection()
+          // Map API Student type to component's expected format
+          const mappedStudents: StudentDisplay[] = studentsData.map(s => ({
+            id: s.id,
+            firstName: s.user?.firstName || '',
+            lastName: s.user?.lastName || '',
+            name: s.user?.firstName && s.user?.lastName
+              ? `${s.user.firstName} ${s.user.lastName}`
+              : s.user?.email || '',
+          }))
+          setStudents(mappedStudents)
         } catch (error) {
           console.error("Error fetching students:", error)
         } finally {

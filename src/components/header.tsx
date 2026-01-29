@@ -2,7 +2,7 @@ import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
 import { useApi } from "@/services/api"
-import type { CurrentWeekInfo } from "@/services/api"
+import type { CurrentWeekInfo } from "@/services/api/schools"
 import { BreadcrumbNav } from "@/components/breadcrumb-nav"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useTranslation } from "react-i18next"
@@ -79,7 +79,7 @@ export function Header() {
       'Q3': t("common.quarterLabelQ3"),
       'Q4': t("common.quarterLabelQ4"),
     }
-    return quarterLabels[quarterName] || activeQuarter?.displayName || quarterName
+    return quarterLabels[quarterName] || quarterName
   }
 
   return (
