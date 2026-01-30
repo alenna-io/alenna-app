@@ -828,7 +828,7 @@ export default function ProjectionDetailsPageV2() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col items-end gap-4">
           {projectionInfo.isActive && (
             <div className="flex flex-col items-end gap-2">
               <div className='flex flex-col items-start gap-2'>
@@ -928,6 +928,11 @@ export default function ProjectionDetailsPageV2() {
                   if (!studentId || !projectionId) return
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
+                onViewDailyGoals={projectionInfo.isActive ? (quarter: string, week: number) => {
+                  if (!studentId || !projectionId) return
+                  const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
+                } : undefined}
               />
             </CardContent>
           </Card>
@@ -965,6 +970,11 @@ export default function ProjectionDetailsPageV2() {
                   if (!studentId || !projectionId) return
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
+                onViewDailyGoals={projectionInfo.isActive ? (quarter: string, week: number) => {
+                  if (!studentId || !projectionId) return
+                  const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
+                } : undefined}
               />
             </CardContent>
           </Card>
@@ -1001,6 +1011,11 @@ export default function ProjectionDetailsPageV2() {
                   if (!studentId || !projectionId) return
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
+                onViewDailyGoals={projectionInfo.isActive ? (quarter: string, week: number) => {
+                  if (!studentId || !projectionId) return
+                  const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
+                } : undefined}
               />
             </CardContent>
           </Card>
@@ -1037,6 +1052,11 @@ export default function ProjectionDetailsPageV2() {
                   if (!studentId || !projectionId) return
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${week}`)
                 }}
+                onViewDailyGoals={projectionInfo.isActive ? (quarter: string, week: number) => {
+                  if (!studentId || !projectionId) return
+                  const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
+                  navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
+                } : undefined}
               />
             </CardContent>
           </Card>

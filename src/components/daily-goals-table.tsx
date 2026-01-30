@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Check, History } from "lucide-react"
+import { Spinner } from "@/components/ui/spinner"
 import type { DailyGoalData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { sortCategoriesByOrder } from "@/utils/category-order"
@@ -17,6 +18,7 @@ interface DailyGoalsTableProps {
   data: DailyGoalData
   subjects: string[]
   subjectToCategory?: Map<string, string> // Mapping from sub-subject to category
+  loadingActions?: Map<string, boolean>
   onGoalUpdate?: (subject: string, dayIndex: number, value: string) => void
   onGoalToggle?: (subject: string, dayIndex: number) => void
   onNotesUpdate?: (subject: string, dayIndex: number, notes: string) => void
@@ -36,6 +38,7 @@ export function DailyGoalsTable({
   data,
   subjects,
   subjectToCategory,
+  loadingActions = new Map(),
   onGoalUpdate,
   onGoalToggle,
   onNotesUpdate,
@@ -304,6 +307,9 @@ export function DailyGoalsTable({
                       {(() => {
                         const goal = groupedData.data[category]?.[dayIndex]
                         const hasGoal = goal?.text
+                        const isAddingGoal = loadingActions.get(`goal-add-${category}-${dayIndex}`) === true
+                        const isTogglingGoal = goal?.id ? loadingActions.get(`goal-toggle-${goal.id}`) === true : false
+                        const isAddingNote = goal?.id ? loadingActions.get(`note-${goal.id}`) === true : false
 
                         return (
                           <div className="relative flex flex-col items-center justify-center w-full gap-1 p-1">
@@ -312,7 +318,7 @@ export function DailyGoalsTable({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    if (canToggleGoal) {
+                                    if (canToggleGoal && !isTogglingGoal) {
                                       onGoalToggle?.(category, dayIndex)
                                     }
                                   }}
@@ -321,9 +327,11 @@ export function DailyGoalsTable({
                                     : "bg-white border-border hover:border-green-400"
                                     }`}
                                   title={goal?.isCompleted ? t("dailyGoals.markIncomplete") : t("dailyGoals.markComplete")}
-                                  disabled={!canToggleGoal}
+                                  disabled={!canToggleGoal || isTogglingGoal}
                                 >
-                                  {goal?.isCompleted && (
+                                  {isTogglingGoal ? (
+                                    <Spinner className="h-2 w-2 text-primary" />
+                                  ) : goal?.isCompleted && (
                                     <Check className="h-3 w-3 text-white" />
                                   )}
                                 </button>
@@ -334,19 +342,31 @@ export function DailyGoalsTable({
                                 </Badge>
                               )}
                               <div
-                                onClick={() => hasGoal ? handleExistingGoalClick() : handleGoalClick(category, dayIndex)}
-                                className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
+                                onClick={() => {
+                                  if (!isAddingGoal && !isTogglingGoal) {
+                                    if (hasGoal) {
+                                      handleExistingGoalClick()
+                                    } else {
+                                      handleGoalClick(category, dayIndex)
+                                    }
+                                  }
+                                }}
+                                className={`flex-1 min-h-[32px] flex items-center justify-center transition-all rounded ${isEditable && !isAddingGoal && !isTogglingGoal ? "cursor-pointer hover:bg-muted/50" : "cursor-default"}`}
                               >
-                                <span className={`text-sm font-mono text-center ${goal?.isCompleted ? "line-through text-muted-foreground" : ""
-                                  }`}>
-                                  {goal?.text || (
-                                    <span className="text-muted-foreground/50 text-xs">
-                                      {isEditable ? t("dailyGoals.add") : '—'}
-                                    </span>
-                                  )}
-                                </span>
+                                {isAddingGoal ? (
+                                  <Spinner className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <span className={`text-sm font-mono text-center ${goal?.isCompleted ? "line-through text-muted-foreground" : ""
+                                    }`}>
+                                    {goal?.text || (
+                                      <span className="text-muted-foreground/50 text-xs">
+                                        {isEditable ? t("dailyGoals.add") : '—'}
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
                               </div>
-                              {hasGoal && (isEditable || canEditNotes || (goal?.notesHistory?.length ?? 0) > 0) && (
+                              {hasGoal && (isEditable || canEditNotes || (goal?.notesHistory?.length ?? 0) > 0) && !isAddingNote && (
                                 <DailyGoalActionsMenu
                                   onAddNote={() => {
                                     const goalData = groupedData.data[category]?.[dayIndex]
@@ -363,6 +383,9 @@ export function DailyGoalsTable({
                                   onMarkComplete={() => handleMarkComplete(category, dayIndex)}
                                   isCompleted={goal?.isCompleted || false}
                                 />
+                              )}
+                              {isAddingNote && (
+                                <Spinner className="h-3 w-3 text-primary" />
                               )}
                             </div>
                             {goal?.notes && !goal?.notesCompleted && (

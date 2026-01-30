@@ -209,6 +209,7 @@
     "noProjections": "No projections",
     "noProjectionsForYear": "No projections found for {{year}}",
     "noProjectionsFound": "No projections found",
+    "noProjectionsDescription": "Adjust filters or select another period to see results.",
     "duplicateLesson": "Duplicate Lesson",
     "duplicateLessonMessage": "Lesson {{paceNumber}} already exists in {{subject}}",
     "unfinishedPace": "Unfinished pace from {{originalQuarter}}",
@@ -260,7 +261,26 @@
     "cannotAddPaceOrderIndexAfter": "Cannot add lesson: cannot place lesson with order {{newOrder}} after lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
     "cannotMovePaceOrderIndex": "Cannot move lesson: cannot place lesson with order {{newOrder}} before lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
     "cannotMovePaceOrderIndexAtPosition": "Cannot move lesson: cannot place lesson with order {{newOrder}} at position that already has lesson with order {{existingOrder}}",
-    "cannotMovePaceOrderIndexAfter": "Cannot move lesson: cannot place lesson with order {{newOrder}} after lesson with order {{existingOrder}} (at {{quarter}} week {{week}})"
+    "cannotMovePaceOrderIndexAfter": "Cannot move lesson: cannot place lesson with order {{newOrder}} after lesson with order {{existingOrder}} (at {{quarter}} week {{week}})",
+    "minimumPacesRequired": "Projection must contain at least 72 total paces",
+    "maxPacesPerSubject": "A subject has {{count}} paces, but maximum is 36",
+    "atLeastOneSubjectRequired": "At least one subject is required to generate a projection",
+    "invalidDifficultyPairing": "Invalid difficulty pairing due to notPairWith constraint",
+    "studentNotFound": "Student not found; cannot create projection",
+    "schoolNotFound": "School not found; cannot create projection",
+    "schoolYearNotFound": "School year not found; cannot create projection",
+    "schoolYearNotActive": "School year is not active; cannot create projection",
+    "categoriesNotFound": "One or more categories not found",
+    "subjectsNotFound": "One or more subjects not found",
+    "noPacesFoundForSubject": "No paces found for subject {{subject}}",
+    "noPaceCatalogsFound": "No pace catalogs found for requested ranges",
+    "paceDoesNotBelong": "Start or end pace does not belong to this subject or category",
+    "pacesMustBelongToSameSubject": "Start and end paces must belong to the same subject",
+    "paceRangeNotContiguous": "Pace range is not contiguous",
+    "startPaceAfterEndPace": "Start pace comes after end pace in curriculum order",
+    "projectionAlreadyExists": "A projection already exists for this student in this school year",
+    "currentDailyGoals": "View Daily Goals",
+    "viewDailyGoals": "View Daily Goals"
   },
   "dailyGoals": {
     "title": "Daily Goals",
@@ -289,6 +309,7 @@
     "errorMarkingComplete": "Error marking daily goal as complete",
     "goalMarkedIncomplete": "Daily goal marked as incomplete successfully",
     "errorUpdatingGoalStatus": "Error updating daily goal status",
+    "testAutoCreated": "Test automatically created for next day",
     "errorPrefix": "Error: ",
     "markComplete": "Mark as Complete",
     "markIncomplete": "Mark as Incomplete",
@@ -339,5 +360,13 @@
     "confirmPasswordPlaceholder": "Repeat password",
     "setupPassword": "Set Password",
     "settingUp": "Setting up..."
+  },
+  "filters": {
+    "schoolYear": "School Year",
+    "projectionStatus": "Status",
+    "active": "Active",
+    "closed": "Closed",
+    "all": "All",
+    "reset": "Reset"
   }
 }

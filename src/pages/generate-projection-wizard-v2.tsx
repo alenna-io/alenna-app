@@ -496,6 +496,150 @@ export default function GenerateProjectionWizardPageV2() {
     }
   }
 
+  // Helper function to translate backend error messages
+  const translateError = React.useCallback((errorMessage: string): string => {
+    // Pattern: "Projection must contain at least 72 total paces"
+    if (errorMessage.includes("Projection must contain at least 72 total paces")) {
+      const translated = t("projections.minimumPacesRequired")
+      if (translated && translated !== "projections.minimumPacesRequired") {
+        return translated
+      }
+    }
+
+    // Pattern: "Subject X has Y paces, but maximum is 36"
+    const maxPacesMatch = errorMessage.match(/Subject .+ has (\d+) paces, but maximum is 36/i)
+    if (maxPacesMatch) {
+      const translated = t("projections.maxPacesPerSubject", { count: parseInt(maxPacesMatch[1], 10) })
+      if (translated && translated !== "projections.maxPacesPerSubject") {
+        return translated
+      }
+    }
+
+    // Pattern: "At least one subject is required to generate a projection"
+    if (errorMessage.includes("At least one subject is required")) {
+      const translated = t("projections.atLeastOneSubjectRequired")
+      if (translated && translated !== "projections.atLeastOneSubjectRequired") {
+        return translated
+      }
+    }
+
+    // Pattern: "Invalid difficulty pairing due to notPairWith constraint"
+    if (errorMessage.includes("Invalid difficulty pairing due to notPairWith constraint")) {
+      const translated = t("projections.invalidDifficultyPairing")
+      if (translated && translated !== "projections.invalidDifficultyPairing") {
+        return translated
+      }
+    }
+
+    // Pattern: "Student not found"
+    if (errorMessage.includes("Student not found")) {
+      const translated = t("projections.studentNotFound")
+      if (translated && translated !== "projections.studentNotFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "School not found"
+    if (errorMessage.includes("School not found")) {
+      const translated = t("projections.schoolNotFound")
+      if (translated && translated !== "projections.schoolNotFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "School year not found"
+    if (errorMessage.includes("School year not found")) {
+      const translated = t("projections.schoolYearNotFound")
+      if (translated && translated !== "projections.schoolYearNotFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "School year is not active"
+    if (errorMessage.includes("School year is not active")) {
+      const translated = t("projections.schoolYearNotActive")
+      if (translated && translated !== "projections.schoolYearNotActive") {
+        return translated
+      }
+    }
+
+    // Pattern: "One or more categories not found"
+    if (errorMessage.includes("One or more categories not found")) {
+      const translated = t("projections.categoriesNotFound")
+      if (translated && translated !== "projections.categoriesNotFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "One or more subjects not found"
+    if (errorMessage.includes("One or more subjects not found")) {
+      const translated = t("projections.subjectsNotFound")
+      if (translated && translated !== "projections.subjectsNotFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "No paces found for subject X"
+    const noPacesMatch = errorMessage.match(/No paces found for subject (.+)/i)
+    if (noPacesMatch) {
+      const translated = t("projections.noPacesFoundForSubject", { subject: noPacesMatch[1] })
+      if (translated && translated !== "projections.noPacesFoundForSubject") {
+        return translated
+      }
+    }
+
+    // Pattern: "No pace catalogs found for requested ranges"
+    if (errorMessage.includes("No pace catalogs found for requested ranges")) {
+      const translated = t("projections.noPaceCatalogsFound")
+      if (translated && translated !== "projections.noPaceCatalogsFound") {
+        return translated
+      }
+    }
+
+    // Pattern: "Start or end pace does not belong to this subject/category"
+    if (errorMessage.includes("Start or end pace does not belong")) {
+      const translated = t("projections.paceDoesNotBelong")
+      if (translated && translated !== "projections.paceDoesNotBelong") {
+        return translated
+      }
+    }
+
+    // Pattern: "Start and end paces must belong to the same subject"
+    if (errorMessage.includes("Start and end paces must belong to the same subject")) {
+      const translated = t("projections.pacesMustBelongToSameSubject")
+      if (translated && translated !== "projections.pacesMustBelongToSameSubject") {
+        return translated
+      }
+    }
+
+    // Pattern: "Pace range is not contiguous"
+    if (errorMessage.includes("Pace range is not contiguous")) {
+      const translated = t("projections.paceRangeNotContiguous")
+      if (translated && translated !== "projections.paceRangeNotContiguous") {
+        return translated
+      }
+    }
+
+    // Pattern: "Start pace comes after end pace"
+    if (errorMessage.includes("Start pace comes after end pace")) {
+      const translated = t("projections.startPaceAfterEndPace")
+      if (translated && translated !== "projections.startPaceAfterEndPace") {
+        return translated
+      }
+    }
+
+    // Pattern: "A projection already exists for this student"
+    if (errorMessage.includes("A projection already exists for this student")) {
+      const translated = t("projections.projectionAlreadyExists")
+      if (translated && translated !== "projections.projectionAlreadyExists") {
+        return translated
+      }
+    }
+
+    // Return original message if no translation found
+    return errorMessage
+  }, [t])
+
   const handleGenerate = async () => {
     if (!validateStep(2)) {
       setCurrentStep(2)
@@ -574,7 +718,9 @@ export default function GenerateProjectionWizardPageV2() {
         errorMessage = error.message
       }
 
-      toast.error(errorMessage)
+      // Translate the error message
+      const translatedError = translateError(errorMessage)
+      toast.error(translatedError)
       setCurrentStep(2)
     } finally {
       setIsGenerating(false)
