@@ -159,7 +159,24 @@ export function CreateFromTemplateDialog({
       navigate(`/students/${projection.studentId}/projections/${projection.id}`)
     } catch (err) {
       console.error("Error creating projection from template:", err)
-      setError(err instanceof Error ? err.message : "Error al crear la proyección desde la plantilla.")
+      let errorMessage = err instanceof Error ? err.message : "Error al crear la proyección desde la plantilla."
+
+      // Translate error message if it's a known backend error
+      if (errorMessage.includes("Projection must contain at least 72 total paces")) {
+        errorMessage = t("projections.minimumPacesRequired")
+      } else if (errorMessage.includes("At least one subject is required")) {
+        errorMessage = t("projections.atLeastOneSubjectRequired")
+      } else if (errorMessage.includes("Student not found")) {
+        errorMessage = t("projections.studentNotFound")
+      } else if (errorMessage.includes("School not found")) {
+        errorMessage = t("projections.schoolNotFound")
+      } else if (errorMessage.includes("School year not found")) {
+        errorMessage = t("projections.schoolYearNotFound")
+      } else if (errorMessage.includes("School year is not active")) {
+        errorMessage = t("projections.schoolYearNotActive")
+      }
+
+      setError(errorMessage)
     } finally {
       setIsCreating(false)
     }

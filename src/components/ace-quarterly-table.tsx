@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info, CalendarCheck } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,7 @@ interface QuarterlyTableProps {
   onDeletePace?: (quarter: string, subject: string, weekIndex: number) => void
   onGradeUpdate?: (quarter: string, subject: string, weekIndex: number, grade: number) => void
   onMarkUngraded?: (quarter: string, subject: string, weekIndex: number) => void
+  onViewDailyGoals?: (quarter: string, week: number) => void
 }
 
 
@@ -92,7 +93,8 @@ export function ACEQuarterlyTable({
   onAddPace,
   onDeletePace,
   onGradeUpdate,
-  onMarkUngraded
+  onMarkUngraded,
+  onViewDailyGoals
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
 
@@ -366,6 +368,20 @@ export function ACEQuarterlyTable({
               )}
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              {onViewDailyGoals && (
+                <Button
+                  variant="soft"
+                  size="lg"
+                  className="h-6 px-2 text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onViewDailyGoals(quarter, currentWeek || 1)
+                  }}
+                >
+                  <CalendarCheck className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                  {t("projections.viewDailyGoals") || "View Daily Goals"}
+                </Button>
+              )}
               {currentWeek && (
                 <Badge variant="outline" className="text-[10px] md:text-xs lg:text-sm">
                   {t("projections.week")} {currentWeek}
@@ -397,18 +413,19 @@ export function ACEQuarterlyTable({
                   </th>
                   {weeks.map((week, weekIdx) => {
                     const weekPaceCount = weekPaceCounts[weekIdx]
+                    const isCurrentWeek = currentWeek === week
 
                     return (
                       <th
                         key={week}
-                        className={`text-center py-2 md:py-3 px-2 md:px-3 font-semibold min-w-[80px] md:min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${currentWeek === week
+                        className={`text-center py-2 md:py-3 px-2 md:px-3 font-semibold min-w-[80px] md:min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${isCurrentWeek
                           ? "bg-mint-soft/50 border-b-3 border-l-0 border-mint"
                           : "hover:bg-muted/40"
                           }`}
                         onClick={() => onWeekClick?.(quarter, week)}
                       >
                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
-                          <span className={`text-xs md:text-sm font-semibold ${currentWeek === week ? "text-[#059669]" : "text-foreground"}`}>
+                          <span className={`text-xs md:text-sm font-semibold ${isCurrentWeek ? "text-[#059669]" : "text-foreground"}`}>
                             {t("projections.week")} {week}
                           </span>
                           <span className="text-[9px] md:text-[10px] text-muted-foreground">

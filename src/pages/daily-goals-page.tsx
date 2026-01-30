@@ -20,6 +20,7 @@ export default function DailyGoalsPage() {
 
   const [subjectToCategory, setSubjectToCategory] = React.useState<Map<string, string>>(new Map())
   const [subjects, setSubjects] = React.useState<string[]>([])
+  const [loadingActions, setLoadingActions] = React.useState<Map<string, boolean>>(new Map())
 
   const currentQuarter = quarter || 'Q1'
   const currentWeek = week ? parseInt(week, 10) : 1
@@ -169,10 +170,10 @@ export default function DailyGoalsPage() {
 
   const getQuarterName = (q: string) => {
     const quarterLabels: { [key: string]: string } = {
-      'Q1': t("dailyGoals.quarterLabelQ1") || "First Quarter",
-      'Q2': t("dailyGoals.quarterLabelQ2") || "Second Quarter",
-      'Q3': t("dailyGoals.quarterLabelQ3") || "Third Quarter",
-      'Q4': t("dailyGoals.quarterLabelQ4") || "Fourth Quarter",
+      'Q1': t("common.quarterLabelQ1") || "First Quarter",
+      'Q2': t("common.quarterLabelQ2") || "Second Quarter",
+      'Q3': t("common.quarterLabelQ3") || "Third Quarter",
+      'Q4': t("common.quarterLabelQ4") || "Fourth Quarter",
     }
     return quarterLabels[q] || q
   }
@@ -192,6 +193,9 @@ export default function DailyGoalsPage() {
     if (!projectionId || !studentId) return
 
     const subject = getSubjectFromCategory(categoryOrSubject)
+    const loadingKey = `goal-add-${categoryOrSubject}-${dayIndex}`
+
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
 
     try {
       await createDailyGoalMutation.mutateAsync({
@@ -207,6 +211,12 @@ export default function DailyGoalsPage() {
     } catch (err) {
       const error = err as Error
       toast.error(error.message || t("dailyGoals.errorCreatingGoal") || "Failed to create daily goal")
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
     }
   }
 
@@ -247,6 +257,10 @@ export default function DailyGoalsPage() {
     const goal = findGoalInData(categoryOrSubject, dayIndex)
     if (!goal?.id) return
 
+    const loadingKey = `note-${goal.id}`
+
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
+
     try {
       await addNoteMutation.mutateAsync({
         dailyGoalId: goal.id,
@@ -261,26 +275,98 @@ export default function DailyGoalsPage() {
       const error = err as Error
       toast.error(error.message || t("dailyGoals.errorAddingNote") || "Failed to add note")
       console.error('Error adding note:', err)
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
     }
   }
 
+  const isSelfTest = (text: string): boolean => {
+    const normalized = text.trim().toUpperCase()
+    return normalized === 'ST' || normalized === 'SELF TEST'
+  }
+
+  const getNextDay = (dayIndex: number, quarter: string, week: number): { quarter: string; week: number; dayIndex: number } | null => {
+    // If it's Monday-Thursday (0-3), next day is dayIndex + 1
+    if (dayIndex < 4) {
+      return { quarter, week, dayIndex: dayIndex + 1 }
+    }
+
+    // If it's Friday (4), next day is Monday (0) of next week
+    if (week < 9) {
+      return { quarter, week: week + 1, dayIndex: 0 }
+    }
+
+    // If it's Friday of week 9, next day is Monday of week 1 of next quarter
+    const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentIndex = quarterOrder.indexOf(quarter)
+    if (currentIndex < 3) {
+      return { quarter: quarterOrder[currentIndex + 1], week: 1, dayIndex: 0 }
+    }
+
+    // Last quarter, week 9, Friday - no next day
+    return null
+  }
+
   const handleGoalToggle = async (categoryOrSubject: string, dayIndex: number) => {
-    if (!goalsData || !studentId) return
+    if (!goalsData || !studentId || !projectionId) return
 
     const goal = findGoalInData(categoryOrSubject, dayIndex)
     if (!goal?.id) return
 
+    const loadingKey = `goal-toggle-${goal.id}`
+    const wasCompleted = goal.isCompleted
+    const willBeCompleted = !wasCompleted
+
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
+
     try {
       await markCompleteMutation.mutateAsync({
         dailyGoalId: goal.id,
-        isCompleted: !goal.isCompleted,
+        isCompleted: willBeCompleted,
         studentId,
         projectionId,
         quarter: currentQuarter,
         week: currentWeek,
       })
+
+      // If marking an ST/Self Test as completed, automatically create a Test for the next day
+      if (willBeCompleted && goal.text && isSelfTest(goal.text)) {
+        const nextDay = getNextDay(dayIndex, currentQuarter, currentWeek)
+
+        if (nextDay) {
+          const subject = getSubjectFromCategory(categoryOrSubject)
+
+          // Check if a goal already exists for the next day (only if in same week/quarter)
+          const isNextDayInSameWeek = nextDay.quarter === currentQuarter && nextDay.week === currentWeek
+          const nextDayGoal = isNextDayInSameWeek ? findGoalInData(categoryOrSubject, nextDay.dayIndex) : null
+
+          // Only create if no goal exists (or if next day is in different week/quarter, try anyway - backend handles duplicates)
+          if (!nextDayGoal?.text) {
+            try {
+              await createDailyGoalMutation.mutateAsync({
+                projectionId,
+                subject,
+                quarter: nextDay.quarter,
+                week: nextDay.week,
+                dayOfWeek: nextDay.dayIndex + 1,
+                text: 'Test',
+                studentId,
+              })
+              toast.success(t("dailyGoals.testAutoCreated") || "Test automatically created for next day")
+            } catch (testErr) {
+              // Silently fail if test already exists or other error
+              console.log('Could not auto-create test:', testErr)
+            }
+          }
+        }
+      }
+
       toast.success(
-        goal.isCompleted
+        wasCompleted
           ? (t("dailyGoals.goalMarkedIncomplete") || "Goal marked as incomplete")
           : (t("dailyGoals.goalMarkedComplete") || "Goal marked as complete")
       )
@@ -288,6 +374,12 @@ export default function DailyGoalsPage() {
       const error = err as Error
       toast.error(error.message || t("dailyGoals.errorMarkingComplete") || "Failed to update goal")
       console.error('Error marking goal complete:', err)
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
     }
   }
 
@@ -395,6 +487,7 @@ export default function DailyGoalsPage() {
             data={goalsData || {}}
             subjects={subjects}
             subjectToCategory={subjectToCategory}
+            loadingActions={loadingActions}
             onGoalUpdate={handleGoalUpdate}
             onNotesUpdate={handleNotesUpdate}
             onGoalToggle={handleGoalToggle}
