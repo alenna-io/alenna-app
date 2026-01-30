@@ -210,6 +210,7 @@
     "noProjections": "No hay proyecciones",
     "noProjectionsForYear": "No se encontraron proyecciones para {{year}}",
     "noProjectionsFound": "No se encontraron proyecciones",
+    "noProjectionsDescription": "Ajusta los filtros o selecciona otro período para ver resultados.",
     "duplicateLesson": "Lección Duplicada",
     "duplicateLessonMessage": "La lección {{paceNumber}} ya existe en {{subject}}",
     "unfinishedPace": "Lección sin terminar de {{originalQuarter}}",
@@ -374,5 +375,13 @@
     },
     "success": "Contraseña establecida exitosamente",
     "error": "Error al establecer la contraseña. Por favor intenta de nuevo."
+  },
+  "filters": {
+    "schoolYear": "Año Escolar",
+    "projectionStatus": "Estado",
+    "active": "Activa",
+    "closed": "Cerrada",
+    "all": "Todos",
+    "reset": "Restablecer"
   }
 }

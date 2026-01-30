@@ -209,6 +209,7 @@
     "noProjections": "No projections",
     "noProjectionsForYear": "No projections found for {{year}}",
     "noProjectionsFound": "No projections found",
+    "noProjectionsDescription": "Adjust filters or select another period to see results.",
     "duplicateLesson": "Duplicate Lesson",
     "duplicateLessonMessage": "Lesson {{paceNumber}} already exists in {{subject}}",
     "unfinishedPace": "Unfinished pace from {{originalQuarter}}",
@@ -359,5 +360,13 @@
     "confirmPasswordPlaceholder": "Repeat password",
     "setupPassword": "Set Password",
     "settingUp": "Setting up..."
+  },
+  "filters": {
+    "schoolYear": "School Year",
+    "projectionStatus": "Status",
+    "active": "Active",
+    "closed": "Closed",
+    "all": "All",
+    "reset": "Reset"
   }
 }
