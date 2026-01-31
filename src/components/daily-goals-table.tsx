@@ -110,10 +110,19 @@ export function DailyGoalsTable({
       // Check if this subject is in the subjectToCategory mapping (it's a sub-subject)
       if (subjectToCategory.has(subject)) {
         const category = subjectToCategory.get(subject)!
-        if (!categoryGroups.has(category)) {
-          categoryGroups.set(category, [])
+        // For Electives category, keep each subject separate (don't group)
+        if (category === 'Electives') {
+          if (!categoryGroups.has(subject)) {
+            categoryGroups.set(subject, [])
+          }
+          categoryGroups.get(subject)!.push(subject)
+        } else {
+          // For non-Electives, group by category
+          if (!categoryGroups.has(category)) {
+            categoryGroups.set(category, [])
+          }
+          categoryGroups.get(category)!.push(subject)
         }
-        categoryGroups.get(category)!.push(subject)
       } else {
         // Subject doesn't have a mapping - check if it's already a category
         // (i.e., it's a value in the mapping but not a key)
@@ -192,8 +201,35 @@ export function DailyGoalsTable({
       result[category] = combinedGoals
     })
 
-    // Sort categories by default order
-    const sortedCategoryOrder = sortCategoriesByOrder(categoryOrder)
+    // Sort categories: non-electives by order, then electives alphabetically
+    const nonElectiveCategories: string[] = []
+    const electiveSubjects: string[] = []
+
+    categoryOrder.forEach(category => {
+      // Check if this is an elective subject (it's a subject name, not a category)
+      // An elective subject will have itself as the key in categoryGroups with only itself in the array
+      const subjectsInCategory = categoryGroups.get(category)
+      const isElectiveSubject = subjectsInCategory &&
+        subjectsInCategory.length === 1 &&
+        subjectsInCategory[0] === category &&
+        subjectToCategory.has(category) &&
+        subjectToCategory.get(category) === 'Electives'
+
+      if (isElectiveSubject) {
+        electiveSubjects.push(category)
+      } else {
+        nonElectiveCategories.push(category)
+      }
+    })
+
+    // Sort non-electives by category order
+    const sortedNonElectives = sortCategoriesByOrder(nonElectiveCategories)
+
+    // Sort electives alphabetically
+    const sortedElectives = electiveSubjects.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+    // Combine: non-electives first, then electives
+    const sortedCategoryOrder = [...sortedNonElectives, ...sortedElectives]
 
     return { data: result, categories: sortedCategoryOrder }
   }, [data, subjects, subjectToCategory])
