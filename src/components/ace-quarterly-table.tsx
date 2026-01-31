@@ -132,6 +132,7 @@ export function ACEQuarterlyTable({
   const [dropdownOpen, setDropdownOpen] = React.useState<{ subject: string, weekIndex: number } | null>(null)
 
   // Sort display keys (category names for non-Electives, subject names for Electives) by category displayOrder
+  // Electives are sorted alphabetically after display order
   const subjects = React.useMemo(() => {
     const displayKeyList = Object.keys(data)
     if (!subjectToCategoryDisplayOrder || !subjectToCategory) {
@@ -146,6 +147,7 @@ export function ACEQuarterlyTable({
 
       // Check if 'a' is a category name or subject name
       const isCategoryA = Array.from(subjectToCategory.values()).includes(a) && a !== 'Electives'
+      const isElectiveA = !isCategoryA && subjectToCategory.get(a) === 'Electives'
       if (isCategoryA) {
         // Find any subject in this category
         for (const [subject, category] of subjectToCategory.entries()) {
@@ -161,6 +163,7 @@ export function ACEQuarterlyTable({
 
       // Same for 'b'
       const isCategoryB = Array.from(subjectToCategory.values()).includes(b) && b !== 'Electives'
+      const isElectiveB = !isCategoryB && subjectToCategory.get(b) === 'Electives'
       if (isCategoryB) {
         for (const [subject, category] of subjectToCategory.entries()) {
           if (category === b) {
@@ -172,7 +175,17 @@ export function ACEQuarterlyTable({
         orderB = subjectToCategoryDisplayOrder.get(b) ?? 999
       }
 
-      return orderA - orderB
+      // First sort by display order
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+
+      // If same display order and both are Electives, sort alphabetically
+      if (isElectiveA && isElectiveB) {
+        return a.localeCompare(b, undefined, { sensitivity: 'base' })
+      }
+
+      return 0
     })
   }, [data, subjectToCategoryDisplayOrder, subjectToCategory])
 
