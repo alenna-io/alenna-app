@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { includesIgnoreAccents } from "@/lib/string-utils"
 
 export interface SearchablePickerOption {
   id: string
@@ -67,10 +68,9 @@ export function SearchablePicker<T extends SearchablePickerOption>({
     if (filterOptions && searchTerm) {
       filtered = filtered.filter(o => filterOptions(o, searchTerm))
     } else if (searchTerm) {
-      // Default search: search in label
-      const searchLower = searchTerm.toLowerCase()
+      // Default search: search in label (ignoring accents and case)
       filtered = filtered.filter(o =>
-        o.label.toLowerCase().includes(searchLower)
+        includesIgnoreAccents(o.label, searchTerm)
       )
     }
 

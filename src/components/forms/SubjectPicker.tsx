@@ -2,6 +2,7 @@ import * as React from "react"
 import { useTranslation } from "react-i18next"
 import { SearchablePicker } from "./SearchablePicker"
 import type { SearchablePickerOption } from "./SearchablePicker"
+import { includesIgnoreAccents } from "@/lib/string-utils"
 
 interface Subject {
   id: string
@@ -81,10 +82,9 @@ export function SubjectPicker({
       emptyMessage={t("projections.noSubjectsFound")}
       groupBy={(option) => (option as { categoryName: string }).categoryName || null}
       filterOptions={(option, searchTerm) => {
-        const searchLower = searchTerm.toLowerCase()
         const subject = option as { label: string; categoryName: string }
-        return subject.label.toLowerCase().includes(searchLower) ||
-          subject.categoryName.toLowerCase().includes(searchLower)
+        return includesIgnoreAccents(subject.label, searchTerm) ||
+          includesIgnoreAccents(subject.categoryName, searchTerm)
       }}
     />
   )
