@@ -4,6 +4,7 @@ export interface MonthlyAssignmentTemplate {
   id: string;
   name: string;
   quarter: string;
+  month: number;
   schoolYearId: string;
   schoolId: string;
   createdAt: string;
@@ -47,10 +48,12 @@ export interface ProjectionMonthlyAssignment {
 export interface CreateMonthlyAssignmentTemplateInput {
   name: string;
   quarter: string;
+  month: number;
 }
 
 export interface UpdateMonthlyAssignmentTemplateInput {
   name: string;
+  month: number;
 }
 
 export interface CreateQuarterPercentageInput {

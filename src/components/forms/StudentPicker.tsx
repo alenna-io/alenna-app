@@ -2,6 +2,7 @@ import * as React from "react"
 import { useTranslation } from "react-i18next"
 import { SearchablePicker } from "./SearchablePicker"
 import type { SearchablePickerOption } from "./SearchablePicker"
+import { includesIgnoreAccents } from "@/lib/string-utils"
 
 interface Student {
   id: string
@@ -68,12 +69,11 @@ export function StudentPicker({
       searchPlaceholder={t("projections.searchStudent")}
       emptyMessage={t("projections.noStudentsFound")}
       filterOptions={(option, searchTerm) => {
-        const searchLower = searchTerm.toLowerCase()
         const student = students.find(s => s.id === option.id)
         if (!student) return false
-        const firstName = student.user?.firstName?.toLowerCase() || ""
-        const lastName = student.user?.lastName?.toLowerCase() || ""
-        return firstName.includes(searchLower) || lastName.includes(searchLower)
+        const firstName = student.user?.firstName || ""
+        const lastName = student.user?.lastName || ""
+        return includesIgnoreAccents(firstName, searchTerm) || includesIgnoreAccents(lastName, searchTerm)
       }}
       className={className}
       disabled={disabled}

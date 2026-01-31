@@ -39,8 +39,20 @@ export function ProjectionMonthlyAssignments({
   const [gradeInput, setGradeInput] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const assignmentsForQuarter = React.useMemo(() => {
-    return monthlyAssignments.filter((g) => g.monthlyAssignmentTemplate.quarter === quarter)
+  const assignmentsByMonth = React.useMemo(() => {
+    const filtered = monthlyAssignments.filter((g) => g.monthlyAssignmentTemplate.quarter === quarter)
+    const grouped = new Map<number, ProjectionMonthlyAssignment[]>()
+
+    filtered.forEach((assignment) => {
+      const month = assignment.monthlyAssignmentTemplate.month
+      if (!grouped.has(month)) {
+        grouped.set(month, [])
+      }
+      grouped.get(month)!.push(assignment)
+    })
+
+    const sorted = Array.from(grouped.entries()).sort(([a], [b]) => a - b)
+    return sorted
   }, [monthlyAssignments, quarter])
 
   const handleOpenGradeDialog = (assignment: ProjectionMonthlyAssignment) => {
@@ -84,7 +96,7 @@ export function ProjectionMonthlyAssignments({
     await onMarkUngraded(assignment.id)
   }
 
-  if (assignmentsForQuarter.length === 0) {
+  if (assignmentsByMonth.length === 0) {
     return null
   }
 
@@ -97,81 +109,90 @@ export function ProjectionMonthlyAssignments({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 mt-6">
-          <div className="grid gap-2">
-            {assignmentsForQuarter.map((assignment) => (
-              <div
-                key={assignment.id}
-                className={cn(
-                  "flex items-center justify-between p-3 rounded-xs border"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-medium">{assignment.monthlyAssignmentTemplate.name}</span>
-                  {assignment.grade !== null && (
-                    <Badge
-                      variant={assignment.status === "COMPLETED" ? "default" : "destructive"}
-                      className="text-xs flex items-center gap-1"
-                    >
-                      {loadingActions.get(`monthly-grade-${assignment.id}`) && (
-                        <Spinner className="size-2" />
+          <div className="space-y-6">
+            {assignmentsByMonth.map(([month, assignments]) => (
+              <div key={month} className="space-y-2">
+                <h4 className="text-sm font-semibold text-muted-foreground">
+                  {t(`common.months.${month}`) || new Date(2000, month - 1, 1).toLocaleString('default', { month: 'long' })}
+                </h4>
+                <div className="grid gap-2">
+                  {assignments.map((assignment) => (
+                    <div
+                      key={assignment.id}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-xs border"
                       )}
-                      {assignment.grade}%
-                    </Badge>
-                  )}
-                  {assignment.status === "PENDING" && (
-                    <Badge variant="secondary" className="text-xs">
-                      {t("monthlyAssignments.pending") || "Pending"}
-                    </Badge>
-                  )}
-                </div>
-                {isEditing && (
-                  <div className="flex items-center gap-2">
-                    {assignment.grade !== null ? (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenGradeDialog(assignment)}
-                          className="h-8 px-2"
-                          disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
-                        >
-                          {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
-                            <Spinner className="size-3" />
-                          ) : (
-                            t("monthlyAssignments.editGrade") || "Edit"
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMarkUngraded(assignment)}
-                          className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                          disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
-                        >
-                          {loadingActions.get(`monthly-ungraded-${assignment.id}`) ? (
-                            <Spinner className="size-3" />
-                          ) : (
-                            <Undo2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenGradeDialog(assignment)}
-                        className="h-8"
-                        disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true}
-                      >
-                        {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
-                          <Spinner className="size-3" />
-                        ) : (
-                          t("monthlyAssignments.addGrade") || "Add Grade"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">{assignment.monthlyAssignmentTemplate.name}</span>
+                        {assignment.grade !== null && (
+                          <Badge
+                            variant={assignment.status === "COMPLETED" ? "default" : "destructive"}
+                            className="text-xs flex items-center gap-1"
+                          >
+                            {loadingActions.get(`monthly-grade-${assignment.id}`) && (
+                              <Spinner className="size-2" />
+                            )}
+                            {assignment.grade}%
+                          </Badge>
                         )}
-                      </Button>
-                    )}
-                  </div>
-                )}
+                        {assignment.status === "PENDING" && (
+                          <Badge variant="secondary" className="text-xs">
+                            {t("monthlyAssignments.pending") || "Pending"}
+                          </Badge>
+                        )}
+                      </div>
+                      {isEditing && (
+                        <div className="flex items-center gap-2">
+                          {assignment.grade !== null ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenGradeDialog(assignment)}
+                                className="h-8 px-2"
+                                disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
+                              >
+                                {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
+                                  <Spinner className="size-3" />
+                                ) : (
+                                  t("monthlyAssignments.editGrade") || "Edit"
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMarkUngraded(assignment)}
+                                className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                                disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true || loadingActions.get(`monthly-ungraded-${assignment.id}`) === true}
+                              >
+                                {loadingActions.get(`monthly-ungraded-${assignment.id}`) ? (
+                                  <Spinner className="size-3" />
+                                ) : (
+                                  <Undo2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenGradeDialog(assignment)}
+                              className="h-8"
+                              disabled={loadingActions.get(`monthly-grade-${assignment.id}`) === true}
+                            >
+                              {loadingActions.get(`monthly-grade-${assignment.id}`) ? (
+                                <Spinner className="size-3" />
+                              ) : (
+                                t("monthlyAssignments.addGrade") || "Add Grade"
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

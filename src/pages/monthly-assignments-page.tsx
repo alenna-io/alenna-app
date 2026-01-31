@@ -6,7 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, Percent } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Trash2, Percent, MoreVertical, Edit } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useApi } from "@/services/api"
 import type { MonthlyAssignmentTemplate, QuarterGradePercentage } from "@/services/api/monthly-assignment"
 import { useUser } from "@/contexts/UserContext"
@@ -36,8 +43,12 @@ export default function MonthlyAssignmentsPage() {
   const [schoolYearId, setSchoolYearId] = React.useState<string | null>(null)
 
   const [showAddTemplateDialog, setShowAddTemplateDialog] = React.useState(false)
+  const [showEditTemplateDialog, setShowEditTemplateDialog] = React.useState(false)
+  const [editingTemplate, setEditingTemplate] = React.useState<MonthlyAssignmentTemplate | null>(null)
   const [newTemplateName, setNewTemplateName] = React.useState("")
+  const [selectedMonth, setSelectedMonth] = React.useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [quarterDates, setQuarterDates] = React.useState<Record<string, { startDate: string; endDate: string }>>({})
 
   const [percentageInputs, setPercentageInputs] = React.useState<Record<string, string>>({})
 
@@ -48,6 +59,15 @@ export default function MonthlyAssignmentsPage() {
         const currentYear = schoolData?.schoolYears?.find(sy => sy.status === 'CURRENT_YEAR')
         if (currentYear?.id) {
           setSchoolYearId(currentYear.id)
+        }
+
+        const weekInfo = await api.schoolYears.getCurrentWeek()
+        if (weekInfo?.schoolYear?.quarters) {
+          const dates: Record<string, { startDate: string; endDate: string }> = {}
+          weekInfo.schoolYear.quarters.forEach((q) => {
+            dates[q.name] = { startDate: q.startDate, endDate: q.endDate }
+          })
+          setQuarterDates(dates)
         }
       } catch (err) {
         console.error("Error loading school data:", err)
@@ -88,18 +108,55 @@ export default function MonthlyAssignmentsPage() {
     return templates.filter((t) => t.quarter === activeQuarter)
   }, [templates, activeQuarter])
 
+  const templatesByMonth = React.useMemo(() => {
+    const filtered = templatesForQuarter
+    const grouped = new Map<number, MonthlyAssignmentTemplate[]>()
+
+    filtered.forEach((template) => {
+      const month = template.month
+      if (!grouped.has(month)) {
+        grouped.set(month, [])
+      }
+      grouped.get(month)!.push(template)
+    })
+
+    const sorted = Array.from(grouped.entries()).sort(([a], [b]) => a - b)
+    return sorted
+  }, [templatesForQuarter])
+
+  const availableMonths = React.useMemo(() => {
+    const quarterDate = quarterDates[activeQuarter]
+    if (!quarterDate) return []
+
+    const start = new Date(quarterDate.startDate)
+    const end = new Date(quarterDate.endDate)
+    const months: number[] = []
+
+    const current = new Date(start.getFullYear(), start.getMonth(), 1)
+    const endMonth = new Date(end.getFullYear(), end.getMonth(), 1)
+
+    while (current <= endMonth) {
+      months.push(current.getMonth() + 1)
+      current.setMonth(current.getMonth() + 1)
+    }
+
+    return months
+  }, [quarterDates, activeQuarter])
+
 
   const handleAddTemplate = async () => {
-    if (!schoolYearId || !newTemplateName.trim()) return
+    if (!schoolYearId || !newTemplateName.trim() || !selectedMonth) return
 
     setIsSubmitting(true)
     try {
       const newTemplate = await api.monthlyAssignments.createTemplate(schoolYearId, {
         name: newTemplateName.trim(),
         quarter: activeQuarter,
+        month: selectedMonth,
       })
       setTemplates((prev) => [...prev, newTemplate])
       setNewTemplateName("")
+      setSelectedMonth(null)
       setShowAddTemplateDialog(false)
       toast.success(t("monthlyAssignments.templateCreated") || "Monthly assignment created")
     } catch (err) {
@@ -118,6 +175,36 @@ export default function MonthlyAssignmentsPage() {
     } catch (err) {
       console.error("Error deleting template:", err)
       toast.error(t("monthlyAssignments.errorDeletingTemplate") || "Failed to delete monthly assignment")
+    }
+  }
+
+  const handleEditTemplate = (template: MonthlyAssignmentTemplate) => {
+    setEditingTemplate(template)
+    setNewTemplateName(template.name)
+    setSelectedMonth(template.month)
+    setShowEditTemplateDialog(true)
+  }
+
+  const handleUpdateTemplate = async () => {
+    if (!schoolYearId || !editingTemplate || !newTemplateName.trim() || !selectedMonth) return
+
+    setIsSubmitting(true)
+    try {
+      const updated = await api.monthlyAssignments.updateTemplate(editingTemplate.id, {
+        name: newTemplateName.trim(),
+        month: selectedMonth,
+      })
+      setTemplates((prev) => prev.map((t) => t.id === editingTemplate.id ? updated : t))
+      setNewTemplateName("")
+      setSelectedMonth(null)
+      setEditingTemplate(null)
+      setShowEditTemplateDialog(false)
+      toast.success(t("monthlyAssignments.templateUpdated") || "Monthly assignment updated")
+    } catch (err) {
+      console.error("Error updating template:", err)
+      toast.error(t("monthlyAssignments.errorUpdatingTemplate") || "Failed to update monthly assignment")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -321,24 +408,49 @@ export default function MonthlyAssignmentsPage() {
                 {t("monthlyAssignments.noAssignments") || "No monthly assignments for this quarter yet"}
               </div>
             ) : (
-              <ul className="space-y-2">
-                {templatesForQuarter.map((template) => (
-                  <li
-                    key={template.id}
-                    className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg gap-2"
-                  >
-                    <span className="font-medium text-sm sm:text-base break-words flex-1 min-w-0">{template.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteTemplate(template.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </li>
+              <div className="space-y-6">
+                {templatesByMonth.map(([month, monthTemplates]) => (
+                  <div key={month} className="space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground">
+                      {t(`common.months.${month}`) || new Date(2000, month - 1, 1).toLocaleString('default', { month: 'long' })}
+                    </h4>
+                    <ul className="space-y-2">
+                      {monthTemplates.map((template) => (
+                        <li
+                          key={template.id}
+                          className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg gap-2"
+                        >
+                          <span className="font-medium text-sm sm:text-base break-words flex-1 min-w-0">{template.name}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 shrink-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditTemplate(template)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                {t("common.edit") || "Edit"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t("common.delete") || "Delete"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -395,24 +507,52 @@ export default function MonthlyAssignmentsPage() {
         </Card>
       </div>
 
-      <Dialog open={showAddTemplateDialog} onOpenChange={setShowAddTemplateDialog}>
+      <Dialog open={showAddTemplateDialog} onOpenChange={(open) => {
+        setShowAddTemplateDialog(open)
+        if (!open) {
+          setNewTemplateName("")
+          setSelectedMonth(null)
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {t("monthlyAssignments.addAssignmentTitle") || "Add Monthly Assignment"}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="template-name">
-              {t("monthlyAssignments.assignmentName") || "Assignment Name"}
-            </Label>
-            <Input
-              id="template-name"
-              value={newTemplateName}
-              onChange={(e) => setNewTemplateName(e.target.value)}
-              placeholder={t("monthlyAssignments.assignmentNamePlaceholder") || "e.g., Oral Report, Verse of the Month"}
-              className="mt-2"
-            />
+          <div className="py-4 space-y-4">
+            <div>
+              <Label htmlFor="template-name">
+                {t("monthlyAssignments.assignmentName") || "Assignment Name"}
+              </Label>
+              <Input
+                id="template-name"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder={t("monthlyAssignments.assignmentNamePlaceholder") || "e.g., Oral Report, Verse of the Month"}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="template-month">
+                {t("monthlyAssignments.month") || "Month"}
+              </Label>
+              <Select
+                value={selectedMonth?.toString() || ""}
+                onValueChange={(value) => setSelectedMonth(parseInt(value, 10))}
+              >
+                <SelectTrigger id="template-month" className="mt-2">
+                  <SelectValue placeholder={t("monthlyAssignments.selectMonth") || "Select month"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMonths.map((month) => (
+                    <SelectItem key={month} value={month.toString()}>
+                      {t(`common.months.${month}`) || new Date(2000, month - 1, 1).toLocaleString('default', { month: 'long' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -420,13 +560,84 @@ export default function MonthlyAssignmentsPage() {
               onClick={() => {
                 setShowAddTemplateDialog(false)
                 setNewTemplateName("")
+                setSelectedMonth(null)
               }}
             >
               {t("common.cancel") || "Cancel"}
             </Button>
             <Button
               onClick={handleAddTemplate}
-              disabled={!newTemplateName.trim() || isSubmitting}
+              disabled={!newTemplateName.trim() || !selectedMonth || isSubmitting}
+            >
+              {isSubmitting ? t("common.saving") || "Saving..." : t("common.save") || "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditTemplateDialog} onOpenChange={(open) => {
+        setShowEditTemplateDialog(open)
+        if (!open) {
+          setNewTemplateName("")
+          setSelectedMonth(null)
+          setEditingTemplate(null)
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("monthlyAssignments.editAssignmentTitle") || "Edit Monthly Assignment"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label htmlFor="edit-template-name">
+                {t("monthlyAssignments.assignmentName") || "Assignment Name"}
+              </Label>
+              <Input
+                id="edit-template-name"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder={t("monthlyAssignments.assignmentNamePlaceholder") || "e.g., Oral Report, Verse of the Month"}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-template-month">
+                {t("monthlyAssignments.month") || "Month"}
+              </Label>
+              <Select
+                value={selectedMonth?.toString() || ""}
+                onValueChange={(value) => setSelectedMonth(parseInt(value, 10))}
+              >
+                <SelectTrigger id="edit-template-month" className="mt-2">
+                  <SelectValue placeholder={t("monthlyAssignments.selectMonth") || "Select month"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMonths.map((month) => (
+                    <SelectItem key={month} value={month.toString()}>
+                      {t(`common.months.${month}`) || new Date(2000, month - 1, 1).toLocaleString('default', { month: 'long' })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditTemplateDialog(false)
+                setNewTemplateName("")
+                setSelectedMonth(null)
+                setEditingTemplate(null)
+              }}
+            >
+              {t("common.cancel") || "Cancel"}
+            </Button>
+            <Button
+              onClick={handleUpdateTemplate}
+              disabled={!newTemplateName.trim() || !selectedMonth || isSubmitting}
             >
               {isSubmitting ? t("common.saving") || "Saving..." : t("common.save") || "Save"}
             </Button>
