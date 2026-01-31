@@ -11,7 +11,9 @@ import { ErrorAlert } from "@/components/ui/error-alert"
 import { useApi } from "@/services/api"
 import type { ProjectionDetails } from "@/services/api/projections"
 import { Move, Edit, Eye } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useEditMode } from "@/contexts/EditModeContext"
 import { PacePickerDialog } from "@/components/pace-picker-dialog"
 import { ProjectionMonthlyAssignments } from "@/components/projection-monthly-assignments"
 import { toast } from "sonner"
@@ -158,6 +160,15 @@ export default function ProjectionDetailsPageV2() {
     isActive: boolean
   } | null>(null)
   const [editMode, setEditMode] = React.useState<'view' | 'moving' | 'editing'>('view')
+  const { setEditMode: setGlobalEditMode } = useEditMode()
+
+  // Sync local editMode with global context
+  React.useEffect(() => {
+    setGlobalEditMode(editMode)
+    return () => {
+      setGlobalEditMode(null)
+    }
+  }, [editMode, setGlobalEditMode])
 
   const [pacePickerOpen, setPacePickerOpen] = React.useState(false)
   const [pacePickerContext, setPacePickerContext] = React.useState<{
@@ -832,9 +843,11 @@ export default function ProjectionDetailsPageV2() {
           {projectionInfo.isActive && (
             <div className="flex flex-col items-end gap-2">
               <div className='flex flex-col items-start gap-2'>
-                <span className="text-xs font-bold text-black">
-                  {t("projections.mode") || "Mode"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-black">
+                    {t("projections.mode") || "Mode"}
+                  </span>
+                </div>
                 <Tabs
                   value={editMode}
                   defaultValue="view"
@@ -843,12 +856,20 @@ export default function ProjectionDetailsPageV2() {
                   }}
                   className="w-auto"
                 >
-                  <TabsList className="h-9 p-0.5 bg-[#8B5CF6]/10">
+                  <TabsList className={cn(
+                    "h-9 p-0.5 transition-colors duration-200",
+                    editMode === 'view' && "bg-muted/10",
+                    editMode === 'moving' && "bg-blue-500/10",
+                    editMode === 'editing' && "bg-green-500/10"
+                  )}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="view"
-                          className="h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5"
+                          className={cn(
+                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
+                            editMode === 'view' && "bg-white text-foreground shadow-sm"
+                          )}
                         >
                           <Eye className="h-4 w-4" />
                           <span className="hidden sm:inline">{t("projections.view") || "View"}</span>
@@ -862,7 +883,10 @@ export default function ProjectionDetailsPageV2() {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="moving"
-                          className="h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5"
+                          className={cn(
+                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
+                            editMode === 'moving' && "bg-white text-blue-600 shadow-sm"
+                          )}
                         >
                           <Move className="h-4 w-4" />
                           <span className="hidden sm:inline">{t("projections.movePaces") || "Move"}</span>
@@ -876,7 +900,10 @@ export default function ProjectionDetailsPageV2() {
                       <TooltipTrigger asChild>
                         <TabsTrigger
                           value="editing"
-                          className="h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5"
+                          className={cn(
+                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
+                            editMode === 'editing' && "bg-white text-green-600 shadow-sm"
+                          )}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="hidden sm:inline">{t("projections.edit") || "Edit"}</span>
@@ -905,7 +932,7 @@ export default function ProjectionDetailsPageV2() {
         </TabsList>
 
         <TabsContent value="Q1" className="mt-6">
-          <Card className='bg-transparent'>
+          <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
                 data={projectionData.Q1}
@@ -947,7 +974,7 @@ export default function ProjectionDetailsPageV2() {
         </TabsContent>
 
         <TabsContent value="Q2" className="mt-6">
-          <Card className='bg-transparent'>
+          <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
                 data={projectionData.Q2}
@@ -988,7 +1015,7 @@ export default function ProjectionDetailsPageV2() {
         </TabsContent>
 
         <TabsContent value="Q3" className="mt-6">
-          <Card className='bg-transparent'>
+          <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
                 data={projectionData.Q3}
@@ -1029,7 +1056,7 @@ export default function ProjectionDetailsPageV2() {
         </TabsContent>
 
         <TabsContent value="Q4" className="mt-6">
-          <Card className='bg-transparent'>
+          <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
                 data={projectionData.Q4}

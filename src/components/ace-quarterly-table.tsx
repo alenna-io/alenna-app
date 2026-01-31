@@ -25,6 +25,7 @@ import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
+import { cn } from '@/lib/utils'
 
 interface QuarterlyTableProps {
   quarter: string
@@ -354,7 +355,14 @@ export function ACEQuarterlyTable({
 
   return (
     <div className='relative'>
-      <Card className={`${isActive ? "border-primary border-2" : "border-border/50"} transition-all duration-200`}>
+      <Card className={
+        cn(
+          'bg-white transition-all duration-200',
+          'border-2',
+          editMode === 'view' && (isActive ? 'border-primary' : 'border-border'),
+          editMode === 'moving' && 'border-blue-500/50 shadow-lg shadow-blue-500/10',
+          editMode === 'editing' && 'border-green-500/50 shadow-lg shadow-green-500/10'
+        )}>
         <CardHeader className="p-4 md:p-5 lg:p-6 border-b border-border/30">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
