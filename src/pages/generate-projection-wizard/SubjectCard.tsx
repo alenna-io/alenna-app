@@ -28,7 +28,7 @@ interface SubjectCardProps {
   onSubjectSelect: (subjectId: string) => void
   onSubjectChange: (field: keyof SubjectConfig, value: unknown) => void
   onSkipPaceChange: (pace: number, checked: boolean) => void
-  onNotPairWithChange: (otherSubjectId: string, checked: boolean) => void
+  onNotPairWithChange: (otherSubjectId: string | null) => void
   otherSubjects: Array<{ id: string; subjectId: string }>
   subjectsByCategory: Record<string, Subject[]>
   availableSubjects: Subject[]
@@ -258,30 +258,21 @@ export const SubjectCard = React.memo(function SubjectCard({
 
                       {otherSubjects.length > 0 && (
                         <div className="space-y-2">
-                          <Label>{t("projections.notPairWith")}:</Label>
-                          <div className="space-y-2 mt-2">
-                            {otherSubjects.map((otherSubject) => {
-                              const isChecked = subject.notPairWith.includes(otherSubject.subjectId)
-                              return (
-                                <div key={otherSubject.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`not-pair-${index}-${otherSubject.id}`}
-                                    checked={isChecked}
-                                    onCheckedChange={(checked) =>
-                                      onNotPairWithChange(otherSubject.subjectId, checked === true)
-                                    }
-                                    className="cursor-pointer"
-                                  />
-                                  <Label
-                                    htmlFor={`not-pair-${index}-${otherSubject.id}`}
-                                    className="text-sm font-normal cursor-pointer"
-                                  >
-                                    {getSubjectName(otherSubject.subjectId)}
-                                  </Label>
-                                </div>
-                              )
-                            })}
-                          </div>
+                          <SelectField
+                            label={t("projections.notPairWith")}
+                            value={subject.notPairWith[0] || ""}
+                            onValueChange={(value) => {
+                              onNotPairWithChange(value === "" ? null : value)
+                            }}
+                            placeholder={t("projections.selectNotPairWith") || "Select a subject (optional)"}
+                            options={[
+                              { value: "", label: t("projections.none") || "None" },
+                              ...otherSubjects.map((otherSubject) => ({
+                                value: otherSubject.subjectId,
+                                label: getSubjectName(otherSubject.subjectId),
+                              })),
+                            ]}
+                          />
                         </div>
                       )}
                     </>

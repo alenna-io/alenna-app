@@ -19,7 +19,7 @@ interface Step2SelectSubjectsProps {
   onSubjectSelect: (index: number, subjectId: string) => void
   onSubjectChange: (index: number, field: keyof SubjectConfig, value: unknown) => void
   onSkipPaceChange: (index: number, pace: number, checked: boolean) => void
-  onNotPairWithChange: (index: number, otherSubjectId: string, checked: boolean) => void
+  onNotPairWithChange: (index: number, otherSubjectId: string | null) => void
   expandedSubjectIndex: number | null
   onToggleExpand: (index: number) => void
   getAvailablePacesForSubject: (index: number) => number[]
@@ -97,8 +97,8 @@ export const Step2SelectSubjects = React.memo(function Step2SelectSubjects({
               onSubjectSelect={(subjectId) => onSubjectSelect(index, subjectId)}
               onSubjectChange={(field, value) => onSubjectChange(index, field, value)}
               onSkipPaceChange={(pace, checked) => onSkipPaceChange(index, pace, checked)}
-              onNotPairWithChange={(otherSubjectId, checked) =>
-                onNotPairWithChange(index, otherSubjectId, checked)
+              onNotPairWithChange={(otherSubjectId) =>
+                onNotPairWithChange(index, otherSubjectId)
               }
               otherSubjects={otherSubjects}
               subjectsByCategory={subjectsByCategory}
