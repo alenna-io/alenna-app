@@ -129,7 +129,8 @@
   "sidebar": {
     "home": "Inicio",
     "projections": "Proyecciones",
-    "monthlyAssignments": "Asignaciones"
+    "monthlyAssignments": "Asignaciones",
+    "academicPlanning": "Plan Académico"
   },
   "breadcrumbs": {
     "projections": "Proyecciones",

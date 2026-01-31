@@ -122,7 +122,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Academic Planning</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("sidebar.academicPlanning") || "Academic Planning"}</SidebarGroupLabel>
           <SidebarGroupContent>
             {isLoadingUser ? (
               <SidebarMenu>
