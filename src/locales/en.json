@@ -128,7 +128,8 @@
   "sidebar": {
     "home": "Home",
     "projections": "Projections",
-    "monthlyAssignments": "Monthly Assignments"
+    "monthlyAssignments": "Monthly Assignments",
+    "academicPlanning": "Academic Planning"
   },
   "breadcrumbs": {
     "projections": "Projections",
