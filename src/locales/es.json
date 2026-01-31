@@ -115,7 +115,8 @@
     "quarterLabelQ1": "Primer Bloque",
     "quarterLabelQ2": "Segundo Bloque",
     "quarterLabelQ3": "Tercer Bloque",
-    "quarterLabelQ4": "Cuarto Bloque"
+    "quarterLabelQ4": "Cuarto Bloque",
+    "none": "Ninguno"
   },
   "errors": {
     "error": "Error",
