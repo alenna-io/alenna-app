@@ -87,10 +87,13 @@ export function DailyGoalsTable({
 
     // We have sub-subjects that need to be grouped
 
-    // Get all unique categories
+    // Get all unique categories (excluding "Electives" category itself)
     const allCategories = new Set<string>()
     subjectToCategory.forEach((category) => {
-      allCategories.add(category)
+      // Don't add "Electives" as a category - we'll show individual elective subjects instead
+      if (category !== 'Electives') {
+        allCategories.add(category)
+      }
     })
 
     // Add any subjects that don't have a category mapping
@@ -206,6 +209,11 @@ export function DailyGoalsTable({
     const electiveSubjects: string[] = []
 
     categoryOrder.forEach(category => {
+      // Skip "Electives" category itself - we only want individual elective subjects
+      if (category === 'Electives') {
+        return
+      }
+
       // Check if this is an elective subject (it's a subject name, not a category)
       // An elective subject will have itself as the key in categoryGroups with only itself in the array
       const subjectsInCategory = categoryGroups.get(category)

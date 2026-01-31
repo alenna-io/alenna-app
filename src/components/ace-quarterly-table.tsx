@@ -135,7 +135,7 @@ export function ACEQuarterlyTable({
   // Sort display keys (category names for non-Electives, subject names for Electives) by category displayOrder
   // Electives are sorted alphabetically after display order
   const subjects = React.useMemo(() => {
-    const displayKeyList = Object.keys(data)
+    const displayKeyList = Object.keys(data).filter(key => key !== 'Electives')
     if (!subjectToCategoryDisplayOrder || !subjectToCategory) {
       return displayKeyList
     }
