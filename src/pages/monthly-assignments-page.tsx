@@ -418,7 +418,7 @@ export default function MonthlyAssignmentsPage() {
                       {monthTemplates.map((template) => (
                         <li
                           key={template.id}
-                          className="flex items-center justify-between p-1 bg-muted/50 rounded-lg gap-2"
+                          className="flex items-center justify-between p-1 bg-muted/50 rounded-xs gap-2"
                         >
                           <span className="font-medium text-sm break-words flex-1 min-w-0">{template.name}</span>
                           <DropdownMenu>

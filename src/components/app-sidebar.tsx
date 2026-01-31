@@ -6,11 +6,11 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -33,7 +33,6 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed"
 
   const menuItems: MenuItem[] = [
-    { title: t("sidebar.home") || "Home", url: "/", icon: "home" },
     { title: t("sidebar.projections") || "Projections", url: "/projections", icon: "projections" },
     { title: t("sidebar.monthlyAssignments") || "Monthly Assignments", url: "/monthly-assignments", icon: "monthlyAssignments" },
   ]
@@ -53,16 +52,16 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="w-[200px]">
+    <Sidebar collapsible="icon" className="w-[200px] bg-sidebar/50 border-r border-border/30">
       <SidebarHeader>
         {isCollapsed ? (
           // Collapsed state: centered toggle button below logo
           <div className="flex flex-col gap-2 items-center">
             <SidebarMenu className="w-full">
-              <SidebarMenuItem>
-                <SidebarMenuButton size="default" asChild className="justify-center">
+              <SidebarMenuItem className='rounded-xs'>
+                <SidebarMenuButton size="default" asChild className="justify-center rounded-xs">
                   <Link to="/" className="flex justify-center p-0!">
-                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-transparent text-primary/70 rounded-xs'}`}>
                       {isLoadingUser ? (
                         <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                       ) : schoolLogoUrl ? (
@@ -86,10 +85,10 @@ export function AppSidebar() {
           // Expanded state: toggle button to the right of school name
           <div className="flex items-center justify-between gap-2">
             <SidebarMenu className="flex-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild className='px-2.5'>
-                  <Link to="/">
-                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary text-primary-foreground rounded-xl shadow-sm'}`}>
+              <SidebarMenuItem className='rounded-xs'>
+                <SidebarMenuButton size="lg" asChild className='px-2.5 rounded-xs'>
+                  <Link to="/" className='flex justify-between p-0!'>
+                    <div className={`flex aspect-square size-10 items-center justify-center overflow-hidden ${schoolLogoUrl ? '' : 'bg-primary/10 text-primary/70 rounded-xs'}`}>
                       {isLoadingUser ? (
                         <LoadingSpinner size="sm" className="text-sidebar-primary-foreground" />
                       ) : schoolLogoUrl ? (
@@ -123,6 +122,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Academic Planning</SidebarGroupLabel>
           <SidebarGroupContent>
             {isLoadingUser ? (
               <SidebarMenu>
@@ -145,7 +145,7 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/90 !text-primary! hover:!bg-primary/90 hover:!text-primary data-[active=true]:!bg-primary/20 data-[active=true]:!text-primary [&>svg]:!text-primary-foreground" : ""}`}
+                        className={`!overflow-visible !h-auto [&>span:last-child]:!whitespace-normal [&>span:last-child]:!overflow-visible ${isActive ? "!bg-primary/8 !text-primary hover:!bg-primary/12 data-[active=true]:!bg-primary/8 data-[active=true]:!text-primary [&>svg]:!text-primary/80" : "hover:!bg-muted/40"}`}
                       >
                         <Link
                           to={item.url}
@@ -208,8 +208,6 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   )
 }

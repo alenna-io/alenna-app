@@ -735,7 +735,7 @@ export default function ProjectionDetailsPageV2() {
             <TabsTrigger value="Q3">Q3</TabsTrigger>
             <TabsTrigger value="Q4">Q4</TabsTrigger>
           </TabsList>
-          <TabsContent value="Q1" className="mt-6">
+          <TabsContent value="Q1" className="mt-8">
             <Card className="bg-transparent border">
               <CardHeader className="border-b pb-4">
                 <div className="flex items-center justify-between">
@@ -820,109 +820,101 @@ export default function ProjectionDetailsPageV2() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">
+    <div className="space-y-8">
+      {/* Layer 2 - Entity focus (stronger) */}
+      <div className="flex items-start justify-between gap-6 pt-2">
+        <div className="flex-1">
+          <h1 className="text-3xl font-semibold tracking-tight mb-3">
             {projectionInfo.studentName}
           </h1>
-          <div className="flex items-center gap-3 mt-2">
-            <Badge variant={projectionInfo.isActive ? "default" : "secondary"}>
+          <div className="flex items-center gap-2.5 mt-1">
+            <Badge variant={projectionInfo.isActive ? "default" : "secondary"} className="text-xs">
               {projectionInfo.isActive ? t("projections.active") : t("projections.inactive")}
             </Badge>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground/80">
               {projectionInfo.schoolYearName}
             </span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{totalPaces}</span> {t("projections.totalPaces")}
+            <span className="text-sm text-muted-foreground/50">•</span>
+            <span className="text-sm text-muted-foreground/80">
+              <span className="font-medium text-foreground/90">{totalPaces}</span> {t("projections.totalPaces")}
             </span>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-4">
-          {projectionInfo.isActive && (
-            <div className="flex flex-col items-end gap-2">
-              <div className='flex flex-col items-start gap-2'>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-black">
-                    {t("projections.mode") || "Mode"}
-                  </span>
-                </div>
-                <Tabs
-                  value={editMode}
-                  defaultValue="view"
-                  onValueChange={(value) => {
-                    setEditMode(value as 'view' | 'moving' | 'editing')
-                  }}
-                  className="w-auto"
-                >
-                  <TabsList className={cn(
-                    "h-9 p-0.5 transition-colors duration-200",
-                    editMode === 'view' && "bg-muted/10",
-                    editMode === 'moving' && "bg-blue-500/10",
-                    editMode === 'editing' && "bg-green-500/10"
-                  )}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <TabsTrigger
-                          value="view"
-                          className={cn(
-                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
-                            editMode === 'view' && "bg-white text-foreground shadow-sm"
-                          )}
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span className="hidden sm:inline">{t("projections.view") || "View"}</span>
-                        </TabsTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("projections.view") || "View"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <TabsTrigger
-                          value="moving"
-                          className={cn(
-                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
-                            editMode === 'moving' && "bg-white text-blue-600 shadow-sm"
-                          )}
-                        >
-                          <Move className="h-4 w-4" />
-                          <span className="hidden sm:inline">{t("projections.movePaces") || "Move"}</span>
-                        </TabsTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("projections.movePaces") || "Move Lessons"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <TabsTrigger
-                          value="editing"
-                          className={cn(
-                            "h-8 px-3 text-sm transition-all duration-200 flex items-center gap-1.5",
-                            editMode === 'editing' && "bg-white text-green-600 shadow-sm"
-                          )}
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="hidden sm:inline">{t("projections.edit") || "Edit"}</span>
-                        </TabsTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("projections.edit") || "Edit"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Mode selector - reduced visual weight */}
+        {projectionInfo.isActive && (
+          <div className="flex flex-col items-end gap-1.5">
+            <Tabs
+              value={editMode}
+              defaultValue="view"
+              onValueChange={(value) => {
+                setEditMode(value as 'view' | 'moving' | 'editing')
+              }}
+              className="w-auto"
+            >
+              <TabsList className={cn(
+                "h-8 p-0.5 transition-colors duration-200 bg-muted/30",
+                editMode === 'view' && "bg-gray-300/30",
+                editMode === 'moving' && "bg-blue-500/8",
+                editMode === 'editing' && "bg-green-500/8"
+              )}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value="view"
+                      className={cn(
+                        "h-7 px-2.5 text-xs transition-all duration-200 flex items-center gap-1.5",
+                        editMode === 'view' && "bg-background text-foreground/90 shadow-none"
+                      )}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t("projections.view") || "View"}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("projections.view") || "View"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value="moving"
+                      className={cn(
+                        "h-7 px-2.5 text-xs transition-all duration-200 flex items-center gap-1.5",
+                        editMode === 'moving' && "bg-background text-blue-600/90 shadow-none"
+                      )}
+                    >
+                      <Move className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t("projections.movePaces") || "Move"}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("projections.movePaces") || "Move Lessons"}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value="editing"
+                      className={cn(
+                        "h-7 px-2.5 text-xs transition-all duration-200 flex items-center gap-1.5",
+                        editMode === 'editing' && "bg-background text-green-600/90 shadow-none"
+                      )}
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{t("projections.edit") || "Edit"}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("projections.edit") || "Edit"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
       </div>
 
-
-
+      {/* Quarter selector - context, not action */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 gap-2">
           <TabsTrigger value="Q1">Q1</TabsTrigger>
@@ -931,7 +923,7 @@ export default function ProjectionDetailsPageV2() {
           <TabsTrigger value="Q4">Q4</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="Q1" className="mt-6">
+        <TabsContent value="Q1" className="mt-8">
           <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
@@ -973,7 +965,7 @@ export default function ProjectionDetailsPageV2() {
           />
         </TabsContent>
 
-        <TabsContent value="Q2" className="mt-6">
+        <TabsContent value="Q2" className="mt-8">
           <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
@@ -1014,7 +1006,7 @@ export default function ProjectionDetailsPageV2() {
           />
         </TabsContent>
 
-        <TabsContent value="Q3" className="mt-6">
+        <TabsContent value="Q3" className="mt-8">
           <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
@@ -1055,7 +1047,7 @@ export default function ProjectionDetailsPageV2() {
           />
         </TabsContent>
 
-        <TabsContent value="Q4" className="mt-6">
+        <TabsContent value="Q4" className="mt-8">
           <Card className='border-none bg-transparent'>
             <CardContent className="!p-0">
               <ACEQuarterlyTable
