@@ -404,7 +404,7 @@ export default function MonthlyAssignmentsPage() {
           </CardHeader>
           <CardContent className="pt-0">
             {templatesForQuarter.length === 0 ? (
-              <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-muted-foreground">
+              <div className="text-center py-6 sm:py-8 text-sm text-muted-foreground">
                 {t("monthlyAssignments.noAssignments") || "No monthly assignments for this quarter yet"}
               </div>
             ) : (
@@ -418,9 +418,9 @@ export default function MonthlyAssignmentsPage() {
                       {monthTemplates.map((template) => (
                         <li
                           key={template.id}
-                          className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg gap-2"
+                          className="flex items-center justify-between p-1 bg-muted/50 rounded-xs gap-2"
                         >
-                          <span className="font-medium text-sm sm:text-base break-words flex-1 min-w-0">{template.name}</span>
+                          <span className="font-medium text-sm break-words flex-1 min-w-0">{template.name}</span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

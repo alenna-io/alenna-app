@@ -352,6 +352,7 @@
     "gradeUpdated": "Grade updated successfully",
     "errorUpdatingGrade":"Error updating grade",
     "markedUngraded": "Assignment marked as ungraded",
+    "markUngraded": "Mark as Ungraded",
     "errorMarkingUngraded":"Error marking assignment as ungraded",
     "editGrade": "Edit Grade"
   },

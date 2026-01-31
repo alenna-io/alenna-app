@@ -262,7 +262,7 @@ export function DailyGoalsTable({
   return (
     <Card className="border-none bg-transparent">
       <CardContent className="p-0">
-        <div className="overflow-x-auto -mx-3 md:mx-0 border border-border rounded-xl overflow-hidden bg-transparent">
+        <div className="overflow-x-auto -mx-3 md:mx-0 border border-border rounded-xs overflow-hidden bg-transparent">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-muted/30">
@@ -389,7 +389,7 @@ export function DailyGoalsTable({
                               )}
                             </div>
                             {goal?.notes && !goal?.notesCompleted && (
-                              <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-md text-red-900 shadow-sm">
+                              <div className="w-full flex items-start gap-2 text-xs text-left px-3 py-2 bg-red-100 border-2 border-red-400 rounded-xs text-red-900 shadow-sm">
                                 <div className="flex-1">
                                   <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-0.5">{t("dailyGoals.pending")}</p>
                                   <p className="text-sm font-medium leading-tight">
@@ -417,19 +417,19 @@ export function DailyGoalsTable({
         {/* Summary */}
         <div className="mt-3 md:mt-4 pt-3 md:pt-4 border-t">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-            <div className="text-center p-2 md:p-3 rounded-xl color-zone-progress relative overflow-hidden">
+            <div className="text-center p-2 md:p-3 rounded-xs color-zone-progress relative overflow-hidden">
               <p className="text-lg md:text-2xl font-semibold text-mint relative z-10 tabular-nums">
                 {completedGoals}
               </p>
               <p className="text-[10px] md:text-xs text-foreground relative z-10 font-medium">{t("dailyGoals.completedGoals")}</p>
             </div>
-            <div className="text-center p-2 md:p-3 rounded-xl color-zone-status relative overflow-hidden">
+            <div className="text-center p-2 md:p-3 rounded-xs color-zone-status relative overflow-hidden">
               <p className="text-lg md:text-2xl font-semibold text-sky relative z-10 tabular-nums">
                 {groupedData.categories.length * 5}
               </p>
               <p className="text-[10px] md:text-xs text-foreground relative z-10 font-medium">{t("dailyGoals.totalGoals")}</p>
             </div>
-            <div className="text-center p-2 md:p-3 rounded-xl color-zone-highlight relative overflow-hidden">
+            <div className="text-center p-2 md:p-3 rounded-xs color-zone-highlight relative overflow-hidden">
               <p className="text-lg md:text-2xl font-semibold text-amber relative z-10 tabular-nums">
                 {groupedData.categories.length}
               </p>
@@ -477,7 +477,7 @@ export function DailyGoalsTable({
           {notesHistory && (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {notesHistory.history.map((entry, index) => (
-                <div key={index} className="p-3 rounded-lg border-2 bg-green-50 border-green-200">
+                <div key={index} className="p-3 rounded-xs border-2 bg-green-50 border-green-200">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm text-gray-800 flex-1">{entry.text}</p>
                     <Check className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />

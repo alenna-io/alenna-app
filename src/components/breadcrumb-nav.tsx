@@ -76,7 +76,7 @@ export function BreadcrumbNav() {
     } else {
       setUserName(null)
     }
-     
+
   }, [location.pathname, isSchoolAdmin])
 
   // Fetch student name when on daily goals page or projection detail page
@@ -379,37 +379,37 @@ export function BreadcrumbNav() {
   }
 
   return (
-    <div className="hidden md:flex items-center gap-2">
+    <div className="hidden md:flex items-center gap-1.5">
       {/* Back button - only show if not on first level */}
       {breadcrumbs.length > 1 && (
         <Button
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="h-8 px-2"
+          className="h-7 px-1.5 text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </Button>
       )}
 
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-1 text-sm">
+      <nav className="flex items-center gap-1 text-xs font-semibold text-gray-600">
         {breadcrumbs.map((crumb, index) => {
           const isLast = index === breadcrumbs.length - 1
 
           return (
             <React.Fragment key={`${crumb.path}-${index}`}>
               {index > 0 && (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-3 w-3 text-gray-600" />
               )}
               {isLast ? (
-                <span className="font-semibold text-foreground">
+                <span className="text-gray-600">
                   {crumb.label}
                 </span>
               ) : (
                 <Link
                   to={crumb.path}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-gray-600 hover:text-gray-700 transition-colors"
                 >
                   {crumb.label}
                 </Link>

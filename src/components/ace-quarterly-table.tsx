@@ -25,6 +25,7 @@ import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
+import { cn } from '@/lib/utils'
 
 interface QuarterlyTableProps {
   quarter: string
@@ -354,8 +355,15 @@ export function ACEQuarterlyTable({
 
   return (
     <div className='relative'>
-      <Card className={`${isActive ? "border-primary border-2" : "border-border/50"} transition-all duration-200`}>
-        <CardHeader className="p-4 md:p-5 lg:p-6 border-b border-border/30">
+      <Card className={
+        cn(
+          'bg-white transition-all duration-200',
+          'border-2',
+          editMode === 'view' && (isActive ? 'border-primary' : 'border-border'),
+          editMode === 'moving' && 'border-blue-500/50 shadow-lg shadow-blue-500/10',
+          editMode === 'editing' && 'border-green-500/50 shadow-lg shadow-green-500/10'
+        )}>
+        <CardHeader className="p-5 md:p-6 lg:p-7 border-b border-border">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
               <CardTitle className="flex items-center gap-2 md:gap-3 text-base md:text-lg">
@@ -416,12 +424,12 @@ export function ACEQuarterlyTable({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0! md:p-6">
+        <CardContent className="p-0! md:p-8">
           <div className="overflow-x-auto mx-0 border border-border overflow-hidden bg-card rounded-b-xs">
             <table className="w-full min-w-[600px]">
               <thead>
-                <tr className="bg-muted/30">
-                  <th className="text-left py-2 md:py-3 px-3 md:px-4 font-semibold bg-card sticky left-0 z-10 min-w-[100px] max-w-[120px] md:min-w-[140px] md:max-w-none border-b border-r border-border text-xs md:text-sm">
+                <tr className="bg-muted/20">
+                  <th className="text-left py-3 md:py-4 px-4 md:px-5 font-semibold bg-card sticky left-0 z-10 min-w-[100px] max-w-[120px] md:min-w-[140px] md:max-w-none border-b border-r border-border text-xs md:text-sm">
                     {t("projections.subject")}
                   </th>
                   {weeks.map((week, weekIdx) => {
@@ -431,17 +439,17 @@ export function ACEQuarterlyTable({
                     return (
                       <th
                         key={week}
-                        className={`text-center py-2 md:py-3 px-2 md:px-3 font-semibold min-w-[80px] md:min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${isCurrentWeek
-                          ? "bg-mint-soft/50 border-b-3 border-l-0 border-mint"
-                          : "hover:bg-muted/40"
+                        className={`text-center py-3 md:py-4 px-3 md:px-4 font-semibold min-w-[80px] md:min-w-[100px] cursor-pointer transition-all duration-200 border-b border-l border-border ${isCurrentWeek
+                          ? "bg-mint-soft border-b-2 border-l-0 border-mint"
+                          : "hover:bg-muted/30"
                           }`}
                         onClick={() => onWeekClick?.(quarter, week)}
                       >
                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
-                          <span className={`text-xs md:text-sm font-semibold ${isCurrentWeek ? "text-[#059669]" : "text-foreground"}`}>
+                          <span className={`text-xs md:text-sm font-semibold ${isCurrentWeek ? "text-[#059669]" : "text-foreground/90"}`}>
                             {t("projections.week")} {week}
                           </span>
-                          <span className="text-[9px] md:text-[10px] text-muted-foreground">
+                          <span className="text-[9px] md:text-[10px] text-muted-foreground/70">
                             {weekPaceCount} {t("projections.lessons")}
                           </span>
                         </div>
@@ -454,10 +462,10 @@ export function ACEQuarterlyTable({
                 {subjects.map((subject) => (
                   <tr
                     key={subject}
-                    className={`transition-colors group border-b border-border last:border-b-0 bg-card hover:opacity-80`}
+                    className={`transition-colors group border-b border-border last:border-b-0 bg-card hover:opacity-90`}
                   >
                     <td
-                      className={`py-2 md:py-3 px-3 md:px-4 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.05)] bg-card ${getSubjectColor(subject).text} text-xs md:text-sm`}
+                      className={`py-3 md:py-4 px-4 md:px-5 font-semibold sticky left-0 z-10 border-r border-border shadow-[2px_0_4px_-2px_rgba(0,0,0,0.03)] bg-card ${getSubjectColor(subject).text} text-xs md:text-sm`}
                     >
                       <div className="flex flex-col">
                         <span className={`text-xs md:text-sm font-semibold ${getSubjectColor(subject).text}`}>
@@ -485,7 +493,7 @@ export function ACEQuarterlyTable({
                           key={weekIndex}
                           data-week-index={weekIndex}
                           data-subject={subject}
-                          className={`py-1.5 md:py-2 px-2 md:px-3 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-green-100 border-green-300 border-l-2" : ""} transition-colors relative`}
+                          className={`py-2.5 md:py-3 px-3 md:px-4 text-center align-middle border-l border-border ${currentWeek === weekIndex + 1 ? "bg-green-50/50 border-green-200/50 border-l-2" : ""} transition-colors relative`}
                           draggable={!isReadOnly && !isQuarterClosed && editMode === 'moving' && !!primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)}
                           onDragStart={(e) => {
                             if (!isReadOnly && editMode === 'moving' && primaryPace && !isArray && !(primaryPace.isUnfinished && primaryPace.originalQuarter === quarter)) {
