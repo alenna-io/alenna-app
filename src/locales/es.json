@@ -354,6 +354,7 @@
     "gradeUpdated": "Calificación actualizada exitosamente",
     "errorUpdatingGrade":"Error al actualizar la calificación",
     "markedUngraded": "Asignación marcada como no calificada",
+    "markUngraded": "Marcar como Sin Calificar",
     "errorMarkingUngraded":"Error al marcar la asignación como sin calificar",
     "editGrade": "Editar Calificación"
   },

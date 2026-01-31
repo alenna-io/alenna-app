@@ -12,11 +12,12 @@ import { NotFoundPage } from '@/pages/not-found'
 import { ScrollToTop } from '@/components/scroll-to-top'
 import { AuthSync } from '@/components/auth-sync'
 import { UserProvider } from '@/contexts/UserContext'
+import { EditModeProvider } from '@/contexts/EditModeContext'
 import { Toaster } from '@/components/ui/sonner'
 import { PasswordSetupGuard } from '@/components/PasswordSetupGuard'
 import { SetupPasswordPage } from '@/pages/setup-password'
 import { AlennaBackground } from '@/components/ui/alenna-background'
-import '@/lib/i18n' // Initialize i18n
+import '@/lib/i18n' // Initialize i18n'
 import ProjectionsPageV2 from '@/pages/projections-v2'
 import GenerateProjectionWizardPageV2 from '@/pages/generate-projection-wizard-v2'
 import ProjectionDetailsPageV2 from '@/pages/projection-details-v2'
@@ -30,9 +31,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <SignedIn>
         <AuthSync>
           <UserProvider>
-            <PasswordSetupGuard>
-              {children}
-            </PasswordSetupGuard>
+            <EditModeProvider>
+              <PasswordSetupGuard>
+                {children}
+              </PasswordSetupGuard>
+            </EditModeProvider>
           </UserProvider>
         </AuthSync>
       </SignedIn>
@@ -64,9 +67,11 @@ export default function App() {
               <SignedIn>
                 <AuthSync>
                   <UserProvider>
-                    <PasswordSetupGuard>
-                      <SetupPasswordPage />
-                    </PasswordSetupGuard>
+                    <EditModeProvider>
+                      <PasswordSetupGuard>
+                        <SetupPasswordPage />
+                      </PasswordSetupGuard>
+                    </EditModeProvider>
                   </UserProvider>
                 </AuthSync>
               </SignedIn>

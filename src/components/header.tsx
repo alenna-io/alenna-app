@@ -6,10 +6,12 @@ import type { CurrentWeekInfo } from "@/services/api/schools"
 import { BreadcrumbNav } from "@/components/breadcrumb-nav"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useTranslation } from "react-i18next"
+import { useEditMode } from "@/contexts/EditModeContext"
 
 export function Header() {
   const api = useApi()
   const { t } = useTranslation()
+  const { editMode } = useEditMode()
   const [currentWeekInfo, setCurrentWeekInfo] = React.useState<CurrentWeekInfo | null>(null)
   const [loading, setLoading] = React.useState(true)
 
@@ -93,6 +95,20 @@ export function Header() {
       {/* Week indicator on the right - only render if we have a quarter */}
       {activeQuarter && (
         <div className="flex items-center gap-3 ml-auto">
+          {editMode && (
+            <Badge
+              variant={
+                editMode === 'view' ? 'secondary' :
+                  editMode === 'moving' ? 'status-open' :
+                    'status-active'
+              }
+              className="mr-2"
+            >
+              {editMode === 'view' ? t("projections.view") :
+                editMode === 'moving' ? t("projections.movePaces") :
+                  t("projections.edit")}
+            </Badge>
+          )}
           <div className="hidden md:flex items-center gap-2">
             <Clock className="h-4 w-4 text-green-600" />
             <div className="flex flex-col">
