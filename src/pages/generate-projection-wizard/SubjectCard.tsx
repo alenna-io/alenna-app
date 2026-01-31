@@ -260,13 +260,13 @@ export const SubjectCard = React.memo(function SubjectCard({
                         <div className="space-y-2">
                           <SelectField
                             label={t("projections.notPairWith")}
-                            value={subject.notPairWith[0] || ""}
+                            value={subject.notPairWith[0] || "__none__"}
                             onValueChange={(value) => {
-                              onNotPairWithChange(value === "" ? null : value)
+                              onNotPairWithChange(value === "__none__" ? null : value)
                             }}
                             placeholder={t("projections.selectNotPairWith") || "Select a subject (optional)"}
                             options={[
-                              { value: "", label: t("projections.none") || "None" },
+                              { value: "__none__", label: t("common.none") || "None" },
                               ...otherSubjects.map((otherSubject) => ({
                                 value: otherSubject.subjectId,
                                 label: getSubjectName(otherSubject.subjectId),
