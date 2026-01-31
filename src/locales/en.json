@@ -166,6 +166,8 @@
     "skipPaces": "Skip Lectures",
     "selectLessonsToSkip": "Select lessons to skip",
     "notPairWith": "Do Not Pair With",
+    "selectNotPairWith": "Select a subject to not pair with",
+    "none": "None",
     "addSubject": "Add Subject",
     "clickToAddSubject": "Click on \"Add Subject\" to begin",
     "loadingPaces": "Loading lectures...",

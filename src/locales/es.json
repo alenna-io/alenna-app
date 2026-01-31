@@ -167,6 +167,8 @@
     "skipPaces": "Saltar Lecciones",
     "selectLessonsToSkip": "Selecciona las lecciones a saltar",
     "notPairWith": "No Emparejar Con",
+    "selectNotPairWith": "Selecciona una materia para no emparejar",
+    "none": "Ninguna",
     "addSubject": "Agregar Materia",
     "clickToAddSubject": "Haz clic en \"Agregar Materia\" para comenzar",
     "loadingPaces": "Cargando lecciones...",

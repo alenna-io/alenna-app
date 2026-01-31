@@ -418,24 +418,35 @@ export default function GenerateProjectionWizardPageV2() {
     }))
   }, [])
 
-  const handleNotPairWithChange = React.useCallback((index: number, otherSubjectId: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      subjects: prev.subjects.map((subject, i) => {
-        if (i === index) {
-          const notPairWith = checked
-            ? [...subject.notPairWith, otherSubjectId]
-            : subject.notPairWith.filter(id => id !== otherSubjectId)
-          return { ...subject, notPairWith }
-        } else if (subject.subjectId === otherSubjectId) {
-          const notPairWith = checked
-            ? [...subject.notPairWith, prev.subjects[index].subjectId]
-            : subject.notPairWith.filter(id => id !== prev.subjects[index].subjectId)
-          return { ...subject, notPairWith }
-        }
-        return subject
-      }),
-    }))
+  const handleNotPairWithChange = React.useCallback((index: number, otherSubjectId: string | null) => {
+    setFormData(prev => {
+      const currentSubject = prev.subjects[index]
+      const currentSubjectId = currentSubject.subjectId
+
+      // Find the previously paired subject (if any)
+      const previousPairedSubjectId = currentSubject.notPairWith[0] || null
+
+      return {
+        ...prev,
+        subjects: prev.subjects.map((subject, i) => {
+          if (i === index) {
+            // Set the new notPairWith (only one allowed)
+            const notPairWith = otherSubjectId ? [otherSubjectId] : []
+            return { ...subject, notPairWith }
+          } else if (subject.subjectId === otherSubjectId && otherSubjectId) {
+            // Bidirectional: if A is not paired with B, then B is also not paired with A
+            // Remove any previous pairing and set new one
+            const notPairWith = currentSubjectId ? [currentSubjectId] : []
+            return { ...subject, notPairWith }
+          } else if (previousPairedSubjectId && subject.subjectId === previousPairedSubjectId) {
+            // Remove the previous bidirectional pairing
+            const notPairWith = subject.notPairWith.filter(id => id !== currentSubjectId)
+            return { ...subject, notPairWith }
+          }
+          return subject
+        }),
+      }
+    })
   }, [])
 
   const validateStep = (step: WizardStep): boolean => {
