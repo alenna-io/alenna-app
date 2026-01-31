@@ -114,7 +114,8 @@
     "quarterLabelQ1": "First Quarter",
     "quarterLabelQ2": "Second Quarter",
     "quarterLabelQ3": "Third Quarter",
-    "quarterLabelQ4": "Fourth Quarter"
+    "quarterLabelQ4": "Fourth Quarter",
+    "none": "None"
   },
   "errors": {
     "error": "Error",
