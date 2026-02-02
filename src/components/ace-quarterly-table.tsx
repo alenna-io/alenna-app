@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info, CalendarCheck, Plus } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info, CalendarCheck, Plus, Move } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +54,7 @@ interface QuarterlyTableProps {
   onMarkUngraded?: (quarter: string, subject: string, weekIndex: number) => void
   onViewDailyGoals?: (quarter: string, week: number) => void
   onAddElective?: (subjectId: string) => void
+  onMovePaceToQuarter?: (fromQuarter: string, toQuarter: string, subject: string, weekIndex: number, targetWeekIndex: number) => void
 }
 
 
@@ -103,7 +104,8 @@ export function ACEQuarterlyTable({
   onGradeUpdate,
   onMarkUngraded,
   onViewDailyGoals,
-  onAddElective
+  onAddElective,
+  onMovePaceToQuarter
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
   const [showAddElectiveDialog, setShowAddElectiveDialog] = React.useState(false)
@@ -248,6 +250,71 @@ export function ACEQuarterlyTable({
       setDeleteDialog(null)
     }
   }
+
+  // Helper: Check if pace is first in quarter for subject
+  const isFirstPaceInQuarter = React.useCallback((subject: string, weekIndex: number): boolean => {
+    const subjectData = data[subject]
+    if (!subjectData) return false
+
+    // Find earliest week with a pace (can be single pace or array of paces)
+    for (let i = 0; i < 9; i++) {
+      const paceOrArray = subjectData[i]
+      if (paceOrArray && paceOrArray !== null) {
+        // Check if this week has any pace (single or array)
+        const hasPace = Array.isArray(paceOrArray) ? paceOrArray.length > 0 : true
+        if (hasPace) {
+          return i === weekIndex
+        }
+      }
+    }
+    return false
+  }, [data])
+
+  // Helper: Check if pace is last in quarter for subject
+  const isLastPaceInQuarter = React.useCallback((subject: string, weekIndex: number): boolean => {
+    const subjectData = data[subject]
+    if (!subjectData) return false
+
+    // Find latest week with a pace (can be single pace or array of paces)
+    for (let i = 8; i >= 0; i--) {
+      const paceOrArray = subjectData[i]
+      if (paceOrArray && paceOrArray !== null) {
+        // Check if this week has any pace (single or array)
+        const hasPace = Array.isArray(paceOrArray) ? paceOrArray.length > 0 : true
+        if (hasPace) {
+          return i === weekIndex
+        }
+      }
+    }
+    return false
+  }, [data])
+
+  // Handler: Right-click on pace cell
+
+  // Handler: Move pace to next/prev quarter
+  const handleMovePaceToQuarter = React.useCallback((subject: string, weekIndex: number, direction: 'next' | 'prev') => {
+    if (!onMovePaceToQuarter) return
+
+    const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+    const currentIndex = quarterOrder.indexOf(quarter)
+
+    let targetQuarter: string | null = null
+    let targetWeek: number
+
+    if (direction === 'next' && currentIndex < 3) {
+      targetQuarter = quarterOrder[currentIndex + 1]
+      targetWeek = 0 // Week 1 (0-based)
+    } else if (direction === 'prev' && currentIndex > 0) {
+      targetQuarter = quarterOrder[currentIndex - 1]
+      targetWeek = 8 // Week 9 (0-based, last week)
+    } else {
+      return
+    }
+
+    if (targetQuarter) {
+      onMovePaceToQuarter(quarter, targetQuarter, subject, weekIndex, targetWeek)
+    }
+  }, [quarter, onMovePaceToQuarter])
 
   // Calculate paces per week for display
   const weekPaceCounts = React.useMemo(() => {
@@ -733,9 +800,22 @@ export function ACEQuarterlyTable({
                                   const gradeLoadingKey = pace.id ? `grade-${pace.id}` : null
                                   const ungradedLoadingKey = pace.id ? `ungraded-${pace.id}` : null
                                   const deleteLoadingKey = `delete-${quarter}-${subject}-${weekIndex}`
+                                  // Check for any move operation involving this pace
+                                  // Format: move-quarter-{fromQuarter}-{toQuarter}-{subject}-{fromWeek}-{toWeek}
+                                  const moveLoadingKeys = Array.from(loadingActions.keys()).filter(key => {
+                                    if (!key.startsWith(`move-quarter-`)) return false
+                                    const parts = key.split('-')
+                                    // Check if subject matches and fromWeek matches
+                                    const subjectIndex = parts.indexOf(subject)
+                                    if (subjectIndex === -1) return false
+                                    // fromWeek should be the part after subject
+                                    const fromWeekInKey = parseInt(parts[subjectIndex + 1])
+                                    return fromWeekInKey === weekIndex
+                                  })
                                   const isGradeLoading = gradeLoadingKey ? isActionLoading(gradeLoadingKey) : false
                                   const isUngradedLoading = ungradedLoadingKey ? isActionLoading(ungradedLoadingKey) : false
                                   const isDeleteLoading = isActionLoading(deleteLoadingKey)
+                                  const isMoveLoading = moveLoadingKeys.some(key => isActionLoading(key))
 
                                   const paceContent = (
                                     <div
@@ -752,7 +832,7 @@ export function ACEQuarterlyTable({
                                         }
                                       }}
                                     >
-                                      {(isGradeLoading || isUngradedLoading || isDeleteLoading) && (
+                                      {(isGradeLoading || isUngradedLoading || isDeleteLoading || isMoveLoading) && (
                                         <div className="absolute -top-1 -right-1 z-10">
                                           <Spinner className="size-3 text-primary" />
                                         </div>
@@ -780,6 +860,10 @@ export function ACEQuarterlyTable({
                                       )}
                                     </div>
                                   )
+
+                                  const isFirst = isFirstPaceInQuarter(subject, weekIndex)
+                                  const isLast = isLastPaceInQuarter(subject, weekIndex)
+                                  const canMoveToQuarter = (isFirst || isLast) && onMovePaceToQuarter !== undefined
 
                                   return (
                                     editMode === 'editing' ? (
@@ -843,6 +927,40 @@ export function ACEQuarterlyTable({
                                           )}
                                           <DropdownMenuSeparator />
                                           <DropdownMenuLabel>{t("projections.admin") || "Admin"}</DropdownMenuLabel>
+                                          {/* Move to Quarter options - only for first/last paces in edit mode */}
+                                          {canMoveToQuarter && (
+                                            <>
+                                              {isFirst && quarter !== 'Q1' && (
+                                                <DropdownMenuItem
+                                                  onClick={() => {
+                                                    handleMovePaceToQuarter(subject, weekIndex, 'prev')
+                                                    setDropdownOpen(null)
+                                                  }}
+                                                  disabled={isMoveLoading}
+                                                >
+                                                  <div className="flex justify-between items-center w-full">
+                                                    {t("projections.moveToPreviousQuarter") || "Move to Previous Quarter"}
+                                                    <Move className="h-2 w-2 ml-4" />
+                                                  </div>
+                                                </DropdownMenuItem>
+                                              )}
+                                              {isLast && quarter !== 'Q4' && (
+                                                <DropdownMenuItem
+                                                  onClick={() => {
+                                                    handleMovePaceToQuarter(subject, weekIndex, 'next')
+                                                    setDropdownOpen(null)
+                                                  }}
+                                                  disabled={isMoveLoading}
+                                                >
+                                                  <div className="flex justify-between items-center w-full">
+                                                    {t("projections.moveToNextQuarter") || "Move to Next Quarter"}
+                                                    <Move className="h-2 w-2 ml-4" />
+                                                  </div>
+                                                </DropdownMenuItem>
+                                              )}
+                                              {(isFirst || isLast) && <DropdownMenuSeparator />}
+                                            </>
+                                          )}
                                           {paceGrade === null && onDeletePace && (
                                             <DropdownMenuItem
                                               onClick={() => {
@@ -1133,6 +1251,7 @@ export function ACEQuarterlyTable({
           onAdd={onAddElective}
         />
       )}
+
     </div >
   );
 }
