@@ -41,7 +41,6 @@ interface PacePickerDialogProps {
   levelFilter?: string
   title?: string
   existingPaceCatalogIds?: string[] // IDs of paces already in the projection
-  existingPaceLocations?: Map<string, { quarter: string; week: number; subject: string }> // Map of paceCatalogId to current location
   onMovePace?: (paceCatalogId: string, toQuarter: string, toWeek: number) => void // Handler for moving existing pace
   targetQuarter?: string // Target quarter for move operation
   targetWeek?: number // Target week for move operation
@@ -56,7 +55,6 @@ export function PacePickerDialog({
   // levelFilter is deprecated - level filtering is now handled by the dropdown in the dialog
   title = "Seleccionar Lección",
   existingPaceCatalogIds = [],
-  existingPaceLocations, // eslint-disable-line @typescript-eslint/no-unused-vars
   onMovePace,
   targetQuarter,
   targetWeek

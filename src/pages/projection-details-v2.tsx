@@ -893,7 +893,7 @@ export default function ProjectionDetailsPageV2() {
     if (!projectionId || !projection) return
 
     // Find existing pace location from projection object
-    const projectionPace = projection.projectionPaces.find(p => p.paceCatalogId === paceCatalogId && !p.deletedAt)
+    const projectionPace = projection.projectionPaces.find(p => p.paceCatalogId === paceCatalogId)
 
     if (!projectionPace) {
       toast.error(t("projections.paceNotFound") || "Pace not found in projection")
@@ -984,32 +984,6 @@ export default function ProjectionDetailsPageV2() {
     }
   }, [projectionId, projection, projectionData, api, t, translateError, validateCrossQuarterMove, autoShiftPacesInQuarter])
 
-  // Track existing pace locations for pace picker
-  const existingPaceLocations = React.useMemo(() => {
-    const locations = new Map<string, { quarter: string; week: number; subject: string }>()
-
-    if (!projection) return locations
-
-    projection.projectionPaces.forEach(pace => {
-      let quarter: string
-      if (typeof pace.quarter === 'number') {
-        quarter = `Q${pace.quarter}`
-      } else if (typeof pace.quarter === 'string') {
-        quarter = pace.quarter.startsWith('Q') ? pace.quarter : `Q${pace.quarter}`
-      } else {
-        return
-      }
-
-      const subjectName = pace.paceCatalog.subject.name
-      locations.set(pace.paceCatalogId, {
-        quarter,
-        week: pace.week - 1, // Convert to 0-based
-        subject: subjectName
-      })
-    })
-
-    return locations
-  }, [projection])
 
   const handlePaceSelect = React.useCallback((paceId: string) => {
     if (!pacePickerContext) return
@@ -1544,7 +1518,6 @@ export default function ProjectionDetailsPageV2() {
           })()}
           title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 }) || `Add Lesson - ${pacePickerContext.subject}`}
           existingPaceCatalogIds={existingPaceCatalogIds}
-          existingPaceLocations={existingPaceLocations}
           onMovePace={editMode === 'editing' ? handleMovePaceFromPicker : undefined}
           targetQuarter={pacePickerContext.quarter}
           targetWeek={pacePickerContext.weekIndex}
