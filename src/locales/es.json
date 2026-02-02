@@ -285,7 +285,11 @@
     "startPaceAfterEndPace": "La lección inicial viene después de la lección final en el orden del currículo",
     "projectionAlreadyExists": "Ya existe una proyección para este estudiante en este año escolar",
     "currentDailyGoals": "Ver Metas Diarias",
-    "viewDailyGoals": "Ver Metas Diarias"
+    "viewDailyGoals": "Ver Metas Diarias",
+    "addElective": "Agregar Electiva",
+    "addElectiveDescription": "Selecciona una materia electiva para agregar a la proyección. Puedes agregar lecciones más adelante usando la selección de lecciones existente.",
+    "subjectAdded": "Materia agregada exitosamente",
+    "errorAddingSubject": "Error al agregar la materia"
   },
   "dailyGoals": {
     "title": "Metas Diarias",

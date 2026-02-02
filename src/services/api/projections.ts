@@ -83,6 +83,23 @@ export interface DailyGoalDetails {
   notesCompleted: boolean;
 }
 
+export interface ProjectionSubjectDetails {
+  id: string;
+  projectionId: string;
+  subjectId: string;
+  subject: {
+    id: string;
+    name: string;
+    category: {
+      id: string;
+      name: string;
+      displayOrder: number;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProjectionDetails {
   id: string;
   studentId: string;
@@ -99,6 +116,7 @@ export interface ProjectionDetails {
     };
   };
   projectionPaces: ProjectionPaceDetails[];
+  projectionSubjects: ProjectionSubjectDetails[];
   dailyGoals: DailyGoalDetails[];
   createdAt: string;
   updatedAt: string;
@@ -133,6 +151,12 @@ export const projectionsApi = {
 
   addPace: async (projectionId: string, data: { paceCatalogId: string; quarter: string; week: number }, token: string | null = null) =>
     apiFetch(`/projections/${projectionId}/paces`, token, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  addSubject: async (projectionId: string, data: { subjectId: string }, token: string | null = null) =>
+    apiFetch(`/projections/${projectionId}/subjects`, token, {
       method: 'POST',
       body: JSON.stringify(data),
     }),

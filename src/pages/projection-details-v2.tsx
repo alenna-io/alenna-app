@@ -38,9 +38,13 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
   const subjectToCategory = new Map<string, string>()
   const subjectToCategoryDisplayOrder = new Map<string, number>()
   const categoryCounts = new Map<string, Map<string, number>>() // Track category counts per quarter
+  const subjectsWithPaces = new Set<string>() // Track which subjects have paces
 
-  // Group paces by quarter, subject, and week
+  // First, process all paces to build the main data structure
   projection.projectionPaces.forEach((pace: ProjectionDetails['projectionPaces'][0]) => {
+    const subjectName = pace.paceCatalog.subject.name
+    subjectsWithPaces.add(subjectName)
+
     // Convert quarter from number (1-4) or string ("Q1"-"Q4") to "Q1"-"Q4" format
     let quarter: 'Q1' | 'Q2' | 'Q3' | 'Q4'
     if (typeof pace.quarter === 'number') {
@@ -57,8 +61,6 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     if (!quarters[quarter]) {
       return
     }
-
-    const subjectName = pace.paceCatalog.subject.name
     const categoryName = pace.paceCatalog.subject.category.name
     const categoryDisplayOrder = pace.paceCatalog.subject.category.displayOrder
     const weekIndex = pace.week - 1 // Convert to 0-based index
@@ -126,6 +128,43 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     }
   })
 
+  // Then, process projectionSubjects that don't have any paces yet
+  // These should appear as empty rows in all quarters
+  projection.projectionSubjects?.forEach((projectionSubject: ProjectionDetails['projectionSubjects'][0]) => {
+    const subjectName = projectionSubject.subject.name
+    const categoryName = projectionSubject.subject.category.name
+    const categoryDisplayOrder = projectionSubject.subject.category.displayOrder
+    const isElectivesCategory = categoryName === 'Electives'
+    const displayKey = isElectivesCategory ? subjectName : categoryName
+
+    // Skip if this subject already has paces (already processed above)
+    if (subjectsWithPaces.has(subjectName)) {
+      return
+    }
+
+    // Store subject to category mapping
+    if (!subjectToCategory.has(subjectName)) {
+      subjectToCategory.set(subjectName, categoryName)
+      subjectToCategoryDisplayOrder.set(subjectName, categoryDisplayOrder)
+    }
+
+    // Initialize empty rows for all quarters
+    ; (['Q1', 'Q2', 'Q3', 'Q4'] as const).forEach((quarter) => {
+      // Track category counts per quarter
+      if (!categoryCounts.has(quarter)) {
+        categoryCounts.set(quarter, new Map<string, number>())
+      }
+      const quarterCategoryCounts = categoryCounts.get(quarter)!
+
+      // Initialize empty row if it doesn't exist
+      if (!quarters[quarter][displayKey]) {
+        quarters[quarter][displayKey] = Array(9).fill(null)
+        const currentCount = quarterCategoryCounts.get(categoryName) || 0
+        quarterCategoryCounts.set(categoryName, currentCount + 1)
+      }
+    })
+  })
+
   return {
     quarters,
     subjectToCategory,
@@ -153,6 +192,7 @@ export default function ProjectionDetailsPageV2() {
   const [totalPaces, setTotalPaces] = React.useState<number>(0)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [projection, setProjection] = React.useState<ProjectionDetails | null>(null)
   const [projectionInfo, setProjectionInfo] = React.useState<{
     studentName: string
     schoolYear: string
@@ -219,6 +259,7 @@ export default function ProjectionDetailsPageV2() {
         setError(null)
 
         const projection = await api.projections.getById(projectionId)
+        setProjection(projection)
 
         const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
         setProjectionData(quarters)
@@ -706,6 +747,61 @@ export default function ProjectionDetailsPageV2() {
 
   }, [projectionId, api, t])
 
+  // Calculate unique subject count (from both paces and projectionSubjects)
+  const uniqueSubjectCount = React.useMemo(() => {
+    if (!projection) return 0
+    const uniqueSubjectIds = new Set<string>()
+
+    // Add subjects from paces
+    projection.projectionPaces.forEach(p => {
+      uniqueSubjectIds.add(p.paceCatalog.subject.id)
+    })
+
+    // Add subjects from projectionSubjects
+    projection.projectionSubjects?.forEach(ps => {
+      uniqueSubjectIds.add(ps.subject.id)
+    })
+
+    return uniqueSubjectIds.size
+  }, [projection])
+
+  // Handle adding a new Elective subject
+  const handleAddElective = React.useCallback(async (subjectId: string) => {
+    if (!projectionId) return
+
+    const loadingKey = `add-subject-${subjectId}`
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
+
+    try {
+      await api.projections.addSubject(projectionId, {
+        subjectId,
+      })
+      toast.success(t("projections.subjectAdded") || "Subject added successfully")
+
+      const updatedProjection = await api.projections.getById(projectionId)
+      setProjection(updatedProjection)
+
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(updatedProjection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = updatedProjection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      toast.error(error.message || t("projections.errorAddingSubject") || "Failed to add subject")
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
+    }
+     
+  }, [projectionId, api, t])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -952,6 +1048,8 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
+                uniqueSubjectCount={uniqueSubjectCount}
+                onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
               />
             </CardContent>
           </Card>
@@ -994,6 +1092,8 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
+                uniqueSubjectCount={uniqueSubjectCount}
+                onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
               />
             </CardContent>
           </Card>
@@ -1035,6 +1135,8 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
+                uniqueSubjectCount={uniqueSubjectCount}
+                onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
               />
             </CardContent>
           </Card>
@@ -1076,6 +1178,8 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
+                uniqueSubjectCount={uniqueSubjectCount}
+                onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
               />
             </CardContent>
           </Card>

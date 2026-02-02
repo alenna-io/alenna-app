@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
-import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info, CalendarCheck } from "lucide-react"
+import { CheckCircle2, Trash2, XCircle, Edit, X, History, Info, CalendarCheck, Plus } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,9 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from '@/lib/utils'
+import { useApi } from "@/services/api"
+import { SelectField } from "@/components/forms"
+import { isElectivesCategory } from "@/utils/elective-utils"
 
 interface QuarterlyTableProps {
   quarter: string
@@ -40,6 +43,7 @@ interface QuarterlyTableProps {
   subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
   categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
   loadingActions?: Map<string, boolean> // Map of loading action keys to boolean
+  uniqueSubjectCount?: number // Number of unique subjects in the projection
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -48,6 +52,7 @@ interface QuarterlyTableProps {
   onGradeUpdate?: (quarter: string, subject: string, weekIndex: number, grade: number) => void
   onMarkUngraded?: (quarter: string, subject: string, weekIndex: number) => void
   onViewDailyGoals?: (quarter: string, week: number) => void
+  onAddElective?: (subjectId: string) => void
 }
 
 
@@ -89,15 +94,18 @@ export function ACEQuarterlyTable({
   subjectToCategory,
   subjectToCategoryDisplayOrder,
   loadingActions = new Map(),
+  uniqueSubjectCount = 0,
   onPaceDrop,
   onWeekClick,
   onAddPace,
   onDeletePace,
   onGradeUpdate,
   onMarkUngraded,
-  onViewDailyGoals
+  onViewDailyGoals,
+  onAddElective
 }: QuarterlyTableProps) {
   const { t } = useTranslation()
+  const [showAddElectiveDialog, setShowAddElectiveDialog] = React.useState(false)
 
   const isActionLoading = (key: string): boolean => {
     return loadingActions.get(key) === true
@@ -389,6 +397,20 @@ export function ACEQuarterlyTable({
               )}
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              {onAddElective && uniqueSubjectCount < 7 && editMode === 'editing' && (
+                <Button
+                  variant="soft"
+                  size="lg"
+                  className="h-6 px-2 text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowAddElectiveDialog(true)
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                  {t("projections.addElective") || "Add Elective"}
+                </Button>
+              )}
               {onViewDailyGoals && (
                 <Button
                   variant="soft"
@@ -1094,6 +1116,116 @@ export function ACEQuarterlyTable({
         />
       )}
 
+      {/* Add Elective Dialog */}
+      {showAddElectiveDialog && onAddElective && (
+        <AddElectiveDialog
+          open={showAddElectiveDialog}
+          onOpenChange={setShowAddElectiveDialog}
+          onAdd={onAddElective}
+        />
+      )}
     </div >
   );
+}
+
+// Add Elective Dialog Component
+function AddElectiveDialog({
+  open,
+  onOpenChange,
+  onAdd,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onAdd: (subjectId: string) => void
+}) {
+  const { t } = useTranslation()
+  const api = useApi()
+  const [categories, setCategories] = React.useState<Array<{
+    id: string
+    name: string
+    subjects: Array<{ id: string; name: string }>
+  }>>([])
+  const [loading, setLoading] = React.useState(false)
+  const [selectedSubjectId, setSelectedSubjectId] = React.useState("")
+  const [categoriesLoaded, setCategoriesLoaded] = React.useState(false)
+
+  // Reset state when dialog closes
+  React.useEffect(() => {
+    if (!open) {
+      setSelectedSubjectId("")
+      setCategoriesLoaded(false)
+    }
+  }, [open])
+
+  // Fetch categories only once when dialog opens
+  React.useEffect(() => {
+    if (open && !categoriesLoaded) {
+      const fetchCategories = async () => {
+        try {
+          setLoading(true)
+          const cats = await api.categories.getAllWithSubjects()
+          const electivesCategory = cats.find(c => isElectivesCategory(c.name))
+          if (electivesCategory) {
+            setCategories([electivesCategory])
+          } else {
+            setCategories([])
+          }
+          setCategoriesLoaded(true)
+        } catch (error) {
+          console.error("Error fetching categories:", error)
+          toast.error("Failed to load subjects")
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchCategories()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, categoriesLoaded])
+
+  const allElectiveSubjects = categories.flatMap(c => c.subjects)
+
+  const handleSubmit = () => {
+    if (!selectedSubjectId) {
+      toast.error(t("projections.selectSubject") || "Please select a subject")
+      return
+    }
+    onAdd(selectedSubjectId)
+    onOpenChange(false)
+    setSelectedSubjectId("")
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{t("projections.addElective") || "Add Elective Subject"}</DialogTitle>
+          <DialogDescription>
+            {t("projections.addElectiveDescription") || "Select an Elective subject to add to the projection. You can add paces later using the existing pace selection."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <SelectField
+            label={t("projections.subject")}
+            required
+            value={selectedSubjectId}
+            onValueChange={setSelectedSubjectId}
+            placeholder={t("projections.selectSubject") || "Select a subject"}
+            options={allElectiveSubjects.map(s => ({
+              value: s.id,
+              label: s.name,
+            }))}
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("common.cancel") || "Cancel"}
+          </Button>
+          <Button onClick={handleSubmit} disabled={!selectedSubjectId || loading}>
+            {loading ? <Spinner className="size-4" /> : (t("common.add") || "Add")}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
