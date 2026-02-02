@@ -691,6 +691,300 @@ export default function ProjectionDetailsPageV2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionId, api, t])
 
+  // Helper: Validate cross-quarter move orderIndex constraints
+  const validateCrossQuarterMove = React.useCallback((
+    fromQuarter: string,
+    toQuarter: string,
+    subject: string,
+    fromWeek: number,
+    toWeek: number,
+    movingPaceOrderIndex: number
+  ): { valid: boolean; error?: string } => {
+    const quarterOrder = ['Q1', 'Q2', 'Q3', 'Q4']
+    const fromQuarterIndex = quarterOrder.indexOf(fromQuarter)
+    const toQuarterIndex = quarterOrder.indexOf(toQuarter)
+
+    if (fromQuarterIndex === -1 || toQuarterIndex === -1) {
+      return { valid: false, error: t("projections.invalidQuarter") || "Invalid quarter" }
+    }
+
+    // Collect all paces for the subject across all quarters
+    const allPacesInSubject: Array<{ orderIndex: number; quarter: string; weekIndex: number }> = []
+    Object.entries(projectionData).forEach(([q, qData]) => {
+      const subjectData = qData[subject]
+      if (subjectData) {
+        subjectData.forEach((pace, idx) => {
+          if (!pace || Array.isArray(pace)) return
+          if (q === fromQuarter && idx === fromWeek) return // Exclude the moving pace
+          if (pace.orderIndex !== undefined) {
+            allPacesInSubject.push({ orderIndex: pace.orderIndex, quarter: q, weekIndex: idx })
+          }
+        })
+      }
+    })
+
+    // Find paces before and after target position
+    const pacesBeforeTarget = allPacesInSubject.filter(item => {
+      const itemQuarterIndex = quarterOrder.indexOf(item.quarter)
+      const isBefore = itemQuarterIndex < toQuarterIndex ||
+        (itemQuarterIndex === toQuarterIndex && item.weekIndex < toWeek)
+      return isBefore
+    })
+
+    const pacesAfterTarget = allPacesInSubject.filter(item => {
+      const itemQuarterIndex = quarterOrder.indexOf(item.quarter)
+      const isAfter = itemQuarterIndex > toQuarterIndex ||
+        (itemQuarterIndex === toQuarterIndex && item.weekIndex > toWeek)
+      return isAfter
+    })
+
+    // Check if moving pace's orderIndex fits between adjacent paces
+    for (const paceBefore of pacesBeforeTarget) {
+      if (paceBefore.orderIndex > movingPaceOrderIndex) {
+        return {
+          valid: false,
+          error: t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order"
+        }
+      }
+    }
+
+    for (const paceAfter of pacesAfterTarget) {
+      if (paceAfter.orderIndex < movingPaceOrderIndex) {
+        return {
+          valid: false,
+          error: t("projections.cannotMovePaceSequentialOrder") || "Cannot move pace: would break sequential order"
+        }
+      }
+    }
+
+    return { valid: true }
+  }, [projectionData, t])
+
+  // Helper: Auto-shift paces in a quarter to make space
+  const autoShiftPacesInQuarter = React.useCallback(async (
+    quarter: string,
+    subject: string,
+    targetWeek: number
+  ): Promise<void> => {
+    if (!projectionId) return
+
+    const quarterData = projectionData[quarter as keyof typeof projectionData]
+    const subjectData = quarterData[subject]
+    if (!subjectData) return
+
+    // Check if week 9 is occupied (can't shift)
+    const week9Pace = subjectData[8]
+    if (week9Pace && !Array.isArray(week9Pace) && week9Pace !== null) {
+      throw new Error(t("projections.cannotShiftPacesWeek9Occupied") || "Cannot shift paces: week 9 is occupied")
+    }
+
+    // Find all paces from target week to end of quarter that need to be shifted
+    const pacesToShift: Array<{ pace: PaceData; currentWeek: number }> = []
+    for (let week = targetWeek; week < 9; week++) {
+      const paceOrArray = subjectData[week]
+      if (paceOrArray) {
+        const paces = Array.isArray(paceOrArray) ? paceOrArray : [paceOrArray]
+        paces.forEach(pace => {
+          if (pace && pace.id) {
+            pacesToShift.push({ pace, currentWeek: week })
+          }
+        })
+      }
+    }
+
+    // Sort by week (descending) to shift from end to beginning
+    pacesToShift.sort((a, b) => b.currentWeek - a.currentWeek)
+
+    // Shift each pace forward by 1 week
+    for (const { pace, currentWeek } of pacesToShift) {
+      if (pace.id) {
+        await api.projections.movePace(projectionId, pace.id, {
+          quarter,
+          week: currentWeek + 2 // +1 for 1-based, +1 for next week
+        })
+      }
+    }
+  }, [projectionId, projectionData, api, t])
+
+  // Handler: Move pace to different quarter (from right-click menu)
+  const handleMovePaceToQuarter = React.useCallback(async (
+    fromQuarter: string,
+    toQuarter: string,
+    subject: string,
+    fromWeek: number,
+    toWeek: number
+  ) => {
+    if (!projectionId) return
+
+    const fromQuarterData = projectionData[fromQuarter as keyof typeof projectionData]
+    const fromPaceRaw = fromQuarterData[subject][fromWeek]
+
+    const fromPace = Array.isArray(fromPaceRaw) ? null : fromPaceRaw
+    if (!fromPace || !fromPace.id || !fromPace.orderIndex) {
+      toast.error(t("projections.errorMovingLesson") || "Cannot move pace: invalid pace")
+      return
+    }
+
+    const loadingKey = `move-quarter-${fromQuarter}-${toQuarter}-${subject}-${fromWeek}-${toWeek}`
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
+
+    try {
+      // Validate orderIndex constraints
+      const validation = validateCrossQuarterMove(
+        fromQuarter,
+        toQuarter,
+        subject,
+        fromWeek,
+        toWeek,
+        fromPace.orderIndex
+      )
+
+      if (!validation.valid) {
+        toast.error(validation.error || t("projections.errorMovingLesson") || "Cannot move pace")
+        return
+      }
+
+      // Check if target week is occupied and auto-shift if needed
+      const toQuarterData = projectionData[toQuarter as keyof typeof projectionData]
+      const targetWeekPace = toQuarterData[subject]?.[toWeek]
+
+      if (targetWeekPace && !Array.isArray(targetWeekPace) && targetWeekPace !== null) {
+        // Target week is occupied, need to shift
+        await autoShiftPacesInQuarter(toQuarter, subject, toWeek)
+      }
+
+      // Move the pace to target position
+      await api.projections.movePace(projectionId, fromPace.id, {
+        quarter: toQuarter,
+        week: toWeek + 1
+      })
+
+      toast.success(t("projections.lessonMoved") || "Pace moved successfully")
+
+      // Refresh projection data
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+    } catch (err) {
+      const error = err as Error
+      const translatedMessage = translateError(error.message)
+      toast.error(translatedMessage || t("projections.errorMovingLesson") || "Failed to move pace")
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
+    }
+  }, [projectionId, projectionData, api, t, translateError, validateCrossQuarterMove, autoShiftPacesInQuarter])
+
+  // Handler: Move pace from pace picker dialog
+  const handleMovePaceFromPicker = React.useCallback(async (
+    paceCatalogId: string,
+    toQuarter: string,
+    toWeek: number
+  ) => {
+    if (!projectionId || !projection) return
+
+    // Find existing pace location from projection object
+    const projectionPace = projection.projectionPaces.find(p => p.paceCatalogId === paceCatalogId)
+
+    if (!projectionPace) {
+      toast.error(t("projections.paceNotFound") || "Pace not found in projection")
+      return
+    }
+
+    // Get quarter and week from projection pace
+    let fromQuarter: string
+    if (typeof projectionPace.quarter === 'number') {
+      fromQuarter = `Q${projectionPace.quarter}`
+    } else if (typeof projectionPace.quarter === 'string') {
+      fromQuarter = projectionPace.quarter.startsWith('Q') ? projectionPace.quarter : `Q${projectionPace.quarter}`
+    } else {
+      toast.error(t("projections.paceNotFound") || "Pace not found in projection")
+      return
+    }
+
+    const fromWeek = projectionPace.week - 1 // Convert to 0-based
+    const subjectName = projectionPace.paceCatalog.subject.name
+    const orderIndex = projectionPace.paceCatalog.orderIndex
+
+    const existingPace = {
+      id: projectionPace.id,
+      quarter: fromQuarter,
+      week: fromWeek,
+      subject: subjectName,
+      orderIndex
+    }
+
+    const loadingKey = `move-picker-${paceCatalogId}-${toQuarter}-${toWeek}`
+    setLoadingActions(prev => new Map(prev).set(loadingKey, true))
+
+    try {
+      // Validate orderIndex constraints
+      const validation = validateCrossQuarterMove(
+        existingPace.quarter,
+        toQuarter,
+        existingPace.subject,
+        existingPace.week,
+        toWeek,
+        existingPace.orderIndex
+      )
+
+      if (!validation.valid) {
+        toast.error(validation.error || t("projections.errorMovingLesson") || "Cannot move pace")
+        return
+      }
+
+      // Check if target week is occupied and auto-shift if needed
+      const toQuarterData = projectionData[toQuarter as keyof typeof projectionData]
+      const targetWeekPace = toQuarterData[existingPace.subject]?.[toWeek]
+
+      if (targetWeekPace && !Array.isArray(targetWeekPace) && targetWeekPace !== null) {
+        // Target week is occupied, need to shift
+        await autoShiftPacesInQuarter(toQuarter, existingPace.subject, toWeek)
+      }
+
+      // Move the pace to target position
+      await api.projections.movePace(projectionId, existingPace.id, {
+        quarter: toQuarter,
+        week: toWeek + 1
+      })
+
+      toast.success(t("projections.lessonMoved") || "Pace moved successfully")
+
+      // Refresh projection data
+      const projection = await api.projections.getById(projectionId)
+      const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
+      setProjectionData(quarters)
+      setSubjectToCategory(subjectCategoryMap)
+      setSubjectToCategoryDisplayOrder(subjectCategoryDisplayOrderMap)
+      setCategoryCounts(categoryCountsMap)
+      setTotalPaces(totalPacesCount)
+      const paceCatalogIds = projection.projectionPaces.map(p => p.paceCatalogId)
+      setExistingPaceCatalogIds(paceCatalogIds)
+      setPacePickerOpen(false)
+      setPacePickerContext(null)
+    } catch (err) {
+      const error = err as Error
+      const translatedMessage = translateError(error.message)
+      toast.error(translatedMessage || t("projections.errorMovingLesson") || "Failed to move pace")
+    } finally {
+      setLoadingActions(prev => {
+        const next = new Map(prev)
+        next.delete(loadingKey)
+        return next
+      })
+    }
+  }, [projectionId, projection, projectionData, api, t, translateError, validateCrossQuarterMove, autoShiftPacesInQuarter])
+
+
   const handlePaceSelect = React.useCallback((paceId: string) => {
     if (!pacePickerContext) return
     handlePaceAdd(pacePickerContext.quarter, pacePickerContext.subject, pacePickerContext.weekIndex, paceId)
@@ -1049,6 +1343,7 @@ export default function ProjectionDetailsPageV2() {
                 } : undefined}
                 uniqueSubjectCount={uniqueSubjectCount}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
+                onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
             </CardContent>
           </Card>
@@ -1093,6 +1388,7 @@ export default function ProjectionDetailsPageV2() {
                 } : undefined}
                 uniqueSubjectCount={uniqueSubjectCount}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
+                onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
             </CardContent>
           </Card>
@@ -1136,6 +1432,7 @@ export default function ProjectionDetailsPageV2() {
                 } : undefined}
                 uniqueSubjectCount={uniqueSubjectCount}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
+                onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
             </CardContent>
           </Card>
@@ -1179,6 +1476,7 @@ export default function ProjectionDetailsPageV2() {
                 } : undefined}
                 uniqueSubjectCount={uniqueSubjectCount}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
+                onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
             </CardContent>
           </Card>
@@ -1220,6 +1518,9 @@ export default function ProjectionDetailsPageV2() {
           })()}
           title={t("projections.addLesson", { subject: pacePickerContext.subject, quarter: pacePickerContext.quarter, week: pacePickerContext.weekIndex + 1 }) || `Add Lesson - ${pacePickerContext.subject}`}
           existingPaceCatalogIds={existingPaceCatalogIds}
+          onMovePace={editMode === 'editing' ? handleMovePaceFromPicker : undefined}
+          targetQuarter={pacePickerContext.quarter}
+          targetWeek={pacePickerContext.weekIndex}
         />
       )}
     </div>

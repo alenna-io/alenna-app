@@ -299,7 +299,32 @@
     "addElective": "Add Elective",
     "addElectiveDescription": "Select an elective subject to add to the projection. You can add lessons later using the existing lesson selection.",
     "subjectAdded": "Subject added successfully",
-    "errorAddingSubject": "Failed to add subject"
+    "errorAddingSubject": "Failed to add subject",
+    "movePaceToQuarter": "Move Pace to Quarter",
+    "movePaceToQuarterDescription": "Move this pace to a different quarter. Only first and last paces can be moved between quarters.",
+    "currentLocation": "Current Location",
+    "targetLocation": "Target Location",
+    "targetQuarter": "Target Quarter",
+    "targetWeek": "Target Week",
+    "selectTargetQuarter": "Select target quarter",
+    "selectTargetWeek": "Select target week",
+    "move": "Move",
+    "movePace": "Move Pace",
+    "movePaceDescription": "Move this pace to a different location in the projection.",
+    "locationUnknown": "Location unknown",
+    "paceNotFound": "Pace not found in projection",
+    "invalidQuarter": "Invalid quarter",
+    "cannotMoveFirstPaceQ1": "Cannot move first pace from Q1",
+    "cannotMoveLastPaceQ4": "Cannot move last pace from Q4",
+    "paceNotFirstOrLast": "Only first or last paces in a quarter can be moved",
+    "moveToHere": "Move to here",
+    "alreadyAdded": "Already Added",
+    "cannotShiftPacesWeek9Occupied": "Cannot shift paces: week 9 is occupied",
+    "quarter": "Quarter",
+    "actions": "Actions",
+    "moveToNextQuarter": "Move to Next Quarter",
+    "moveToPreviousQuarter": "Move to Previous Quarter",
+    "moving": "Moving..."
   },
   "dailyGoals": {
     "title": "Daily Goals",
@@ -373,7 +398,8 @@
     "markedUngraded": "Assignment marked as ungraded",
     "markUngraded": "Mark as Ungraded",
     "errorMarkingUngraded":"Error marking assignment as ungraded",
-    "editGrade": "Edit Grade"
+    "editGrade": "Edit Grade",
+    "enterGrade": "Enter Grade"
   },
   "passwordSetup": {
     "title": "Set Password",

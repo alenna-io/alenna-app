@@ -300,7 +300,32 @@
     "addElective": "Agregar Electiva",
     "addElectiveDescription": "Selecciona una materia electiva para agregar a la proyección. Puedes agregar lecciones más adelante usando la selección de lecciones existente.",
     "subjectAdded": "Materia agregada exitosamente",
-    "errorAddingSubject": "Error al agregar la materia"
+    "errorAddingSubject": "Error al agregar la materia",
+    "movePaceToQuarter": "Mover Lección a Bloque",
+    "movePaceToQuarterDescription": "Mueve esta lección a un bloque diferente. Solo las lecciones primera y última pueden moverse entre bloques.",
+    "currentLocation": "Ubicación Actual",
+    "targetLocation": "Ubicación Objetivo",
+    "targetQuarter": "Bloque Objetivo",
+    "targetWeek": "Semana Objetivo",
+    "selectTargetQuarter": "Seleccionar bloque objetivo",
+    "selectTargetWeek": "Seleccionar semana objetivo",
+    "move": "Mover",
+    "movePace": "Mover Lección",
+    "movePaceDescription": "Mueve esta lección a una ubicación diferente en la proyección.",
+    "locationUnknown": "Ubicación desconocida",
+    "paceNotFound": "Lección no encontrada en la proyección",
+    "invalidQuarter": "Bloque inválido",
+    "cannotMoveFirstPaceQ1": "No se puede mover la primera lección de Q1",
+    "cannotMoveLastPaceQ4": "No se puede mover la última lección de Q4",
+    "paceNotFirstOrLast": "Solo las lecciones primera y última de un bloque pueden moverse",
+    "moveToHere": "Mover aquí",
+    "alreadyAdded": "Ya Agregada",
+    "cannotShiftPacesWeek9Occupied": "No se pueden desplazar lecciones: la semana 9 está ocupada",
+    "quarter": "Bloque",
+    "actions": "Acciones",
+    "moveToNextQuarter": "Mover al Siguiente Bloque",
+    "moveToPreviousQuarter": "Mover al Bloque Anterior",
+    "moving": "Moviendo..."
   },
   "dailyGoals": {
     "title": "Metas Diarias",
@@ -375,7 +400,8 @@
     "markedUngraded": "Asignación marcada como no calificada",
     "markUngraded": "Marcar como Sin Calificar",
     "errorMarkingUngraded":"Error al marcar la asignación como sin calificar",
-    "editGrade": "Editar Calificación"
+    "editGrade": "Editar Calificación",
+    "enterGrade": "Ingresar Calificación"
   },
   "passwordSetup": {
     "title": "Crear Contraseña",

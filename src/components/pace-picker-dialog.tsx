@@ -19,6 +19,7 @@ import {
 import { Search, BookOpen, Plus } from "lucide-react"
 import { useApi } from "@/services/api"
 import { Loading } from "@/components/ui/loading"
+import { Spinner } from "@/components/ui/spinner"
 import { useTranslation } from "react-i18next"
 
 interface PaceCatalogItem {
@@ -40,6 +41,9 @@ interface PacePickerDialogProps {
   levelFilter?: string
   title?: string
   existingPaceCatalogIds?: string[] // IDs of paces already in the projection
+  onMovePace?: (paceCatalogId: string, toQuarter: string, toWeek: number) => void // Handler for moving existing pace
+  targetQuarter?: string // Target quarter for move operation
+  targetWeek?: number // Target week for move operation
 }
 
 export function PacePickerDialog({
@@ -50,7 +54,10 @@ export function PacePickerDialog({
   subSubjectFilter,
   // levelFilter is deprecated - level filtering is now handled by the dropdown in the dialog
   title = "Seleccionar Lección",
-  existingPaceCatalogIds = []
+  existingPaceCatalogIds = [],
+  onMovePace,
+  targetQuarter,
+  targetWeek
 }: PacePickerDialogProps) {
   const api = useApi()
   const { t } = useTranslation()
@@ -58,6 +65,7 @@ export function PacePickerDialog({
   const [loading, setLoading] = React.useState(false)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [selectedLevel, setSelectedLevel] = React.useState<string>("all")
+  const [movingPaceId, setMovingPaceId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (open) {
@@ -85,7 +93,7 @@ export function PacePickerDialog({
       }
 
       let data = await api.paceCatalog.get(filters)
-      
+
       // If subSubjectFilter is provided, filter by subSubjectName
       if (subSubjectFilter) {
         data = data.filter((pace: PaceCatalogItem) => pace.subSubjectName === subSubjectFilter)
@@ -242,12 +250,12 @@ export function PacePickerDialog({
                 <div
                   key={pace.id}
                   className={`w-full p-4 border rounded-lg transition-colors ${isAlreadyAdded
-                    ? 'opacity-50 bg-muted'
+                    ? 'bg-muted'
                     : 'hover:bg-accent hover:border-primary'
                     }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
+                    <div className={`flex-1 min-w-0 ${isAlreadyAdded ? 'opacity-50' : ''}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="font-mono text-sm">
                           {pace.code}
@@ -270,21 +278,48 @@ export function PacePickerDialog({
                         </Badge>
                       </div>
                     </div>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSelectPace(pace)
-                      }}
-                      size="sm"
-                      disabled={isAlreadyAdded}
-                      className={`cursor-pointer ${isAlreadyAdded
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white'
-                        }`}
-                    >
-                      <Plus className="h-4 w-4" />
-                      {isAlreadyAdded ? 'Agregada' : 'Agregar'}
-                    </Button>
+                    {isAlreadyAdded && onMovePace && targetQuarter !== undefined && targetWeek !== undefined ? (
+                      <Button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          setMovingPaceId(pace.id)
+                          try {
+                            // Directly move to the target location without asking
+                            await onMovePace(pace.id, targetQuarter, targetWeek)
+                          } finally {
+                            setMovingPaceId(null)
+                          }
+                        }}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer disabled:bg-blue-600 disabled:opacity-90 disabled:cursor-wait"
+                        disabled={movingPaceId === pace.id}
+                      >
+                        {movingPaceId === pace.id ? (
+                          <>
+                            <Spinner className="size-4 mr-2" />
+                            {t("projections.moving") || "Moving..."}
+                          </>
+                        ) : (
+                          t("projections.moveToHere") || "Move to here"
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleSelectPace(pace)
+                        }}
+                        size="sm"
+                        disabled={isAlreadyAdded}
+                        className={`cursor-pointer ${isAlreadyAdded
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-[#8B5CF6] hover:bg-[#7C3AED] text-white'
+                          }`}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isAlreadyAdded ? (t("projections.alreadyAdded") || 'Agregada') : (t("projections.add") || 'Agregar')}
+                      </Button>
+                    )}
                   </div>
                 </div>
               )
@@ -294,10 +329,11 @@ export function PacePickerDialog({
 
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={onClose} className="cursor-pointer">
-            Cancelar
+            {t("common.cancel") || "Cancelar"}
           </Button>
         </div>
       </DialogContent>
+
     </Dialog>
   )
 }
