@@ -22,6 +22,7 @@ interface Step2SelectSubjectsProps {
   onNotPairWithChange: (index: number, otherSubjectId: string | null) => void
   expandedSubjectIndex: number | null
   onToggleExpand: (index: number) => void
+  abandonedSubjectIndices?: Set<number>
   getAvailablePacesForSubject: (index: number) => number[]
   loadingPaces: Record<string, boolean>
   subjectsByCategory: Record<string, Subject[]>
@@ -48,6 +49,7 @@ export const Step2SelectSubjects = React.memo(function Step2SelectSubjects({
   onNotPairWithChange,
   expandedSubjectIndex,
   onToggleExpand,
+  abandonedSubjectIndices,
   getAvailablePacesForSubject,
   loadingPaces,
   subjectsByCategory,
@@ -110,6 +112,7 @@ export const Step2SelectSubjects = React.memo(function Step2SelectSubjects({
               getSubjectName={getSubjectName}
               getNextLevelsCount={getNextLevelsCount}
               getCategoryName={getCategoryName}
+              isAbandoned={abandonedSubjectIndices?.has(index) ?? false}
             />
           )
         })}
