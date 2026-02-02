@@ -128,8 +128,9 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     }
   })
 
-  // Then, process projectionSubjects that don't have any paces yet
-  // These should appear as empty rows in all quarters
+  // Then, process projectionSubjects to ensure they appear in all quarters
+  // This includes subjects that don't have any paces yet, and subjects that have paces in some quarters
+  // but need empty rows in other quarters
   projection.projectionSubjects?.forEach((projectionSubject: ProjectionDetails['projectionSubjects'][0]) => {
     const subjectName = projectionSubject.subject.name
     const categoryName = projectionSubject.subject.category.name
@@ -137,18 +138,14 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
     const isElectivesCategory = categoryName === 'Electives'
     const displayKey = isElectivesCategory ? subjectName : categoryName
 
-    // Skip if this subject already has paces (already processed above)
-    if (subjectsWithPaces.has(subjectName)) {
-      return
-    }
-
-    // Store subject to category mapping
+    // Store subject to category mapping (always, even if subject has paces)
     if (!subjectToCategory.has(subjectName)) {
       subjectToCategory.set(subjectName, categoryName)
       subjectToCategoryDisplayOrder.set(subjectName, categoryDisplayOrder)
     }
 
-    // Initialize empty rows for all quarters
+    // Initialize empty rows for all quarters where the row doesn't exist yet
+    // This ensures subjects appear in all quarters, even if they only have paces in some
     ; (['Q1', 'Q2', 'Q3', 'Q4'] as const).forEach((quarter) => {
       // Track category counts per quarter
       if (!categoryCounts.has(quarter)) {
@@ -156,7 +153,9 @@ function transformProjectionToQuarterData(projection: ProjectionDetails): {
       }
       const quarterCategoryCounts = categoryCounts.get(quarter)!
 
-      // Initialize empty row if it doesn't exist
+      // Initialize empty row if it doesn't exist in this quarter
+      // This is important: a subject might have paces in Q1 but not in Q2, Q3, Q4
+      // We still want to show the row in Q2, Q3, Q4 so the user can add paces there
       if (!quarters[quarter][displayKey]) {
         quarters[quarter][displayKey] = Array(9).fill(null)
         const currentCount = quarterCategoryCounts.get(categoryName) || 0
@@ -799,7 +798,7 @@ export default function ProjectionDetailsPageV2() {
         return next
       })
     }
-     
+
   }, [projectionId, api, t])
 
   if (loading) {
