@@ -39,6 +39,8 @@ interface SubjectCardProps {
   getSubjectName: (subjectId: string) => string
   getNextLevelsCount: (index: number) => number
   getCategoryName: (categoryId: string) => string
+  isIncomplete?: boolean
+  isAbandoned?: boolean
 }
 
 export const SubjectCard = React.memo(function SubjectCard({
@@ -64,6 +66,8 @@ export const SubjectCard = React.memo(function SubjectCard({
   getSubjectName,
   getNextLevelsCount,
   getCategoryName,
+  isIncomplete = false,
+  isAbandoned = false,
 }: SubjectCardProps) {
   const { t } = useTranslation()
 
@@ -77,8 +81,27 @@ export const SubjectCard = React.memo(function SubjectCard({
     return []
   }, [subject.startPace, subject.endPace, availablePaces])
 
+  const isIncompleteCheck = React.useMemo(() => {
+    if (!subject.subjectId || subject.subjectId.trim() === "") {
+      return false
+    }
+    const startPaceValid = subject.startPace != null &&
+      typeof subject.startPace === 'number' &&
+      Number.isInteger(subject.startPace) &&
+      subject.startPace >= 1
+    const endPaceValid = subject.endPace != null &&
+      typeof subject.endPace === 'number' &&
+      Number.isInteger(subject.endPace) &&
+      subject.endPace >= 1
+    return !startPaceValid || !endPaceValid || (startPaceValid && endPaceValid && subject.startPace >= subject.endPace)
+  }, [subject.subjectId, subject.startPace, subject.endPace])
+
+  const showIncompleteWarning = isIncomplete || isIncompleteCheck
+  // Only show the alert when expanded if the subject is incomplete AND abandoned (user moved on)
+  const showAlertWhenExpanded = showIncompleteWarning && isExpanded && isAbandoned
+
   return (
-    <Card className="border shadow-none">
+    <Card className={cn("border shadow-none", showIncompleteWarning && !isExpanded && "border-orange-300 bg-orange-50/30")}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-4">
           <button
@@ -94,6 +117,9 @@ export const SubjectCard = React.memo(function SubjectCard({
             <p className="font-semibold text-md">
               {subject.subjectId ? getSubjectName(subject.subjectId) : `${t("projections.subject")} ${index + 1}`}
             </p>
+            {showIncompleteWarning && !isExpanded && (
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+            )}
           </button>
           {canRemove && (
             <Button
@@ -115,6 +141,14 @@ export const SubjectCard = React.memo(function SubjectCard({
         >
           <div className="overflow-hidden">
             <div className="space-y-4 pt-0">
+              {showAlertWhenExpanded && (
+                <Alert variant="destructive" className="bg-orange-50! border-orange-200! text-orange-500! rounded-xs">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    {t("projections.subjectIncompleteWarning") || "Esta materia está incompleta. Por favor configura el pace inicial y final."}
+                  </AlertDescription>
+                </Alert>
+              )}
               <SubjectPicker
                 label={t("projections.subject")}
                 required

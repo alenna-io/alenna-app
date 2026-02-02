@@ -44,6 +44,8 @@ export default function GenerateProjectionWizardPageV2() {
   const [subjectPaces, setSubjectPaces] = React.useState<Record<string, SubjectWithPaces[]>>({})
   const [loadingPaces, setLoadingPaces] = React.useState<Record<string, boolean>>({})
   const [expandedSubjectIndex, setExpandedSubjectIndex] = React.useState<number | null>(null)
+  // Track subjects that have been "abandoned" (user moved on from them)
+  const [abandonedSubjectIndices, setAbandonedSubjectIndices] = React.useState<Set<number>>(new Set())
 
   const [formData, setFormData] = React.useState<FormData>({
     studentId: "",
@@ -124,6 +126,16 @@ export default function GenerateProjectionWizardPageV2() {
       setExpandedSubjectIndex(0)
     }
   }, [currentStep, expandedSubjectIndex, formData.subjects.length])
+
+  // Track when a subject card is collapsed - mark it as abandoned
+  const handleToggleExpand = React.useCallback((index: number) => {
+    const wasExpanded = expandedSubjectIndex === index
+    if (wasExpanded) {
+      // User collapsed this card - mark it as abandoned
+      setAbandonedSubjectIndices(prev => new Set([...prev, index]))
+    }
+    setExpandedSubjectIndex(wasExpanded ? null : index)
+  }, [expandedSubjectIndex])
 
   const selectedStudent = React.useMemo(() => {
     return students.find(s => s.id === formData.studentId)
@@ -303,6 +315,14 @@ export default function GenerateProjectionWizardPageV2() {
   const handleAddSubject = () => {
     if (formData.subjects.length >= 6) return
     const newIndex = formData.subjects.length
+    // Mark all existing subjects as abandoned when a new one is added
+    setAbandonedSubjectIndices(prev => {
+      const newSet = new Set(prev)
+      for (let i = 0; i < newIndex; i++) {
+        newSet.add(i)
+      }
+      return newSet
+    })
     setFormData(prev => ({
       ...prev,
       subjects: [
@@ -385,6 +405,12 @@ export default function GenerateProjectionWizardPageV2() {
     fetchPacesForSubject(subjectId)
     setOpenSubjectPopoverIndex(null)
     setExpandedSubjectIndex(index)
+    // When a subject is selected, remove it from abandoned list (user is actively working on it)
+    setAbandonedSubjectIndices(prev => {
+      const newSet = new Set(prev)
+      newSet.delete(index)
+      return newSet
+    })
   }, [getAllSubjects, categories, fetchPacesForSubject])
 
   const handleSubjectChange = React.useCallback((index: number, field: keyof SubjectConfig, value: unknown) => {
@@ -453,34 +479,101 @@ export default function GenerateProjectionWizardPageV2() {
     switch (step) {
       case 1:
         if (!formData.studentId) {
-          toast.error("Por favor selecciona un estudiante")
+          toast.error(t("projections.selectStudentRequired") || "Por favor selecciona un estudiante")
           return false
         }
         if (!formData.schoolYear || !activeSchoolYear) {
-          toast.error("No hay un año escolar activo")
+          toast.error(t("projections.activeSchoolYearRequired") || "No hay un año escolar activo")
           return false
         }
         return true
       case 2: {
-        const hasValidSubject = formData.subjects.some(s => s.subjectId && s.startPace > 0 && s.endPace > 0)
-        if (!hasValidSubject) {
-          toast.error("Por favor configura al menos una materia")
+        // First, check if there's at least one subject with a subjectId
+        const subjectsWithId = formData.subjects.filter(s => s.subjectId && s.subjectId.trim() !== "")
+        if (subjectsWithId.length === 0) {
+          toast.error(t("projections.atLeastOneSubjectRequired") || "Por favor configura al menos una materia")
           return false
         }
 
-        const invalidSubjects = formData.subjects.filter(s => {
-          return !s.subjectId ||
-            !s.startPace ||
-            !s.endPace ||
-            s.startPace < 1 ||
-            s.endPace < 1 ||
-            !Number.isInteger(s.startPace) ||
-            !Number.isInteger(s.endPace) ||
-            s.startPace >= s.endPace
+        // Identify incomplete subjects with specific issues
+        // Only check subjects that have a subjectId (skip empty rows)
+        const incompleteSubjects: Array<{ index: number; issues: string[] }> = []
+
+        formData.subjects.forEach((subject, index) => {
+          // Skip empty subject rows (no subjectId)
+          if (!subject.subjectId || subject.subjectId.trim() === "") {
+            return
+          }
+
+          const issues: string[] = []
+          const subjectName = getSubjectName(subject.subjectId)
+
+          // Check if start pace is missing or invalid (explicitly check for 0, null, undefined, or invalid numbers)
+          const startPaceValid = subject.startPace != null &&
+            typeof subject.startPace === 'number' &&
+            Number.isInteger(subject.startPace) &&
+            subject.startPace >= 1
+
+          if (!startPaceValid) {
+            issues.push(t("projections.startPaceMissing", { subject: subjectName }) || `lección inicial no configurada para ${subjectName}`)
+          }
+
+          // Check if end pace is missing or invalid (explicitly check for 0, null, undefined, or invalid numbers)
+          const endPaceValid = subject.endPace != null &&
+            typeof subject.endPace === 'number' &&
+            Number.isInteger(subject.endPace) &&
+            subject.endPace >= 1
+
+          if (!endPaceValid) {
+            issues.push(t("projections.endPaceMissing", { subject: subjectName }) || `lección final no configurada para ${subjectName}`)
+          }
+
+          // Check if start pace is less than end pace (only if both are valid)
+          if (startPaceValid && endPaceValid) {
+            if (subject.startPace >= subject.endPace) {
+              issues.push(t("projections.startPaceMustBeLessThanEnd", { subject: subjectName }) || `la lección inicial debe ser menor que la final para ${subjectName}`)
+            }
+          }
+
+          if (issues.length > 0) {
+            incompleteSubjects.push({ index, issues })
+          }
         })
 
-        if (invalidSubjects.length > 0) {
-          toast.error("Por favor completa todos los campos de las materias correctamente. Los paces deben ser números enteros positivos y el inicial debe ser menor que el final.")
+        if (incompleteSubjects.length > 0) {
+          // Expand the first incomplete subject so user can see what's missing
+          const firstIncompleteIndex = incompleteSubjects[0].index
+          setExpandedSubjectIndex(firstIncompleteIndex)
+
+          // Build detailed error message for the first incomplete subject
+          const firstIncomplete = incompleteSubjects[0]
+          const firstSubject = formData.subjects[firstIncomplete.index]
+          const firstSubjectName = firstSubject.subjectId
+            ? getSubjectName(firstSubject.subjectId)
+            : `${t("projections.subject")} ${firstIncomplete.index + 1}`
+
+          const firstSubjectIssues = firstIncomplete.issues.join(", ")
+
+          // Show error message - if multiple incomplete, mention count
+          let errorMessage: string
+          if (incompleteSubjects.length === 1) {
+            errorMessage = t("projections.incompleteSubject", {
+              subject: firstSubjectName,
+              issues: firstSubjectIssues
+            }) || `${firstSubjectName}: ${firstSubjectIssues}. Por favor expande la materia y completa los campos faltantes.`
+          } else {
+            const otherCount = incompleteSubjects.length - 1
+            const otherText = otherCount === 1
+              ? t("projections.oneOtherSubjectIncomplete") || "1 otra materia está incompleta"
+              : t("projections.multipleOtherSubjectsIncomplete", { count: otherCount }) || `${otherCount} otras materias están incompletas`
+            errorMessage = t("projections.incompleteSubjects", {
+              subject: firstSubjectName,
+              issues: firstSubjectIssues,
+              otherText
+            }) || `${firstSubjectName}: ${firstSubjectIssues}. Y ${otherText}. Por favor expande las materias y completa los campos faltantes.`
+          }
+
+          toast.error(errorMessage, { duration: 7000 })
           return false
         }
 
@@ -685,16 +778,6 @@ export default function GenerateProjectionWizardPageV2() {
       const trimmedSchoolYear = formData.schoolYear.trim()
       const trimmedStudentId = formData.studentId.trim()
 
-      // Log the values being sent for debugging
-      console.log("Generating projection with:", {
-        studentId: trimmedStudentId,
-        schoolId: trimmedSchoolId,
-        schoolYear: trimmedSchoolYear,
-        studentIdLength: trimmedStudentId.length,
-        schoolIdLength: trimmedSchoolId.length,
-        schoolYearLength: trimmedSchoolYear.length,
-      })
-
       const generateInput = {
         studentId: trimmedStudentId,
         schoolId: trimmedSchoolId,
@@ -889,7 +972,8 @@ export default function GenerateProjectionWizardPageV2() {
           onSkipPaceChange={handleSkipPaceChange}
           onNotPairWithChange={handleNotPairWithChange}
           expandedSubjectIndex={expandedSubjectIndex}
-          onToggleExpand={(index) => setExpandedSubjectIndex(expandedSubjectIndex === index ? null : index)}
+          onToggleExpand={handleToggleExpand}
+          abandonedSubjectIndices={abandonedSubjectIndices}
           getAvailablePacesForSubject={getAvailablePacesForSubject}
           loadingPaces={loadingPaces}
           subjectsByCategory={subjectsByCategory}
@@ -903,7 +987,22 @@ export default function GenerateProjectionWizardPageV2() {
           getCategoryName={getCategoryName}
           onBack={handleBack}
           onNext={handleNext}
-          canProceed={formData.subjects.length > 0 && !formData.subjects.some(s => !s.subjectId || !s.startPace || !s.endPace || s.startPace >= s.endPace)}
+          canProceed={(() => {
+            // Only check subjects that have a subjectId (skip empty rows)
+            const subjectsWithId = formData.subjects.filter(s => s.subjectId && s.subjectId.trim() !== "")
+            if (subjectsWithId.length === 0) return false
+
+            // All subjects with subjectId must have valid paces
+            return !subjectsWithId.some(s =>
+              !s.startPace ||
+              !s.endPace ||
+              s.startPace < 1 ||
+              s.endPace < 1 ||
+              !Number.isInteger(s.startPace) ||
+              !Number.isInteger(s.endPace) ||
+              s.startPace >= s.endPace
+            )
+          })()}
         />
       )}
 
