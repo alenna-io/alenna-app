@@ -38,6 +38,10 @@ export function useApi() {
         const token = await getToken();
         return projectionsApi.addPace(projectionId, data, token);
       },
+      addSubject: async (projectionId: string, data: { subjectId: string }) => {
+        const token = await getToken();
+        return projectionsApi.addSubject(projectionId, data, token);
+      },
       deletePace: async (projectionId: string, paceId: string) => {
         const token = await getToken();
         return projectionsApi.deletePace(projectionId, paceId, token);

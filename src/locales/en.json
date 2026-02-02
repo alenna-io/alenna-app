@@ -284,7 +284,11 @@
     "startPaceAfterEndPace": "Start pace comes after end pace in curriculum order",
     "projectionAlreadyExists": "A projection already exists for this student in this school year",
     "currentDailyGoals": "View Daily Goals",
-    "viewDailyGoals": "View Daily Goals"
+    "viewDailyGoals": "View Daily Goals",
+    "addElective": "Add Elective",
+    "addElectiveDescription": "Select an elective subject to add to the projection. You can add lessons later using the existing lesson selection.",
+    "subjectAdded": "Subject added successfully",
+    "errorAddingSubject": "Failed to add subject"
   },
   "dailyGoals": {
     "title": "Daily Goals",
