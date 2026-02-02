@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { GradeEditDialog } from "@/components/grade-edit-dialog"
 import type { QuarterData } from "@/types/pace"
 import { useTranslation } from "react-i18next"
@@ -397,20 +398,6 @@ export function ACEQuarterlyTable({
               )}
             </div>
             <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-              {onAddElective && uniqueSubjectCount < 7 && editMode === 'editing' && (
-                <Button
-                  variant="soft"
-                  size="lg"
-                  className="h-6 px-2 text-sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowAddElectiveDialog(true)
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                  {t("projections.addElective") || "Add Elective"}
-                </Button>
-              )}
               {onViewDailyGoals && (
                 <Button
                   variant="soft"
@@ -904,6 +891,28 @@ export function ACEQuarterlyTable({
                     })}
                   </tr>
                 ))}
+                {onAddElective && uniqueSubjectCount < 7 && editMode === 'editing' && (
+                  <tr>
+                    <td colSpan={weeks.length + 1} className="p-0 border-t border-border">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="w-full bg-muted/30 hover:bg-muted/40 transition-colors cursor-pointer flex items-center justify-center py-2 md:py-3"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setShowAddElectiveDialog(true)
+                            }}
+                          >
+                            <Plus className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("projections.addElective") || "Add Elective"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
