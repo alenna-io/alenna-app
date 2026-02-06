@@ -85,8 +85,10 @@ export function GradeEditDialog({
               value={gradeInput}
               onChange={(e) => {
                 const value = e.target.value
-                // Allow empty, digits, and decimal numbers
-                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                // Allow empty, digits, and decimal numbers with max 1 decimal place
+                // Regex: allows digits, optional single decimal point, and up to 1 digit after decimal
+                // Also allows trailing decimal point for partial input (e.g., "85.")
+                if (value === '' || /^\d+(\.\d{0,1})?$|^\d*\.$/.test(value)) {
                   // Clamp to 0-100 range
                   if (value === '') {
                     setGradeInput('')
@@ -98,8 +100,17 @@ export function GradeEditDialog({
                       } else if (numValue < 0) {
                         setGradeInput('0')
                       } else {
-                        setGradeInput(value)
+                        // Ensure only 1 decimal place
+                        const parts = value.split('.')
+                        if (parts.length === 2 && parts[1].length > 1) {
+                          setGradeInput(parts[0] + '.' + parts[1].charAt(0))
+                        } else {
+                          setGradeInput(value)
+                        }
                       }
+                    } else if (value.endsWith('.')) {
+                      // Allow trailing decimal point for partial input
+                      setGradeInput(value)
                     } else {
                       setGradeInput(value)
                     }
@@ -116,10 +127,14 @@ export function GradeEditDialog({
                   e.preventDefault()
                   handleCancel()
                 }
-                // Prevent non-numeric keys except backspace, delete, arrow keys, etc.
-                if (!/[\d\bDeleteArrowLeftArrowRightArrowUpArrowDownTab]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
-                  e.preventDefault()
+                // Allow decimal point, backspace, delete, arrow keys, tab, and digits
+                // Also allow Ctrl/Cmd combinations (for copy/paste)
+                if (e.key === '.' || /[\d\bDeleteArrowLeftArrowRightArrowUpArrowDownTab]/.test(e.key) || e.ctrlKey || e.metaKey) {
+                  // Allow these keys
+                  return
                 }
+                // Prevent other keys
+                e.preventDefault()
               }}
               placeholder="0-100"
               className={`text-lg font-semibold [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield] ${previewBorderColor}`}

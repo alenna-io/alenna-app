@@ -73,10 +73,23 @@ export function ProjectionMonthlyAssignments({
       setGradeInput("")
       return
     }
-    // Allow decimal numbers
-    const numValue = parseFloat(value)
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-      setGradeInput(value)
+    // Allow decimal numbers with max 1 decimal place
+    // Regex: allows digits, optional single decimal point, and up to 1 digit after decimal
+    // Also allows trailing decimal point for partial input (e.g., "85.")
+    if (/^\d+(\.\d{0,1})?$|^\d*\.$/.test(value)) {
+      const numValue = parseFloat(value)
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        // Ensure only 1 decimal place
+        const parts = value.split('.')
+        if (parts.length === 2 && parts[1].length > 1) {
+          setGradeInput(parts[0] + '.' + parts[1].charAt(0))
+        } else {
+          setGradeInput(value)
+        }
+      } else if (value.endsWith('.')) {
+        // Allow trailing decimal point for partial input
+        setGradeInput(value)
+      }
     }
   }
 
