@@ -44,7 +44,15 @@ interface QuarterlyTableProps {
   subjectToCategoryDisplayOrder?: Map<string, number> // Mapping from subject to category displayOrder
   categoryCounts?: Map<string, Map<string, number>> // quarter -> category -> count
   loadingActions?: Map<string, boolean> // Map of loading action keys to boolean
-  uniqueSubjectCount?: number // Number of unique subjects in the projection
+  projectionSubjects?: Array<{
+    subject: {
+      id: string
+      category: {
+        id: string
+        name: string
+      }
+    }
+  }> // Projection subjects to check which categories are already present
   onPaceDrop?: (quarter: string, subject: string, fromWeek: number, toWeek: number) => void
   onPaceToggle?: (quarter: string, subject: string, weekIndex: number, grade?: number) => void
   onWeekClick?: (quarter: string, week: number) => void
@@ -96,7 +104,7 @@ export function ACEQuarterlyTable({
   subjectToCategory,
   subjectToCategoryDisplayOrder,
   loadingActions = new Map(),
-  uniqueSubjectCount = 0,
+  projectionSubjects,
   onPaceDrop,
   onWeekClick,
   onAddPace,
@@ -1009,7 +1017,7 @@ export function ACEQuarterlyTable({
                     })}
                   </tr>
                 ))}
-                {onAddElective && uniqueSubjectCount < 7 && editMode === 'editing' && (
+                {onAddElective && editMode === 'editing' && (
                   <tr>
                     <td colSpan={weeks.length + 1} className="p-0 border-t border-border">
                       <Tooltip>
@@ -1025,7 +1033,7 @@ export function ACEQuarterlyTable({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{t("projections.addElective") || "Add Elective"}</p>
+                          <p>{t("projections.addSubject") || "Add Subject"}</p>
                         </TooltipContent>
                       </Tooltip>
                     </td>
@@ -1243,12 +1251,13 @@ export function ACEQuarterlyTable({
         />
       )}
 
-      {/* Add Elective Dialog */}
+      {/* Add Category or Subject Dialog */}
       {showAddElectiveDialog && onAddElective && (
         <AddElectiveDialog
           open={showAddElectiveDialog}
           onOpenChange={setShowAddElectiveDialog}
           onAdd={onAddElective}
+          projectionSubjects={projectionSubjects}
         />
       )}
 
@@ -1256,15 +1265,25 @@ export function ACEQuarterlyTable({
   );
 }
 
-// Add Elective Dialog Component
+// Add Category or Subject Dialog Component
 function AddElectiveDialog({
   open,
   onOpenChange,
   onAdd,
+  projectionSubjects,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (subjectId: string) => void
+  projectionSubjects?: Array<{
+    subject: {
+      id: string
+      category: {
+        id: string
+        name: string
+      }
+    }
+  }>
 }) {
   const { t } = useTranslation()
   const api = useApi()
@@ -1275,12 +1294,25 @@ function AddElectiveDialog({
   }>>([])
   const [loading, setLoading] = React.useState(false)
   const [selectedSubjectId, setSelectedSubjectId] = React.useState("")
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState("")
   const [categoriesLoaded, setCategoriesLoaded] = React.useState(false)
+
+  // Determine which categories are already present
+  const existingCategoryIds = React.useMemo(() => {
+    const categorySet = new Set<string>()
+    if (projectionSubjects) {
+      projectionSubjects.forEach(ps => {
+        categorySet.add(ps.subject.category.id)
+      })
+    }
+    return categorySet
+  }, [projectionSubjects])
 
   // Reset state when dialog closes
   React.useEffect(() => {
     if (!open) {
       setSelectedSubjectId("")
+      setSelectedCategoryId("")
       setCategoriesLoaded(false)
     }
   }, [open])
@@ -1292,16 +1324,13 @@ function AddElectiveDialog({
         try {
           setLoading(true)
           const cats = await api.categories.getAllWithSubjects()
-          const electivesCategory = cats.find(c => isElectivesCategory(c.name))
-          if (electivesCategory) {
-            setCategories([electivesCategory])
-          } else {
-            setCategories([])
-          }
+          // Filter out categories that are already present
+          const availableCategories = cats.filter(c => !existingCategoryIds.has(c.id))
+          setCategories(availableCategories)
           setCategoriesLoaded(true)
         } catch (error) {
           console.error("Error fetching categories:", error)
-          toast.error("Failed to load subjects")
+          toast.error("Failed to load categories")
         } finally {
           setLoading(false)
         }
@@ -1309,47 +1338,107 @@ function AddElectiveDialog({
       fetchCategories()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, categoriesLoaded])
+  }, [open, categoriesLoaded, existingCategoryIds])
 
-  const allElectiveSubjects = categories.flatMap(c => c.subjects)
+  // Get the selected category
+  const selectedCategory = React.useMemo(() => {
+    if (!selectedCategoryId) return null
+    return categories.find(c => c.id === selectedCategoryId)
+  }, [selectedCategoryId, categories])
+
+  // Check if selected category is Electives
+  const isElectivesSelected = selectedCategory && isElectivesCategory(selectedCategory.name)
+  const electiveSubjects = isElectivesSelected ? (selectedCategory?.subjects || []) : []
 
   const handleSubmit = () => {
-    if (!selectedSubjectId) {
-      toast.error(t("projections.selectSubject") || "Please select a subject")
+    if (isElectivesSelected) {
+      // Elective category: require subject selection
+      if (!selectedSubjectId) {
+        toast.error(t("projections.selectSubject") || "Please select an elective subject")
+        return
+      }
+      onAdd(selectedSubjectId)
+      onOpenChange(false)
+      setSelectedSubjectId("")
+      setSelectedCategoryId("")
       return
+    } else if (selectedCategoryId) {
+      // Non-elective category: add first subject from that category
+      if (selectedCategory && selectedCategory.subjects.length > 0) {
+        onAdd(selectedCategory.subjects[0].id)
+        onOpenChange(false)
+        setSelectedCategoryId("")
+        return
+      }
     }
-    onAdd(selectedSubjectId)
-    onOpenChange(false)
-    setSelectedSubjectId("")
+    toast.error(t("projections.selectCategory") || "Please select a category")
   }
+
+  const hasOptions = categories.length > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t("projections.addElective") || "Add Elective Subject"}</DialogTitle>
-          <DialogDescription>
-            {t("projections.addElectiveDescription") || "Select an Elective subject to add to the projection. You can add paces later using the existing pace selection."}
+          <DialogTitle>{t("projections.addCategoryOrSubject") || "Add Category or Subject"}</DialogTitle>
+          <DialogDescription className='text-gray-700'>
+            {t("projections.addCategoryOrSubjectDescription") || "Select a category to add (non-elective) or an elective subject to add to the projection. You can add paces later using the existing pace selection."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <SelectField
-            label={t("projections.subject")}
-            required
-            value={selectedSubjectId}
-            onValueChange={setSelectedSubjectId}
-            placeholder={t("projections.selectSubject") || "Select a subject"}
-            options={allElectiveSubjects.map(s => ({
-              value: s.id,
-              label: s.name,
-            }))}
-          />
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <Spinner className="size-6" />
+            </div>
+          ) : !hasOptions ? (
+            <div className="text-center py-4 text-muted-foreground">
+              {t("projections.allCategoriesAdded") || "All available categories have been added to this projection."}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {t("projections.categories") || "Categories"}
+                </label>
+                <SelectField
+                  label=""
+                  value={selectedCategoryId}
+                  onValueChange={(value) => {
+                    setSelectedCategoryId(value)
+                    setSelectedSubjectId("") // Clear subject selection when category changes
+                  }}
+                  placeholder={t("projections.selectCategory") || "Select a category"}
+                  options={categories.map(c => ({
+                    value: c.id,
+                    label: c.name,
+                  }))}
+                />
+              </div>
+              {isElectivesSelected && electiveSubjects.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    {t("projections.electiveSubjects") || "Elective Subjects"}
+                  </label>
+                  <SelectField
+                    label=""
+                    value={selectedSubjectId}
+                    onValueChange={setSelectedSubjectId}
+                    placeholder={t("projections.selectSubject") || "Select an elective subject"}
+                    options={electiveSubjects.map((s: { id: string; name: string }) => ({
+                      value: s.id,
+                      label: s.name,
+                    }))}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t("common.cancel") || "Cancel"}
           </Button>
-          <Button onClick={handleSubmit} disabled={!selectedSubjectId || loading}>
+          <Button onClick={handleSubmit} disabled={(!selectedCategoryId || (isElectivesSelected && !selectedSubjectId)) || loading || !hasOptions}>
             {loading ? <Spinner className="size-4" /> : (t("common.add") || "Add")}
           </Button>
         </div>
