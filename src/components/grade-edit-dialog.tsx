@@ -35,7 +35,7 @@ export function GradeEditDialog({
   }, [open, currentGrade])
 
   const handleSave = () => {
-    const grade = parseInt(gradeInput)
+    const grade = parseFloat(gradeInput)
     if (isNaN(grade) || grade < 0 || grade > 100) {
       setError(t("projections.invalidGrade") || "Grade must be between 0 and 100")
       return
@@ -50,7 +50,7 @@ export function GradeEditDialog({
     onOpenChange(false)
   }
 
-  const previewGrade = parseInt(gradeInput)
+  const previewGrade = parseFloat(gradeInput)
   const isValidGrade = !isNaN(previewGrade) && previewGrade >= 0 && previewGrade <= 100
   const previewBorderColor = isValidGrade
     ? previewGrade >= 80
@@ -77,22 +77,29 @@ export function GradeEditDialog({
               {t("projections.grade") || "Grade"}
             </label>
             <Input
-              type="text"
-              inputMode="numeric"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              max={100}
+              step="0.1"
               value={gradeInput}
               onChange={(e) => {
                 const value = e.target.value
-                // Only allow digits
-                if (value === '' || /^\d+$/.test(value)) {
+                // Allow empty, digits, and decimal numbers
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
                   // Clamp to 0-100 range
                   if (value === '') {
                     setGradeInput('')
                   } else {
-                    const numValue = parseInt(value, 10)
-                    if (numValue > 100) {
-                      setGradeInput('100')
-                    } else if (numValue < 0) {
-                      setGradeInput('0')
+                    const numValue = parseFloat(value)
+                    if (!isNaN(numValue)) {
+                      if (numValue > 100) {
+                        setGradeInput('100')
+                      } else if (numValue < 0) {
+                        setGradeInput('0')
+                      } else {
+                        setGradeInput(value)
+                      }
                     } else {
                       setGradeInput(value)
                     }

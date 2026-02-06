@@ -496,6 +496,7 @@ export default function ProjectionDetailsPageV2() {
       toast.success(t("projections.lessonMoved") || "Pace moved successfully")
 
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)
@@ -533,6 +534,7 @@ export default function ProjectionDetailsPageV2() {
       toast.success(t("projections.lessonAdded") || "Pace added successfully")
 
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)
@@ -583,6 +585,7 @@ export default function ProjectionDetailsPageV2() {
       toast.success(t("projections.lessonDeleted") || "Pace deleted successfully")
 
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)
@@ -629,6 +632,7 @@ export default function ProjectionDetailsPageV2() {
       toast.success(t("projections.gradeUpdated") || "Grade updated successfully")
 
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)
@@ -863,6 +867,7 @@ export default function ProjectionDetailsPageV2() {
 
       // Refresh projection data
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)
@@ -961,6 +966,7 @@ export default function ProjectionDetailsPageV2() {
 
       // Refresh projection data
       const projection = await api.projections.getById(projectionId)
+      setProjection(projection)
       const { quarters, subjectToCategory: subjectCategoryMap, subjectToCategoryDisplayOrder: subjectCategoryDisplayOrderMap, categoryCounts: categoryCountsMap, totalPaces: totalPacesCount } = transformProjectionToQuarterData(projection)
       setProjectionData(quarters)
       setSubjectToCategory(subjectCategoryMap)

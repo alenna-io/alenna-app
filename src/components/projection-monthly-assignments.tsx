@@ -73,7 +73,8 @@ export function ProjectionMonthlyAssignments({
       setGradeInput("")
       return
     }
-    const numValue = parseInt(value, 10)
+    // Allow decimal numbers
+    const numValue = parseFloat(value)
     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
       setGradeInput(value)
     }
@@ -82,7 +83,7 @@ export function ProjectionMonthlyAssignments({
   const handleSaveGrade = async () => {
     if (!selectedAssignment) return
 
-    const grade = parseInt(gradeInput, 10)
+    const grade = parseFloat(gradeInput)
     if (isNaN(grade) || grade < 0 || grade > 100) {
       return
     }
@@ -220,6 +221,7 @@ export function ProjectionMonthlyAssignments({
                 type="number"
                 min={0}
                 max={100}
+                step="0.1"
                 value={gradeInput}
                 onChange={handleGradeInputChange}
                 placeholder="0-100"
@@ -229,7 +231,7 @@ export function ProjectionMonthlyAssignments({
             </div>
             {gradeInput && (
               <div className="mt-2 flex items-center gap-2">
-                {parseInt(gradeInput, 10) >= 80 ? (
+                {parseFloat(gradeInput) >= 80 ? (
                   <>
                     <Check className="h-4 w-4 text-green-600" />
                     <span className="text-sm text-green-600">
