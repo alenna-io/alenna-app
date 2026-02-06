@@ -73,16 +73,30 @@ export function ProjectionMonthlyAssignments({
       setGradeInput("")
       return
     }
-    const numValue = parseInt(value, 10)
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-      setGradeInput(value)
+    // Allow decimal numbers with max 1 decimal place
+    // Regex: allows digits, optional single decimal point, and up to 1 digit after decimal
+    // Also allows trailing decimal point for partial input (e.g., "85.")
+    if (/^\d+(\.\d{0,1})?$|^\d*\.$/.test(value)) {
+      const numValue = parseFloat(value)
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        // Ensure only 1 decimal place
+        const parts = value.split('.')
+        if (parts.length === 2 && parts[1].length > 1) {
+          setGradeInput(parts[0] + '.' + parts[1].charAt(0))
+        } else {
+          setGradeInput(value)
+        }
+      } else if (value.endsWith('.')) {
+        // Allow trailing decimal point for partial input
+        setGradeInput(value)
+      }
     }
   }
 
   const handleSaveGrade = async () => {
     if (!selectedAssignment) return
 
-    const grade = parseInt(gradeInput, 10)
+    const grade = parseFloat(gradeInput)
     if (isNaN(grade) || grade < 0 || grade > 100) {
       return
     }
@@ -220,6 +234,7 @@ export function ProjectionMonthlyAssignments({
                 type="number"
                 min={0}
                 max={100}
+                step="0.1"
                 value={gradeInput}
                 onChange={handleGradeInputChange}
                 placeholder="0-100"
@@ -229,7 +244,7 @@ export function ProjectionMonthlyAssignments({
             </div>
             {gradeInput && (
               <div className="mt-2 flex items-center gap-2">
-                {parseInt(gradeInput, 10) >= 80 ? (
+                {parseFloat(gradeInput) >= 80 ? (
                   <>
                     <Check className="h-4 w-4 text-green-600" />
                     <span className="text-sm text-green-600">
