@@ -1040,24 +1040,6 @@ export default function ProjectionDetailsPageV2() {
 
   }, [projectionId, api, t])
 
-  // Calculate unique subject count (from both paces and projectionSubjects)
-  const uniqueSubjectCount = React.useMemo(() => {
-    if (!projection) return 0
-    const uniqueSubjectIds = new Set<string>()
-
-    // Add subjects from paces
-    projection.projectionPaces.forEach(p => {
-      uniqueSubjectIds.add(p.paceCatalog.subject.id)
-    })
-
-    // Add subjects from projectionSubjects
-    projection.projectionSubjects?.forEach(ps => {
-      uniqueSubjectIds.add(ps.subject.id)
-    })
-
-    return uniqueSubjectIds.size
-  }, [projection])
-
   // Handle adding a new Elective subject
   const handleAddElective = React.useCallback(async (subjectId: string) => {
     if (!projectionId) return
@@ -1341,7 +1323,7 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
-                uniqueSubjectCount={uniqueSubjectCount}
+                projectionSubjects={projection?.projectionSubjects}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
                 onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
@@ -1386,7 +1368,7 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
-                uniqueSubjectCount={uniqueSubjectCount}
+                projectionSubjects={projection?.projectionSubjects}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
                 onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
@@ -1430,7 +1412,7 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
-                uniqueSubjectCount={uniqueSubjectCount}
+                projectionSubjects={projection?.projectionSubjects}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
                 onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
@@ -1474,7 +1456,7 @@ export default function ProjectionDetailsPageV2() {
                   const targetWeek = currentWeekInfo.currentQuarter === quarter && currentWeekInfo.currentWeek ? currentWeekInfo.currentWeek : week
                   navigate(`/students/${studentId}/projections/${projectionId}/${quarter}/week/${targetWeek}`)
                 } : undefined}
-                uniqueSubjectCount={uniqueSubjectCount}
+                projectionSubjects={projection?.projectionSubjects}
                 onAddElective={projectionInfo.isActive && editMode === 'editing' ? handleAddElective : undefined}
                 onMovePaceToQuarter={editMode === 'editing' || editMode === 'moving' ? handleMovePaceToQuarter : undefined}
               />
